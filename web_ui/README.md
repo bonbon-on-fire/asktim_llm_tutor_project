@@ -32,7 +32,7 @@ environment variable).
 The web UI mirrors the terminal UI pipeline:
 
 1. **Configure** — the page presents dropdowns for tutor prompt, student
-   persona type + version, course, and exercise. All options are discovered
+   persona type + version, course, and exercise. Options are discovered
    dynamically from the file system via `GET /api/config-options`.
 2. **Start conversation** — `POST /api/start` builds the tutor graph with the
    chosen exercise injected into the system prompt and returns the tutor's
@@ -46,9 +46,9 @@ The web UI mirrors the terminal UI pipeline:
 ## API routes
 
 | Method | Path                  | Description                       |
-|--------|-----------------------|-----------------------------------|
+| ------ | --------------------- | --------------------------------- |
 | GET    | `/`                   | Serve the HTML page               |
-| GET    | `/api/config-options` | Discover available config options  |
+| GET    | `/api/config-options` | Discover available config options |
 | POST   | `/api/start`          | Start a new conversation          |
 | POST   | `/api/chat`           | Send a user message               |
 | POST   | `/api/student-turn`   | Generate student + tutor turn     |

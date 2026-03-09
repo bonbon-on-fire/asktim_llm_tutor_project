@@ -12,6 +12,7 @@ import os
 import re
 from pathlib import Path
 
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
@@ -22,6 +23,10 @@ import operator
 from utils.parsing import extract_json_object
 
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Load repo-level .env once so OPENAI_API_KEY is available across entrypoints.
+load_dotenv(_REPO_ROOT / ".env")
 
 # ---------------------------------------------------------------------------
 # API key

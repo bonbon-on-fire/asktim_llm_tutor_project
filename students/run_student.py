@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 from typing import Annotated, Sequence
 
+from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
@@ -19,6 +20,10 @@ from langgraph.graph.message import add_messages
 from typing_extensions import NotRequired, TypedDict
 
 PERSONAS_DIR = Path(__file__).resolve().parent / "personas"
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Load repo-level .env once so OPENAI_API_KEY is available across entrypoints.
+load_dotenv(_REPO_ROOT / ".env")
 
 # ---------------------------------------------------------------------------
 # API key

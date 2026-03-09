@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
@@ -30,6 +31,9 @@ _JUDGE_ROOT = Path(__file__).resolve().parent
 _REPO_ROOT = _JUDGE_ROOT.parent
 PROMPTS_DIR = _JUDGE_ROOT / "prompts"
 TRANSCRIPTS_DIR = _REPO_ROOT / "transcripts"
+
+# Load repo-level .env once so OPENAI_API_KEY is available across entrypoints.
+load_dotenv(_REPO_ROOT / ".env")
 
 # ---------------------------------------------------------------------------
 # API key

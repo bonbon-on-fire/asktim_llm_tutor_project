@@ -8,6 +8,27 @@ Interactive terminal launcher that orchestrates a **tutor vs student** conversat
 python -m terminal_ui
 ```
 
+### Batch automation
+
+Run automated evaluations with explicit selections:
+
+```
+python -m terminal_ui.run_batch ^
+  --tutor-prompt tutor_01 ^
+  --student-persona chaotic_01 ^
+  --student-persona chitchat_01 ^
+  --course-exercise philosophy:01 ^
+  --course-exercise urban_studies:02 ^
+  --judge-prompt judge_01 ^
+  --judge-rubric rubric_01 ^
+  --trials 2 ^
+  --turn-size 10
+```
+
+This runs: selected `tutor_prompt` x selected `student_persona` list x selected
+`course:exercise_number` list x selected `judge_prompt` x selected
+`judge_rubric` x `N` trials.
+
 ## Pipeline
 
 The UI prompts for each configuration step, then runs the conversation:
@@ -22,7 +43,8 @@ The UI prompts for each configuration step, then runs the conversation:
 | 5 | Number of turns | Positive integer |
 | 6 | *Runs conversation* | Tutor and student alternate for N turns |
 | 7 | Judge prompt version | Scans `judge/prompts/*.txt` |
-| 8 | *Auto-saves transcript + runs judge* | See below |
+| 8 | Judge rubric version | Scans `judge/rubrics/*.md` |
+| 9 | *Auto-saves transcript + runs judge* | See below |
 
 If there's only one option for a step (e.g. one tutor prompt), it's auto-selected.
 
@@ -53,6 +75,7 @@ Numbers auto-increment (next available `transcript_XX`).
   "turn_size": 10,
   "exercise": "Combined assignment text (course context + exercise + run configuration)...",
   "judge_prompt": "judge_01",
+  "judge_rubric": "rubric_01",
   "turns": 10,
   "exchanges": [
     { "turn": 1, "student": "...", "tutor": "..." },

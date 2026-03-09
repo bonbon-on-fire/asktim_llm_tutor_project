@@ -340,15 +340,17 @@ Transcripts are test-run artifacts shared between the UI (producer) and judge (c
 | 5 | Number of turns | User input |
 | 6 | Run conversation | Tutor + student alternate for N turns |
 | 7 | Judge prompt version | Scans `judge/prompts/*.txt` |
-| 8 | Auto-save + judge | See below |
+| 8 | Judge rubric version | Scans `judge/rubrics/*.md` |
+| 9 | Auto-save + judge | See below |
 
 **Transcript auto-naming:** `transcripts/{persona_type}/transcript_XX.json` with auto-incrementing numbers.
 
 **Changes:**
 - Uses `students.run_student` API (prompt_name-based, flat).
 - Uses `tutor.run_tutor` API (prompt version selectable).
-- Uses `judge.judge_transcript()` with selectable judge prompt version.
+- Uses `judge.judge_transcript()` with selectable judge prompt and rubric versions.
 - Assignment context loaded as `curriculum/{course}/course.txt` + `exercise_{num}.txt` (combined and passed to both tutor and student).
+- Added `python -m terminal_ui.run_batch` to automate persona × exercise × `N` trials with transcript generation and judge scoring.
 - Transcripts saved to `transcripts/{persona_type}/transcript_XX.json`.
 - Transcript JSON includes: tutor_prompt, student_persona, course, exercise_number, judge_prompt, turns, exchanges.
 - Run turn count (`turn_size`) is now injected into tutor and student context so both roles know the planned conversation length.

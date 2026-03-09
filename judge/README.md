@@ -35,6 +35,16 @@ result = judge_transcript("chaotic_01_exercise_01_01")
 print(result.total_score, result.max_score)  # e.g. 38.5, 45.0
 ```
 
+You can also choose specific judge prompt + rubric versions:
+
+```python
+result = judge_transcript(
+    "chaotic/transcript_01",
+    prompt_name="judge_01",
+    rubric_name="rubric_01",
+)
+```
+
 ## Rubric summary
 
 | Section                  | Sub-criteria | Max points | Bonus |

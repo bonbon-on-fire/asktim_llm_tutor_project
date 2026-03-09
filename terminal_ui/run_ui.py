@@ -10,7 +10,8 @@ Pipeline (no ML in this file):
   5. Pick number of turns
   6. Run conversation and display it
   7. Pick judge prompt version
-  8. Auto-save transcript and run judge
+  8. Pick judge rubric version
+  9. Auto-save transcript and run judge
 """
 
 from __future__ import annotations
@@ -36,6 +37,7 @@ _TUTOR_PROMPTS_DIR = _REPO_ROOT / "tutor" / "prompts"
 _PERSONAS_DIR = _REPO_ROOT / "students" / "personas"
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
 _JUDGE_PROMPTS_DIR = _REPO_ROOT / "judge" / "prompts"
+_JUDGE_RUBRICS_DIR = _REPO_ROOT / "judge" / "rubrics"
 _TRANSCRIPTS_DIR = _REPO_ROOT / "transcripts"
 
 _PERSONA_TYPES: tuple[str, ...] = ("chaotic", "chitchat", "clueless")
@@ -105,6 +107,13 @@ def _discover_judge_versions() -> list[str]:
     if not _JUDGE_PROMPTS_DIR.exists():
         return []
     return sorted(p.stem for p in _JUDGE_PROMPTS_DIR.glob("*.txt"))
+
+
+def _discover_judge_rubrics() -> list[str]:
+    """Return sorted judge rubric stems (e.g. ['rubric_01'])."""
+    if not _JUDGE_RUBRICS_DIR.exists():
+        return []
+    return sorted(p.stem for p in _JUDGE_RUBRICS_DIR.glob("*.md"))
 
 
 def _next_transcript_number(persona_dir: Path) -> str:
@@ -263,10 +272,12 @@ def main() -> int:
             print("No turns completed. Exiting without saving.")
             return 130
 
-    # 7. Judge version
+    # 7. Judge prompt version
     try:
         judge_versions = _discover_judge_versions()
         judge_version = _prompt_choice("Judge prompt", judge_versions)
+        judge_rubrics = _discover_judge_rubrics()
+        judge_rubric = _prompt_choice("Judge rubric", judge_rubrics)
     except (KeyboardInterrupt, EOFError):
         print("\nCancelled. Exiting without saving.")
         return 130
@@ -286,6 +297,7 @@ def main() -> int:
         "turn_size": turns,
         "exercise": assignment_text,
         "judge_prompt": judge_version,
+        "judge_rubric": judge_rubric,
         "turns": len(transcript_exchanges),
         "exchanges": transcript_exchanges,
     }
@@ -298,7 +310,7 @@ def main() -> int:
     # Run judge
     relative_stem = f"{persona_type}/{transcript_name}"
     try:
-        result = judge_transcript(relative_stem)
+        result = judge_transcript(relative_stem, prompt_name=judge_version, rubric_name=judge_rubric)
     except JudgeError as e:
         print(f"Judge failed: {e}")
         return 1

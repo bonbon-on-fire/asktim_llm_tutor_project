@@ -14,6 +14,7 @@ judge/
     judge_02.txt       — structured judge prompt template (role/objective/input/function/output)
   rubrics/
     rubric_01.md       — grading rubric (deduction-based, 33 base + 12 bonus = 45 max)
+    rubric_02.md       — refined rubric with anti-overlap notes and criterion-level cap guidance
 ```
 
 Transcripts live in the top-level `transcripts/` folder (not inside `judge/`).
@@ -43,6 +44,16 @@ result = judge_transcript(
     "chaotic/transcript_01",
     prompt_name="judge_01",
     rubric_name="rubric_01",
+)
+```
+
+Alternative (newer prompt + rubric profile):
+
+```python
+result = judge_transcript(
+    "chaotic/transcript_01",
+    prompt_name="judge_02",
+    rubric_name="rubric_02",
 )
 ```
 

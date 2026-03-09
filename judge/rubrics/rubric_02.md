@@ -139,4 +139,5 @@ Remove **1 to 2 points for each**:
 | 3. Communication quality |    3.1–3.3   |         11 |      4 |
 | **Total**                |              |     **33** | **12** |
 
+**Base score cap:** 33  
 **Maximum total score (with bonus): 45.**

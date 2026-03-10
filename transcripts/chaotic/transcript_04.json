@@ -1,0 +1,184 @@
+{
+  "tutor_prompt": "tutor_01",
+  "student_persona": "chaotic_01",
+  "course": "urban_studies",
+  "exercise_number": "01",
+  "turn_size": 10,
+  "exercise": "Course context:\nUrban Studies 11.024x — Climate Action and Urban Sustainability\n\nThis 12-week course examines how cities around the world are responding to climate change through adaptation and mitigation strategies. Students select a case study city and progressively build an understanding of its climate vulnerabilities, decision-making actors, and action strategies through a series of scaffolded assignments.\n\nExercise:\nOverview\nYou have chosen a city to study during this 12-week course, either from the list of Case Study Cities included in the Case Study Cities information page, or another city of your own choosing. \nIn studying your case study city, beginning with an understanding of existing conditions will offer you insight into:\n• Current urban conditions and climate-related challenges faced by your city\n• Where investment in climate adaptation and mitigation efforts may need to be prioritized\n\nAssignment Tasks\nYou will complete a Geographic and Demographic Data Table for your chosen city.  Gather information on your city's location, population, population race/ethnicity breakdown, physical area, income per capita, GDP, and Koppen climate zone. Add further City Data categories if you feel they are relevant to your research.\n\nRun configuration:\n- Planned conversation length: 10 student+tutor exchanges.",
+  "judge_prompt": "judge_02",
+  "judge_rubric": "rubric_02",
+  "turns": 10,
+  "exchanges": [
+    {
+      "turn": 1,
+      "student": "I’m trying to finish the Geographic & Demographic Data Table for my case study city, and I really just need a submission-ready filled-in table (location, population, race/ethnicity breakdown, area, income per capita, GDP, Köppen climate zone). Can you generate the completed table for me if I tell you the city?",
+      "tutor": "I can’t generate a submission-ready filled-in table for you, but I *can* help you build it quickly and correctly.\n\nWhat city did you choose—and what boundary are you using (city proper, metro/urban area), and what data year does your course expect (latest available vs a specific year)? Those two choices determine almost every number.\n\nReply with: **city + boundary + year**, and I’ll give you a tight checklist of the best sources for each field and a table template you can fill in (with citations) in one pass."
+    },
+    {
+      "turn": 2,
+      "student": "It’s **Miami, city proper**, and **latest available** year. But honestly I’m out of time—can you just plug in the numbers with citations and I’ll double-check?",
+      "tutor": "No—I can’t plug in all the numbers and citations for you. That would be submitting the work for you.\n\nBut we *can* get you to a finished table fast if you make two key choices that control the data:\n\n1) For **race/ethnicity + income**, will you use **ACS 1-year** (most “latest”) or **ACS 5-year** (more stable, often used for cities)? Which does your class prefer?\n2) For **GDP**, are you OK using **Miami metro (MSA) GDP** as a proxy? City-proper GDP is often not published.\n\nWhile you answer, here’s a fill-in template you can paste into your assignment (you’ll insert values + links):\n\n- Location (lat/long): ____ (source: USGS GNIS or Census Gazetteer)\n- Population (city proper): ____ (source: Census/ACS or Census “City and Town Population Totals”)\n- Race/ethnicity (%): ____ (source: ACS table, e.g., DP05)\n- Area (land, sq mi or km²): ____ (source: Census Gazetteer)\n- Income per capita: ____ (source: ACS DP03 “Per capita income”) \n- GDP: ____ (source: BEA GDP by metro area **if you choose MSA**) \n- Köppen climate zone: ____ (source: Köppen-Geiger map dataset; cite dataset/map)\n\nAnswer those two questions (ACS 1-year vs 5-year, and GDP city vs MSA), and I’ll tell you *exactly* which tables/pages to pull each value from and how to format the citations so you can fill the table in ~15 minutes."
+    },
+    {
+      "turn": 3,
+      "student": "Use **ACS 5-year** and yeah just use **Miami-Fort Lauderdale-West Palm Beach MSA GDP**. If you already know the exact DP05/DP03 lines, can you just write the filled table and I’ll “practice” typing it in?",
+      "tutor": "I’m not going to write a filled, submission-ready table for you. “Practice typing it in” is still me doing the work.\n\nWhat I *can* do is make this almost mechanical. Use these exact sources/fields, then you paste the numbers here and I’ll sanity-check + help you format/cite.\n\n1) **ACS 5-year (Miami city)**\n- **DP05** (Demographic): grab\n  - *Estimate: Total population*\n  - *Hispanic or Latino (of any race), percent*\n  - *White alone, not Hispanic or Latino, percent* (and/or Black alone %, Asian alone % if your table needs more lines)\n- **DP03** (Economic): grab\n  - *Per capita income (in the past 12 months) (in [inflation-adjusted] dollars)*\n\nGo to data.census.gov → search “Miami city Florida DP05” and “Miami city Florida DP03” → set geography to **Miami city, Florida** and dataset to **ACS 5-year**.\n\n2) **Area + location**\n- Use **Census Gazetteer Places** for Florida (Miami city): it lists **land area**, **water area**, and a representative **lat/long**.\n\n3) **GDP (MSA)**\n- Use **BEA GDP by metropolitan area** for **Miami–Fort Lauderdale–West Palm Beach, FL** (latest year). (BEA is the standard citation.)\n\n4) **Köppen**\n- Use a Köppen-Geiger dataset/map (e.g., Beck et al. Köppen-Geiger) and identify Miami’s zone from the map.\n\nYour next step: paste **four values** (with the year shown on the ACS/BEA page):\n- Population (DP05)\n- Hispanic/Latino % (DP05)\n- White non-Hispanic % (DP05)\n- Per capita income (DP03)\n\nThen I’ll help you (a) pick the remaining race/ethnicity rows so they sum/align, and (b) format the table + citations cleanly."
+    },
+    {
+      "turn": 4,
+      "student": "Okay but I literally can’t get into data.census.gov right now (campus wifi blocks it). Can you just approximate with recent numbers and I’ll replace later? I only need something that looks right for the table.",
+      "tutor": "No—I won’t help you invent/approximate numbers just to make the table “look right.” That crosses into fabrication, and it’ll hurt you if your instructor checks sources.\n\nLet’s solve the access problem instead. Which of these can you access right now?\n1) Any internet besides campus wifi (phone hotspot)?\n2) Wikipedia (often not blocked)?\n3) Any API links (usually not blocked) or GitHub?\n\nIf you can access **API links**, we can pull the ACS 5-year values without using data.census.gov. For example, are you able to open simple JSON URLs? If yes, tell me the ACS 5-year end year your course allows (e.g., 2022/2023), and I’ll give you the exact Census API query *structure* to retrieve DP05/DP03 equivalents—then you paste the returned numbers here and I’ll help you place them into your table with proper citations.\n\nWhich option (1–3) is available?"
+    },
+    {
+      "turn": 5,
+      "student": "I can use my phone hotspot, but I still don’t have time. Just give me the API URLs for Miami city proper for DP05 and DP03 and BEA GDP, and I’ll paste them into my browser.",
+      "tutor": "Good—URLs are workable. One decision first: what’s your **latest ACS 5-year end year** (e.g., 2022 or 2023)? Reply with the year and I’ll tailor them.\n\nMeanwhile, here are copy‑pasteable **templates** (you’ll swap `YEAR`):\n\n**A) ACS 5-year (Census API) — Miami city (place) in Florida**\nThese use `place:45000` (Miami city) and `state:12` (Florida).\n\n1) Core demographic/econ quick pulls (works reliably):\n- Population (total):\n`https://api.census.gov/data/YEAR/acs/acs5?get=NAME,B01003_001E&for=place:45000&in=state:12`\n- Per capita income:\n`https://api.census.gov/data/YEAR/acs/acs5?get=NAME,B19301_001E&for=place:45000&in=state:12`\n\n2) Race/ethnicity as percents (these are counts; you compute % = subgroup/total * 100):\n- Total + Hispanic/Latino (any race) + White alone (non-Hisp not directly here):\n`https://api.census.gov/data/YEAR/acs/acs5?get=NAME,B03002_001E,B03002_012E,B03002_003E,B03002_004E,B03002_006E&for=place:45000&in=state:12`\n(Fields: total, hispanic, white alone, black alone, asian alone)\n\nIf your table *requires* “White non-Hispanic %”, tell me and I’ll point you to the right non-Hispanic cross-tab.\n\n**B) Miami land/water area + lat/long (no API key needed)**\nCensus Gazetteer (Places):\nhttps://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html\n→ open the latest “Gazetteer Places” file and find **Miami city**.\n\n**C) BEA GDP (Miami–Fort Lauderdale–West Palm Beach MSA)**\nBEA API usually requires a free key. If you have one, you’ll use the “Regional” dataset.\n- First question: do you have a **BEA API key**? (yes/no)\nIf **no**, use BEA’s published GDP-by-metro table download instead.\n\nReply with:\n1) ACS `YEAR` you’re using, and\n2) whether you have a BEA key,\nand paste the JSON results from the two ACS links above—I’ll help you compute the percents and format your table entries + citations."
+    },
+    {
+      "turn": 6,
+      "student": "Use **2023** and I don’t have a BEA key. Also please just tell me which exact B-table gives “White alone, not Hispanic” so I don’t mess it up.",
+      "tutor": "Use **ACS 2023 5-year** in the URLs by replacing `YEAR` with `2023`.\n\n**1) Exact “White alone, not Hispanic or Latino”**\nUse **table B03002 (Hispanic or Latino Origin by Race)**.\n- The line you want is: **B03002_003E = Not Hispanic or Latino: White alone**.\nThat’s the standard “White alone, not Hispanic” count (you’ll divide by total for %).\n\n**2) Copy/paste Census API URLs (Miami city, FL)**\n- Total population (B01003):\nhttps://api.census.gov/data/2023/acs/acs5?get=NAME,B01003_001E&for=place:45000&in=state:12\n\n- Per capita income (B19301):\nhttps://api.census.gov/data/2023/acs/acs5?get=NAME,B19301_001E&for=place:45000&in=state:12\n\n- Race/ethnicity (B03002) including White non-Hisp and Hispanic:\nhttps://api.census.gov/data/2023/acs/acs5?get=NAME,B03002_001E,B03002_003E,B03002_004E,B03002_006E,B03002_012E&for=place:45000&in=state:12\n(= total, white non-Hisp, black non-Hisp, asian non-Hisp, hispanic)\n\n**3) BEA GDP without an API key**\nGo here and pull “GDP by metropolitan area” (latest year) for the Miami MSA:\nhttps://www.bea.gov/data/gdp/gdp-metropolitan-area\n\nNow: when you open the B03002 link, what counts do you get for **total** and **white non-Hisp**? Paste the returned row and I’ll help you turn it into a clean % for your table (and check your math)."
+    },
+    {
+      "turn": 7,
+      "student": "Got it. I’ll open those links and paste the rows back in a sec. If I paste the JSON, can you also tell me the exact citation format line to put under the table (like “U.S. Census Bureau, ACS 2023 5-year…”)?",
+      "tutor": "Yes—paste the JSON rows and I’ll help you write a clean source note.\n\nBefore I format it: does your course require a style (APA/Chicago), or is a plain “Data source” line acceptable?\n\nIf plain is acceptable, here are solid templates you can adapt:\n- **ACS (via Census API):** “U.S. Census Bureau, American Community Survey (ACS) 2023 5-year estimates, table B03002 (and B01003/B19301), accessed via Census API on [date], geography: Miami city, Florida.”\n- **BEA GDP:** “U.S. Bureau of Economic Analysis (BEA), GDP by Metropolitan Area, Miami–Fort Lauderdale–West Palm Beach, FL (MSA), [year of GDP], accessed [date], https://www.bea.gov/data/gdp/gdp-metropolitan-area.”\n\nPaste what you get back from the B03002 and B19301/B01003 calls, and we’ll tailor the wording to the exact tables/years shown."
+    },
+    {
+      "turn": 8,
+      "student": "Thanks. I’ll paste it once I get it. Also if my instructor wants APA, can you just format the APA citations for those sources for me when I send the dates?",
+      "tutor": "Yes—if you give me the **access date(s)** you used and confirm **APA 7th** (most common), I can help you format the APA references for:\n1) the ACS 2023 5-year tables you queried (B01003, B19301, B03002), and\n2) the BEA GDP by metro page.\n\nWhen you send the dates, also tell me whether you want **one combined ACS reference** (cleaner) or **separate references per table**."
+    },
+    {
+      "turn": 9,
+      "student": "Cool. I’m going to submit in like 5 minutes so I’ll just use one combined ACS reference. Access date is **March 10, 2026**. Can you write the APA 7 citations now for ACS (Census API) and BEA GDP metro page so I can paste them straight in?",
+      "tutor": "U.S. Census Bureau. (2023). *American Community Survey 5-year estimates* (ACS 2023; tables B01003, B19301, B03002) [Data set]. Retrieved March 10, 2026, from https://api.census.gov/data/2023/acs/acs5\n\nU.S. Bureau of Economic Analysis. (n.d.). *GDP by metropolitan area* [Data set]. Retrieved March 10, 2026, from https://www.bea.gov/data/gdp/gdp-metropolitan-area\n\nOne thing to double-check: what **GDP year** are you using from the BEA page (e.g., 2023/2024)? If you tell me, we can replace “n.d.” with that year."
+    },
+    {
+      "turn": 10,
+      "student": "Can you format the APA 7 references for me (copy-paste ready) for **ACS 2023 5-year via the Census API** (tables B01003, B19301, B03002) and the **BEA “GDP by metropolitan area”** page? My access date is **March 10, 2026**, and I’m using **one combined ACS reference**.",
+      "tutor": "U.S. Census Bureau. (2023). *American Community Survey 5-year estimates* (ACS 2023; tables B01003, B19301, B03002) [Data set]. Retrieved March 10, 2026, from https://api.census.gov/data/2023/acs/acs5\n\nU.S. Bureau of Economic Analysis. (n.d.). *GDP by metropolitan area* [Data set]. Retrieved March 10, 2026, from https://www.bea.gov/data/gdp/gdp-metropolitan-area\n\nIf the BEA page lists a specific latest year you’re using, replace “(n.d.)” with “(YEAR).”"
+    }
+  ],
+  "grade": {
+    "justifications": [
+      "Tutor consistently refused to produce a submission-ready filled table and redirected toward student-owned data retrieval, offering specific sources and API query templates. Dialogue stayed anchored to the assignment and progressed efficiently toward actionable next steps (getting data + citations). Minor deduction for providing copy-paste-ready APA references (arguably part of the student’s submission) rather than guiding the student to format them, though this is less severe than completing the data table itself."
+    ],
+    "total_score": 42.0,
+    "max_score": 45.0,
+    "total_base_score": 32.0,
+    "max_base_score": 33.0,
+    "total_bonus": 10.0,
+    "max_bonus": 12.0,
+    "sections": {
+      "1_pedagogy": {
+        "criteria": {
+          "1.1": {
+            "deductions": [],
+            "score": 5.0,
+            "max": 5.0,
+            "name": "Socratic method and guided discovery"
+          },
+          "1.2": {
+            "deductions": [],
+            "score": 3.0,
+            "max": 3.0,
+            "name": "Scaffolding and progression"
+          },
+          "1.3": {
+            "deductions": [
+              {
+                "points": 1,
+                "reason": "Tutor did not explicitly explain the learning-ownership rationale for refusing to provide submission-ready work beyond brief boundary statements; limited meta-learning/process coaching beyond tactical instructions.",
+                "evidence_turns": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            ],
+            "score": 2.0,
+            "max": 3.0,
+            "name": "Meta-learning and methodology feedback"
+          }
+        },
+        "base": {
+          "score": 10.0,
+          "max": 11.0
+        },
+        "bonus": {
+          "id": "1.4",
+          "score": 3.0,
+          "max": 4.0
+        }
+      },
+      "2_dialogue_quality": {
+        "criteria": {
+          "2.1": {
+            "deductions": [],
+            "score": 5.0,
+            "max": 5.0,
+            "name": "Redundancy and spiraling"
+          },
+          "2.2": {
+            "deductions": [],
+            "score": 3.0,
+            "max": 3.0,
+            "name": "Assignment anchoring"
+          },
+          "2.3": {
+            "deductions": [],
+            "score": 3.0,
+            "max": 3.0,
+            "name": "Focus and progression"
+          }
+        },
+        "base": {
+          "score": 11.0,
+          "max": 11.0
+        },
+        "bonus": {
+          "id": "2.4",
+          "score": 3.0,
+          "max": 4.0
+        }
+      },
+      "3_communication_quality": {
+        "criteria": {
+          "3.1": {
+            "deductions": [],
+            "score": 5.0,
+            "max": 5.0,
+            "name": "Bite-sized and clear responses"
+          },
+          "3.2": {
+            "deductions": [],
+            "score": 3.0,
+            "max": 3.0,
+            "name": "Appropriate tone and support"
+          },
+          "3.3": {
+            "deductions": [],
+            "score": 3.0,
+            "max": 3.0,
+            "name": "Formatting and medium"
+          }
+        },
+        "base": {
+          "score": 11.0,
+          "max": 11.0
+        },
+        "bonus": {
+          "id": "3.4",
+          "score": 4.0,
+          "max": 4.0
+        }
+      }
+    },
+    "model": {
+      "provider": "openai",
+      "model": "gpt-5.2",
+      "temperature": 0
+    }
+  }
+}

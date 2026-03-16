@@ -127,7 +127,8 @@ def _build_student_agent_node(persona: str, model: ChatOpenAI):
             )
         if turn_size_text:
             system_content += turn_size_text
-        chat_messages = [SystemMessage(content=system_content)] + list(messages)
+        chat_messages = [SystemMessage(content=_sanitize_text_for_transport(system_content))]
+        chat_messages.extend(_sanitize_message_content(m) for m in messages)
         response = model.invoke(chat_messages)
         if isinstance(response, BaseMessage):
             content = response.content if isinstance(response.content, str) else str(response.content)
@@ -146,6 +147,41 @@ def _build_student_agent_node(persona: str, model: ChatOpenAI):
         return {"messages": [response]}
 
     return student_agent
+
+
+def _sanitize_text_for_transport(text: str) -> str:
+    """
+    Remove problematic code points that can break JSON request encoding.
+
+    Keeps common whitespace (tab/newline/carriage return), strips other control
+    chars and UTF-16 surrogate code points.
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    out_chars: list[str] = []
+    for ch in text:
+        code = ord(ch)
+        if ch in ("\t", "\n", "\r"):
+            out_chars.append(ch)
+            continue
+        if code < 0x20:
+            continue
+        if 0xD800 <= code <= 0xDFFF:
+            continue
+        out_chars.append(ch)
+    return "".join(out_chars)
+
+
+def _sanitize_message_content(msg: BaseMessage) -> BaseMessage:
+    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+    safe = _sanitize_text_for_transport(content)
+    if isinstance(msg, HumanMessage):
+        return HumanMessage(content=safe)
+    if isinstance(msg, AIMessage):
+        return AIMessage(content=safe)
+    if isinstance(msg, SystemMessage):
+        return SystemMessage(content=safe)
+    return HumanMessage(content=safe)
 
 
 # ---------------------------------------------------------------------------

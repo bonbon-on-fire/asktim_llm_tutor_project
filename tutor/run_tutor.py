@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import Annotated, TypedDict
@@ -89,7 +89,9 @@ def create_tutor_graph(system_prompt: str):
     )
 
     def tutor_node(state: TutorState) -> dict:
-        messages = [SystemMessage(content=system_prompt)] + state["messages"]
+        messages = [SystemMessage(content=_sanitize_text_for_transport(system_prompt))]
+        for msg in state["messages"]:
+            messages.append(_sanitize_message_content(msg))
         response = model.invoke(messages)
         return {"messages": [response]}
 
@@ -134,6 +136,41 @@ def parse_tutor_response(content: str) -> tuple[str | None, str | None]:
 def _fenced_json(text: str) -> str | None:
     m = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.DOTALL)
     return m.group(1).strip() if m else None
+
+
+def _sanitize_text_for_transport(text: str) -> str:
+    """
+    Remove problematic code points that can break JSON request encoding.
+
+    Keeps common whitespace (tab/newline/carriage return), strips other control
+    chars and UTF-16 surrogate code points.
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    out_chars: list[str] = []
+    for ch in text:
+        code = ord(ch)
+        if ch in ("\t", "\n", "\r"):
+            out_chars.append(ch)
+            continue
+        if code < 0x20:
+            continue
+        if 0xD800 <= code <= 0xDFFF:
+            continue
+        out_chars.append(ch)
+    return "".join(out_chars)
+
+
+def _sanitize_message_content(msg: BaseMessage) -> BaseMessage:
+    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+    safe = _sanitize_text_for_transport(content)
+    if isinstance(msg, HumanMessage):
+        return HumanMessage(content=safe)
+    if isinstance(msg, AIMessage):
+        return AIMessage(content=safe)
+    if isinstance(msg, SystemMessage):
+        return SystemMessage(content=safe)
+    return HumanMessage(content=safe)
 
 
 # ---------------------------------------------------------------------------

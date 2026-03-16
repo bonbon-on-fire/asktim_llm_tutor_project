@@ -44,7 +44,7 @@ _TUTOR_GREETING = "Hi. What would you like to work on today?"
 TUTOR_PROMPTS: list[str] = ["tutor_02"]
 
 # Which student personas to run (from students/personas/*.txt, without extension).
-STUDENT_PERSONAS: list[str] = ["chaotic_02"]
+STUDENT_PERSONAS: list[str] = ["chaotic_03"]
 
 # Which course/exercise combinations to run.
 # Exercise numbers should be zero-padded strings like "01".

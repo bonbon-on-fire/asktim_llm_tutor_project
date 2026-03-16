@@ -90,3 +90,20 @@ Maximum total score (with bonus): **42**.
 | `OPENAI_API_KEY` | Yes | OpenAI API key. Fails immediately if not set. |
 | `OPENAI_MODEL` | No | Model name (default: `gpt-5.2`). |
 | `JUDGE_INCLUDE_TIMESTAMP` | No | If truthy (`1/true/yes/on`), include `timestamp_utc` in grade output. Default off for deterministic artifacts. |
+
+## Claude Re-judge Script
+
+To re-judge existing transcripts with Claude and write outputs into:
+- `transcripts/chaotic_claude`
+- `transcripts/chitchat_claude`
+- `transcripts/clueless_claude`
+
+Run:
+
+```python
+python -m judge.run_judge_claude --model claude-3-7-sonnet --prompt judge_03 --rubric rubric_03
+```
+
+Notes:
+- The script clears existing `*_claude` transcript JSON files before writing new results.
+- Requires `ANTHROPIC_API_KEY` in environment (or `.env`).

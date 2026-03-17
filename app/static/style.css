@@ -1,0 +1,377 @@
+:root {
+  --bg: #0f0f12;
+  --surface: #1a1a1f;
+  --border: #2d2d35;
+  --text: #e8e8ed;
+  --text-muted: #8a8a96;
+  --accent: #7c6ef6;
+  --accent-dim: #5c4fd9;
+  --student: #4ade80;
+  --tutor: #60a5fa;
+  --reasoning: #a78bfa;
+  --score-high: #4ade80;
+  --score-mid: #facc15;
+  --score-low: #f87171;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "DM Sans", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.header nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-left: 1rem;
+}
+
+.header nav a:hover {
+  color: var(--accent);
+}
+
+#main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.page.hidden {
+  display: none;
+}
+
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.section h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: var(--text);
+}
+
+.section h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chart-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.chart-wrap canvas {
+  max-height: 280px;
+}
+
+.sort-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: -0.5rem 0 0.75rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+
+thead th:hover {
+  color: var(--accent);
+}
+
+thead th.num {
+  text-align: right;
+}
+
+thead th.sorted-asc::after {
+  content: " ↑";
+  color: var(--accent);
+}
+
+thead th.sorted-desc::after {
+  content: " ↓";
+  color: var(--accent);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr:last-child {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+tbody td {
+  padding: 0.65rem 1rem;
+  font-size: 0.9rem;
+}
+
+tbody td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody td .score-cell {
+  display: inline-block;
+  min-width: 3rem;
+}
+
+tbody td a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+tbody td a:hover {
+  text-decoration: underline;
+}
+
+/* Transcript page */
+.transcript-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.btn.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn.secondary:hover {
+  background: var(--border);
+}
+
+.transcript-title {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+#transcript-content {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.meta-block {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.meta-block dt {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.meta-block dd {
+  margin: 0 0 0.25rem;
+}
+
+.exchange {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg);
+  border-radius: 8px;
+  border-left: 3px solid var(--border);
+}
+
+.exchange .turn-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.exchange .student {
+  color: var(--student);
+  margin-bottom: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.exchange .tutor {
+  color: var(--tutor);
+  margin-bottom: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.exchange .reasoning {
+  font-size: 0.85rem;
+  color: var(--reasoning);
+  opacity: 0.95;
+  font-style: italic;
+  white-space: pre-wrap;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+}
+
+.grade-report {
+  margin-top: 2rem;
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.grade-report.gpt {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.06);
+}
+
+.grade-report.claude {
+  border-color: #a78bfa;
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.grade-report h3 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.grade-report .total-score {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.grade-report .overview {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.grade-report .overview ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.grade-report .overview li {
+  margin-bottom: 0.25rem;
+}
+
+.grade-report .sections {
+  font-size: 0.85rem;
+}
+
+.grade-report .section-block {
+  margin-bottom: 1rem;
+}
+
+.grade-report .section-block h4 {
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+}
+
+.grade-report .criterion {
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.grade-report .criterion .name {
+  flex: 1;
+}
+
+.grade-report .criterion .score {
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-report .deduction {
+  font-size: 0.8rem;
+  color: var(--score-low);
+  margin-left: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.loading {
+  color: var(--text-muted);
+  padding: 2rem;
+  text-align: center;
+}
+
+.error {
+  color: var(--score-low);
+  padding: 1rem;
+}

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Transcript Viewer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="header">
+    <a href="/" class="logo">Transcript Viewer</a>
+    <nav>
+      <a href="/">Dashboard</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <div id="dashboard-page" class="page">
+      <section class="section">
+        <h1>Grade distributions</h1>
+        <div class="charts">
+          <div class="chart-wrap">
+            <h2>GPT evaluator</h2>
+            <canvas id="chart-gpt" aria-label="GPT grade distribution"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <h2>Claude evaluator</h2>
+            <canvas id="chart-claude" aria-label="Claude grade distribution"></canvas>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <h1>Conversations</h1>
+        <p class="sort-hint">Sort by clicking column headers. Default: by GPT score (highest first).</p>
+        <div class="table-wrap">
+          <table id="transcripts-table">
+            <thead>
+              <tr>
+                <th data-sort="persona">Persona</th>
+                <th data-sort="number">#</th>
+                <th data-sort="course">Course</th>
+                <th data-sort="gpt_score" class="num">GPT score</th>
+                <th data-sort="claude_score" class="num">Claude score</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="transcripts-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <div id="transcript-page" class="page hidden">
+      <div class="transcript-toolbar">
+        <a href="/" id="back-link" class="btn secondary">← Dashboard</a>
+        <span id="transcript-title" class="transcript-title"></span>
+      </div>
+      <article id="transcript-content"></article>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

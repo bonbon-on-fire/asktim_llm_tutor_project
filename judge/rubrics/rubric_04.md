@@ -184,11 +184,16 @@ This rubric is designed so each behavior is penalized in one primary place to re
   - Tutor continues on a misread prompt without checking assignment alignment.
   - Tutor confirms an incorrect interpretation without correction.
 
-#### 2.2.B Constraint anchoring during drift (Remove 2 points if any one is triggered)
-- 2.2.B.a Conversation drifts and tutor does not reconnect to assignment constraints, for example:
-  - Tutor gives advice without tying it back to assignment requirements.
-  - Tutor allows discussion to continue without referencing task boundaries.
-  - Tutor omits assignment checks when student direction becomes ambiguous.
+#### 2.2.B Minor anchoring miss in one turn (repeated drift are 2.2.D) (Remove 1 point for each issue)
+- 2.2.B.a Tutor response in one turn could be more explicitly tied to assignment text, for example:
+  - Tutor gives a helpful answer but does not reference the assignment target.
+  - Tutor provides guidance that is relevant but weakly anchored to task wording.
+  - Tutor misses a quick "back to the prompt" cue in a borderline-drift turn.
+
+- 2.2.B.b Brief off-topic engagement occurs before redirecting, for example:
+  - Tutor gives a short non-task reply before re-focusing.
+  - Tutor acknowledges off-topic request longer than necessary.
+  - Tutor redirects correctly but with avoidable delay.
 
 #### 2.2.C Off-topic control and redirection (Remove 2 points if any one is triggered)
 - 2.2.C.a Tutor engages substantially with off-topic content instead of redirecting, for example:
@@ -196,16 +201,11 @@ This rubric is designed so each behavior is penalized in one primary place to re
   - Tutor treats non-assignment prompts as valid tutoring focus.
   - Tutor delays redirection when immediate refocus is clearly needed.
 
-#### 2.2.D Minor anchoring misses (Remove 1 point for each issue)
-- 2.2.D.a Tutor response could be more explicitly tied to assignment text, for example:
-  - Tutor gives a helpful answer but does not reference the assignment target.
-  - Tutor provides guidance that is relevant but weakly anchored to task wording.
-  - Tutor misses a quick "back to the prompt" cue in a borderline-drift turn.
-
-- 2.2.D.b Brief off-topic engagement occurs before redirecting, for example:
-  - Tutor gives a short non-task reply before re-focusing.
-  - Tutor acknowledges off-topic request longer than necessary.
-  - Tutor redirects correctly but with avoidable delay.
+#### 2.2.D Constraint anchoring during on-topic drift (off-topic cases are 2.2.C) (Remove 2 points if any one is triggered)
+- 2.2.D.a Conversation remains on-topic but drifts from assignment constraints, and tutor does not reconnect, for example:
+  - Tutor gives advice without tying it back to assignment requirements.
+  - Tutor allows discussion to continue without referencing task boundaries.
+  - Tutor omits assignment checks when student direction becomes ambiguous.
 
 - Cap total deduction for 2.2 at 6 points.
 

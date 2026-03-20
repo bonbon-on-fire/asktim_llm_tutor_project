@@ -77,67 +77,21 @@ This rubric is designed so each behavior is penalized in one primary place to re
 ### 1.2 Scaffolding and progression
 **Out of 6**
 
-#### 1.2.A Builds on student progress (Remove 3 points if any one is triggered)
-- 1.2.A.a Tutor does not acknowledge correct partial answers, for example:
+#### 1.2.A Fails to build on student progress (Remove 3 points if any one is triggered)
+- 1.2.A.a Tutor does not acknowledge or build on correct student progress, for example:
   - Student gives a valid step but tutor ignores it and moves on.
   - Tutor treats partially correct work as fully wrong without using useful parts.
   - Tutor restarts from scratch instead of building from what student already got right.
-
-- 1.2.A.b Tutor fails to use student progress as the next-step anchor, for example:
   - Tutor asks unrelated questions after student makes concrete progress.
   - Tutor gives a generic response that does not connect to student's latest reasoning.
   - Tutor misses obvious opportunities to advance from the student's current position.
 
-#### 1.2.B Diagnose before explaining (Remove 2 points if any one is triggered)
-- 1.2.B.a Tutor jumps to explanation before diagnosing confusion, for example:
+#### 1.2.B Tutor misunderstands student's point of confusion and responds inappropriately (Remove 2 points if any one is triggered)
+- 1.2.B.a Tutor responds to the wrong confusion point, for example:
   - Student says "I'm stuck" and tutor gives long explanation immediately.
   - Tutor does not ask short check questions to locate the misunderstanding first.
   - When the student is stuck, tutor jumps straight to addressing the issue instead of diagnostic questioning first.
   - Tutor gives a full method dump before checking what student already understands.
-
-#### 1.2.C Hint calibration (Remove 1 point for each issue)
-- 1.2.C.a Too many hints stacked together, for example:
-  - Tutor gives layered hints that leave little independent thinking.
-  - Tutor chains hints so tightly student mostly confirms instead of reasons.
-  - Tutor gives near-complete roadmap before student effort appears.
-
-- 1.2.C.b Guidance is too leading, for example:
-  - Questions strongly point to one target answer path.
-  - Tutor uses forced-choice prompts where one option is clearly "right."
-  - Tutor narrows thinking space so student autonomy drops.
-
-#### 1.2.D Step sizing and pacing (Remove 1 point for each issue)
-- 1.2.D.a Tutor breaks task down too early or too completely, for example:
-  - Tutor provides near-complete step plan before student attempt.
-  - Tutor pre-defines structure and sequence student should design.
-  - Tutor front-loads method before checking student understanding.
-
-- 1.2.D.b Step size is mismatched to student state, for example:
-  - Steps are too large for confused student or too tiny for progressing student.
-  - Tutor gives abstract prompts when concrete next action is needed.
-  - Tutor gives over-detailed guidance when a light nudge would be enough.
-
-#### 1.2.E Turn-to-turn progression quality (Remove 1 point for each issue)
-- 1.2.E.a Questions do not move progress, for example:
-  - Questions are broad but do not create a clear next step.
-  - Tutor repeats prompts that do not unlock student movement.
-  - Tutor asks reflective questions without actionable direction.
-
-- 1.2.E.b Progression is disconnected across turns, for example:
-  - Tutor changes direction abruptly without linking to prior turn.
-  - Tutor asks new questions that do not build on established context.
-  - Tutor loses the local thread after student response.
-
-#### 1.2.F Adaptation to student signals (Remove 1 point for each issue)
-- 1.2.F.a Tutor does not adapt after confusion or errors, for example:
-  - Tutor repeats similar question type despite confusion signals.
-  - Tutor does not adjust difficulty after weak/incorrect responses.
-  - Tutor misses chances to switch strategy after stalling.
-
-- 1.2.F.b Support level remains mismatched, for example:
-  - Tutor keeps abstract prompts despite repeated student uncertainty.
-  - Tutor keeps high-control prompts after student shows readiness for independence.
-  - Tutor gives same style of help even when it is clearly not working.
 
 - Cap total deduction for 1.2 at 6 points.
 

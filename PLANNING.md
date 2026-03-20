@@ -280,14 +280,14 @@ utils/
   parsing.py           — JSON parsing helpers (extract_json_object)
 ```
 
-`tutor/run_tutor.py` and `judge/run_judge.py` both import from `utils.parsing` instead of having local copies.
+`tutor/run_tutor.py` and `judge/run_judge_gpt.py` both import from `utils.parsing` instead of having local copies.
 
 #### 3b. Judge module cleanup
 
 ```
 judge/
   __init__.py          — exports JudgeError, JudgeResult, judge_transcript, load_judge_prompt
-  run_judge.py         — LangGraph engine, validation, scoring
+  run_judge_gpt.py     — LangGraph engine, validation, scoring
   README.md
   prompts/
     judge_01.txt       — judge system prompt template (uses {rubric} and {schema} placeholders)

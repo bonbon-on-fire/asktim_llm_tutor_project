@@ -227,23 +227,23 @@ This rubric is designed so each behavior is penalized in one primary place to re
   - Tutor keeps explaining at length instead of checking student understanding first.
   - Message length consistently reduces student opportunity to think and respond.
 
-#### 3.1.B Clarity and readability (Remove 2 points if any one is triggered)
-- 3.1.B.a Tutor responses are hard to follow, for example:
+#### 3.1.B Single-turn concision miss (repeated cases are 3.1.A) (Remove 1 point for each issue)
+- 3.1.B.a Tutor response in one turn could be shorter or sharper, for example:
+  - Tutor includes extra sentences that do not advance the immediate goal.
+  - Repetition appears within a single response.
+  - Concision opportunities are missed without causing major confusion.
+
+#### 3.1.C Clarity and readability (Remove 2 points if any one is triggered)
+- 3.1.C.a Tutor responses are hard to follow, for example:
   - Core point is buried in long text with weak structure.
   - Explanations are ambiguous, making next action unclear.
   - Student would reasonably struggle to identify what to do next.
 
-#### 3.1.C Language simplicity and precision (Remove 1 point for each issue)
-- 3.1.C.a Tutor uses avoidable dense language, for example:
+#### 3.1.D Language simplicity and precision (Remove 1 point for each issue)
+- 3.1.D.a Tutor uses avoidable dense language, for example:
   - Unnecessary jargon-heavy wording increases cognitive load.
   - Word choice is more complex than needed for the student's state.
   - Simpler phrasing would preserve meaning and improve comprehension.
-
-#### 3.1.D Minor concision misses (Remove 1 point for each issue)
-- 3.1.D.a Several turns could be shorter or sharper, for example:
-  - Tutor includes extra sentences that do not advance the immediate goal.
-  - Repetition appears within a single response.
-  - Concision opportunities are missed without causing major confusion.
 
 - Cap total deduction for 3.1 at 6 points.
 
@@ -256,11 +256,11 @@ This rubric is designed so each behavior is penalized in one primary place to re
   - Tutor language discourages further student participation.
   - Emotional framing makes student confusion worse.
 
-#### 3.2.B Support adaptation to student state (Remove 2 points if any one is triggered)
-- 3.2.B.a Tutor does not adjust support when student is confused, frustrated, or stalled, for example:
-  - Tutor keeps same intensity/style despite clear distress signals.
-  - Tutor fails to simplify after repeated misunderstanding.
-  - Tutor does not provide reassurance when confidence drops.
+#### 3.2.B Tone adaptation to student state (Remove 2 points if any one is triggered)
+- 3.2.B.a Tutor does not adjust tone when student is confused, frustrated, or stalled, for example:
+  - Tutor keeps the same tone despite clear distress signals.
+  - Tutor remains overly rigid or blunt after student shows frustration.
+  - Tutor does not provide reassuring tone when student confidence drops.
 
 #### 3.2.C Non-grading stance and framing (Remove 1 point for each issue)
 - 3.2.C.a Tutor assigns or implies formal grades, for example:

@@ -34,10 +34,17 @@ _SECTION_KEYS = ("pedagogy", "dialogue", "communication")
 _SECTION_CRITERIA: dict[str, tuple[str, ...]] = {
     "pedagogy": ("1.1", "1.2", "1.3"),
     "dialogue": ("2.1", "2.2"),
-    "communication": ("3.1", "3.2", "3.3"),
+    "communication": ("3.1", "3.2"),
 }
-_SECTION_MALUS_ID = {"pedagogy": "1.4", "dialogue": "2.3", "communication": "3.4"}
-_CRITERIA_MAX = {"1.1": 12, "1.2": 6, "1.3": 5, "2.1": 4, "2.2": 6, "3.1": 6, "3.2": 5, "3.3": 3}
+_CRITERIA_MAX = {
+    "1.1": 12,
+    "1.2": 6,
+    "1.3": 6,
+    "2.1": 4,
+    "2.2": 8,
+    "3.1": 6,
+    "3.2": 4,
+}
 _CRITERIA_NAME = {
     "1.1": "Socratic method, guided discovery, and direct work",
     "1.2": "Scaffolding and progression",
@@ -46,12 +53,9 @@ _CRITERIA_NAME = {
     "2.2": "Assignment anchoring",
     "3.1": "Bite-sized and clear responses",
     "3.2": "Appropriate tone and support",
-    "3.3": "Formatting and medium",
 }
-_MAX_BASE_SCORE = 47
-_MAX_MALUS_SECTION = 2
-_MAX_MALUS_TOTAL = 6
-_MAX_TOTAL_SCORE = 47
+_MAX_BASE_SCORE = 46
+_MAX_TOTAL_SCORE = 46
 
 
 class JudgeError(RuntimeError):
@@ -257,8 +261,6 @@ def _is_complete_grade_shape(payload: dict[str, Any]) -> bool:
             return False
         if not isinstance(sec.get("base"), dict):
             return False
-        if not isinstance(sec.get("malus"), dict):
-            return False
         for crit in _SECTION_CRITERIA[section_key]:
             if not isinstance(sec["criteria"].get(crit), dict):
                 return False
@@ -289,7 +291,6 @@ def _sanitize_grade_payload(payload: dict[str, Any]) -> dict[str, Any]:
     sections_in = _as_dict(out["sections"], path="sections")
     sections_out: dict[str, Any] = {}
     total_base = 0
-    total_malus = 0
 
     for section_key in _SECTION_KEYS:
         sec_in = _as_dict(sections_in.get(section_key), path=f"sections.{section_key}")
@@ -323,35 +324,17 @@ def _sanitize_grade_payload(payload: dict[str, Any]) -> dict[str, Any]:
             crit_out[crit_id] = {"deductions": d_out, "score": score, "max": crit_max, "name": _CRITERIA_NAME[crit_id]}
             section_base += score
 
-        malus_in = _as_dict(sec_in.get("malus"), path=f"sections.{section_key}.malus")
-        malus_raw = _coerce_int(malus_in.get("score"))
-        if malus_raw is None:
-            malus_score_out: Any = malus_in.get("score")
-            malus_for_total = 0
-        else:
-            malus_score_out = _clamp(malus_raw, 0, _MAX_MALUS_SECTION)
-            malus_for_total = malus_score_out
-
         sections_out[section_key] = {
             "criteria": crit_out,
             "base": {"score": section_base, "max": sum(_CRITERIA_MAX[c] for c in _SECTION_CRITERIA[section_key])},
-            "malus": {
-                "id": _SECTION_MALUS_ID[section_key],
-                "explanation": str(malus_in.get("explanation", "")).strip(),
-                "score": malus_score_out,
-                "max": _MAX_MALUS_SECTION,
-            },
         }
         total_base += section_base
-        total_malus += malus_for_total
 
     out["sections"] = sections_out
     out["total_base_score"] = total_base
     out["max_base_score"] = _MAX_BASE_SCORE
-    out["total_malus"] = total_malus
-    out["max_malus"] = _MAX_MALUS_TOTAL
     out["max_score"] = _MAX_TOTAL_SCORE
-    out["total_score"] = _clamp(total_base - total_malus, 0, _MAX_TOTAL_SCORE)
+    out["total_score"] = _clamp(total_base, 0, _MAX_TOTAL_SCORE)
     return out
 
 
@@ -392,14 +375,10 @@ def _order_grade_payload(payload: dict[str, Any]) -> dict[str, Any]:
             sections_out[section_key] = {
                 "criteria": criteria_out,
                 "base": sec.get("base", {"score": 0, "max": 0}),
-                "malus": sec.get(
-                    "malus",
-                    {"id": _SECTION_MALUS_ID[section_key], "explanation": "", "score": 0, "max": _MAX_MALUS_SECTION},
-                ),
             }
         ordered["sections"] = sections_out
 
-    for key in ("total_base_score", "max_base_score", "total_malus", "max_malus", "max_score", "overview", "total_score"):
+    for key in ("total_base_score", "max_base_score", "max_score", "overview", "total_score"):
         if key in payload:
             ordered[key] = payload[key]
     for key in ("model", "timestamp_utc", "judge_llm_calls"):
@@ -408,24 +387,29 @@ def _order_grade_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return ordered
 
 
-@lru_cache(maxsize=1)
-def _rubric_04_sub_ids() -> frozenset[str]:
-    rubric_path = _RUBRICS_DIR / "rubric_04.md"
+@lru_cache(maxsize=8)
+def _rubric_sub_ids(rubric_name: str) -> frozenset[str]:
+    rubric_path = _RUBRICS_DIR / f"{rubric_name}.md"
     if not rubric_path.exists():
         raise JudgeError(f"Rubric file not found: {rubric_path}")
     text = rubric_path.read_text(encoding="utf-8")
     ids = set(re.findall(r"(?m)^\s*-\s*((?:[1-3]\.[1-4])\.[A-Z]\.[a-z])\b", text))
     if not ids:
-        raise JudgeError("No rubric_04 sub-criterion IDs discovered.")
+        raise JudgeError(f"No {rubric_name} sub-criterion IDs discovered.")
     return frozenset(ids)
 
 
-def _validate_grade_payload(payload: dict[str, Any], *, num_turns: int, enforce_sub_criterion_ids: bool) -> dict[str, Any]:
+def _validate_grade_payload(
+    payload: dict[str, Any],
+    *,
+    num_turns: int,
+    enforce_sub_criterion_ids: bool,
+    rubric_name: str = "rubric_05",
+) -> dict[str, Any]:
     root = _as_dict(payload, path="$")
     sections = _as_dict(root.get("sections"), path="sections")
-    valid_sub_ids = _rubric_04_sub_ids() if enforce_sub_criterion_ids else frozenset()
+    valid_sub_ids = _rubric_sub_ids(rubric_name) if enforce_sub_criterion_ids else frozenset()
     total_base = 0
-    total_malus = 0
 
     for section_key in _SECTION_KEYS:
         sec = _as_dict(sections.get(section_key), path=f"sections.{section_key}")
@@ -480,26 +464,10 @@ def _validate_grade_payload(payload: dict[str, Any], *, num_turns: int, enforce_
         section_max = sum(_CRITERIA_MAX[c] for c in _SECTION_CRITERIA[section_key])
         if _as_int(base.get("max"), path=f"sections.{section_key}.base.max") != section_max:
             raise JudgeError(f"Invalid section base max at sections.{section_key}.base.max")
-
-        malus = _as_dict(sec.get("malus"), path=f"sections.{section_key}.malus")
-        if str(malus.get("id", "")).strip() != _SECTION_MALUS_ID[section_key]:
-            raise JudgeError(f"Invalid malus id at sections.{section_key}.malus.id")
-        malus_score = _as_int(malus.get("score"), path=f"sections.{section_key}.malus.score")
-        malus_max = _as_int(malus.get("max"), path=f"sections.{section_key}.malus.max")
-        if malus_max != _MAX_MALUS_SECTION:
-            raise JudgeError(f"Invalid malus max at sections.{section_key}.malus.max")
-        if malus_score < 0 or malus_score > _MAX_MALUS_SECTION:
-            raise JudgeError(f"malus.score out of range at sections.{section_key}.malus.score")
-        if malus_score > 0 and not str(malus.get("explanation", "")).strip():
-            raise JudgeError(f"malus.explanation must be non-empty when malus.score > 0 at sections.{section_key}")
-
         total_base += section_base
-        total_malus += malus_score
 
     total_base_score = _as_int(root.get("total_base_score"), path="total_base_score")
     max_base_score = _as_int(root.get("max_base_score"), path="max_base_score")
-    total_malus_score = _as_int(root.get("total_malus"), path="total_malus")
-    max_malus_score = _as_int(root.get("max_malus"), path="max_malus")
     max_score = _as_int(root.get("max_score"), path="max_score")
     total_score = _as_int(root.get("total_score"), path="total_score")
 
@@ -507,14 +475,10 @@ def _validate_grade_payload(payload: dict[str, Any], *, num_turns: int, enforce_
         raise JudgeError(f"Inconsistent total_base_score (expected {total_base}, got {total_base_score}).")
     if max_base_score != _MAX_BASE_SCORE:
         raise JudgeError(f"Invalid max_base_score (expected {_MAX_BASE_SCORE}, got {max_base_score}).")
-    if total_malus_score != total_malus:
-        raise JudgeError(f"Inconsistent total_malus (expected {total_malus}, got {total_malus_score}).")
-    if max_malus_score != _MAX_MALUS_TOTAL:
-        raise JudgeError(f"Invalid max_malus (expected {_MAX_MALUS_TOTAL}, got {max_malus_score}).")
     if max_score != _MAX_TOTAL_SCORE:
         raise JudgeError(f"Invalid max_score (expected {_MAX_TOTAL_SCORE}, got {max_score}).")
 
-    expected_total = _clamp(total_base - total_malus, 0, _MAX_TOTAL_SCORE)
+    expected_total = _clamp(total_base, 0, _MAX_TOTAL_SCORE)
     if total_score != expected_total:
         raise JudgeError(f"Inconsistent total_score (expected {expected_total}, got {total_score}).")
 
@@ -525,7 +489,7 @@ def _validate_grade_payload(payload: dict[str, Any], *, num_turns: int, enforce_
 
 
 def _build_expected_schema(*, rubric_name: str) -> dict[str, Any]:
-    example_sub = "1.1.A.a" if rubric_name.strip().lower() == "rubric_04" else ""
+    example_sub = "1.1.A.a" if rubric_name.strip().lower() in {"rubric_04", "rubric_05"} else ""
     return {
         "sections": {
             "pedagogy": {
@@ -544,41 +508,35 @@ def _build_expected_schema(*, rubric_name: str) -> dict[str, Any]:
                         "name": _CRITERIA_NAME["1.1"],
                     },
                     "1.2": {"deductions": [], "score": 6, "max": 6, "name": _CRITERIA_NAME["1.2"]},
-                    "1.3": {"deductions": [], "score": 5, "max": 5, "name": _CRITERIA_NAME["1.3"]},
+                    "1.3": {"deductions": [], "score": 6, "max": 6, "name": _CRITERIA_NAME["1.3"]},
                 },
-                "base": {"score": 19, "max": 23},
-                "malus": {"id": "1.4", "explanation": "", "score": 0, "max": 2},
+                "base": {"score": 20, "max": 24},
             },
             "dialogue": {
                 "criteria": {
                     "2.1": {"deductions": [], "score": 4, "max": 4, "name": _CRITERIA_NAME["2.1"]},
-                    "2.2": {"deductions": [], "score": 6, "max": 6, "name": _CRITERIA_NAME["2.2"]},
+                    "2.2": {"deductions": [], "score": 8, "max": 8, "name": _CRITERIA_NAME["2.2"]},
                 },
-                "base": {"score": 10, "max": 10},
-                "malus": {"id": "2.3", "explanation": "", "score": 0, "max": 2},
+                "base": {"score": 12, "max": 12},
             },
             "communication": {
                 "criteria": {
                     "3.1": {"deductions": [], "score": 6, "max": 6, "name": _CRITERIA_NAME["3.1"]},
-                    "3.2": {"deductions": [], "score": 5, "max": 5, "name": _CRITERIA_NAME["3.2"]},
-                    "3.3": {"deductions": [], "score": 3, "max": 3, "name": _CRITERIA_NAME["3.3"]},
+                    "3.2": {"deductions": [], "score": 4, "max": 4, "name": _CRITERIA_NAME["3.2"]},
                 },
-                "base": {"score": 14, "max": 14},
-                "malus": {"id": "3.4", "explanation": "", "score": 0, "max": 2},
+                "base": {"score": 10, "max": 10},
             },
         },
-        "total_base_score": 43,
-        "max_base_score": 47,
-        "total_malus": 0,
-        "max_malus": 6,
-        "max_score": 47,
+        "total_base_score": 42,
+        "max_base_score": 46,
+        "max_score": 46,
         "overview": ["Brief evidence-based summary."],
-        "total_score": 43,
+        "total_score": 42,
         "judge_llm_calls": 1,
     }
 
 
-def load_judge_prompt(*, prompt_name: str = "judge_03", rubric_name: str = "rubric_04") -> str:
+def load_judge_prompt(*, prompt_name: str = "judge_05", rubric_name: str = "rubric_05") -> str:
     prompt_path = _PROMPTS_DIR / f"{prompt_name}.txt"
     rubric_path = _RUBRICS_DIR / f"{rubric_name}.md"
     if not prompt_path.exists():
@@ -598,7 +556,7 @@ def _judge_repair_prompt(error: str) -> str:
         "Return corrected JSON ONLY that fixes the error while keeping your original grading intent.\n"
         "Do NOT add extra wrapper keys like `grade`, `result`, or `output`.\n"
         "All required integer totals must be present and non-null: total_score, max_score, "
-        "total_base_score, max_base_score, total_malus, max_malus.\n"
+        "total_base_score, max_base_score.\n"
         "Ensure all totals and maxima are correct and internally consistent.\n"
     )
 
@@ -638,7 +596,7 @@ class _JudgeState(TypedDict):
     grade_json: NotRequired[dict[str, Any]]
 
 
-def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_ids: bool):
+def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_ids: bool, rubric_name: str):
     reasoning = _openai_reasoning_config()
     kwargs: dict[str, Any] = {"model": model_name, "temperature": 0, "api_key": api_key}
     if reasoning:
@@ -668,6 +626,7 @@ def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_
                 parsed,
                 num_turns=int(state["num_turns"]),
                 enforce_sub_criterion_ids=enforce_sub_criterion_ids,
+                rubric_name=rubric_name,
             )
             return {"grade_json": _order_grade_payload(validated), "last_error": None}
         except JudgeError as e:
@@ -691,8 +650,8 @@ def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_
 def judge_transcript(
     transcript_name: str,
     *,
-    prompt_name: str = "judge_03",
-    rubric_name: str = "rubric_04",
+    prompt_name: str = "judge_05",
+    rubric_name: str = "rubric_05",
     output_name: str | None = None,
 ) -> JudgeResult:
     name = (transcript_name or "").strip()
@@ -718,7 +677,8 @@ def judge_transcript(
     graph = _create_judge_graph(
         model_name=model_name,
         api_key=_require_openai_api_key(),
-        enforce_sub_criterion_ids=rubric_name.strip().lower() == "rubric_04",
+        enforce_sub_criterion_ids=rubric_name.strip().lower() in {"rubric_04", "rubric_05"},
+        rubric_name=rubric_name.strip().lower(),
     )
     result = graph.invoke(
         {

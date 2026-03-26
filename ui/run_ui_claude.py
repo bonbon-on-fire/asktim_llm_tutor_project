@@ -27,21 +27,15 @@ _TARGET_SUBDIR_BY_TYPE = {
 # Batch config (edit directly)
 # ---------------------------------------------------------------------------
 
-JUDGE_PROMPTS: list[str] = ["judge_04"]
-JUDGE_RUBRICS: list[str] = ["rubric_04"]
+JUDGE_PROMPTS: list[str] = ["judge_05"]
+JUDGE_RUBRICS: list[str] = ["rubric_05"]
 STUDENT_PERSONAS: list[str] = [
-    "chitchat_01",
-    "chitchat_02",
-    "chitchat_03",
-    "chitchat_04",
-    "chitchat_05",
-    "chitchat_06",
     "clueless_01",
     "clueless_02",
     "clueless_03",
     "clueless_04",
     "clueless_05",
-    "clueless_06",
+    "clueless_06"
 ]
 
 # Optional transcript filtering per persona type.

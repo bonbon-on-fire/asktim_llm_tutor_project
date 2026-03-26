@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import math
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,18 +30,6 @@ class GradeRow:
     def persona_type(self) -> str:
         # chaotic_04 -> chaotic
         return (self.student_persona.split("_", 1)[0] or self.student_persona).strip()
-
-    @property
-    def exercise_label(self) -> str:
-        return f"{self.course}:{self.exercise_number}"
-
-    @property
-    def persona_version(self) -> str:
-        # chaotic_01 -> 01
-        match = re.search(r"_(\d+)$", self.student_persona)
-        if match:
-            return match.group(1)
-        return "unknown"
 
     @property
     def transcript_key(self) -> str:
@@ -255,192 +242,6 @@ def _line_chart_grades_per_transcript(
     plt.close(fig)
 
 
-def _distribution_chart_grades_per_persona(
-    *,
-    gpt_rows: list[GradeRow],
-    claude_rows: list[GradeRow],
-    out_dir: Path,
-) -> None:
-    plt = _safe_import_matplotlib()
-
-    def build_scores_by_persona(rows: list[GradeRow]) -> dict[str, list[float]]:
-        by_persona: dict[str, list[float]] = {}
-        for row in rows:
-            if not math.isfinite(row.total_score):
-                continue
-            by_persona.setdefault(row.persona_type, []).append(row.total_score)
-        return by_persona
-
-    gpt_by_persona = build_scores_by_persona(gpt_rows)
-    claude_by_persona = build_scores_by_persona(claude_rows)
-    personas = sorted(set(gpt_by_persona.keys()) | set(claude_by_persona.keys()))
-    if not personas:
-        return
-
-    fig, ax = plt.subplots(figsize=(12, 7))
-    base_positions = list(range(len(personas)))
-    offset = 0.18
-    box_width = 0.3
-
-    gpt_positions: list[float] = []
-    gpt_data: list[list[float]] = []
-    claude_positions: list[float] = []
-    claude_data: list[list[float]] = []
-
-    for idx, persona in enumerate(personas):
-        gpt_scores = gpt_by_persona.get(persona, [])
-        claude_scores = claude_by_persona.get(persona, [])
-
-        if gpt_scores:
-            gpt_positions.append(idx - offset)
-            gpt_data.append(gpt_scores)
-        if claude_scores:
-            claude_positions.append(idx + offset)
-            claude_data.append(claude_scores)
-
-    if gpt_data:
-        bp_gpt = ax.boxplot(
-            gpt_data,
-            positions=gpt_positions,
-            widths=box_width,
-            patch_artist=True,
-            manage_ticks=False,
-        )
-        for box in bp_gpt["boxes"]:
-            box.set(facecolor="#a65dea", alpha=0.45, edgecolor="#6f2ebf")
-
-    if claude_data:
-        bp_claude = ax.boxplot(
-            claude_data,
-            positions=claude_positions,
-            widths=box_width,
-            patch_artist=True,
-            manage_ticks=False,
-        )
-        for box in bp_claude["boxes"]:
-            box.set(facecolor="#ff893a", alpha=0.45, edgecolor="#cc5f0f")
-
-    from matplotlib.patches import Patch
-
-    legend_items = [
-        Patch(facecolor="#a65dea", edgecolor="#6f2ebf", alpha=0.45, label="GPT"),
-        Patch(facecolor="#ff893a", edgecolor="#cc5f0f", alpha=0.45, label="Claude"),
-    ]
-    ax.legend(handles=legend_items)
-    ax.set_title("Grade Distribution Per Persona: GPT vs Claude")
-    ax.set_xlabel("Persona Type")
-    ax.set_ylabel("Total Score")
-    ax.set_xticks(base_positions)
-    ax.set_xticklabels(personas)
-    ax.grid(True, axis="y", alpha=0.3)
-
-    fig.tight_layout()
-    fig.savefig(out_dir / "grade_distribution_per_persona_gpt_vs_claude.png", dpi=150)
-    plt.close(fig)
-
-
-def _distribution_charts_grades_per_persona_by_version(
-    *,
-    gpt_rows: list[GradeRow],
-    claude_rows: list[GradeRow],
-    out_dir: Path,
-) -> None:
-    versions = sorted(
-        {
-            row.persona_version
-            for row in gpt_rows + claude_rows
-            if row.persona_version != "unknown"
-        }
-    )
-
-    for version in versions:
-        gpt_filtered = [r for r in gpt_rows if r.persona_version == version]
-        claude_filtered = [r for r in claude_rows if r.persona_version == version]
-
-        if not gpt_filtered and not claude_filtered:
-            continue
-
-        plt = _safe_import_matplotlib()
-
-        def build_scores_by_persona(rows: list[GradeRow]) -> dict[str, list[float]]:
-            by_persona: dict[str, list[float]] = {}
-            for row in rows:
-                if not math.isfinite(row.total_score):
-                    continue
-                by_persona.setdefault(row.persona_type, []).append(row.total_score)
-            return by_persona
-
-        gpt_by_persona = build_scores_by_persona(gpt_filtered)
-        claude_by_persona = build_scores_by_persona(claude_filtered)
-        personas = sorted(set(gpt_by_persona.keys()) | set(claude_by_persona.keys()))
-        if not personas:
-            continue
-
-        fig, ax = plt.subplots(figsize=(12, 7))
-        base_positions = list(range(len(personas)))
-        offset = 0.18
-        box_width = 0.3
-
-        gpt_positions: list[float] = []
-        gpt_data: list[list[float]] = []
-        claude_positions: list[float] = []
-        claude_data: list[list[float]] = []
-
-        for idx, persona in enumerate(personas):
-            gpt_scores = gpt_by_persona.get(persona, [])
-            claude_scores = claude_by_persona.get(persona, [])
-
-            if gpt_scores:
-                gpt_positions.append(idx - offset)
-                gpt_data.append(gpt_scores)
-            if claude_scores:
-                claude_positions.append(idx + offset)
-                claude_data.append(claude_scores)
-
-        if gpt_data:
-            bp_gpt = ax.boxplot(
-                gpt_data,
-                positions=gpt_positions,
-                widths=box_width,
-                patch_artist=True,
-                manage_ticks=False,
-            )
-            for box in bp_gpt["boxes"]:
-                box.set(facecolor="#a65dea", alpha=0.45, edgecolor="#6f2ebf")
-
-        if claude_data:
-            bp_claude = ax.boxplot(
-                claude_data,
-                positions=claude_positions,
-                widths=box_width,
-                patch_artist=True,
-                manage_ticks=False,
-            )
-            for box in bp_claude["boxes"]:
-                box.set(facecolor="#ff893a", alpha=0.45, edgecolor="#cc5f0f")
-
-        from matplotlib.patches import Patch
-
-        legend_items = [
-            Patch(facecolor="#a65dea", edgecolor="#6f2ebf", alpha=0.45, label="GPT"),
-            Patch(facecolor="#ff893a", edgecolor="#cc5f0f", alpha=0.45, label="Claude"),
-        ]
-        ax.legend(handles=legend_items)
-        ax.set_title(f"Grade Distribution Per Persona (Version _{version}): GPT vs Claude")
-        ax.set_xlabel("Persona Type")
-        ax.set_ylabel("Total Score")
-        ax.set_xticks(base_positions)
-        ax.set_xticklabels(personas)
-        ax.grid(True, axis="y", alpha=0.3)
-
-        fig.tight_layout()
-        fig.savefig(
-            out_dir / f"grade_distribution_per_persona_version_{version}_gpt_vs_claude.png",
-            dpi=150,
-        )
-        plt.close(fig)
-
-
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     transcripts_dir = repo_root / "transcripts"
@@ -456,16 +257,6 @@ def main() -> int:
         )
 
     _line_chart_grades_per_transcript(
-        gpt_rows=gpt_rows,
-        claude_rows=claude_rows,
-        out_dir=out_dir,
-    )
-    _distribution_chart_grades_per_persona(
-        gpt_rows=gpt_rows,
-        claude_rows=claude_rows,
-        out_dir=out_dir,
-    )
-    _distribution_charts_grades_per_persona_by_version(
         gpt_rows=gpt_rows,
         claude_rows=claude_rows,
         out_dir=out_dir,

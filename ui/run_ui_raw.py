@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage  # pyright: ignore[reportMissingImports]
 
 from students.run_student import build_graph as build_student_graph
 from students.run_student import get_next_student_message, list_personas

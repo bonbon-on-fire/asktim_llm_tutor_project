@@ -18,6 +18,7 @@ from judge.run_judge_gpt import (
     JudgeResult,
     TRANSCRIPTS_DIR,
     _default_output_path,
+    _extract_text_from_model_content,
     _env_truthy,
     _format_conversation_for_judge,
     _judge_repair_prompt,
@@ -49,7 +50,7 @@ class _JudgeState(TypedDict):
     grade_json: NotRequired[dict[str, Any]]
 
 
-def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_ids: bool):
+def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_ids: bool, rubric_name: str):
     model = ChatAnthropic(model=model_name, temperature=0, api_key=api_key)
 
     def judge_node(state: _JudgeState) -> dict[str, Any]:
@@ -64,7 +65,7 @@ def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_
             )
         messages.append(HumanMessage(content=state["conversation_text"]))
         resp = model.invoke(messages)
-        content = resp.content if isinstance(resp.content, str) else str(resp.content)
+        content = _extract_text_from_model_content(resp.content)
         return {"last_output": content, "attempts": int(state.get("attempts", 0)) + 1}
 
     def validate_node(state: _JudgeState) -> dict[str, Any]:
@@ -75,6 +76,7 @@ def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_
                 parsed,
                 num_turns=int(state["num_turns"]),
                 enforce_sub_criterion_ids=enforce_sub_criterion_ids,
+                rubric_name=rubric_name,
             )
             return {"grade_json": _order_grade_payload(validated), "last_error": None}
         except JudgeError as e:
@@ -98,8 +100,8 @@ def _create_judge_graph(*, model_name: str, api_key: str, enforce_sub_criterion_
 def judge_transcript(
     transcript_name: str,
     *,
-    prompt_name: str = "judge_03",
-    rubric_name: str = "rubric_04",
+    prompt_name: str = "judge_05",
+    rubric_name: str = "rubric_05",
     output_name: str | None = None,
 ) -> JudgeResult:
     name = (transcript_name or "").strip()
@@ -125,7 +127,8 @@ def judge_transcript(
     graph = _create_judge_graph(
         model_name=model_name,
         api_key=_require_anthropic_api_key(),
-        enforce_sub_criterion_ids=rubric_name.strip().lower() == "rubric_04",
+        enforce_sub_criterion_ids=rubric_name.strip().lower() in {"rubric_04", "rubric_05"},
+        rubric_name=rubric_name.strip().lower(),
     )
     result = graph.invoke(
         {

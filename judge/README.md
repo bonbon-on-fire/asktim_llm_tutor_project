@@ -10,9 +10,11 @@ Current defaults in code:
 
 ```text
 judge/
-  __init__.py              — package exports (lazy-loads from run_judge_gpt)
-  run_judge_gpt.py         — GPT judge: single-transcript scoring API (OpenAI)
-  run_judge_claude.py      — Claude judge: single-transcript scoring API (Anthropic)
+  __init__.py                  — package exports (lazy-loads from run_judge_gpt)
+  run_judge_gpt.py             — GPT judge: single-transcript scoring API (OpenAI)
+  run_judge_claude.py          — Claude judge: single-transcript scoring API (Anthropic)
+  run_judge_batch_gpt.py       — GPT judge: batch (combined multi-transcript) scoring API
+  run_judge_batch_claude.py    — Claude judge: batch (combined multi-transcript) scoring API
   README.md
   prompts/
     judge_01.txt           — baseline prompt template
@@ -71,7 +73,7 @@ result = judge_transcript("chaotic/chaotic_claude/transcript_01")
 print(result.total_score, result.max_score)
 ```
 
-### Batch Judging (all raw transcripts)
+### Batch Judging (all raw transcripts individually)
 
 Grade every raw transcript across all persona types using the batch runners
 in `ui/`:
@@ -93,6 +95,38 @@ python -m ui.run_ui_claude --prompt judge_06 --rubric rubric_06
 
 Parallelism is controlled by the `PARALLEL_WORKERS` constant at the top of
 each runner file (default: 6).
+
+### Batch Judging (combined multi-transcript batches)
+
+Grade transcript bundles where multiple transcripts are combined into one
+prompt for holistic/comparative evaluation:
+
+```python
+from judge.run_judge_batch_gpt import judge_transcript_batch
+
+result = judge_transcript_batch(
+    "transcripts/batches/batches_raw/batch_01/batch_001.txt",
+    prompt_name="judge_05",
+    rubric_name="rubric_05",
+    output_path="transcripts/batches/batches_gpt/batch_01/batch_001.json",
+)
+print(result.total_score, result.max_score)
+```
+
+To grade all batches of a given type, use the batch UI runners:
+
+```bash
+# GPT — grade all batch_01 bundles
+python -m ui.run_ui_batch_gpt --batch-type 01
+
+# Claude — grade all batch_02 bundles
+python -m ui.run_ui_batch_claude --batch-type 02 --prompt judge_06 --rubric rubric_06
+```
+
+Batch files live in `transcripts/batches/batches_raw/batch_XX/` and output
+goes to `transcripts/batches/batches_gpt/batch_XX/` (or `batches_claude/`).
+Each batch file lists 3 transcript paths; they are combined into a single
+prompt with full metadata headers and graded holistically.
 
 ## Rubric summary
 

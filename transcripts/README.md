@@ -53,7 +53,7 @@ Each persona folder uses a `_raw` / `_gpt` / `_claude` suffix pattern:
 
 ## Transcript JSON Schema
 
-Every transcript file (`transcript_NN.json`) follows this structure:
+Every transcript file (`transcript_NNNN.json`) follows this structure:
 
 ```json
 {
@@ -123,8 +123,8 @@ Each persona has multiple versions (e.g. `chaotic_01`, `chaotic_02`).
 
 ## Transcript Naming
 
-Files are named `transcript_NN.json` where `NN` is a zero-padded index
-(01–96). The same index across `_raw`, `_gpt`, and `_claude` folders
+Files are named `transcript_NNNN.json` where `NNNN` is a zero-padded index
+(0001–9999). The same index across `_raw`, `_gpt`, and `_claude` folders
 corresponds to the same conversation — the graded versions are copies of
 the raw file with a `grade` object appended.
 

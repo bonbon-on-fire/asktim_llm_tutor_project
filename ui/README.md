@@ -29,7 +29,7 @@ Run matrix: `tutor_prompts x student_personas x course_exercises x trials`
 
 **Features:**
 - Parallel processing (6 workers by default)
-- Thread-safe transcript filename allocation (`transcript_XX.json`) during concurrent writes
+- Thread-safe transcript filename allocation (`transcript_XXXX.json`) during concurrent writes
 - Automatic API key validation
 - Interactive confirmation before processing
 
@@ -102,7 +102,7 @@ Raw transcripts are saved to persona-specific raw folders:
 - `transcripts/cooperative/cooperative_raw/`
 - `transcripts/clueless/clueless_raw/`
 
-Each file is auto-named as `transcript_XX.json`.
+Each file is auto-named as `transcript_XXXX.json`.
 
 ### Judged runs (`ui.run_ui_judge`)
 
@@ -118,7 +118,7 @@ Judged transcripts are saved to provider-specific folders:
 - `transcripts/cooperative/cooperative_claude/`
 - `transcripts/clueless/clueless_claude/`
 
-Each output file uses the same stem as raw input: `transcript_XX.json`
+Each output file uses the same stem as raw input: `transcript_XXXX.json`
 
 ### Bundle judged runs (`ui.run_ui_bundle_judge`)
 

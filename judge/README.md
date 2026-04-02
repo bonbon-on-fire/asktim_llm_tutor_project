@@ -36,8 +36,8 @@ Transcripts live in the top-level `transcripts/` folder (not inside `judge/`).
 1. Load prompt from `prompts/<prompt_name>.txt`.
 2. Inject rubric text from `rubrics/<rubric_name>.md` and the expected output schema.
 3. Read transcript JSON from `transcripts/<relative_stem>.json`.
-4. Call model, parse JSON output, sanitize numeric fields, and validate schema.
-5. If validation fails, issue one repair attempt (up to 3 total attempts).
+4. Call model, parse JSON output, normalize explanation fields, sanitize numeric fields, and validate schema.
+5. If validation fails, retry with repair prompting (up to 3 total attempts).
 6. Write `grade` back into the transcript file.
 
 ## Usage
@@ -144,6 +144,12 @@ Maximum total score: **46**.
 - Scores are whole integers only.
 - Top-level key order ends with `total_score`, then `judge_llm_calls`.
 - `overview` replaces `justifications` and appears near the end.
+- `judge_reasoning` is included in each graded output as explicit scoring rationale.
+- `judge_reasoning` normalization mirrors tutor-style fallback behavior:
+  - if model provides `judge_reasoning`, keep it
+  - else if `overview` exists, copy `overview` into `judge_reasoning`
+  - else inject runtime fallback reasoning text
+- `overview` is also guaranteed in output; if missing from model output, runtime fills a fallback overview.
 - Deductions are ordered as `evidence_turns`, `sub_criterion_id`, `reason`, then `points` (`evidence_turns` optional).
 - For `rubric_04`/`rubric_05`/`rubric_06`, each deduction must include an exact rubric sub-sub ID in `sub_criterion_id` (for example `1.1.A.a`, `2.2.D.a`, `3.2.C.b`).
 - For `rubric_05`: No malus deductions. `total_score` equals `total_base_score`.

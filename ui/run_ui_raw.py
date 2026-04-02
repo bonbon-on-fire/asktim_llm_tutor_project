@@ -15,6 +15,8 @@ import json
 import os
 import re
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -48,6 +50,8 @@ _RAW_SUBDIR_BY_PERSONA_TYPE: dict[str, str] = {
     "clueless": "clueless_raw",
 }
 _TUTOR_CALL_MAX_RETRIES = 2
+PARALLEL_WORKERS = 6
+_SAVE_LOCK = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Default bundle config (can be overridden by CLI)
@@ -167,7 +171,7 @@ def _next_transcript_number(output_dir: Path) -> str:
     next_num = 1
     while next_num in used_numbers:
         next_num += 1
-    return f"{next_num:02d}"
+    return f"{next_num:04d}"
 
 
 def _validate_bundle_config(config: BundleConfig) -> None:
@@ -311,25 +315,28 @@ def _save_raw_transcript(
     output_dir = _TRANSCRIPTS_DIR / config.persona_type / raw_subdir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    transcript_num = _next_transcript_number(output_dir)
-    transcript_name = f"transcript_{transcript_num}"
-    transcript_path = output_dir / f"{transcript_name}.json"
+    # Protect transcript numbering + write as one critical section to avoid
+    # duplicate filenames when raw generation runs in parallel.
+    with _SAVE_LOCK:
+        transcript_num = _next_transcript_number(output_dir)
+        transcript_name = f"transcript_{transcript_num}"
+        transcript_path = output_dir / f"{transcript_name}.json"
 
-    payload = {
-        "tutor_prompt": config.tutor_prompt,
-        "student_persona": config.student_persona,
-        "course": config.course,
-        "exercise_number": config.exercise_number,
-        "turn_size": config.turn_size,
-        "context": context_text,
-        "exercise": assignment_text,
-        "turns": len(exchanges),
-        "exchanges": exchanges,
-    }
-    transcript_path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+        payload = {
+            "tutor_prompt": config.tutor_prompt,
+            "student_persona": config.student_persona,
+            "course": config.course,
+            "exercise_number": config.exercise_number,
+            "turn_size": config.turn_size,
+            "context": context_text,
+            "exercise": assignment_text,
+            "turns": len(exchanges),
+            "exchanges": exchanges,
+        }
+        transcript_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     return transcript_name, transcript_path
 
 
@@ -530,7 +537,11 @@ def _run_bundle(bundle_config: BundleConfig) -> int:
 
     try:
         failed_runs = 0
-        for config, trial in _iter_runs(bundle_config):
+        runs = list(_iter_runs(bundle_config))
+        total_runs = len(runs)
+        print(f"[Raw Bundle] Running in parallel with {PARALLEL_WORKERS} workers.")
+
+        def _run_one(config: RunConfig, trial: int) -> dict[str, object]:
             assignment_text = _build_assignment_text(
                 config.course,
                 config.exercise_number,
@@ -540,33 +551,59 @@ def _run_bundle(bundle_config: BundleConfig) -> int:
             try:
                 exchanges = _run_conversation(config, assignment_text)
             except RuntimeError as error:
-                failed_runs += 1
-                print(
-                    "[Run Failed] "
-                    f"trial={trial}/{bundle_config.trials} "
-                    f"tutor={config.tutor_prompt} "
-                    f"persona={config.student_persona} "
-                    f"course={config.course} "
-                    f"exercise={config.exercise_number} "
-                    f"reason={error}"
-                )
-                continue
+                return {
+                    "ok": False,
+                    "trial": trial,
+                    "config": config,
+                    "reason": str(error),
+                }
             _, transcript_path = _save_raw_transcript(
                 config,
                 context_text,
                 assignment_text,
                 exchanges,
             )
-            print(
-                "[Raw Bundle] "
-                f"trial={trial}/{bundle_config.trials} "
-                f"tutor={config.tutor_prompt} "
-                f"persona={config.student_persona} "
-                f"course={config.course} "
-                f"exercise={config.exercise_number} "
-                f"turns={config.turn_size} "
-                f"saved={transcript_path.relative_to(_REPO_ROOT)}"
-            )
+            return {
+                "ok": True,
+                "trial": trial,
+                "config": config,
+                "path": transcript_path,
+            }
+
+        with ThreadPoolExecutor(max_workers=PARALLEL_WORKERS) as pool:
+            futures = {pool.submit(_run_one, config, trial): (config, trial) for config, trial in runs}
+            completed = 0
+            for future in as_completed(futures):
+                completed += 1
+                result = future.result()
+                config = result["config"]
+                trial = int(result["trial"])
+                if result["ok"]:
+                    transcript_path = Path(result["path"])
+                    print(
+                        "[Raw Bundle] "
+                        f"[{completed}/{total_runs}] "
+                        f"trial={trial}/{bundle_config.trials} "
+                        f"tutor={config.tutor_prompt} "
+                        f"persona={config.student_persona} "
+                        f"course={config.course} "
+                        f"exercise={config.exercise_number} "
+                        f"turns={config.turn_size} "
+                        f"saved={transcript_path.relative_to(_REPO_ROOT)}"
+                    )
+                else:
+                    failed_runs += 1
+                    reason = result["reason"]
+                    print(
+                        "[Run Failed] "
+                        f"[{completed}/{total_runs}] "
+                        f"trial={trial}/{bundle_config.trials} "
+                        f"tutor={config.tutor_prompt} "
+                        f"persona={config.student_persona} "
+                        f"course={config.course} "
+                        f"exercise={config.exercise_number} "
+                        f"reason={reason}"
+                    )
         if failed_runs:
             print(f"[Raw Bundle] completed with {failed_runs} failed run(s).")
     except KeyboardInterrupt:

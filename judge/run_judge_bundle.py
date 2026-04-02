@@ -1,4 +1,4 @@
-﻿"""Unified bundle judge (GPT + Claude)."""
+"""Unified bundle judge (GPT + Claude)."""
 
 from __future__ import annotations
 
@@ -34,6 +34,8 @@ from judge.run_judge import (
 Provider = Literal["gpt", "claude"]
 
 TRANSCRIPTS_DIR = REPO_ROOT / "transcripts"
+# Keep bundle transcript labels aligned with judge prompt wording.
+BUNDLE_TRANSCRIPT_LABEL_TEMPLATE = "TRANSCRIPT {index} OF {total}"
 
 
 def _parse_bundle_file(bundle_file_path: Path) -> list[str]:
@@ -89,7 +91,7 @@ def _format_bundle_conversation(transcripts: list[tuple[str, dict[str, Any]]]) -
             "\n".join(
                 [
                     "=" * 60,
-                    f"TRANSCRIPT {idx} OF {count}",
+                    BUNDLE_TRANSCRIPT_LABEL_TEMPLATE.format(index=idx, total=count),
                     "=" * 60,
                     f"Stem: {stem}",
                     f"Persona: {persona}",

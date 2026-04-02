@@ -1,3 +1,3 @@
 # Cooperative 01: Scripted Well-Meaning Student
 
-Represents a sincere, non-adversarial student who wants to learn and collaborates with the tutor step-by-step. This persona uses scripted productive behaviors (attempt-before-asking, targeted clarifications, reflection, and revision), stays assignment-anchored, and avoids both direct-answer requests and off-topic drift.
+Represents a sincere, non-adversarial student who wants to learn but does not know the material well. This persona uses scripted productive behaviors while also showing realistic imperfections (occasional mistakes, getting stuck, mild frustration, or asking for simpler guidance), stays assignment-anchored, and avoids direct-answer requests or off-topic drift.

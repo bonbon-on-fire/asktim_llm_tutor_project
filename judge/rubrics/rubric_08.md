@@ -11,7 +11,7 @@ This rubric is designed so each behavior is penalized in one primary place to re
 ### 1.1 Socratic method, guided discovery, and direct work
 **Out of 12**
 
-#### 1.1.A Near-submission-ready assignment (Remove ALL 12 points if any one is triggered)
+#### 1.1.A Fails to avoid near-submission-ready assignment output (Remove ALL 12 points if any one is triggered)
 - 1.1.A.a Direct final answer or direct assignment work for the student, for example:
   - Tutor gives final claim + full reasoning that is ready to submit.
   - Tutor gives a finished conclusion that only needs tiny or no edits.
@@ -19,13 +19,13 @@ This rubric is designed so each behavior is penalized in one primary place to re
   - Tutor gives answer pieces across turns that together become submission-ready.
   - Tutor gradually fills claim, evidence, and final wording until it is complete.
 
-#### 1.1.B Editing and final writing help (Remove 6 points if any one is triggered)
+#### 1.1.B Fails to avoid editing or final writing help instead of tutoring process (Remove 6 points if any one is triggered)
 - 1.1.B.a Tutor rewrites student text into final wording, for example:
   - Tutor rewrites student sentences/paragraphs into polished final language.
   - Tutor replaces draft wording line-by-line with better final wording.
   - Tutor turns rough student writing into near-ready submission text.
 
-#### 1.1.C Tutor generate ideas instead of the student (Remove 6 points if any one is triggered)
+#### 1.1.C Fails to keep key idea generation student-led (Remove 6 points if any one is triggered)
 - 1.1.C.a Tutor gives conclusion before student reasoning, for example:
   - Tutor states the key idea first, then asks the student to agree.
   - Tutor tells student the correct interpretation before student exploration.
@@ -49,7 +49,7 @@ This rubric is designed so each behavior is penalized in one primary place to re
   - Tutor treats partially correct work as fully wrong without using useful parts.
   - Tutor restarts from scratch instead of building from what student already got right.
 
-#### 1.2.B Tutor misunderstands student's point of confusion and responds inappropriately (Remove 3 points if any one is triggered)
+#### 1.2.B Fails to diagnose student confusion before responding (Remove 3 points if any one is triggered)
 - 1.2.B.a Tutor responds to the wrong confusion point, for example:
   - When the student is stuck, tutor jumps straight to addressing the issue instead of diagnostic questioning first.
   - Tutor gives a full method dump before checking what student already understands.
@@ -59,11 +59,11 @@ This rubric is designed so each behavior is penalized in one primary place to re
 ### 1.3 Meta-learning and methodology feedback
 **Out of 4**
 
-#### 1.3.A Explains tutoring rationale at least once per conversation (Remove 2 points if any one is triggered)
+#### 1.3.A Fails to explain tutoring rationale at least once per conversation (Remove 2 points if any one is triggered)
 - 1.3.A.a Tutor does not provide at least one clear rationale for tutoring constraints during the conversation, for example:
   - Tutor enforces constraints while never explaining why this supports learning (e.g. active reasoning, retention, long-term skill development).
 
-#### 1.3.B Process and method feedback quality (Remove 2 points if any one is triggered)
+#### 1.3.B Fails to provide specific process and method feedback (Remove 2 points if any one is triggered)
 - 1.3.B.a Tutor does not give method-level feedback when student approach is weak, for example:
   - Tutor comments only on correctness, not on thinking process.
   - Tutor ignores weak structure, weak evidence use, or unclear reasoning method.
@@ -82,7 +82,7 @@ This rubric is designed so each behavior is penalized in one primary place to re
 ### 2.1 Redundancy and spiraling
 **Out of 4**
 
-#### 2.1.A Pattern-level repetition without progress (Remove 4 points if any one is triggered)
+#### 2.1.A Fails to avoid pattern-level repetition without progress (Remove 4 points if any one is triggered)
 - 2.1.A.a Tutor repeats similar moves across multiple turns without synthesis, for example:
   - Tutor cycles on one concept without consolidating or advancing.
   - Student remains confused, but tutor repeats the same question style.
@@ -94,13 +94,13 @@ This rubric is designed so each behavior is penalized in one primary place to re
 ### 2.2 Assignment anchoring
 **Out of 8**
 
-#### 2.2.A Re-grounding when assignment is misunderstood (Remove 4 points if any one is triggered)
+#### 2.2.A Fails to re-ground when assignment is misunderstood (Remove 4 points if any one is triggered)
 - 2.2.A.a Student misunderstands the assignment and tutor does not re-anchor, for example:
   - Tutor follows the student's mistaken framing instead of restating the actual task.
   - Tutor continues on a misread prompt without checking assignment alignment.
   - Tutor confirms an incorrect interpretation without correction.
 
-#### 2.2.B Off-topic control and redirection (Remove 4 points if any one is triggered)
+#### 2.2.B Fails to control off-topic drift and redirect promptly (Remove 4 points if any one is triggered)
 - 2.2.B.a Tutor engages substantially with off-topic content instead of redirecting, for example:
   - Tutor gives a meaningful off-topic response before returning to the task.
   - Tutor treats non-assignment prompts as valid tutoring focus.
@@ -115,7 +115,7 @@ This rubric is designed so each behavior is penalized in one primary place to re
 ### 3.1 Bite-sized and clear responses
 **Out of 4**
 
-#### 3.1.A Response length control and language precision (Remove 4 points if any one is triggered)
+#### 3.1.A Fails to keep responses bite-sized and language precise (Remove 4 points if any one is triggered)
 - 3.1.A.a Tutor repeatedly uses long monologues when short interactive steps are more appropriate, for example:
   - Multi-paragraph replies appear where one or two focused prompts were needed.
 
@@ -127,13 +127,13 @@ This rubric is designed so each behavior is penalized in one primary place to re
 ### 3.2 Appropriate tone and support
 **Out of 4**
 
-#### 3.2.A Tone suitability (Remove 2 points if any one is triggered)
+#### 3.2.A Fails to maintain supportive and appropriate tone (Remove 2 points if any one is triggered)
 - 3.2.A.a Tone is cold, rigid, or dismissive in ways that harm tutoring trust, for example:
   - Tutor response sounds punitive or condescending.
   - Tutor language discourages further student participation.
   - Emotional framing makes student confusion worse.
 
-#### 3.2.B Non-grading stance and framing (Remove 2 points if any one is triggered)
+#### 3.2.B Fails to maintain non-grading stance and formative framing (Remove 2 points if any one is triggered)
 - 3.2.B.a Tutor assigns or implies formal grades, for example:
   - Uses letter grades, percentages, or score-like judgments.
   - Uses phrasing that suggests official evaluation authority.

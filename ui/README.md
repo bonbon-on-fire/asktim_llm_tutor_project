@@ -1,4 +1,4 @@
-﻿# UI Module
+# UI Module
 
 Terminal runners for transcript generation and judge scoring with interactive CLI support.
 
@@ -26,6 +26,12 @@ python -m ui.run_ui_raw --tutor tutor_03 --personas clueless_01 chaotic_02 --cou
 ```
 
 Run matrix: `tutor_prompts x student_personas x course_exercises x trials`
+
+**Features:**
+- Parallel processing (6 workers by default)
+- Thread-safe transcript filename allocation (`transcript_XXXX.json`) during concurrent writes
+- Automatic API key validation
+- Interactive confirmation before processing
 
 ### 2) Judge raw transcripts (GPT or Claude)
 
@@ -96,7 +102,7 @@ Raw transcripts are saved to persona-specific raw folders:
 - `transcripts/cooperative/cooperative_raw/`
 - `transcripts/clueless/clueless_raw/`
 
-Each file is auto-named as `transcript_XX.json`.
+Each file is auto-named as `transcript_XXXX.json`.
 
 ### Judged runs (`ui.run_ui_judge`)
 
@@ -112,7 +118,7 @@ Judged transcripts are saved to provider-specific folders:
 - `transcripts/cooperative/cooperative_claude/`
 - `transcripts/clueless/clueless_claude/`
 
-Each output file uses the same stem as raw input: `transcript_XX.json`
+Each output file uses the same stem as raw input: `transcript_XXXX.json`
 
 ### Bundle judged runs (`ui.run_ui_bundle_judge`)
 
@@ -167,6 +173,11 @@ All UI scripts support both interactive and command-line modes:
 - **Required inputs**: Judge scripts require explicit selection of all options
 - **Confirmation**: Interactive mode shows summary and asks for confirmation
 - **Range support**: Select multiple items with ranges like `1-5` or `1,3,5-7`
+
+## Parallelism configuration
+
+- `ui.run_ui_raw`, `ui.run_ui_judge`, and `ui.run_ui_bundle_judge` all run with `6` workers by default.
+- Adjust `PARALLEL_WORKERS` at the top of each runner file to change concurrency.
 
 ## Environment variables
 

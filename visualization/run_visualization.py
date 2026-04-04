@@ -516,6 +516,75 @@ def _chart_line_scores(
     print(f"  [{chart_idx}] {output_name}")
 
 
+def _chart_provider_regular_vs_v3(
+    regular_rows: list[GradeRow],
+    v3_rows: list[GradeRow],
+    out_dir: Path,
+    *,
+    provider_label: str,
+    output_name: str,
+    chart_idx: int,
+) -> None:
+    """Generate per-transcript line chart comparing regular vs v3 for one provider."""
+    plt = _safe_import_matplotlib()
+
+    regular_by_key = {r.transcript_key: r for r in regular_rows}
+    v3_by_key = {r.transcript_key: r for r in v3_rows}
+    all_keys = sorted(
+        set(regular_by_key) | set(v3_by_key),
+        key=lambda k: _sort_key(regular_by_key.get(k) or v3_by_key[k]),
+    )
+
+    x = list(range(len(all_keys)))
+    y_regular = [regular_by_key[k].total_score if k in regular_by_key else float("nan") for k in all_keys]
+    y_v3 = [v3_by_key[k].total_score if k in v3_by_key else float("nan") for k in all_keys]
+
+    paired_regular: list[float] = []
+    paired_v3: list[float] = []
+    for k in all_keys:
+        r = regular_by_key.get(k)
+        v = v3_by_key.get(k)
+        if r and v and math.isfinite(r.total_score) and math.isfinite(v.total_score):
+            paired_regular.append(r.total_score)
+            paired_v3.append(v.total_score)
+
+    fig, ax = plt.subplots(figsize=(16, 7))
+    ax.plot(x, y_regular, label=f"{provider_label.upper()} regular", color="#4c78a8", linewidth=1.4, marker="o", markersize=2.5)
+    ax.plot(x, y_v3, label=f"{provider_label.upper()} v3", color="#f58518", linewidth=1.4, marker="o", markersize=2.5)
+    ax.set_title(f"{provider_label.upper()} Regular vs v3 — Total Score Per Transcript")
+    ax.set_xlabel("Transcript index (sorted by persona / course / exercise)")
+    ax.set_ylabel("Total Score")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+
+    pearson_v = _pearson(paired_regular, paired_v3)
+    spearman_v = _spearman(paired_regular, paired_v3)
+    lines = []
+    lines.append(f"Pearson r = {pearson_v:.3f}" if pearson_v is not None else "Pearson r = N/A")
+    lines.append(f"Spearman ρ = {spearman_v:.3f}" if spearman_v is not None else "Spearman ρ = N/A")
+    lines.append(f"Paired transcripts: {len(paired_regular)}")
+    if paired_regular:
+        lines.append(
+            f"Regular mean: {sum(paired_regular)/len(paired_regular):.1f}   "
+            f"v3 mean: {sum(paired_v3)/len(paired_v3):.1f}"
+        )
+    ax.text(
+        0.01,
+        0.98,
+        "\n".join(lines),
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=9,
+        bbox={"boxstyle": "round,pad=0.3", "facecolor": "white", "alpha": 0.85, "edgecolor": "#ccc"},
+    )
+
+    fig.tight_layout()
+    fig.savefig(out_dir / output_name, dpi=150)
+    plt.close(fig)
+    print(f"  [{chart_idx}] {output_name}")
+
+
 # ---------------------------------------------------------------------------
 # Chart: Provider self-consistency across repeated runs
 # ---------------------------------------------------------------------------
@@ -1303,6 +1372,25 @@ def main() -> int:
             persona_label="all_personas",
             chart_idx=chart_idx,
             output_name="subsection_correlation_heatmap_claude_all_personas_normalized_v3.png",
+        )
+        chart_idx += 1
+
+        _chart_provider_regular_vs_v3(
+            gpt_all_rows,
+            gpt_v3_rows,
+            out_dir,
+            provider_label="gpt",
+            output_name="individual_grades_gpt_regular_vs_v3.png",
+            chart_idx=chart_idx,
+        )
+        chart_idx += 1
+        _chart_provider_regular_vs_v3(
+            claude_all_rows,
+            claude_v3_rows,
+            out_dir,
+            provider_label="claude",
+            output_name="individual_grades_claude_regular_vs_v3.png",
+            chart_idx=chart_idx,
         )
         chart_idx += 1
     else:

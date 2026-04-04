@@ -61,6 +61,8 @@ Written to `visualization/outputs/`:
 | 25 | `bundle_01_grades_chaotic_gpt_vs_claude_v3.png` | Same as #7, but computed only from `_v3` graded bundles. |
 | 26 | `bundle_01_grades_cooperative_gpt_vs_claude_v3.png` | Same as #8, but computed only from `_v3` graded bundles. |
 | 27 | `bundle_01_grades_clueless_gpt_vs_claude_v3.png` | Same as #9, but computed only from `_v3` graded bundles. |
+| 28 | `individual_grades_gpt_regular_vs_v3.png` | Per-transcript line chart comparing regular GPT grades versus `_v3` GPT grades. |
+| 29 | `individual_grades_claude_regular_vs_v3.png` | Per-transcript line chart comparing regular Claude grades versus `_v3` Claude grades. |
 
 All charts include Pearson r, Spearman rho, and mean scores.
 

@@ -59,7 +59,7 @@ class GradeRow:
 
 @dataclass(frozen=True)
 class HandGradeRow:
-    """Manual grade row from hand_grade_judge.xlsx."""
+    """Manual grade row from hand_grade_workbook.xlsx."""
 
     persona_type: str
     transcript_number: int
@@ -1249,7 +1249,7 @@ def main() -> int:
     )
     chart_idx += 1
 
-    hand_grade_path = repo_root / "judge" / "hand_grade_judge.xlsx"
+    hand_grade_path = repo_root / "judge" / "hand_grade_workbook.xlsx"
     faizan_rows = _read_hand_grade_rows(hand_grade_path, grader_name="faizan")
     if faizan_rows:
         _chart_faizan_vs_gpt_vs_claude(
@@ -1270,7 +1270,7 @@ def main() -> int:
         )
         chart_idx += 1
     else:
-        print("No Faizan hand-grade rows found in judge/hand_grade_judge.xlsx. Skipping hand-grade comparison chart.")
+        print("No Faizan hand-grade rows found in judge/hand_grade_workbook.xlsx. Skipping hand-grade comparison chart.")
 
     # Subsection-correlation heatmaps: exactly 3
     # 1) all providers combined, 2) GPT all personas, 3) Claude all personas.

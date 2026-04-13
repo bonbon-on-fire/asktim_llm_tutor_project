@@ -8,7 +8,7 @@ Reads judged transcript JSON files from:
 
 - `transcripts/<persona_type>/<persona_type>_gpt/transcript_*.json`
 - `transcripts/<persona_type>/<persona_type>_claude/transcript_*.json`
-- `judge/hand_grade_judge.xlsx` (sheet: `compiled grading`, rows where `grader name = faizan`)
+- `judge/hand_grade_workbook.xlsx` (sheet: `compiled grading`, rows where `grader name = faizan`)
 
 ## Run
 

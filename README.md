@@ -66,6 +66,51 @@ The system has four loosely coupled layers:
 
 ## How the Workflow Runs
 
+End-to-end flow from assignment content through simulation, judging, and analysis:
+
+```mermaid
+flowchart TD
+    subgraph inputs["Inputs on disk"]
+        CUR["Curriculum\n(course.txt, exercise_*.txt)"]
+        TUT["Tutor prompts\n(tutor/prompts/*.txt)"]
+        PER["Student personas\n(students/personas/*.txt)"]
+        JR["Judge prompt + rubric\n(judge/prompts, judge/rubrics)"]
+    end
+
+    subgraph gen["1. Generate conversations"]
+        UIRAW["ui.run_ui_raw\n(GPT or Claude tutor)"]
+        LOOP["LangGraph loop:\nstudent reply → tutor reply"]
+    end
+
+    subgraph rawstore["Raw transcripts"]
+        RAWF[("transcripts/*/*_raw/\ntranscript_XXXX.json")]
+    end
+
+    subgraph judge["2. Grade transcripts"]
+        UIJ["ui.run_ui_judge\n(GPT or Claude judge)"]
+        JG["judge.run_judge\nvalidate + repair JSON"]
+    end
+
+    subgraph gradedstore["Graded transcripts"]
+        GF[("transcripts/*/*_gpt/\nor *_claude/")]
+    end
+
+    subgraph view["3. Compare and explore"]
+        VIZ["visualization.run_visualization\n(correlation charts)"]
+        DASH["dashboard_ui\n(Flask + browse grades)"]
+    end
+
+    CUR --> UIRAW
+    TUT --> UIRAW
+    PER --> UIRAW
+    UIRAW --> LOOP --> RAWF
+    RAWF --> UIJ
+    JR --> UIJ
+    UIJ --> JG --> GF
+    GF --> VIZ
+    GF --> DASH
+```
+
 **1. Load prompts and build agents**
 
 ```python

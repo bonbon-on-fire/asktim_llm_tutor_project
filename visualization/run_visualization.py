@@ -21,6 +21,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+# Romain hand vs Claude chart: drop these workbook rows (persona type, transcript number).
+ROMAIN_HAND_VS_CLAUDE_EXCLUDED: frozenset[tuple[str, int]] = frozenset(
+    {("chaotic", 228), ("chaotic", 243)}
+)
+
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -271,7 +276,6 @@ def _read_hand_grade_rows(xlsx_path: Path, *, grader_name: str) -> list[HandGrad
     try:
         load_workbook = importlib.import_module("openpyxl").load_workbook
     except ModuleNotFoundError:
-        print("openpyxl not installed; skipping hand-grade comparison chart.")
         return []
 
     try:
@@ -1382,24 +1386,43 @@ def main() -> int:
             chart_idx += 1
 
     hand_grade_path = repo_root / "judge" / "hand_grade_workbook.xlsx"
-    for grader_key, grader_label in (
-        ("faizan", "Faizan"),
-        ("romain", "Romain"),
-        ("nishita", "Nishita"),
-    ):
-        hand_rows = _read_hand_grade_rows(hand_grade_path, grader_name=grader_key)
-        if hand_rows:
-            _chart_hand_grader_vs_claude(
-                hand_rows,
-                claude_all_rows,
-                out_dir,
-                grader_label=grader_label,
-                output_name=f"hand_grades_{grader_key}_vs_claude.png",
-                chart_idx=chart_idx,
-            )
-            chart_idx += 1
-        else:
-            print(f"No hand-grade rows for '{grader_key}' in {hand_grade_path.name}. Skipping {grader_key}_vs_claude chart.")
+    try:
+        importlib.import_module("openpyxl")
+    except ModuleNotFoundError:
+        print(
+            "Skipping hand vs Claude charts: openpyxl is not installed "
+            f"(cannot read {hand_grade_path.name}). Install with: pip install openpyxl"
+        )
+    else:
+        for grader_key, grader_label in (
+            ("faizan", "Faizan"),
+            ("romain", "Romain"),
+            ("nishita", "Nishita"),
+        ):
+            hand_rows = _read_hand_grade_rows(hand_grade_path, grader_name=grader_key)
+            if grader_key == "romain" and hand_rows:
+                hand_rows = [
+                    r
+                    for r in hand_rows
+                    if (r.persona_type.lower(), r.transcript_number)
+                    not in ROMAIN_HAND_VS_CLAUDE_EXCLUDED
+                ]
+            if hand_rows:
+                _chart_hand_grader_vs_claude(
+                    hand_rows,
+                    claude_all_rows,
+                    out_dir,
+                    grader_label=grader_label,
+                    output_name=f"hand_grades_{grader_key}_vs_claude.png",
+                    chart_idx=chart_idx,
+                )
+                chart_idx += 1
+            else:
+                print(
+                    f"No hand-grade rows for '{grader_key}' in {hand_grade_path.name} "
+                    f"(missing sheet '{grader_key} grading' / 'compiled grading', wrong headers, "
+                    "or no rows for that grader). Skipping chart."
+                )
 
     print(f"\n[Done] Charts saved to: {out_dir}")
     return 0

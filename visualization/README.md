@@ -16,7 +16,10 @@ Paths follow the current repo layout: one folder per persona family (`chaotic`, 
 
 ## Run
 
+Install dependencies (including **openpyxl** for Excel hand grades) from the repo root, then run:
+
 ```powershell
+pip install -r requirements.txt
 python -m visualization.run_visualization
 ```
 

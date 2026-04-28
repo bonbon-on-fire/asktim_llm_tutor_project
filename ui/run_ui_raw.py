@@ -92,6 +92,7 @@ class BundleConfig:
     course_exercises: list[tuple[str, str]]
     turn_size: int
     trials: int
+    output_suffix: str = "raw"
 
 
 def _require_openai_api_key() -> None:
@@ -324,10 +325,10 @@ def _save_raw_transcript(
     context_text: str,
     assignment_text: str,
     exchanges: list[dict[str, object]],
+    output_suffix: str = "raw",
 ) -> tuple[str, Path]:
     """Serialize and save a raw transcript JSON; returns (transcript_name, output_path)."""
-    raw_subdir = _RAW_SUBDIR_BY_PERSONA_TYPE[config.persona_type]
-    output_dir = _TRANSCRIPTS_DIR / config.persona_type / raw_subdir
+    output_dir = _TRANSCRIPTS_DIR / config.persona_type / f"{config.persona_type}_{output_suffix}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Protect transcript numbering + write as one critical section to avoid
@@ -507,7 +508,17 @@ Examples:
         default=DEFAULT_TRIALS,
         help=f"Number of trials per configuration (default: {DEFAULT_TRIALS})",
     )
-    
+    parser.add_argument(
+        "--output-suffix",
+        default="raw",
+        help="Output folder suffix: transcripts/<type>/<type>_{suffix}/ (default: raw)",
+    )
+    parser.add_argument(
+        "--yes", "-y",
+        action="store_true",
+        help="Skip confirmation prompt.",
+    )
+
     return parser.parse_args()
 
 
@@ -528,10 +539,11 @@ def _get_config_from_args(args: argparse.Namespace) -> BundleConfig:
         course_exercises=course_exercises,
         turn_size=args.turn_size,
         trials=args.trials,
+        output_suffix=args.output_suffix,
     )
 
 
-def _run_bundle(bundle_config: BundleConfig) -> int:
+def _run_bundle(bundle_config: BundleConfig, yes: bool = False) -> int:
     """Run the bundle generation with the given configuration."""
     try:
         _validate_bundle_config(bundle_config)
@@ -563,7 +575,7 @@ def _run_bundle(bundle_config: BundleConfig) -> int:
         f"  • {bundle_config.trials} trial(s) per configuration",
     ])
     
-    if not confirm_proceed("\n".join(summary_lines)):
+    if not yes and not confirm_proceed("\n".join(summary_lines)):
         print("Cancelled.")
         return 0
 
@@ -594,6 +606,7 @@ def _run_bundle(bundle_config: BundleConfig) -> int:
                 context_text,
                 assignment_text,
                 exchanges,
+                output_suffix=bundle_config.output_suffix,
             )
             return {
                 "ok": True,
@@ -666,7 +679,7 @@ def main() -> int:
         else:
             bundle_config = _get_config_from_args(args)
         
-        return _run_bundle(bundle_config)
+        return _run_bundle(bundle_config, yes=args.yes)
         
     except (RuntimeError, ValueError) as error:
         print(f"Error: {error}")

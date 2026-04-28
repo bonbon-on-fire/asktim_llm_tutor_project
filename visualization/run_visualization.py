@@ -1381,7 +1381,7 @@ def _chart_original_vs_mini(
     fig, ax = plt.subplots(figsize=(max(10, len(matched_stems) * 0.9 + 2), 6))
     bars_orig = ax.bar(
         [xi - width / 2 for xi in x], y_orig, width,
-        label=f"Original (tutor_03, claude)", color="#ff893a", alpha=0.85,
+        label=f"Original (tutor_04, claude)", color="#ff893a", alpha=0.85,
     )
     bars_mini = ax.bar(
         [xi + width / 2 for xi in x], y_mini, width,

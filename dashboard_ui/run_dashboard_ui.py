@@ -285,6 +285,11 @@ def api_get_transcript(group: str, version: str):
         return jsonify({"error": "Transcript not found"}), 404
 
     mini_data = _load_json(TRANSCRIPTS_DIR / group / f"{group}_mini" / f"{version}.json")
+    resume_from_turn = None
+    if mini_data:
+        mc = mini_data.get("mini_continuation")
+        if isinstance(mc, dict):
+            resume_from_turn = mc.get("resume_from_turn")
 
     return jsonify(
         {
@@ -296,6 +301,7 @@ def api_get_transcript(group: str, version: str):
             "metadata": {k: v for k, v in raw_data.items() if k not in ("exchanges", "grade")},
             "exchanges_raw": raw_data.get("exchanges", []),
             "exchanges_mini": mini_data.get("exchanges", []) if mini_data else [],
+            "resume_from_turn": resume_from_turn,
         }
     )
 

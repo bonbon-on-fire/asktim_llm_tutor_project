@@ -48,6 +48,14 @@
 
     function renderTable() {
       const sorted = [...list].sort((a, b) => {
+        if (sortKey === "resume_from_turn") {
+          const va = a[sortKey];
+          const vb = b[sortKey];
+          if (va == null && vb == null) return 0;
+          if (va == null) return 1;
+          if (vb == null) return -1;
+          return sortDir * (va - vb);
+        }
         if (sortKey === "group") {
           const groupCompare = displayedGroup(a).localeCompare(displayedGroup(b));
           if (groupCompare !== 0) return sortDir * groupCompare;
@@ -101,6 +109,7 @@
           <td>${escapeHtml(t.version || "—")}</td>
           <td>${escapeHtml((t.metadata && t.metadata.course) || "—")}</td>
           <td>${escapeHtml((t.metadata && t.metadata.exercise_number) || "—")}</td>
+          <td class="num">${t.resume_from_turn != null ? t.resume_from_turn : "—"}</td>
           <td><a href="/transcript/${encodeURIComponent(t.route_group || t.group)}/${encodeURIComponent(t.route_version || t.version)}">Read</a></td>
         </tr>`
         )
@@ -112,7 +121,7 @@
       th.onclick = () => {
         const key = th.getAttribute("data-sort");
         if (sortKey === key) sortDir *= -1;
-        else sortDir = 1;
+        else sortDir = key === "resume_from_turn" ? 1 : 1;
         sortKey = key;
         document.querySelectorAll("#transcripts-table thead th[data-sort]").forEach((h) => h.classList.remove("sorted-asc", "sorted-desc"));
         th.classList.add(sortDir === 1 ? "sorted-asc" : "sorted-desc");
@@ -139,15 +148,17 @@
   /**
    * Render a list of exchanges as HTML.
    * @param {object[]} exchanges
+   * @param {number|null} resumeFromTurn - turn number where mini continuation starts (for mini exchanges)
    * @returns {string}
    */
-  function renderExchanges(exchanges) {
+  function renderExchanges(exchanges, resumeFromTurn) {
     if (!exchanges || exchanges.length === 0) {
       return '<p class="error">No exchanges available.</p>';
     }
     return exchanges.map((ex) => {
-      let html = '<div class="exchange">';
-      html += '<div class="turn-badge">Turn ' + ex.turn + "</div>";
+      const isPivot = resumeFromTurn != null && ex.turn === resumeFromTurn;
+      let html = '<div class="exchange' + (isPivot ? " pivot-turn" : "") + '">';
+      html += '<div class="turn-badge">Turn ' + ex.turn + (isPivot ? ' <span class="pivot-badge">pivot</span>' : "") + "</div>";
       html += '<div class="student"><strong>Student:</strong><br/>' + escapeHtml(ex.student || "") + "</div>";
       html += '<div class="tutor"><strong>Tutor:</strong><br/>' + escapeHtml(ex.tutor || "") + "</div>";
       if (ex.pedagogical_reasoning) {
@@ -180,10 +191,13 @@
     }
 
     html += '<h2 class="transcript-section-heading">Original (tutor_04)</h2>';
-    html += renderExchanges(data.exchanges_raw);
+    html += renderExchanges(data.exchanges_raw, null);
 
-    html += '<h2 class="transcript-section-heading">Mini continuation (tutor_05)</h2>';
-    html += renderExchanges(data.exchanges_mini);
+    const miniLabel = data.resume_from_turn != null
+      ? "Mini continuation (tutor_05) — resumed from turn " + data.resume_from_turn
+      : "Mini continuation (tutor_05)";
+    html += '<h2 class="transcript-section-heading">' + escapeHtml(miniLabel) + "</h2>";
+    html += renderExchanges(data.exchanges_mini, data.resume_from_turn);
 
     document.getElementById("transcript-title").textContent = `${data.group} / ${data.version}`;
     const content = document.getElementById("transcript-content");
@@ -196,19 +210,19 @@
   async function loadDashboard() {
     showPage("dashboard-page");
     const tbody = document.getElementById("transcripts-tbody");
-    tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading...</td></tr>';
     try {
       const r = await fetch("/api/transcripts");
       const list = await r.json();
       if (!r.ok) throw new Error(list.error || "Failed to load");
       if (list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="error">No transcript rows found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="error">No transcript rows found.</td></tr>';
         return;
       }
       renderDashboard(list);
     } catch (e) {
       console.error("Failed to load transcripts:", e);
-      tbody.innerHTML = '<tr><td colspan="5" class="error">' + escapeHtml(e.message) + "</td></tr>";
+      tbody.innerHTML = '<tr><td colspan="6" class="error">' + escapeHtml(e.message) + "</td></tr>";
     }
   }
 

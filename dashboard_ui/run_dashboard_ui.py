@@ -92,20 +92,16 @@ def _grade_summary(data: dict | None) -> dict | None:
 
 
 def _extract_display_number(stem: str) -> str:
-    """Convert a mini stem to a readable label.
+    """Convert a mini stem to a readable label (base transcript number only).
 
     transcript_0007      → '0007'
-    transcript_0015_01   → '0015 #1'
-    transcript_0015_02   → '0015 #2'
+    transcript_0015_01   → '0015'
+    transcript_0015_02   → '0015'
     """
-    match = re.match(r"^transcript_(\d+)(?:_(\d+))?$", stem)
+    match = re.match(r"^transcript_(\d+)", stem)
     if not match:
         return stem
-    num = match.group(1)
-    suffix = match.group(2)
-    if suffix:
-        return f"{num} #{int(suffix)}"
-    return num
+    return match.group(1)
 
 
 def _stem_sort_key(stem: str) -> tuple[int, int, int, str]:

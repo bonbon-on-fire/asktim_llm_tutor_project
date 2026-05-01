@@ -21,7 +21,7 @@ Socratic LLM tutor for MIT OpenCourseWare (OCW) humanities/social sciences cours
 **Active work (as of 05/01/2026):**
 - Iterating on tutor prompt (tutor_05 current)
 - Human testing via web UI to surface issues AI-student runs miss
-- Simulating turn-specific reference issues with `run_ui_raw_mini_batch_reference.py` (25 mini runs, all in `*_mini/` with `_01`/`_02` suffix)
+- Simulating turn-specific reference issues with `run_ui_raw_mini_batch.py` (25 mini runs, all in `*_mini/` with `_01`/`_02` suffix)
 - Dashboard shows all `*_mini/` files against their raw source (mini-centric view)
 
 **Removed:** `run_ui_judge_mini`, `run_ui_raw_two_layer`, `judge/run_judge_mini.py`, `tutor/run_tutor_two_layer.py` — two-layer tutor and comparison mini judge are not pursued.

@@ -8,7 +8,6 @@
     const composerForm = document.getElementById("composer");
     const composerInput = document.getElementById("composer-input");
     const sendButton = document.getElementById("send-button");
-    const thinking = document.getElementById("thinking");
     const errorBanner = document.getElementById("error-banner");
     const errorText = document.getElementById("error-text");
     const errorDismiss = document.getElementById("error-dismiss");
@@ -24,7 +23,6 @@
     function setSending(sending) {
         isSending = sending;
         composerInput.disabled = sending;
-        thinking.hidden = !sending;
         updateSendButton();
     }
 
@@ -35,6 +33,15 @@
         li.textContent = content;
         messageList.appendChild(li);
         // Always auto-scroll to bottom. Known papercut: fights user scrolling.
+        messageList.scrollTop = messageList.scrollHeight;
+        return li;
+    }
+
+    function renderThinking() {
+        const li = document.createElement("li");
+        li.className = "message message-thinking";
+        li.textContent = "AskTIM is thinking…";
+        messageList.appendChild(li);
         messageList.scrollTop = messageList.scrollHeight;
         return li;
     }
@@ -54,8 +61,10 @@
         if (!text || isSending) return;
 
         hideError();
-        // Optimistically render the student bubble; rollback on error.
+        // Optimistically render the student bubble + a "thinking" placeholder
+        // where the tutor reply will land. Rollback both on error.
         const studentBubble = renderMessage("student", text);
+        const thinkingBubble = renderThinking();
         const originalText = composerInput.value;
         composerInput.value = "";
         setSending(true);
@@ -85,8 +94,7 @@
                 } catch (_) {
                     /* ignore body-parse errors */
                 }
-                // Rollback the student bubble and restore the draft so the
-                // student can edit and retry without retyping.
+                thinkingBubble.remove();
                 studentBubble.remove();
                 composerInput.value = originalText;
                 showError(reason);
@@ -96,8 +104,10 @@
             const data = await response.json();
             conversationId = data.conversation_id;
             studentMessageCount = data.student_message_count;
+            thinkingBubble.remove();
             renderMessage("tutor", data.reply);
         } catch (err) {
+            thinkingBubble.remove();
             studentBubble.remove();
             composerInput.value = originalText;
             showError("Cannot reach AskTIM. Check your connection and try again.");

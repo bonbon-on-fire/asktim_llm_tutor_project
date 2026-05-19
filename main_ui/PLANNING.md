@@ -868,13 +868,207 @@ start http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=04
 
 ---
 
+## Step 7: Email modal ✦ ACTIVE
+
+**Goal:** Capture a best-effort student identifier so we can correlate conversations across the semester (per meeting notes 2026-05-08). After the third student message, show a modal asking for the email the student used to sign up for the course. Validate `@` and `.` client- and server-side. Store the email in the `tutor_email` cookie and on the current Conversation row, then backfill any past Conversations from the same `session_id` that were created before the email was known.
+
+Wrong emails are explicitly accepted as "good enough" per the meeting notes — connections are still useful even if imperfect. This step doesn't verify, send confirmation, or block usage if the modal is dismissed.
+
+#### Files to create
+
+```text
+main_ui/
+  routes/
+    email.py                          # POST /api/email (Blueprint: email_bp)
+```
+
+Plus edits to:
+- `main_ui/services/conversation.py` — add `backfill_email_for_session(db, session_id, email)`
+- `main_ui/run_app.py` — register `email_bp`
+- `main_ui/templates/embed.html` — add the modal markup (hidden by default)
+- `main_ui/static/css/chat.css` — modal overlay, card, form styles
+- `main_ui/static/js/chat.js` — threshold trigger after each chat response, modal show/hide, validation, POST to `/api/email`, cookie-driven re-prompt suppression
+
+#### Purpose of each file
+
+**`main_ui/routes/email.py`**
+- **Purpose:** owns `POST /api/email`. Validates the submitted email, sets the `tutor_email` cookie using the same attribute policy as `tutor_session_id`, backfills the current session's past Conversations.
+- **Owns:** the `email_bp` Blueprint, request-body validation, and the call into `services/conversation.py::backfill_email_for_session`.
+- **Doesn't own:** cookie attribute construction (that's `cookies.py`), the backfill SQL itself (that's `services/conversation.py`).
+
+**`main_ui/services/conversation.py` (modified)**
+- **Adds:** `backfill_email_for_session(db, session_id, email) -> int` — updates every `Conversation` row where `session_id` matches and `email IS NULL`, sets `email` to the supplied value, returns the number of rows touched (useful for the response payload + telemetry/debug).
+- **Why a helper rather than inline SQL:** keeps DB writes in one module and makes the route handler readable; matches the pattern set in Step 5.
+
+**`main_ui/run_app.py` (modified)**
+- **Adds:** `from main_ui.routes.email import email_bp` + `app.register_blueprint(email_bp)`. Nothing else changes — the per-request DB session lifecycle from Step 5 already covers this route.
+
+**`main_ui/templates/embed.html` (modified)**
+- **Adds:** a hidden modal block (overlay + card) with email input, Submit, and Skip controls. Lives outside the `<main>` so it can sit above the chat with z-index. The `hidden` attribute keeps it out of the layout until JS shows it.
+- **Doesn't add:** any new tutor-config keys; the modal reads no per-render server data.
+
+**`main_ui/static/css/chat.css` (modified)**
+- **Adds:** overlay (full-viewport, semi-transparent dark), centered card with rounded corners, email input + Submit button + Skip link styling. Reuses existing CSS variables (`--send-bg`, `--muted`, etc.) for visual consistency.
+
+**`main_ui/static/js/chat.js` (modified)**
+- **Adds:**
+  - Module-scoped `dismissedThisSession = false` flag (so a Skip click doesn't re-prompt on every subsequent message in the same page load).
+  - A `maybeShowEmailModal(student_message_count)` helper called after each successful `/api/chat` response. Conditions to show: count ≥ 3, no `tutor_email` cookie present, and not previously dismissed this session.
+  - Modal show/hide functions: trap focus into the email input on open; on close, return focus to the composer.
+  - Email format check: regex-light validation matching the server (`@` AND `.`); disables the Submit button until both are present.
+  - `POST /api/email` submission with the same error-banner UX pattern used elsewhere.
+  - ESC key handler and outside-click handler to dismiss the modal (treated as Skip).
+- **Doesn't add:** localStorage-based suppression. Refresh = potentially re-prompt if no cookie yet, by design — students can opt out repeatedly but data capture stays the priority.
+
+#### API spec
+
+**`POST /api/email`**
+
+Request body (JSON):
+```json
+{ "email": "alice@example.edu" }
+```
+
+Successful response (200):
+```json
+{
+  "email": "alice@example.edu",
+  "backfilled_conversations": 2
+}
+```
+
+Error response (400):
+```json
+{ "error": "invalid_email", "reason": "must contain @ and ." }
+```
+
+Side effects:
+- Sets `Set-Cookie: tutor_email=alice@example.edu; HttpOnly; SameSite=None; Secure; Partitioned; Max-Age=15552000; Path=/`
+- Updates all `conversations` rows where `session_id = g.session_id AND email IS NULL` to set the new email
+
+#### Modal UX
+
+```
++-----------------------------------+
+|  [semi-transparent dark overlay]  |
+|                                   |
+|   +-------------------------+     |
+|   |  Help us track your     |     |
+|   |  progress               |     |
+|   |                         |     |
+|   |  Enter the email you    |     |
+|   |  used to sign up for    |     |
+|   |  this course.           |     |
+|   |                         |     |
+|   |  [email input         ] |     |
+|   |                         |     |
+|   |  [Submit]      Skip     |     |
+|   +-------------------------+     |
+|                                   |
++-----------------------------------+
+```
+
+- Overlay covers the iframe; clicking outside the card behaves like Skip.
+- Card is centered, capped at ~360px wide, rounded corners.
+- Email input is pre-focused on open.
+- Submit button is the same crimson as Send, disabled until the input contains both `@` and `.`.
+- Skip is a small text-button to the right of Submit (muted color, no background).
+- Enter submits when the input is valid; ESC closes (same as Skip).
+
+#### Cookie attribute summary
+
+The `tutor_email` cookie reuses the policy from `cookies.py::default_cookie_kwargs()` — same HttpOnly, SameSite, Secure, Partitioned, Max-Age, Path settings as the session cookie. Server-side helper `default_cookie_kwargs()` is the only source of truth.
+
+#### Threshold + backfill logic
+
+**Threshold (frontend):** after each `/api/chat` response, JS inspects `student_message_count`. If it's ≥ 3, no `tutor_email` cookie is present (read via `document.cookie`), and `dismissedThisSession` is false, the modal opens. Modal opens AFTER the tutor reply renders (since the count comes back in the same response) — so the student isn't interrupted mid-thought.
+
+**Backfill (backend):** when the email is submitted, the backend updates every `Conversation` row with the current `session_id` and a null `email`. This catches:
+- The current conversation (created earlier in this iframe load before email was known)
+- Any older conversations from the same browser session that were created before this step shipped
+
+New conversations created AFTER email submission already pick up the email from the cookie automatically (Step 5's `chat.py` reads the cookie when creating a Conversation).
+
+#### Dependencies
+
+- No new pip packages.
+- Builds on Step 3 (cookie machinery, `EMAIL_COOKIE_NAME` already defined in `cookies.py`), Step 5 (`/api/chat` returning `student_message_count`, Conversation rows already wired to accept an `email` field), and Step 6 (chat UI to attach the modal flow onto).
+
+#### Acceptance criteria
+
+1. **Modal triggers on 3rd message:** after sending 3 student messages in a row from a browser with no `tutor_email` cookie, the modal appears once the third tutor reply renders. Not earlier, not later.
+2. **Modal contents:** heading + body + email input + Submit + Skip. Email input is auto-focused.
+3. **Validation:** Submit is disabled until the input contains BOTH `@` AND `.`. Typing "bob" leaves it disabled; "bob@example" leaves it disabled (no `.`); "bob.com" leaves it disabled (no `@`); "bob@example.com" enables Submit.
+4. **Successful submit:** clicking Submit with a valid email → `POST /api/email` returns 200 → modal closes → `tutor_email` cookie set with all 6 expected attributes → DB rows for the current conversation now have `email` populated.
+5. **Backfill:** any older Conversations from the same `session_id` with NULL email are updated to the new email after submission. Response body's `backfilled_conversations` count matches.
+6. **Forward-fill:** new Conversations created on subsequent iframe loads (same browser) pick up the email automatically via the cookie at create time (no further backfill needed).
+7. **Cookie suppresses re-prompt:** with `tutor_email` cookie set, sending more messages — including across page reloads — never re-shows the modal.
+8. **Skip dismisses for the session:** clicking Skip closes the modal; sending more messages in the same page load does not re-show it. A page reload (with no cookie set) can re-prompt.
+9. **ESC and outside-click:** both behave like Skip.
+10. **Server-side validation:** crafting a request with `{"email": "notanemail"}` directly → 400 with `{"error":"invalid_email","reason":"must contain @ and ."}`. (Client-side disabling stops this in the UI; server-side check guards against direct API calls.)
+11. **`/api/whoami` reflects the email:** after submission, `GET /api/whoami` returns the email instead of null.
+12. **Steps 1-6 still work:** existing chat flow, message persistence, etc. unaffected.
+
+#### Verification steps (manual)
+
+```powershell
+# 1. Fresh start — clear cookies in DevTools first, or use a new browser profile
+python -m main_ui
+# Open http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=01
+
+# 2. Send 3 messages: "hi", "Boston", "what's first?"
+# Confirm: modal opens AFTER the 3rd tutor reply renders.
+
+# 3. Try invalid emails: "bob", "bob@example", "bob.com" — Submit stays disabled.
+
+# 4. Try "bob@example.com" — Submit enables. Click Submit.
+# Confirm: modal closes; new cookie `tutor_email` visible in DevTools → Storage → Cookies.
+
+# 5. Hit /api/whoami in a new tab — confirm `"email": "bob@example.com"` is returned.
+
+# 6. Inspect the DB to confirm backfill:
+python -c "
+import main_ui
+from main_ui.db import get_session, Conversation
+with get_session() as s:
+    for c in s.query(Conversation).all():
+        print(f'  {c.id} session={c.session_id[:8]} email={c.email}')
+"
+
+# 7. Send more messages — confirm modal stays closed.
+
+# 8. Reload the page (Ctrl+R) — start a new conversation — confirm modal does NOT re-open.
+
+# 9. Clear the tutor_email cookie in DevTools, reload, send 3 messages — modal returns.
+
+# 10. Click Skip instead of submitting — modal closes, sending more messages in this page load doesn't re-prompt.
+```
+
+#### What's deliberately NOT in Step 7
+
+- **No email verification** — we accept whatever the student types (per meeting notes).
+- **No "Resend email" or password-style auth flow** — the email is a soft identifier, not credentials.
+- **No localStorage suppression** — refreshing without a cookie can re-prompt (intentional; data capture stays the priority).
+- **No email-change flow** — once set, the cookie value is the email until cookie expiry or manual clear. A "change email" feature would belong to a later admin/settings step.
+- **No CSP/CORS hardening** for `POST /api/email` — same protections as `POST /api/chat`.
+- **No tests** — Step 11.
+
+#### Risks / gotchas
+
+- **HttpOnly cookie can't be read by JS.** The `tutor_email` cookie is `HttpOnly` (matches the session cookie's policy). JS can't read `document.cookie` to check if email is set — it has to ask the server via `/api/whoami` or inspect a flag set on the page server-side. Easiest: on initial page render, embed a `data-has-email="true|false"` attribute on `<body>` based on the request's cookie. Add this when wiring Step 7.
+- **Modal pops up mid-typing:** if the student starts typing the 4th message before the 3rd tutor reply arrives, the modal might appear and steal focus while they're typing. Either delay the modal slightly (e.g., 250ms after tutor reply renders) or check whether the textarea has focus and defer. Trade-off; start with the simple "show after reply renders" and refine if it's annoying.
+- **`POST /api/email` race:** student opens two iframe tabs and both hit message 3 around the same time, then submits email in tab A. Tab B's modal is still open. After tab B submits, the cookie just gets re-set to the same value (idempotent) — harmless. If they submit different emails, last-write wins. Acceptable for a soft identifier.
+- **Lax validation surface:** `@ + .` matches "a@b.c" but also "a@.b" — technically valid by our rule, semantically junk. Per meeting notes this is intentional: we don't gate on stricter regex because data capture > data quality. Document this in the docstring so future maintainers don't "fix" it.
+- **Backfill rowcount accuracy:** the SQLAlchemy `update()` query needs `synchronize_session='fetch'` or similar if we want correct rowcount in the same transaction. Note the implementation detail.
+- **Modal accessibility:** must add ARIA role="dialog" + `aria-modal="true"` + `aria-labelledby` pointing at the heading. Focus must trap inside the modal until dismissed. Skipping accessibility makes the modal invisible to screen readers and unusable for keyboard-only users. Don't skip.
+- **Cookie value containing special chars:** an email like `"alice'); DROP TABLE--"` won't escape into SQL because SQLAlchemy parameterizes, but it WILL go into the cookie verbatim. The browser handles cookie encoding for us via `response.set_cookie`, so this is fine — just worth knowing.
+- **`/api/whoami` was returning null for email:** it already reads the `tutor_email` cookie (Step 3 wired this). No code change needed there — just confirm in AC11.
+
+---
+
 ## Future steps (just placeholders for now)
 
 These will get fleshed out as we work through them. Each maps to the implementation order in [Phase 8 of the main PLANNING.md](../PLANNING.md).
-
-### Step 7: Email modal
-
-Frontend counts user messages; after the 3rd one, show a modal asking for email. `POST /api/email` validates `@`+`.`, stores in DB, sets `tutor_email` cookie, backfills past anonymous conversations with the same `session_id`.
 
 ### Step 8: Conversation history
 

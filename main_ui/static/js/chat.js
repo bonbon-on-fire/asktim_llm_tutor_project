@@ -204,19 +204,21 @@
         return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
     }
 
-    async function refreshSidebar() {
-        sidebarList.innerHTML = "";
-        showSidebarEmpty("Loading…");
+    async function refreshSidebar({ showLoading = true } = {}) {
+        if (showLoading) {
+            sidebarList.innerHTML = "";
+            showSidebarEmpty("Loading…");
+        }
         try {
             const response = await fetch("/api/history");
             if (!response.ok) {
-                showSidebarEmpty("Could not load history.");
+                if (showLoading) showSidebarEmpty("Could not load history.");
                 return;
             }
             const data = await response.json();
             renderHistoryEntries(data.email, data.conversations);
         } catch (err) {
-            showSidebarEmpty("Could not load history.");
+            if (showLoading) showSidebarEmpty("Could not load history.");
         }
     }
 
@@ -411,6 +413,11 @@
             thinkingBubble.remove();
             renderMessage("tutor", data.reply);
             maybeShowEmailModal(studentMessageCount);
+            // If the sidebar is open, silently re-fetch so the conversation
+            // that just got a new message floats to the top of the list.
+            if (sidebarOpen) {
+                refreshSidebar({ showLoading: false });
+            }
         } catch (err) {
             if (err && err.name === "AbortError") {
                 // Student switched to a past conversation mid-request.

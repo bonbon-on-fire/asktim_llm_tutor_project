@@ -224,17 +224,17 @@ body {
 }
 
 .sidebar {
-    width: 300px;
+    width: 0;
     flex-shrink: 0;
     background: #ffffff;
-    border-right: 1px solid var(--border);
-    margin-left: -300px;
-    transition: margin-left 0.22s ease;
+    border-right: 0 solid var(--border);
+    transition: width 0.22s ease, border-right-width 0.22s ease;
     overflow: hidden;
 }
 
 .sidebar[data-open="true"] {
-    margin-left: 0;
+    width: 300px;
+    border-right-width: 1px;
 }
 
 .sidebar-inner {
@@ -382,9 +382,8 @@ body {
 }
 
 @media (max-width: 480px) {
-    .sidebar {
+    .sidebar[data-open="true"] {
         width: 100vw;
-        margin-left: -100vw;
     }
     .sidebar-inner {
         width: 100vw;

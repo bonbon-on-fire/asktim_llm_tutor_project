@@ -280,13 +280,13 @@
         try {
             const response = await fetch("/api/history");
             if (!response.ok) {
-                if (showLoading) showSidebarEmpty("Could not load history.");
+                if (showLoading) showSidebarEmpty("Could not load history");
                 return;
             }
             const data = await response.json();
             renderHistoryEntries(data.email, data.conversations);
         } catch (err) {
-            if (showLoading) showSidebarEmpty("Could not load history.");
+            if (showLoading) showSidebarEmpty("Could not load history");
         }
     }
 

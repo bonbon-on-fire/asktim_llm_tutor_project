@@ -12,7 +12,6 @@ from main_ui.cookies import (
 )
 from main_ui.db import SessionLocal
 from main_ui.routes.chat import chat_bp
-from main_ui.routes.email import email_bp
 from main_ui.routes.embed import embed_bp
 from main_ui.routes.history import history_bp
 from main_ui.routes.identity import identity_bp
@@ -26,7 +25,6 @@ def create_app() -> Flask:
     app.register_blueprint(embed_bp)
     app.register_blueprint(identity_bp)
     app.register_blueprint(chat_bp)
-    app.register_blueprint(email_bp)
     app.register_blueprint(history_bp)
 
     @app.before_request
@@ -45,6 +43,9 @@ def create_app() -> Flask:
 
     @app.teardown_request
     def _close_db_session(exception: BaseException | None = None) -> None:
+        # Routes that take over their own session lifecycle (the streaming
+        # /api/chat endpoint) pop g.db themselves before returning; this
+        # teardown then finds nothing to clean up and exits silently.
         db = g.pop("db", None)
         if db is None:
             return

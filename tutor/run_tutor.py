@@ -138,6 +138,23 @@ def _build_invalid_input_reply() -> AIMessage:
     return AIMessage(content=json.dumps(payload, ensure_ascii=False))
 
 
+def build_tutor_model(provider: str = "gpt"):
+    """Construct a LangChain chat model for the tutor.
+
+    Exposed so the streaming path can call ``model.stream(...)`` directly,
+    bypassing the LangGraph wrapper used by the non-streaming path.
+    """
+    if provider == "claude":
+        return ChatAnthropic(
+            model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+            api_key=_require_anthropic_api_key(),
+        )
+    return ChatOpenAI(
+        model=os.environ.get("OPENAI_MODEL", "gpt-5.4"),
+        api_key=_require_openai_api_key(),
+    )
+
+
 def create_tutor_graph(system_prompt: str, *, provider: str = "gpt"):
     """Build and compile the LangGraph for the tutor.
 
@@ -145,16 +162,7 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt"):
         system_prompt: The fully-rendered system prompt text.
         provider: ``"gpt"`` (default) uses OpenAI; ``"claude"`` uses Anthropic Claude.
     """
-    if provider == "claude":
-        model = ChatAnthropic(
-            model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
-            api_key=_require_anthropic_api_key(),
-        )
-    else:
-        model = ChatOpenAI(
-            model=os.environ.get("OPENAI_MODEL", "gpt-5.4"),
-            api_key=_require_openai_api_key(),
-        )
+    model = build_tutor_model(provider)
 
     def tutor_node(state: TutorState) -> dict:
         """Generate one tutor turn from current conversation state."""
@@ -309,3 +317,219 @@ def get_tutor_reply(
     else:
         text = ""
     return out_messages, text
+
+
+# ---------------------------------------------------------------------------
+# Streaming support
+# ---------------------------------------------------------------------------
+
+class StudentAnswerExtractor:
+    """Incrementally pull characters out of the tutor JSON's
+    ``Student-facing-answer`` field as raw model tokens arrive.
+
+    The tutor returns a single JSON object with two keys: the hidden
+    ``pedagogical-reasoning`` and the visible ``Student-facing-answer``.
+    Streaming raw tokens would leak the reasoning and show JSON syntax to
+    the student. This extractor walks the accumulating buffer with a small
+    state machine and emits only the chars that live inside the answer
+    field's string value, with JSON escape handling.
+
+    Usage::
+
+        ex = StudentAnswerExtractor()
+        for token in model.stream(messages):
+            visible = ex.feed(token.content)
+            if visible:
+                send_to_client(visible)
+    """
+
+    _FIELD = '"Student-facing-answer"'
+    _ESCAPE_MAP = {
+        "n": "\n",
+        "t": "\t",
+        "r": "\r",
+        '"': '"',
+        "\\": "\\",
+        "/": "/",
+        "b": "\b",
+        "f": "\f",
+    }
+
+    def __init__(self) -> None:
+        self._buffer = ""
+        self._pos = 0
+        self._phase = "find_field"
+        # find_field -> find_colon -> find_open_quote -> in_value -> done
+        self._escape = False
+
+    @property
+    def found_answer(self) -> bool:
+        """True once we've located the answer field's opening quote."""
+        return self._phase in ("in_value", "done")
+
+    @property
+    def buffer(self) -> str:
+        """Full accumulated raw text — needed for final JSON parse."""
+        return self._buffer
+
+    def feed(self, chunk: str) -> str:
+        """Add ``chunk`` to the buffer and return any newly-visible chars."""
+        if not chunk:
+            return ""
+        self._buffer += chunk
+        out: list[str] = []
+        while True:
+            advanced = self._step(out)
+            if not advanced:
+                return "".join(out)
+
+    def _step(self, out: list[str]) -> bool:
+        """One state-machine iteration. Returns True if state advanced."""
+        if self._phase == "find_field":
+            idx = self._buffer.find(self._FIELD, self._pos)
+            if idx < 0:
+                return False
+            self._pos = idx + len(self._FIELD)
+            self._phase = "find_colon"
+            return True
+
+        if self._phase == "find_colon":
+            while self._pos < len(self._buffer):
+                ch = self._buffer[self._pos]
+                if ch in " \t\n\r":
+                    self._pos += 1
+                    continue
+                if ch == ":":
+                    self._pos += 1
+                    self._phase = "find_open_quote"
+                    return True
+                # Unexpected — abandon streaming; let the final parse handle it.
+                self._phase = "done"
+                return True
+            return False
+
+        if self._phase == "find_open_quote":
+            while self._pos < len(self._buffer):
+                ch = self._buffer[self._pos]
+                if ch in " \t\n\r":
+                    self._pos += 1
+                    continue
+                if ch == '"':
+                    self._pos += 1
+                    self._phase = "in_value"
+                    return True
+                self._phase = "done"
+                return True
+            return False
+
+        if self._phase == "in_value":
+            while self._pos < len(self._buffer):
+                ch = self._buffer[self._pos]
+                if self._escape:
+                    mapped = self._ESCAPE_MAP.get(ch)
+                    if mapped is not None:
+                        out.append(mapped)
+                        self._pos += 1
+                        self._escape = False
+                        continue
+                    if ch == "u":
+                        if self._pos + 5 > len(self._buffer):
+                            # Need 4 hex chars after 'u'; wait for next chunk.
+                            return False
+                        hex_str = self._buffer[self._pos + 1 : self._pos + 5]
+                        try:
+                            out.append(chr(int(hex_str, 16)))
+                        except ValueError:
+                            pass
+                        self._pos += 5
+                        self._escape = False
+                        continue
+                    out.append(ch)
+                    self._pos += 1
+                    self._escape = False
+                    continue
+
+                if ch == "\\":
+                    if self._pos + 1 >= len(self._buffer):
+                        return False  # need the escape companion char
+                    self._escape = True
+                    self._pos += 1
+                    continue
+                if ch == '"':
+                    self._pos += 1
+                    self._phase = "done"
+                    return False
+                out.append(ch)
+                self._pos += 1
+            return False
+
+        # done
+        return False
+
+
+def stream_tutor_reply(
+    messages: list,
+    *,
+    model,
+    system_prompt: str,
+):
+    """Yield visible answer chunks, then a final ``("__done__", full_json)`` tuple.
+
+    Bypasses the LangGraph wrapper so we can use ``model.stream(...)`` directly.
+    Mirrors the non-student-like guard from ``tutor_node`` so a malformed
+    incoming message gets the canned reply (delivered as a single delta).
+
+    Yields:
+        ``str`` for each batch of visible chars to emit to the client.
+        Finally ``("__done__", full_raw_json)`` so callers can run
+        :func:`parse_tutor_response` to recover the hidden reasoning.
+    """
+    safe_system = _sanitize_text_for_transport(system_prompt)
+    safe_messages = [SystemMessage(content=safe_system)]
+    for msg in messages:
+        safe_messages.append(_sanitize_message_content(msg))
+
+    last = messages[-1] if messages else None
+    if isinstance(last, HumanMessage):
+        last_text = last.content if isinstance(last.content, str) else str(last.content)
+        if _looks_non_student_like(last_text):
+            canned = _build_invalid_input_reply()
+            canned_json = canned.content if isinstance(canned.content, str) else str(canned.content)
+            _, answer = parse_tutor_response(canned_json)
+            if answer:
+                yield answer
+            yield ("__done__", canned_json)
+            return
+
+    extractor = StudentAnswerExtractor()
+    try:
+        for chunk in model.stream(safe_messages):
+            piece = chunk.content if hasattr(chunk, "content") else str(chunk)
+            if not isinstance(piece, str):
+                piece = str(piece)
+            visible = extractor.feed(piece)
+            if visible:
+                yield visible
+    except Exception:
+        # If the stream blows up partway, the caller decides what to do; we
+        # surface what we've accumulated so persistence isn't a total loss.
+        raise
+    finally:
+        pass
+
+    raw = extractor.buffer
+    # Normalize through _normalize_tutor_ai_message so downstream consumers
+    # always see the strict two-field JSON shape — same guarantee as the
+    # non-streaming path.
+    normalized = _normalize_tutor_ai_message(AIMessage(content=raw))
+    normalized_text = normalized.content if isinstance(normalized.content, str) else str(normalized.content)
+
+    # Fallback: if our incremental extractor never found the answer field
+    # (drifted JSON shape, unusual key ordering, etc.), emit the recovered
+    # student-facing answer now so the client still sees something.
+    if not extractor.found_answer:
+        _, answer = parse_tutor_response(normalized_text)
+        if answer:
+            yield answer
+
+    yield ("__done__", normalized_text)

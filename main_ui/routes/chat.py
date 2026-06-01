@@ -1,5 +1,5 @@
-"""POST /api/chat — accept a student text message, persist the exchange,
-and return the tutor's reply.
+"""POST /api/chat — accept a student text message, stream the tutor's reply
+back as Server-Sent Events, and persist the exchange.
 
 JSON request:
     {
@@ -10,23 +10,28 @@ JSON request:
       "conversation_id": "<uuid>"       optional; absent = create new
     }
 
-JSON response (200):
-    {
-      "conversation_id": "<uuid>",
-      "reply": "...",
-      "student_message_count": <int>
-    }
+Success response: ``text/event-stream`` with these events, in order:
+    event: delta\n
+    data: {"text": "..."}\n\n
+    ...
+    event: done\n
+    data: {"conversation_id": "...", "reply": "...", "student_message_count": N}\n\n
 
-Errors: 400 bad text or bad conversation_id format; 404 bad course/exercise/
-tutor; 403 conversation_id not owned by the current session; 502 tutor call
-failed or returned empty.
+Mid-stream failure:
+    event: error\n
+    data: {"reason": "..."}\n\n
+
+Pre-stream failures still return JSON: 400 bad text or bad conversation_id;
+404 bad course/exercise/tutor; 403 conversation_id not owned by the current
+session; 502 if the tutor never even starts.
 """
 
 from __future__ import annotations
 
+import json
 from uuid import UUID
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
 from main_ui.cookies import EMAIL_COOKIE_NAME
 from main_ui.routes._validation import (
@@ -38,10 +43,11 @@ from main_ui.routes._validation import (
 from main_ui.services import tutor_bridge
 from main_ui.services.conversation import (
     WrongSessionError,
-    append_exchange,
+    complete_exchange_tutor,
     count_student_messages,
     find_or_create_conversation,
     get_history_for_tutor,
+    start_exchange_student_only,
 )
 
 
@@ -68,8 +74,10 @@ def _wrong_session():
     )
 
 
-def _tutor_failed(reason: str):
-    return jsonify({"error": "tutor_failed", "reason": reason}), 502
+def _sse_event(name: str, payload: dict) -> str:
+    """Serialize one SSE event frame: ``event: name\\ndata: {...}\\n\\n``."""
+    data = json.dumps(payload, ensure_ascii=False)
+    return f"event: {name}\ndata: {data}\n\n"
 
 
 @chat_bp.post("/api/chat")
@@ -104,8 +112,21 @@ def chat():
                 "conversation_id must be a UUID string", "bad_conversation_id"
             )
 
-    db = g.db
+    # Take ownership of the request's DB session — teardown_request would
+    # otherwise commit + close it the instant this view returns the Response,
+    # well before the streaming generator runs its INSERTs. We commit
+    # explicitly inside the generator instead.
+    db = g.pop("db")
     email = request.cookies.get(EMAIL_COOKIE_NAME)
+
+    def _abort_with(json_response):
+        # Helper for the validation-failure path: roll back any pending
+        # writes and close the session before returning the JSON error.
+        try:
+            db.rollback()
+        finally:
+            db.close()
+        return json_response
 
     try:
         convo = find_or_create_conversation(
@@ -118,42 +139,114 @@ def chat():
             email=email,
         )
     except WrongSessionError:
-        return _wrong_session()
+        return _abort_with(_wrong_session())
 
-    # When reusing an existing conversation, use its stored course/exercise/tutor
-    # for the LLM call rather than the request's. Defends against a misbehaving
-    # frontend silently switching the LLM context mid-conversation.
+    # Snapshot the prior turns BEFORE we insert this turn's student message,
+    # so the tutor gets the same shape of history it always has.
     history = get_history_for_tutor(db, convo)
 
+    # Insert the student row up front and commit it. That way the student's
+    # message survives even if the tutor stream errors out partway through.
+    student_msg = start_exchange_student_only(
+        db, conversation=convo, student_text=text
+    )
+    student_turn = student_msg.turn
+
+    # Capture all values we'll need inside the generator BEFORE commit, since
+    # SQLAlchemy expires loaded attributes on commit by default.
+    convo_id_str = str(convo.id)
+    stream_course = convo.course
+    stream_exercise = convo.exercise_number
+    stream_tutor = convo.tutor_prompt
+
     try:
-        reply = tutor_bridge.get_tutor_reply(
-            course=convo.course,
-            exercise=convo.exercise_number,
-            tutor=convo.tutor_prompt,
-            history=history,
-            new_student_message=text,
-        )
+        db.commit()
     except Exception as exc:
-        return _tutor_failed(f"{type(exc).__name__}: {exc}")
+        db.rollback()
+        db.close()
+        return jsonify(
+            {"error": "persist_failed", "reason": f"{type(exc).__name__}: {exc}"}
+        ), 500
 
-    reply_text = reply.get("reply") or ""
-    if not reply_text:
-        return _tutor_failed("empty reply from tutor")
-
-    append_exchange(
-        db,
-        conversation=convo,
-        student_text=text,
-        tutor_text=reply_text,
-        pedagogical_reasoning=reply.get("reasoning"),
+    # When reusing an existing conversation, use its stored course/exercise/
+    # tutor for the LLM call rather than the request's — defends against a
+    # misbehaving frontend silently switching the LLM context mid-conversation.
+    stream_kwargs = dict(
+        course=stream_course,
+        exercise=stream_exercise,
+        tutor=stream_tutor,
+        history=history,
+        new_student_message=text,
     )
 
-    student_count = count_student_messages(db, convo)
+    def event_stream():
+        full_reply = ""
+        reasoning = None
+        try:
+            try:
+                for ev in tutor_bridge.stream_tutor_reply(**stream_kwargs):
+                    ev_type = ev.get("type")
+                    if ev_type == "delta":
+                        piece = ev.get("text", "")
+                        if piece:
+                            full_reply += piece
+                            yield _sse_event("delta", {"text": piece})
+                    elif ev_type == "done":
+                        # The 'done' event from the bridge carries the
+                        # authoritative parsed reply (post-normalization).
+                        # Prefer it over the delta-concatenated string.
+                        if ev.get("reply"):
+                            full_reply = ev["reply"]
+                        reasoning = ev.get("reasoning")
+                        break
+            except Exception as exc:
+                yield _sse_event(
+                    "error", {"reason": f"{type(exc).__name__}: {exc}"}
+                )
+                return
 
-    return jsonify(
-        {
-            "conversation_id": str(convo.id),
-            "reply": reply_text,
-            "student_message_count": student_count,
-        }
+            if not full_reply:
+                yield _sse_event(
+                    "error", {"reason": "empty reply from tutor"}
+                )
+                return
+
+            try:
+                convo_obj = db.get(type(convo), convo.id)
+                complete_exchange_tutor(
+                    db,
+                    conversation=convo_obj,
+                    turn=student_turn,
+                    tutor_text=full_reply,
+                    pedagogical_reasoning=reasoning,
+                )
+                student_count = count_student_messages(db, convo_obj)
+                db.commit()
+            except Exception as exc:
+                db.rollback()
+                yield _sse_event(
+                    "error",
+                    {"reason": f"persist_failed: {type(exc).__name__}: {exc}"},
+                )
+                return
+
+            yield _sse_event(
+                "done",
+                {
+                    "conversation_id": convo_id_str,
+                    "reply": full_reply,
+                    "student_message_count": student_count,
+                },
+            )
+        finally:
+            db.close()
+
+    return Response(
+        stream_with_context(event_stream()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            # Tell nginx (if ever proxied) not to buffer the response.
+            "X-Accel-Buffering": "no",
+        },
     )

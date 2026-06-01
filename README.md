@@ -8,7 +8,7 @@ I designed and built a **Socratic LLM tutor for MIT OpenCourseWare (OCW)** human
 
 To evaluate and improve the tutor before deployment, I built a complete validation framework alongside it: adversarial AI student bots that each probe a specific failure mode (demanding answers under pressure, going off-topic, lecturing a lost student), an LLM judge that grades conversations against a structured rubric, and a visualization module that compares GPT and Claude judge scores across all transcripts. The dashboard lets me browse every conversation and its grades side-by-side.
 
-The primary deliverable is the tutor. The student bots, judge, and charts exist to stress-test it systematically across different student personalities, courses, and difficulty levels before it reaches real learners.
+The primary deliverable is now **AskTIM** — an iframe-embeddable chat app live for the Spring 2026 *MIT 11.270x Cities and Climate Change* course. It wraps the same tutor pipeline in a Postgres-backed, identity-aware web app with token-streamed replies and cross-browser chat history. The student bots, judge, charts, and dashboard exist to stress-test the tutor systematically across different student personalities, courses, and difficulty levels before it reaches real learners.
 
 ### Why I Built It
 
@@ -19,11 +19,13 @@ The primary deliverable is the tutor. The student bots, judge, and charts exist 
 
 ### System Architecture
 
-The system has four loosely coupled layers:
+The system has five loosely coupled layers:
 
-- Conversation pipeline: two LangGraph agents (tutor + student) trade messages in a structured multi-turn loop, each independently configurable via system prompt files
-- Judge pipeline: a separate LangGraph agent reads a finished transcript and returns a structured JSON grade against a rubric, with up to 3 automatic repair-and-retry cycles
-- Dashboard + visualization: a Flask web app for browsing transcripts side-by-side with Claude Mini (tutor_05) and Claude grades, and a matplotlib chart module for per-prompt score comparisons and hand-grade correlation analysis
+- **Conversation pipeline**: two LangGraph agents (tutor + student) trade messages in a structured multi-turn loop, each independently configurable via system prompt files
+- **Judge pipeline**: a separate LangGraph agent reads a finished transcript and returns a structured JSON grade against a rubric, with up to 3 automatic repair-and-retry cycles
+- **Dashboard + visualization**: a Flask web app for browsing transcripts side-by-side with Claude Mini (tutor_05) and Claude grades, and a matplotlib chart module for per-prompt score comparisons and hand-grade correlation analysis
+- **Testing harness (`test_ui/`)**: a 3-step wizard for TAs to manually try out tutor prompt + course + exercise combinations against the same engine
+- **Student-facing app (`main_ui/`)**: iframe-embeddable chat for real OCW students. Postgres persistence, bcrypt-hashed email+password identity, Server-Sent Events streaming, cross-browser conversation history. See [`main_ui/README.md`](main_ui/README.md).
 
 ### Key Components
 
@@ -36,6 +38,8 @@ The system has four loosely coupled layers:
 **UI Runners (`ui/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_ui_raw`), mini-continuation generation (`run_ui_raw_mini`), transcript judging (`run_ui_judge`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
 
 **Dashboard (`dashboard_ui/`):** Flask app that discovers all raw transcripts on disk, loads Claude Mini (tutor_05) and Claude grades for each, and serves a sortable comparison table and per-transcript detail view via a single-page JS frontend.
+
+**Student app (`main_ui/`):** Production-shape Flask app for the live OCW deployment. Streams tutor replies token-by-token via SSE while keeping the `pedagogical-reasoning` field hidden server-side. Persists conversations and messages to Postgres (Alembic-managed schema). Soft identity via a two-stage email + password modal that fires after the third student message — passwords are bcrypt-hashed in a separate `students` table, and the email cookie carries forward across browsers for chat-history continuity.
 
 ## Code in Action: Conversation Flow Example
 
@@ -199,9 +203,17 @@ humanities_llm_tutor_project_2026/
 │   ├── run_dashboard_ui.py  # Flask app: routes, data loading, grade summaries
 │   └── static/app.js        # Frontend: routing, sortable table, Chart.js histograms
 │
-├── web_ui/
+├── test_ui/
 │   ├── run_app.py           # Flask app: wizard config + chat API routes
 │   └── templates/index.html # 3-step wizard (tutor → course → exercise) + human chat
+│
+├── main_ui/                 # Student-facing AskTIM app (iframe-embed, Postgres, SSE)
+│   ├── run_app.py           # Flask factory; SSE /api/chat; identity routes
+│   ├── db/                  # SQLAlchemy models + Alembic migrations
+│   ├── routes/              # embed, chat (SSE), identity, history
+│   ├── services/            # conversation persistence, students (bcrypt), tutor_bridge
+│   ├── static/              # chat.css, chat.js (streaming consumer)
+│   └── templates/embed.html # iframe-embeddable chat page
 │
 ├── visualization/
 │   └── run_visualization.py # Score charts: per-prompt, original vs mini, hand-grade correlation
@@ -221,6 +233,7 @@ The full pipeline is working end-to-end, with:
 - Judge prompts versioned up to `judge_08`, rubrics up to `rubric_08` (current default: `rubric_05`, 46 pts)
 - Dashboard shows Claude Mini (tutor_05) grades vs Claude (tutor_04) grades side-by-side
 - Visualization outputs per-persona score charts for standard and tutor_05 runs, original vs mini grouped bar comparisons, and hand-grade Pearson/Spearman correlation charts
+- **AskTIM (`main_ui/`)** is feature-complete through Step 9 (token streaming) — Postgres persistence, email + password identity, cross-browser history, SSE-streamed replies. Steps 10–12 (image uploads, multi-iframe test host, formal test suite) remain.
 
 ## Challenges and How I Solved Them
 
@@ -234,14 +247,15 @@ The full pipeline is working end-to-end, with:
 
 - Additional student persona families and course subjects
 - Human-in-the-loop evaluation to calibrate the LLM judge against human graders
-- Streaming live conversations through the dashboard UI
 - ML-assisted rubric refinement based on judge disagreement patterns
+- Image uploads in AskTIM (students attaching figures to questions; tutor receiving exercise figures as context — Phase 6 + main_ui Step 10)
+- Railway-hosted production deployment of AskTIM with end-of-course migration to internal storage
 
 ## TL;DR
 
-A Socratic LLM tutor built for MIT OpenCourseWare that guides students through humanities assignments using guided discovery and never gives answers directly—validated against simulated adversarial conversations, graded automatically by GPT & Claude judges across a structured rubric, and analyzed to measure judge consistency before deployment.
+A Socratic LLM tutor built for MIT OpenCourseWare that guides students through humanities assignments using guided discovery and never gives answers directly — validated against simulated adversarial conversations, graded automatically by GPT & Claude judges across a structured rubric, analyzed to measure judge consistency, and shipped as an iframe-embeddable student app (AskTIM) for the Spring 2026 *Cities and Climate Change* course with token streaming and identity-aware chat history.
 
 ---
 
 **Project Duration:** Spring 2026  
-**Technologies:** Python, LangGraph, LangChain, OpenAI API, Anthropic API, Flask, Chart.js, matplotlib, Git
+**Technologies:** Python, LangGraph, LangChain, OpenAI API, Anthropic API, Flask, SQLAlchemy + Alembic, PostgreSQL, bcrypt, Server-Sent Events, Chart.js, matplotlib, Git

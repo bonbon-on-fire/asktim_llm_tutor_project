@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Humanities Tutor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; color: #2d3748; }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #debug-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: #4a5568;
+      cursor: pointer;
+      user-select: none;
+    }
+    #debug-toggle input[type="checkbox"] { cursor: pointer; }
+
+    .btn {
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      color: #4a5568;
+      background: #fff;
+      transition: background 0.15s;
+    }
+    .btn:hover:not(:disabled) { background: #edf2f7; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .main {
+      width: 100%;
+      max-width: 780px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0 12px;
+    }
+
+    /* ---- Wizard ---- */
+    #wizard {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 20px 0 16px;
+      overflow-y: auto;
+    }
+
+    #breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      min-height: 24px;
+    }
+
+    .breadcrumb-chip {
+      background: #e2e8f0;
+      color: #4a5568;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .breadcrumb-sep { color: #a0aec0; font-size: 0.82rem; }
+
+    .wizard-step { display: none; }
+    .wizard-step.active {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .wizard-heading {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .option-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .option-btn {
+      padding: 9px 16px;
+      background: #fff;
+      border: 1.5px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #2d3748;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .option-btn:hover { background: #edf2f7; border-color: #a0aec0; }
+    .option-btn.selected {
+      background: #ebf8ff;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+
+    /* Preview box shown below buttons when an option is selected */
+    .preview-box {
+      display: none;
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: #4a5568;
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .preview-box.show { display: block; }
+
+    /* Navigation row: Back on left, Next on right */
+    .wizard-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .wizard-back {
+      padding: 7px 14px;
+      background: transparent;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #718096;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .wizard-back:hover { background: #edf2f7; }
+
+    .wizard-next {
+      display: none;
+      padding: 8px 20px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .wizard-next.show { display: inline-block; }
+    .wizard-next:hover { background: #2563eb; }
+
+    #wizard-loading {
+      display: none;
+      color: #718096;
+      font-size: 0.92rem;
+      padding: 6px 0;
+    }
+
+    /* ---- Chat panel ---- */
+    #chat-panel {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #session-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 0 6px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .session-chip {
+      background: #e2e8f0;
+      color: #4a5568;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+    }
+
+    /* ---- Chat window ---- */
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .msg {
+      max-width: 78%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      line-height: 1.55;
+      font-size: 0.92rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.tutor {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .msg.student {
+      background: #3b82f6;
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg-label {
+      font-size: 0.73rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      color: #718096;
+    }
+
+    .reasoning {
+      display: none;
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: #78350f;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .reasoning.show { display: block; }
+    .reasoning-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      color: #92400e;
+    }
+
+    .bubble-wrap { display: flex; flex-direction: column; }
+    .bubble-wrap.right { align-items: flex-end; }
+    .bubble-wrap.left  { align-items: flex-start; }
+
+    .typing {
+      display: none;
+      align-self: flex-start;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      border-bottom-left-radius: 4px;
+      padding: 10px 16px;
+    }
+    .typing span {
+      display: inline-block;
+      width: 7px; height: 7px;
+      background: #a0aec0;
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40%           { transform: translateY(-6px); }
+    }
+
+    /* ---- Input row ---- */
+    #input-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 0 16px;
+      flex-shrink: 0;
+    }
+
+    #msg-input {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 0.92rem;
+      border: 1.5px solid #cbd5e0;
+      border-radius: 10px;
+      outline: none;
+      resize: none;
+      line-height: 1.4;
+      max-height: 120px;
+      overflow-y: auto;
+      font-family: inherit;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+    #msg-input:focus { border-color: #3b82f6; }
+
+    #btn-send {
+      padding: 10px 20px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    #btn-send:hover:not(:disabled) { background: #2563eb; }
+    #btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #e53e3e;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Humanities Tutor</h1>
+  <div class="header-controls">
+    <label id="debug-toggle">
+      <input type="checkbox" id="debug-checkbox" />
+      <span>Debug mode</span>
+    </label>
+    <button class="btn" id="btn-new-conversation" style="display:none">New conversation</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Wizard -->
+  <div id="wizard">
+    <div id="breadcrumb"></div>
+
+    <!-- Exercise selection -->
+    <div class="wizard-step active" id="step-exercise">
+      <div class="wizard-heading">Choose an exercise</div>
+      <div class="option-grid" id="exercise-options"></div>
+      <div class="preview-box" id="exercise-preview"></div>
+      <div class="wizard-nav" style="justify-content: flex-end;">
+        <button class="wizard-next" id="start-conversation">Start conversation &rarr;</button>
+      </div>
+    </div>
+
+    <div id="wizard-loading">Starting conversation...</div>
+  </div>
+
+  <!-- Chat panel -->
+  <div id="chat-panel">
+    <div id="session-info"></div>
+    <div id="chat">
+      <div class="typing" id="typing-indicator">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <div id="input-row">
+      <textarea id="msg-input" rows="1" placeholder="Type your message..."></textarea>
+      <button id="btn-send">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const wizardEl = document.getElementById('wizard');
+  const chatPanelEl = document.getElementById('chat-panel');
+  const chatEl = document.getElementById('chat');
+  const typingEl = document.getElementById('typing-indicator');
+  const inputEl = document.getElementById('msg-input');
+  const sendBtn = document.getElementById('btn-send');
+  const newConvBtn = document.getElementById('btn-new-conversation');
+  const toast = document.getElementById('toast');
+  const debugCheckbox = document.getElementById('debug-checkbox');
+  const breadcrumbEl = document.getElementById('breadcrumb');
+  const sessionInfoEl = document.getElementById('session-info');
+  const wizardLoadingEl = document.getElementById('wizard-loading');
+
+  const steps = {
+    exercise: document.getElementById('step-exercise'),
+  };
+
+  let configData = null;
+  let selections = { tutor: null, course: 'cities_and_climate_change', exercise: null };
+  let busy = false;
+
+  // ---- Toast ----
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3500);
+  }
+
+  // ---- Breadcrumb ----
+  function updateBreadcrumb() {
+    breadcrumbEl.innerHTML = '';
+    const parts = [];
+    if (selections.course) parts.push(selections.course);
+    if (selections.exercise) parts.push('exercise_' + selections.exercise);
+
+    parts.forEach((part, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'breadcrumb-chip';
+      chip.textContent = part;
+      breadcrumbEl.appendChild(chip);
+      if (i < parts.length - 1) {
+        const sep = document.createElement('span');
+        sep.className = 'breadcrumb-sep';
+        sep.textContent = '›';
+        breadcrumbEl.appendChild(sep);
+      }
+    });
+  }
+
+  // ---- Step management ----
+  function showStep(name) {
+    Object.values(steps).forEach(el => el.classList.remove('active'));
+    if (name && steps[name]) steps[name].classList.add('active');
+    wizardLoadingEl.style.display = name === 'loading' ? 'block' : 'none';
+    updateBreadcrumb();
+  }
+
+  // ---- Session info chips (shown in chat) ----
+  function updateSessionInfo() {
+    sessionInfoEl.innerHTML = '';
+    const items = [selections.course, 'exercise ' + selections.exercise];
+    items.forEach((val, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'session-chip';
+      chip.textContent = val;
+      sessionInfoEl.appendChild(chip);
+      if (i < items.length - 1) {
+        const sep = document.createElement('span');
+        sep.className = 'breadcrumb-sep';
+        sep.textContent = '›';
+        sessionInfoEl.appendChild(sep);
+      }
+    });
+  }
+
+  // ---- Option buttons ----
+  function makeOptionBtn(label, onClick) {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = label;
+    btn.addEventListener('click', () => onClick(btn));
+    return btn;
+  }
+
+  function setPreview(previewId, nextId, text, selected) {
+    const previewEl = document.getElementById(previewId);
+    const nextEl = document.getElementById(nextId);
+    previewEl.textContent = text || '';
+    previewEl.classList.toggle('show', !!text);
+    nextEl.classList.toggle('show', selected === true);
+  }
+
+  // ---- Load config ----
+  async function loadConfig() {
+    try {
+      const res = await fetch('/api/config-options');
+      configData = await res.json();
+      const versions = configData.tutor_versions || [];
+      selections.tutor = versions[versions.length - 1] || null;
+      populateExerciseStep(selections.course);
+      showStep('exercise');
+    } catch (e) {
+      showToast('Failed to load config: ' + e.message);
+    }
+  }
+
+  // ---- Exercise ----
+  function populateExerciseStep(course) {
+    const grid = document.getElementById('exercise-options');
+    grid.innerHTML = '';
+    (configData.course_exercises[course] || []).forEach(num => {
+      const btn = makeOptionBtn('exercise_' + num, (b) => selectExercise(num, b));
+      if (selections.exercise === num) btn.classList.add('selected');
+      grid.appendChild(btn);
+    });
+    const exText = selections.exercise
+      ? ((configData.exercise_texts || {})[course] || {})[selections.exercise]
+      : null;
+    setPreview('exercise-preview', 'start-conversation', exText, !!selections.exercise);
+  }
+
+  function selectExercise(num, btn) {
+    document.querySelectorAll('#exercise-options .option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selections.exercise = num;
+    updateBreadcrumb();
+    const text = ((configData.exercise_texts || {})[selections.course] || {})[num] || '';
+    setPreview('exercise-preview', 'start-conversation', text, true);
+  }
+
+  document.getElementById('start-conversation').addEventListener('click', () => {
+    if (!selections.exercise) return;
+    startConversation();
+  });
+
+  // ---- Start conversation ----
+  async function startConversation() {
+    showStep('loading');
+    try {
+      const data = await apiPost('/api/start', {
+        tutor_version: selections.tutor,
+        course: selections.course,
+        exercise_num: selections.exercise,
+        debug: debugCheckbox.checked,
+      });
+
+      wizardEl.style.display = 'none';
+      chatPanelEl.style.display = 'flex';
+      newConvBtn.style.display = 'inline-block';
+      updateSessionInfo();
+
+      chatEl.querySelectorAll('.bubble-wrap').forEach(el => el.remove());
+      appendBubble('tutor', data.tutor, undefined, data.reasoning);
+      setBusy(false);
+    } catch (e) {
+      showToast(e.message);
+      showStep('exercise');
+    }
+  }
+
+  // ---- New conversation ----
+  newConvBtn.addEventListener('click', () => {
+    chatPanelEl.style.display = 'none';
+    wizardEl.style.display = 'flex';
+    newConvBtn.style.display = 'none';
+    selections.exercise = null;
+    populateExerciseStep(selections.course);
+    showStep('exercise');
+  });
+
+  // ---- Chat ----
+  function setBusy(state) {
+    busy = state;
+    sendBtn.disabled = state;
+    inputEl.disabled = state;
+    typingEl.style.display = state ? 'flex' : 'none';
+    if (state) chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function appendBubble(role, text, label, reasoning) {
+    const wrap = document.createElement('div');
+    wrap.className = `bubble-wrap ${role === 'tutor' ? 'left' : 'right'}`;
+
+    if (reasoning && debugCheckbox.checked) {
+      const rBox = document.createElement('div');
+      rBox.className = 'reasoning show';
+      const rLabel = document.createElement('div');
+      rLabel.className = 'reasoning-label';
+      rLabel.textContent = 'Pedagogical Reasoning';
+      const rText = document.createElement('div');
+      rText.textContent = reasoning;
+      rBox.appendChild(rLabel);
+      rBox.appendChild(rText);
+      wrap.appendChild(rBox);
+    }
+
+    const lbl = document.createElement('div');
+    lbl.className = 'msg-label';
+    lbl.textContent = label || (role === 'tutor' ? 'Tutor' : 'You');
+
+    const bubble = document.createElement('div');
+    bubble.className = `msg ${role}`;
+    bubble.textContent = text;
+
+    wrap.appendChild(lbl);
+    wrap.appendChild(bubble);
+    chatEl.insertBefore(wrap, typingEl);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  async function apiPost(url, body) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Request failed.' }));
+      throw new Error(err.error || 'Request failed.');
+    }
+    return res.json();
+  }
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text || busy) return;
+    inputEl.value = '';
+    autoResize();
+
+    setBusy(true);
+    appendBubble('student', text);
+
+    try {
+      const data = await apiPost('/api/chat', { message: text, debug: debugCheckbox.checked });
+      appendBubble('tutor', data.tutor, undefined, data.reasoning);
+    } catch (e) {
+      showToast(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  // ---- Debug toggle ----
+  debugCheckbox.addEventListener('change', () => {
+    document.querySelectorAll('.reasoning').forEach(box => {
+      box.classList.toggle('show', debugCheckbox.checked);
+    });
+  });
+
+  // ---- Auto-resize textarea ----
+  function autoResize() {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  }
+  inputEl.addEventListener('input', autoResize);
+
+  // ---- Init ----
+  loadConfig();
+</script>
+</body>
+</html>

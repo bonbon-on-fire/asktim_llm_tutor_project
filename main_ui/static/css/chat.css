@@ -40,7 +40,14 @@ body {
     background: var(--bg);
     color: var(--text);
     display: flex;
+    flex-direction: column;
+}
+
+.layout {
+    flex: 1;
+    display: flex;
     flex-direction: row;
+    min-height: 0;
 }
 
 .chat {
@@ -52,12 +59,33 @@ body {
     height: 100%;
 }
 
+.course-banner {
+    flex-shrink: 0;
+    padding: 0.35rem 1rem;
+    background: #ffffff;
+    border-bottom: 1px solid var(--border);
+}
+
+.course-name {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.beta-tag {
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 0.35rem;
+}
+
 .message-list {
     flex: 1;
     overflow-y: auto;
     list-style: none;
     margin: 0;
-    padding: 1rem;
+    /* Wide horizontal padding keeps bubbles clear of the fixed-position
+     * history-toggle icon on the left, and matches it on the right for
+     * visual symmetry. */
+    padding: 1rem 3rem;
     display: flex;
     flex-direction: column;
 }
@@ -98,6 +126,19 @@ body {
     padding: 0.6rem 1.1rem;
     margin: 0.4rem 0;
     background: transparent;
+}
+
+.thinking-dot {
+    display: inline-block;
+    animation: thinking-blink 1.4s infinite ease-in-out both;
+}
+
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinking-blink {
+    0%, 70%, 100% { opacity: 0.2; }
+    35%           { opacity: 1; }
 }
 
 .error-banner {
@@ -200,17 +241,17 @@ body {
 
 .history-toggle {
     position: fixed;
-    top: 0.6rem;
+    top: 2.25rem;
     left: 0.6rem;
     background: none;
     border: none;
     cursor: pointer;
-    z-index: 20;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--muted);
     padding: 0.4rem;
+    z-index: 20;
     transition: color 0.12s ease;
 }
 
@@ -524,6 +565,44 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
     margin-top: 0.25rem;
 }
 
+.password-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.email-recap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    background: var(--surface-muted, #f4f5f7);
+    border-radius: 10px;
+    font-size: 0.92rem;
+}
+
+.email-display-value {
+    color: var(--text);
+    word-break: break-all;
+}
+
+.email-change {
+    background: none;
+    border: none;
+    color: var(--accent, #8c1a1b);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.password-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
 .modal-skip {
     background: none;
     border: none;
@@ -564,7 +643,7 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
         max-width: 92%;
     }
     .message-list {
-        padding: 0.75rem;
+        padding: 0.75rem 2rem;
     }
     .composer {
         padding: 0.6rem 0.75rem 0.75rem;

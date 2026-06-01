@@ -97,6 +97,56 @@ def append_exchange(
     return student_msg, tutor_msg
 
 
+def start_exchange_student_only(
+    db: Session,
+    *,
+    conversation: Conversation,
+    student_text: str,
+) -> Message:
+    """Insert just the student message at the start of a streaming turn.
+
+    Used by the SSE chat path so the student message is persisted before
+    we begin streaming the tutor reply. If the stream fails mid-flight,
+    the student row remains (no orphan tutor row) and the next call
+    naturally picks the next turn number.
+    """
+    next_turn = _next_turn_number(db, conversation)
+    student_msg = Message(
+        conversation_id=conversation.id,
+        turn=next_turn,
+        role="student",
+        content=student_text,
+    )
+    db.add(student_msg)
+    conversation.last_active_at = datetime.now(timezone.utc)
+    db.flush()
+    return student_msg
+
+
+def complete_exchange_tutor(
+    db: Session,
+    *,
+    conversation: Conversation,
+    turn: int,
+    tutor_text: str,
+    pedagogical_reasoning: str | None,
+) -> Message:
+    """Insert the tutor reply for a turn previously opened by
+    :func:`start_exchange_student_only`.
+    """
+    tutor_msg = Message(
+        conversation_id=conversation.id,
+        turn=turn,
+        role="tutor",
+        content=tutor_text,
+        pedagogical_reasoning=pedagogical_reasoning,
+    )
+    db.add(tutor_msg)
+    conversation.last_active_at = datetime.now(timezone.utc)
+    db.flush()
+    return tutor_msg
+
+
 def get_history_for_tutor(db: Session, conversation: Conversation) -> list[dict]:
     """Return prior messages as [{role, content}, ...] in chronological order.
 

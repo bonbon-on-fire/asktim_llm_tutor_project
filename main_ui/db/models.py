@@ -94,6 +94,24 @@ class Message(Base):
     )
 
 
+class Student(Base):
+    """Soft-identity record: one row per email that's been linked to a password.
+
+    Not a real auth system — just a proof-of-ownership check that prevents
+    casual impersonation when a student claims an existing email from a new
+    browser. The `email` cookie remains the active session-identity carrier;
+    this row exists so we can verify the claim on first link.
+    """
+
+    __tablename__ = "students"
+
+    email: Mapped[str] = mapped_column(Text, primary_key=True)
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+
+
 class UploadedImage(Base):
     __tablename__ = "uploaded_images"
 

@@ -4,7 +4,7 @@
 
 **Goal:** Collapse the 3-step wizard (tutor → course → exercise) down to 1 step (exercise only), auto-selecting the latest tutor and defaulting the course to Cities and Climate Change, so the testing link can be distributed more widely without asking testers to make irrelevant choices.
 
-**Architecture:** All changes are in `web_ui/templates/index.html`. The backend already accepts `tutor_version` and `course` as POST body parameters, so no server changes are needed — the frontend will simply always send the latest tutor version and `cities_and_climate_change`. The wizard HTML for steps 1 and 2 is removed; the JavaScript auto-selects both values after fetching config.
+**Architecture:** All changes are in `test_ui/templates/index.html`. The backend already accepts `tutor_version` and `course` as POST body parameters, so no server changes are needed — the frontend will simply always send the latest tutor version and `cities_and_climate_change`. The wizard HTML for steps 1 and 2 is removed; the JavaScript auto-selects both values after fetching config.
 
 **Tech Stack:** Vanilla JS, HTML, Flask (backend unchanged)
 
@@ -14,14 +14,14 @@
 
 | File | Change |
 |------|--------|
-| `web_ui/templates/index.html` | Remove step-tutor and step-course HTML; update JS to auto-select latest tutor + course; remove dead functions and event listeners; update breadcrumb, session info, and new-conversation reset |
+| `test_ui/templates/index.html` | Remove step-tutor and step-course HTML; update JS to auto-select latest tutor + course; remove dead functions and event listeners; update breadcrumb, session info, and new-conversation reset |
 
 ---
 
 ### Task 1: Remove tutor and course wizard step HTML
 
 **Files:**
-- Modify: `web_ui/templates/index.html:391-419`
+- Modify: `test_ui/templates/index.html:391-419`
 
 The existing HTML has three `<div class="wizard-step">` blocks: `step-tutor` (lines 391–398), `step-course` (lines 400–409), and `step-exercise` (lines 411–420). Remove the first two entirely and strip the Back button from the exercise step, since there is nothing to go back to.
 
@@ -94,7 +94,7 @@ With:
 ### Task 2: Update JavaScript — auto-select defaults and remove dead code
 
 **Files:**
-- Modify: `web_ui/templates/index.html` (the `<script>` block)
+- Modify: `test_ui/templates/index.html` (the `<script>` block)
 
 - [ ] **Step 1: Update `steps` object to only reference `step-exercise`**
 
@@ -291,7 +291,7 @@ These are dead after the HTML buttons they referenced were removed in Task 1.
 - [ ] **Step 1: Start the web UI server**
 
 ```powershell
-python -m web_ui
+python -m test_ui
 ```
 
 Expected: server starts on port 5000, no errors.
@@ -323,6 +323,6 @@ Expected:
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add web_ui/templates/index.html
+git add test_ui/templates/index.html
 git commit -m "feat: simplify wizard to exercise-only; auto-select latest tutor and cities_and_climate_change"
 ```

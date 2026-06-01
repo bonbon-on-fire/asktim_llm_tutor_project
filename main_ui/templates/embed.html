@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AskTIM — {{ course }} / exercise {{ exercise }}</title>
+    <title>AskTIM</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 </head>
 <body data-has-email="{{ 'true' if has_email else 'false' }}">
     <script type="application/json" id="tutor-config">{{ tutor_config | tojson }}</script>
+
+    <header class="course-banner">
+        <span class="course-name">MIT 11.270x Cities and Climate Change</span>
+    </header>
 
     <button type="button" class="history-toggle" id="history-toggle" aria-label="Open sidebar" title="Open sidebar">
         <svg class="history-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -16,10 +20,11 @@
         </svg>
     </button>
 
+    <div class="layout">
     <aside class="sidebar" id="sidebar" aria-label="Past conversations">
         <div class="sidebar-inner">
             <div class="sidebar-header">
-                <h2 id="sidebar-title" class="sidebar-title">AskTIM</h2>
+                <h2 id="sidebar-title" class="sidebar-title">AskTIM <span class="beta-tag">· Beta</span></h2>
                 <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Close sidebar" title="Close sidebar">
                     <svg class="sidebar-close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <rect x="3" y="4" width="18" height="16" rx="2"/>
@@ -70,6 +75,7 @@
             </div>
         </form>
     </main>
+    </div>
 
     <div class="detail-view" id="detail-view" hidden>
         <div class="detail-header">
@@ -84,8 +90,8 @@
         <div class="modal-card">
             <h2 id="email-modal-title" class="modal-title">Help us track your progress</h2>
             <p id="email-modal-body" class="modal-body">
-                Enter the email you used to sign up for this course. We use it to connect
-                this conversation with your other work in the class.
+                Use your course email to save your chats across devices — they
+                stay private to you.
             </p>
             <form id="email-form" class="modal-form" autocomplete="off" novalidate>
                 <input
@@ -96,10 +102,25 @@
                     aria-label="Your email"
                     autocomplete="email"
                     title="">
+                <div id="password-stage" class="password-stage" hidden>
+                    <div class="email-recap">
+                        <span id="email-display" class="email-display-value"></span>
+                        <button type="button" id="email-change" class="email-change">Change</button>
+                    </div>
+                    <input
+                        type="password"
+                        id="password-input"
+                        class="email-input"
+                        placeholder="Create a password (6+ characters)"
+                        aria-label="Your password"
+                        autocomplete="current-password"
+                        title="">
+                    <p id="password-hint" class="password-hint"></p>
+                </div>
                 <div class="modal-error" id="email-error" role="alert" hidden></div>
                 <div class="modal-actions">
                     <button type="button" id="email-skip" class="modal-skip">Skip</button>
-                    <button type="submit" id="email-submit" class="modal-submit" disabled>Submit</button>
+                    <button type="submit" id="email-submit" class="modal-submit" disabled>Next</button>
                 </div>
             </form>
         </div>

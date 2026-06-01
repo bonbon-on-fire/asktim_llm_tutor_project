@@ -109,7 +109,7 @@ Concrete examples that illustrate where the current design can fail and what we 
 ## 6. Tooling / UI (launcher)
 
 - **Terminal UI** (`python -m terminal_ui`): interactive pipeline — selects tutor prompt, student persona, course, exercise, number of turns; runs tutor vs student; saves transcript; invokes judge.
-- **Web UI** (`python -m web_ui`): Flask-based browser chat with config panel for tutor prompt, student persona, course, exercise; student-bot turn button; debug reasoning display.
+- **Web UI** (`python -m test_ui`): Flask-based browser chat with config panel for tutor prompt, student persona, course, exercise; student-bot turn button; debug reasoning display.
 - **Dashboard UI** (`python -m dashboard_ui.run_dashboard_ui`): Flask dashboard that uses raw transcripts as the source of truth (`transcripts/{persona}/{persona}_raw`), includes bundle rows from `transcripts/bundles/bundles_raw`, and attaches GPT/Claude score panels from corresponding counterpart files (with explicit per-provider errors for missing/ambiguous/mismatched pairs).
 
 ---
@@ -401,9 +401,9 @@ Transcripts are test-run artifacts shared between the UI (producer) and judge (c
 **New structure:**
 
 ```
-web_ui/
+test_ui/
   __init__.py          — package init
-  __main__.py          — python -m web_ui
+  __main__.py          — python -m test_ui
   run_app.py           — Flask app with config + chat API routes
   README.md
   templates/
@@ -411,9 +411,9 @@ web_ui/
 ```
 
 **Changes:**
-- **Moved** `app.py` → `web_ui/run_app.py` (rewrote; old file deleted).
-- **Moved** `templates/index.html` → `web_ui/templates/index.html` (rewrote; old folder deleted).
-- **Updated** `Procfile` from `gunicorn app:app` → `gunicorn web_ui.run_app:app`.
+- **Moved** `app.py` → `test_ui/run_app.py` (rewrote; old file deleted).
+- **Moved** `templates/index.html` → `test_ui/templates/index.html` (rewrote; old folder deleted).
+- **Updated** `Procfile` from `gunicorn app:app` → `gunicorn test_ui.run_app:app`.
 - **Config panel** — UI dropdowns discover options dynamically via `GET /api/config-options`:
   - Tutor prompt version (scans `tutor/prompts/*.txt`)
   - Student persona type + version (scans `students/personas/{type}_*.txt`)
@@ -508,13 +508,13 @@ Absent `figures` field = no figures attached (treated as empty list). Existing t
 
 ---
 
-### Phase 7: Human-uploaded figures via web_ui ✦ PROPOSED
+### Phase 7: Human-uploaded figures via test_ui ✦ PROPOSED
 
-**Problem:** Phase 6 makes figures part of the curriculum *context*. But real OCW learners using the web chat will also want to attach their own images — a photo of handwritten work, a screenshot of their Excel table, a phone-camera capture of a hand-drawn Power/Actors Map — and have the tutor respond to that visual content. The current `web_ui` chat composer accepts text only.
+**Problem:** Phase 6 makes figures part of the curriculum *context*. But real OCW learners using the web chat will also want to attach their own images — a photo of handwritten work, a screenshot of their Excel table, a phone-camera capture of a hand-drawn Power/Actors Map — and have the tutor respond to that visual content. The current `test_ui` chat composer accepts text only.
 
-**Decision:** Add per-message image upload to the `web_ui` chat composer for real human students. Tutor receives multimodal user messages and responds. Live interactive only — no disk persistence in this phase; Postgres-backed persistence is a separate future concern. Simulated student bots remain text-only (deferred non-goal).
+**Decision:** Add per-message image upload to the `test_ui` chat composer for real human students. Tutor receives multimodal user messages and responds. Live interactive only — no disk persistence in this phase; Postgres-backed persistence is a separate future concern. Simulated student bots remain text-only (deferred non-goal).
 
-**Web UI changes (`web_ui/templates/index.html` + `web_ui/run_app.py`):**
+**Web UI changes (`test_ui/templates/index.html` + `test_ui/run_app.py`):**
 - File input + drag-and-drop zone on the chat composer
 - Accept PNG, JPG, JPEG only; reject others client-side with a clear error
 - Show preview thumbnails before send; allow per-thumbnail removal
@@ -529,7 +529,7 @@ Absent `figures` field = no figures attached (treated as empty list). Existing t
   - Per-request file count cap (e.g., 5; constant)
   - Reject with 400 + structured error body if any check fails
 
-**Backend (`web_ui/run_app.py`):**
+**Backend (`test_ui/run_app.py`):**
 - Parse uploads, validate, base64-encode in-memory using `utils.figures.image_to_data_url`
 - Build multimodal HumanMessage content blocks using `utils.figures.build_multimodal_content` (reused from Phase 6)
 - Append message to the existing in-memory conversation state for the session
@@ -549,9 +549,9 @@ Absent `figures` field = no figures attached (treated as empty list). Existing t
 
 **Implementation order:**
 1. Extend `utils/figures.py` to accept raw bytes (not only Paths) for the encoder helper
-2. `web_ui/run_app.py` — switch `/api/chat` to multipart; validate; build multimodal HumanMessage
-3. `web_ui/templates/index.html` — file picker + drag-drop + thumbnail previews
-4. `web_ui/README.md` — document the upload control + size/format limits
+2. `test_ui/run_app.py` — switch `/api/chat` to multipart; validate; build multimodal HumanMessage
+3. `test_ui/templates/index.html` — file picker + drag-drop + thumbnail previews
+4. `test_ui/README.md` — document the upload control + size/format limits
 
 **Explicit non-goals:**
 - Bot-uploaded figures (simulated student attaching images from a pre-staged library)
@@ -566,11 +566,11 @@ Absent `figures` field = no figures attached (treated as empty list). Existing t
 
 ### Phase 8: Production-shape embeddable tutor app (`main_ui/`) ✦ PROPOSED
 
-**Problem:** The existing `web_ui/` is a developer/TA testing harness — a 3-step wizard with no persistence, no identity, no iframe-friendly mode. Real OCW students need a different shape: course/exercise hardcoded per page, conversation history persists across reloads, best-effort student identity for longitudinal tracking, and an iframe-ready single-page chat. Rather than reshape `web_ui/` (which would break testing workflows), build a separate production-shape app from scratch.
+**Problem:** The existing `test_ui/` is a developer/TA testing harness — a 3-step wizard with no persistence, no identity, no iframe-friendly mode. Real OCW students need a different shape: course/exercise hardcoded per page, conversation history persists across reloads, best-effort student identity for longitudinal tracking, and an iframe-ready single-page chat. Rather than reshape `test_ui/` (which would break testing workflows), build a separate production-shape app from scratch.
 
-**Decision:** New top-level folder `main_ui/`, distinct from `web_ui/`. Local-only for this phase — production hosting is a later concern. Postgres for persistence, email-after-3-messages for identity (per meeting notes 2026-05-08), and full integration with the multimodal pipeline from Phases 6 + 7.
+**Decision:** New top-level folder `main_ui/`, distinct from `test_ui/`. Local-only for this phase — production hosting is a later concern. Postgres for persistence, email-after-3-messages for identity (per meeting notes 2026-05-08), and full integration with the multimodal pipeline from Phases 6 + 7.
 
-| | Existing `web_ui/` | New `main_ui/` |
+| | Existing `test_ui/` | New `main_ui/` |
 | --- | --- | --- |
 | **Audience** | Developers / TAs testing tutor configs | Real students embedded in OCW course pages |
 | **UI** | 3-step wizard (tutor, course, exercise) | No wizard — course/exercise come from URL params |
@@ -614,11 +614,11 @@ main_ui/
 ```
 
 **Stack:**
-- Flask + Jinja2 (same pattern as `web_ui/`)
+- Flask + Jinja2 (same pattern as `test_ui/`)
 - SQLAlchemy 2.x + Alembic for migrations
 - `psycopg[binary]` (psycopg v3) for PostgreSQL
 - Postgres via Docker locally (`postgres:16` container); SQLite supported via `DATABASE_URL` for ultra-quick dev
-- Vanilla JS frontend (no framework — same pattern as `web_ui/`)
+- Vanilla JS frontend (no framework — same pattern as `test_ui/`)
 - Imports `tutor.run_tutor` directly — no LLM logic duplicated
 
 **Routes / API:**
@@ -715,7 +715,7 @@ $env:OPENAI_API_KEY = "sk-..."
 # 3. Run migrations
 alembic -c main_ui/db/migrations/alembic.ini upgrade head
 
-# 4. Start the app (port 5001 — 5000 belongs to web_ui)
+# 4. Start the app (port 5001 — 5000 belongs to test_ui)
 python -m main_ui
 
 # 5. Test directly
@@ -729,7 +729,7 @@ python -m main_ui
 
 **Dependencies on earlier phases:**
 - **Phase 6 (figures in context)** — required. The tutor calls from `main_ui/` need the multimodal pipeline so the LLM sees curriculum figures.
-- **Phase 7 (uploads in web_ui)** — not a hard dependency, but `utils/figures.py` from Phase 6 is reused here for upload encoding.
+- **Phase 7 (uploads in test_ui)** — not a hard dependency, but `utils/figures.py` from Phase 6 is reused here for upload encoding.
 
 **Implementation order:**
 1. Folder skeleton + Flask app + `python -m main_ui` boots

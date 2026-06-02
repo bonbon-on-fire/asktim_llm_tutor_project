@@ -1,176 +1,123 @@
-# main_ui
+# test_ui — AskTIM Sandbox
 
-Embeddable AskTIM chat app for real MIT OCW students. Designed to load inside an iframe on the course page, with each iframe URL hardcoding its own course + exercise context.
+Developer/TA **testing website** for the tutor. It mirrors the student-facing
+[`main_ui/`](../main_ui/README.md) chat experience — token-streamed replies,
+persistent cross-session history, email + password identity — but adds an
+**Edit context** switcher so a tester can change course, exercise, tutor prompt,
+and the syllabus toggle on the fly, and runs against its **own separate
+database** so test chats never touch production data.
 
-For the overall design — problem framing, schema, identity flow, non-goals — see **Phase 8** of the root [PLANNING.md](../PLANNING.md). For the step-by-step build log, see [main_ui/PLANNING.md](PLANNING.md).
+Branding is deliberately distinct from production: the accent is teal-blue
+(`#126f9a`) instead of MIT crimson, and the header reads **AskTIM · Sandbox Beta**.
 
-## Status
+## What it shares with main_ui
 
-Steps 1–9 complete and **deployed on Railway** (containerized via the root `Dockerfile` + `scripts/railway-entrypoint.sh` — see [Deployment](#deployment-railway)). The app is feature-complete for the 2026 Cities and Climate Change deployment minus image uploads (Step 10), a multi-iframe test host page (Step 11), and the formal test suite (Step 12).
+- iframe-style chat at `/embed?course=...&exercise=...&tutor=...` (and a bare `/` that uses defaults)
+- Server-Sent Events streaming — tutor replies token-by-token, `pedagogical-reasoning` hidden server-side
+- Conversation / Message / Student tables; email + password identity (bcrypt), cross-browser history sidebar
+- The same tutor pipeline via `tutor.run_tutor` (through `services/tutor_bridge.py`)
 
-What works today:
+## What's different
 
-- iframe-embedded chat at `/embed?course=...&exercise=...&tutor=...`
-- Server-Sent Events streaming — tutor replies token-by-token, with hidden `pedagogical-reasoning` server-side
-- Postgres-backed persistence (Conversation / Message / Student tables, Alembic migrations)
-- Two-stage email + password identity (`/api/identity/check` → `/api/identity`) with bcrypt hashing
-- Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats
-- "Add email" sidebar entry point so students who skipped the modal can come back later
-- MIT crimson branding, AskTIM Beta header, "MIT 11.270x Cities and Climate Change" course banner
+| | `main_ui/` (production) | `test_ui/` (this app) |
+| --- | --- | --- |
+| Audience | Real OCW students | Developers / TAs |
+| Context | Fixed per iframe URL | **Editable in-app** via the "Edit context" button |
+| Syllabus | Always included if present | **Toggleable** per conversation |
+| Database | Shared Postgres (`DATABASE_URL`) | **Separate** (`TEST_UI_DATABASE_URL`, SQLite by default) |
+| Schema mgmt | Alembic migrations | `Base.metadata.create_all` on boot (throwaway DB) |
+| Accent / header | Crimson · Beta | `#126f9a` · **Sandbox Beta** |
+| Port | `5001` | `5000` |
+
+Both apps can run side by side.
+
+## The "Edit context" switcher
+
+The solid-blue **Edit context** button (top of the sidebar, above "Add email")
+opens a modal to choose:
+
+- **Course** — any folder under `curriculum/`
+- **Exercise** — exercises available for the chosen course
+- **Tutor prompt** — `tutor_01`–`tutor_05`
+- **Include course syllabus** — folds `syllabus.txt` into the tutor context (disabled for courses that have none)
+
+Applying a change **starts a fresh conversation** under the new settings; the
+previous chat stays in history. The chosen syllabus flag is stored per
+conversation, so reopening a past chat replays it with the same context.
 
 ## Quick start
 
 ```powershell
-python -m main_ui
+python -m test_ui
 ```
 
-Binds to `127.0.0.1:5001` by default. Override with the `PORT` env var.
-
-Open the chat in a browser:
+Binds to `127.0.0.1:5000` by default. Override with the `PORT` env var.
 
 ```text
-http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_05
+http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_05
 ```
 
-Verify the server is up:
+Health check:
 
 ```powershell
-curl http://127.0.0.1:5001/health
-# {"service":"main_ui","status":"ok"}
+curl http://127.0.0.1:5000/health
+# {"service":"test_ui","status":"ok"}
 ```
 
 ## Environment variables
 
-`.env` at the repo root is auto-loaded on import (see [`__init__.py`](__init__.py)).
+`.env` at the repo root is auto-loaded on import.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | — | Required for the tutor LLM call. |
-| `ANTHROPIC_API_KEY` | — | Required only if you point a tutor prompt at Claude. |
-| `DATABASE_URL` | `sqlite:///./main_ui.db` | Postgres URL recommended for real use. Example: `postgresql+psycopg://postgres:PASSWORD@localhost:5432/asktim`. |
-| `MAIN_UI_SECRET_KEY` | `dev-insecure-key` | Flask session signing key. Replace in production. |
-| `MAIN_UI_COOKIE_SECURE` | `true` | Set to `false` for non-HTTPS local testing if cookies aren't sticking. |
-| `MAIN_UI_COOKIE_MAX_AGE` | `15552000` (180 days) | Cookie lifetime in seconds. |
-| `PORT` | `5001` | TCP port the Flask dev server binds to. |
+| `ANTHROPIC_API_KEY` | — | Required only if a tutor prompt points at Claude. |
+| `TEST_UI_DATABASE_URL` | `sqlite:///./test_ui.db` | Separate from main_ui's `DATABASE_URL` so test data stays isolated. |
+| `TEST_UI_SECRET_KEY` | `dev-insecure-key` | Flask session signing key. |
+| `TEST_UI_COOKIE_SECURE` | `false` | Defaults off so identity/history work over local http. Set `true` behind HTTPS. |
+| `TEST_UI_COOKIE_MAX_AGE` | `15552000` (180 days) | Cookie lifetime in seconds. |
+| `PORT` | `5000` | TCP port the dev server binds to. |
 
 ## Database
 
-Schema is managed with Alembic. Migrations live in [db/migrations/versions/](db/migrations/versions/).
+No Alembic. On boot, `create_app()` calls `Base.metadata.create_all(engine)`
+to build the schema directly from the models into whatever `TEST_UI_DATABASE_URL`
+points at (a local SQLite file by default). The schema matches `main_ui` plus a
+`conversations.syllabus_enabled` column that records the syllabus toggle.
 
-```powershell
-# From repo root — create or update the asktim database
-python -m alembic -c main_ui\db\migrations\alembic.ini upgrade head
-```
-
-Five tables in `public`:
-
-- `conversations` — one per chat thread (UUID PK, session_id, email, course, exercise, tutor)
-- `messages` — student/tutor turns (BigInt PK, FK to conversations, role, content, `pedagogical_reasoning`)
-- `students` — email + bcrypt password hash for cross-browser identity (one row per email)
-- `uploaded_images` — placeholder, used by Step 10
-- `alembic_version` — Alembic bookkeeping
-
-Inspect data with psql or pgAdmin:
-
-```powershell
-$env:PGPASSWORD = '<your-postgres-password>'
-psql -U postgres -h localhost -d asktim -c "SELECT turn, role, LEFT(content, 60) FROM messages ORDER BY id DESC LIMIT 10;"
-```
+To reset the sandbox data, just delete the SQLite file (`test_ui.db`).
 
 ## API surface
 
+Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
+`/api/identity[/check]`, `/api/history`, `/api/conversation/<uuid>`), plus:
+
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/embed` | Render the chat page (params: `course`, `exercise`, `tutor`) |
-| GET | `/health` | Liveness probe |
-| GET | `/api/whoami` | Current session/email state |
-| POST | `/api/chat` | Stream a tutor reply as Server-Sent Events |
-| POST | `/api/identity/check` | Probe whether an email already has a password registered |
-| POST | `/api/identity` | Link the current session to an email by password (signup or verify) |
-| GET | `/api/history` | List conversations for the current email cookie |
-| GET | `/api/conversation/<uuid>` | Read-only message log for one conversation |
+| GET | `/api/context/options` | Courses (with their exercises + syllabus availability) and tutor prompts, for the Edit-context switcher |
 
-### Streaming chat shape
-
-`POST /api/chat` returns `text/event-stream` after pre-stream validation (validation errors still come back as JSON 400/403/404):
-
-```text
-event: delta
-data: {"text": "Urban "}
-
-event: delta
-data: {"text": "heat "}
-...
-event: done
-data: {"conversation_id": "...", "reply": "Urban heat island refers to...", "student_message_count": 3}
-```
-
-Mid-stream failure emits a final `error` frame, never an incomplete tutor row in the DB.
+`POST /api/chat` additionally accepts an optional `"syllabus": true|false` field
+(defaults to `true`) that gates the syllabus block for a new conversation.
 
 ## Layout
 
 ```text
-main_ui/
-  __init__.py             # package marker + .env auto-load
-  __main__.py             # python -m main_ui entry point
-  config.py               # env-driven Config dataclass
-  cookies.py              # session + email cookie helpers (HttpOnly, SameSite=None, Partitioned)
-  run_app.py              # Flask factory, before/teardown hooks, blueprint registration
-  README.md               # this file
-  PLANNING.md             # step-by-step build log
-
-  db/
-    __init__.py           # re-exports models + session helpers
-    models.py             # SQLAlchemy 2.x models: Conversation, Message, Student, UploadedImage
-    session.py            # engine + SessionLocal + SQLite PRAGMA foreign_keys=ON hook
-    migrations/           # Alembic env + versioned migrations
-
+test_ui/
+  __main__.py             # python -m test_ui entry point (port 5000)
+  config.py               # env-driven Config (TEST_UI_* vars, separate DB)
+  run_app.py              # Flask factory; create_all on boot; blueprints
+  db/                     # SQLAlchemy models (+ syllabus_enabled) and session
   routes/
-    chat.py               # POST /api/chat (SSE stream, owns its own DB session)
-    embed.py              # GET /embed (renders the chat template)
+    embed.py              # GET /embed, GET / , GET /api/context/options
+    chat.py               # POST /api/chat (SSE, syllabus passthrough)
     history.py            # GET /api/history, /api/conversation/<uuid>
     identity.py           # GET /api/whoami, POST /api/identity[/check]
-    _validation.py        # shared course/exercise/tutor validators
-
+    _validation.py        # validators + context-option listing helpers
   services/
-    conversation.py       # find/create/append/list/backfill helpers for Conversation+Message
-    students.py           # bcrypt create + verify helpers for Student
-    tutor_bridge.py       # the one place that talks to tutor.run_tutor
-
-  static/
-    css/chat.css          # all chat-page styling
-    js/chat.js            # vanilla JS: streaming consumer, sidebar, modal, etc.
-
-  templates/
-    embed.html            # iframe-embeddable chat page
+    conversation.py       # persistence (stores syllabus_enabled)
+    students.py           # bcrypt identity
+    tutor_bridge.py       # talks to tutor.run_tutor (include_syllabus aware)
+  static/css/chat.css     # #126f9a accent + context-modal styles
+  static/js/chat.js       # streaming + sidebar + context switcher
+  templates/embed.html    # chat page (Sandbox Beta, Edit context modal)
 ```
-
-## Deployment (Railway)
-
-`main_ui/` is the only app packaged for production. Container build and process
-config live at the repo root:
-
-- [`Dockerfile`](../Dockerfile) — Python 3.12-slim image; installs `libpq5` + `requirements.txt`, copies only the runtime packages (`main_ui/`, `tutor/`, `curriculum/`, `utils/`) plus the entrypoint, exposes `5001`, and registers a `/health` HEALTHCHECK.
-- [`Procfile`](../Procfile) — `web: gunicorn main_ui.run_app:app --bind 0.0.0.0:$PORT`.
-- [`scripts/railway-entrypoint.sh`](../scripts/railway-entrypoint.sh) — container entrypoint: validates `OPENAI_API_KEY`, **normalizes the `DATABASE_URL` scheme to `postgresql+psycopg://`** (Railway hands out bare `postgres://`, but the app ships psycopg3 only), runs `alembic upgrade head`, then `exec`s gunicorn with `WEB_CONCURRENCY` workers and a `GUNICORN_TIMEOUT`.
-
-The WSGI entrypoint is `main_ui.run_app:app`. Production reads `DATABASE_URL`
-from the Railway Postgres service; migrations run automatically on every boot.
-
-## How `main_ui/` relates to the testing website
-
-`main_ui/` is the student-facing production app: course/exercise/tutor come from
-URL params, conversations persist to Postgres, identity is email + password
-(bcrypt, cross-browser), and replies stream over SSE.
-
-A separate developer/TA **testing website** — for manually configuring course,
-syllabus, and exercise context — is being rebuilt (see the latest
-[meeting notes](../meeting_notes/06_01_2026.md)); the goal is for it to share
-`main_ui/`-style persistent chat history. The earlier `test_ui/` wizard harness
-has been retired from the repo.
-
-## What's still pending
-
-- **Step 10:** Image uploads (multipart chat, `uploaded_images` rows). Depends on Phase 6 figures-in-tutor-context work.
-- **Step 11:** Multi-iframe `test_host.html` for local responsiveness checks.
-- **Step 12:** Pytest suite + this README's "production checklist."

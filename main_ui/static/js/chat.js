@@ -403,7 +403,7 @@
         body: JSON.stringify({ email: emailValue }),
       });
       if (!response.ok) {
-        let reason = "Could not check that email. Please try again.";
+        let reason = "Could not check that email, please try again";
         try {
           const body = await response.json();
           if (body && body.reason) reason = body.reason;

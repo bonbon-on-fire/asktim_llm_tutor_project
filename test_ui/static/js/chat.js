@@ -572,8 +572,7 @@
     createError.hidden = true;
     const step = CREATE_STEPS[createStep];
     createStepLabel.textContent =
-      `Step ${createStep + 1} of ${CREATE_STEPS.length}: ${CREATE_LABELS[createStep]}` +
-      " — pick an existing one or write your own.";
+      `Step ${createStep + 1} of ${CREATE_STEPS.length}: ${CREATE_LABELS[createStep]}`;
     createStepBody.innerHTML = "";
 
     let options = [];
@@ -582,41 +581,45 @@
     let customValue = "";
 
     if (step === "course") {
-      options = contextOptions.courses.map((c) => ({
-        value: c.slug,
-        label: c.name || c.slug,
-      }));
-      options.push({ value: CUSTOM, label: "✎ Write my own course" });
+      options = [
+        { value: CUSTOM, label: "Write my own course" },
+        ...contextOptions.courses.map((c) => ({
+          value: c.slug,
+          label: c.name || c.slug,
+        })),
+      ];
       const d = createDraft.course;
       currentValue = d.mode === "custom" ? CUSTOM : d.existing;
       customValue = d.custom;
       placeholder = "Paste or write the course context…";
     } else if (step === "exercise") {
       const cd = createDraft.course;
-      if (cd.mode === "custom") {
-        options = [{ value: CUSTOM, label: "✎ Write my own exercise" }];
-      } else {
-        const courseObj = courseBySlug(cd.existing);
-        const exs = courseObj ? courseObj.exercises : [];
-        options = exs.map((n) => ({
+      const courseObj = cd.mode === "existing" ? courseBySlug(cd.existing) : null;
+      const exs = courseObj ? courseObj.exercises : [];
+      options = [
+        { value: CUSTOM, label: "Write my own exercise" },
+        ...exs.map((n) => ({
           value: n,
           label: "Exercise " + (parseInt(n, 10) || n),
-        }));
-        options.push({ value: CUSTOM, label: "✎ Write my own exercise" });
-      }
+        })),
+      ];
       const d = createDraft.exercise;
-      currentValue =
-        d.mode === "custom"
-          ? CUSTOM
-          : d.existing || (options[0] && options[0].value);
+      if (cd.mode === "custom") {
+        currentValue = CUSTOM; // custom course has no built-in exercises
+      } else {
+        currentValue =
+          d.mode === "custom" ? CUSTOM : d.existing || exs[0] || CUSTOM;
+      }
       customValue = d.custom;
       placeholder = "Paste or write the exercise / assignment…";
     } else if (step === "tutor") {
-      options = contextOptions.tutors.map((t) => ({
-        value: t,
-        label: tutorLabel(t),
-      }));
-      options.push({ value: CUSTOM, label: "✎ Write my own prompt" });
+      options = [
+        { value: CUSTOM, label: "Write my own prompt" },
+        ...contextOptions.tutors.map((t) => ({
+          value: t,
+          label: tutorLabel(t),
+        })),
+      ];
       const d = createDraft.tutor;
       currentValue = d.mode === "custom" ? CUSTOM : d.existing;
       customValue = d.custom;
@@ -625,12 +628,11 @@
       // syllabus
       const cd = createDraft.course;
       const courseObj = cd.mode === "existing" ? courseBySlug(cd.existing) : null;
-      options = [];
+      options = [{ value: CUSTOM, label: "Write my own syllabus" }];
       if (courseObj && courseObj.has_syllabus) {
         options.push({ value: "default", label: "Use course syllabus" });
       }
       options.push({ value: "none", label: "No syllabus" });
-      options.push({ value: CUSTOM, label: "✎ Write my own syllabus" });
       const d = createDraft.syllabus;
       let v = d.mode === "custom" ? CUSTOM : d.value;
       if (v === "default" && !(courseObj && courseObj.has_syllabus)) v = "none";
@@ -651,13 +653,26 @@
 
     const syncCustom = () => {
       ta.hidden = sel.value !== CUSTOM;
+      updateCreateNextEnabled();
     };
     syncCustom();
     sel.addEventListener("change", syncCustom);
+    ta.addEventListener("input", updateCreateNextEnabled);
 
     createBack.hidden = createStep === 0;
     createNext.textContent =
       createStep === CREATE_STEPS.length - 1 ? "Create & start chat" : "Continue";
+    updateCreateNextEnabled();
+  }
+
+  function updateCreateNextEnabled() {
+    const sel = document.getElementById("create-select");
+    const ta = document.getElementById("create-custom-input");
+    if (!sel) return;
+    // Grey out Continue while a "Write my own…" field is still empty —
+    // same pattern as the email modal's disabled submit button.
+    const needsText = sel.value === CUSTOM;
+    createNext.disabled = needsText && !(ta && ta.value.trim());
   }
 
   function saveCreateStep() {
@@ -683,25 +698,6 @@
       d.mode = "existing";
       d.existing = sel.value;
     }
-  }
-
-  function validateCreateStep() {
-    const step = CREATE_STEPS[createStep];
-    if (step === "syllabus") {
-      if (createDraft.syllabus.mode === "custom" && !createDraft.syllabus.custom.trim()) {
-        return "Enter the syllabus text or pick another option.";
-      }
-      return null;
-    }
-    const d = createDraft[step];
-    const noun = step === "tutor" ? "tutor prompt" : step;
-    if (d.mode === "custom" && !d.custom.trim()) {
-      return `Enter the ${noun} text or pick an existing one.`;
-    }
-    if (d.mode === "existing" && !d.existing) {
-      return "Pick an option.";
-    }
-    return null;
   }
 
   async function openCreateModal() {
@@ -754,12 +750,11 @@
   function createGoNext(event) {
     event.preventDefault();
     saveCreateStep();
-    const err = validateCreateStep();
-    if (err) {
-      createError.textContent = err;
-      createError.hidden = false;
-      return;
-    }
+    // Continue is disabled while a custom field is empty; guard the Enter-key
+    // submit path too, then advance with no error message.
+    const sel = document.getElementById("create-select");
+    const ta = document.getElementById("create-custom-input");
+    if (sel && sel.value === CUSTOM && !(ta && ta.value.trim())) return;
     if (createStep < CREATE_STEPS.length - 1) {
       createStep += 1;
       renderCreateStep();
@@ -839,7 +834,7 @@
         body: JSON.stringify({ email: emailValue }),
       });
       if (!response.ok) {
-        let reason = "Could not check that email. Please try again.";
+        let reason = "Could not check that email, please try again";
         try {
           const body = await response.json();
           if (body && body.reason) reason = body.reason;

@@ -137,5 +137,7 @@ test_ui/
     tutor_bridge.py       # talks to tutor.run_tutor (include_syllabus aware)
   static/css/chat.css     # #126f9a accent + context-modal styles
   static/js/chat.js       # streaming + sidebar + context switcher
+  static/js/marked.min.js # vendored markdown parser (GFM tables)
+  static/js/dompurify.min.js # vendored HTML sanitizer (XSS-safe tutor markdown)
   templates/embed.html    # chat page (Sandbox Beta, Edit context modal)
 ```

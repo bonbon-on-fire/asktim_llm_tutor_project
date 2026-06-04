@@ -201,9 +201,11 @@
 
     <!-- Markdown rendering for tutor messages: marked parses GFM (incl. tables),
          DOMPurify sanitizes the HTML to keep the no-raw-innerHTML XSS guarantee.
-         Loaded with defer so they run, in order, before chat.js. -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js" defer></script>
+         Vendored locally (not a CDN) so they always load offline / behind a VPN
+         and bake into the container image. Loaded with defer so they run, in
+         order, before chat.js. -->
+    <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>
 </body>
 </html>

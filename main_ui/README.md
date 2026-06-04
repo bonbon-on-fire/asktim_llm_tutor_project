@@ -12,7 +12,7 @@ What works today:
 
 - iframe-embedded chat at `/embed?course=...&exercise=...&tutor=...`
 - Server-Sent Events streaming — tutor replies token-by-token, with hidden `pedagogical-reasoning` server-side
-- Sanitized-markdown rendering of tutor replies — tables, lists, and bold display cleanly (`marked` → `DOMPurify`, rendered on stream completion; falls back to plain text if the CDN libs don't load)
+- Sanitized-markdown rendering of tutor replies — tables, lists, and bold display cleanly (`marked` → `DOMPurify`, vendored locally under `static/js/`; rendered on stream completion; falls back to plain text if the libs don't load)
 - Postgres-backed persistence (Conversation / Message / Student tables, Alembic migrations)
 - Two-stage email + password identity (`/api/identity/check` → `/api/identity`) with bcrypt hashing
 - Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats
@@ -141,6 +141,8 @@ main_ui/
   static/
     css/chat.css          # all chat-page styling
     js/chat.js            # vanilla JS: streaming consumer, sidebar, modal, etc.
+    js/marked.min.js      # vendored markdown parser (GFM tables) — tutor message rendering
+    js/dompurify.min.js   # vendored HTML sanitizer — XSS-safe innerHTML for tutor markdown
 
   templates/
     embed.html            # iframe-embeddable chat page

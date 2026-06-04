@@ -3,9 +3,16 @@ set -e
 
 echo "[startup] Validating environment..."
 
-# Check required API keys
+# Check required API keys.
+# TEMPORARY: accept OPENAI_KEY as an alias for OPENAI_API_KEY (Railway var is
+# currently named OPENAI_KEY). Export the canonical name so libraries that read
+# OPENAI_API_KEY directly (e.g. langchain's default env lookup) still work.
+if [ -z "${OPENAI_API_KEY:-}" ] && [ -n "${OPENAI_KEY:-}" ]; then
+    export OPENAI_API_KEY="$OPENAI_KEY"
+    echo "[startup] Using OPENAI_KEY as OPENAI_API_KEY (temporary alias)"
+fi
 if [ -z "${OPENAI_API_KEY:-}" ]; then
-    echo "[error] OPENAI_API_KEY not set" >&2
+    echo "[error] OPENAI_API_KEY (or OPENAI_KEY) not set" >&2
     exit 1
 fi
 echo "[startup] ✓ OPENAI_API_KEY is set"

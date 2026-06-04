@@ -214,7 +214,7 @@ asktim_llm_tutor_project_2026/
 ├── Procfile                 # gunicorn main_ui.run_app:app
 ├── scripts/
 │   ├── railway-entrypoint-main.sh  # main_ui: normalize DATABASE_URL, alembic upgrade, gunicorn
-│   └── railway-entrypoint-test.sh  # test_ui: normalize TEST_UI_DATABASE_URL, gunicorn (create_all on boot)
+│   └── railway-entrypoint-test.sh  # test_ui: normalize DATABASE_URL, gunicorn (create_all on boot)
 │
 ├── main_ui/                 # Student-facing AskTIM app (iframe-embed, Postgres `asktim`, SSE)
 │   ├── run_app.py           # Flask factory; SSE /api/chat; identity routes

@@ -25,7 +25,7 @@ Branding is deliberately distinct from production: the accent is teal-blue
 | Audience | Real OCW students | Developers / TAs |
 | Context | Fixed per iframe URL | **Editable in-app** via the "Edit context" button |
 | Syllabus | Always included if present | **Toggleable** per conversation |
-| Database | Postgres `asktim` (`DATABASE_URL`) | **Separate Postgres** `asktim_test` (`TEST_UI_DATABASE_URL`) |
+| Database | Postgres `asktim` (`DATABASE_URL`) | **Separate Postgres** `asktim_test`, also via `DATABASE_URL` (each Railway service has its own env, so the same var name resolves to a different DB per service) |
 | Schema mgmt | Alembic migrations | `Base.metadata.create_all` on boot (throwaway DB) |
 | Accent / header | Crimson · Beta | `#126f9a` · **Sandbox Beta** |
 | Port | `5001` | `5000` |
@@ -73,7 +73,7 @@ curl http://127.0.0.1:5000/health
 | --- | --- | --- |
 | `OPENAI_API_KEY` | — | Required for the tutor LLM call. |
 | `ANTHROPIC_API_KEY` | — | Required only if a tutor prompt points at Claude. |
-| `TEST_UI_DATABASE_URL` | `postgresql+psycopg://…/asktim_test` | Separate Postgres DB from main_ui's `asktim` so test data stays isolated. Falls back to `sqlite:///./test_ui.db` if unset. |
+| `DATABASE_URL` | `sqlite:///./test_ui.db` (fallback) | Postgres URL for the Sandbox's **own** database (e.g. `asktim_test`). Same var name as main_ui, but on Railway each service's env resolves it to a different Postgres. ⚠️ Locally the two apps share the root `.env`, so if `DATABASE_URL` is set there, point it at a throwaway DB — otherwise the Sandbox writes into whatever production uses. Unset → SQLite `test_ui.db`. |
 | `TEST_UI_SECRET_KEY` | `dev-insecure-key` | Flask session signing key. |
 | `TEST_UI_COOKIE_SECURE` | `false` | Defaults off so identity/history work over local http. Set `true` behind HTTPS. |
 | `TEST_UI_COOKIE_MAX_AGE` | `15552000` (180 days) | Cookie lifetime in seconds. |
@@ -82,7 +82,7 @@ curl http://127.0.0.1:5000/health
 ## Database
 
 No Alembic. On boot, `create_app()` calls `Base.metadata.create_all(engine)`
-to build the schema directly from the models into whatever `TEST_UI_DATABASE_URL`
+to build the schema directly from the models into whatever `DATABASE_URL`
 points at. By default that's its **own Postgres database** (`asktim_test`),
 separate from main_ui's `asktim` so test chats never mix with production data
 (falls back to a local SQLite file if the var is unset). The schema matches
@@ -110,11 +110,13 @@ Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
 Containerized separately from main_ui via the root **[`Dockerfile_test`](../Dockerfile_test)**
 (main_ui uses `Dockerfile_main`). It copies `test_ui/`, `tutor/`, `curriculum/`,
 `utils/` and runs [`scripts/railway-entrypoint-test.sh`](../scripts/railway-entrypoint-test.sh),
-which validates `OPENAI_API_KEY`, normalizes `TEST_UI_DATABASE_URL` to the
+which validates `OPENAI_API_KEY`, normalizes `DATABASE_URL` to the
 `postgresql+psycopg://` scheme, then starts `gunicorn test_ui.run_app:app` on
 `$PORT` (default 5000). No Alembic step — `create_all` builds the schema on boot,
-so the target database just needs to exist. Set `TEST_UI_DATABASE_URL` (and the
-API keys) on the Railway service. Build locally with
+so the target database just needs to exist (and must be the Sandbox's **own**
+empty DB — pointing it at main_ui's Postgres fails, since that table is missing
+test_ui's `syllabus_enabled`/`custom_*` columns and `create_all` won't add them).
+Set `DATABASE_URL` (and the API keys) on the Railway service. Build locally with
 `docker build -f Dockerfile_test -t asktim-sandbox .`.
 
 ## Layout

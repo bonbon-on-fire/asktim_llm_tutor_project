@@ -10,28 +10,30 @@ if [ -z "${OPENAI_API_KEY:-}" ]; then
 fi
 echo "[startup] ✓ OPENAI_API_KEY is set"
 
-# test_ui reads DATABASE_URL (same name as main_ui; Railway gives each service
-# its own environment, so they still resolve to separate Postgres instances).
-# Normalize Railway/Heroku-style Postgres URLs to the psycopg3 driver — the app
-# ships psycopg[binary] (psycopg3), so a bare postgresql:// (which SQLAlchemy
-# maps to psycopg2) would crash with ModuleNotFoundError: No module named 'psycopg2'.
-if [ -n "${DATABASE_URL:-}" ]; then
-    case "$DATABASE_URL" in
-        postgres://*)
-            DATABASE_URL="postgresql+psycopg://${DATABASE_URL#postgres://}"
-            echo "[startup] Converted DATABASE_URL postgres:// -> postgresql+psycopg://"
-            ;;
-        postgresql+psycopg://*)
-            ;; # already explicit, leave as-is
-        postgresql://*)
-            DATABASE_URL="postgresql+psycopg://${DATABASE_URL#postgresql://}"
-            echo "[startup] Converted DATABASE_URL postgresql:// -> postgresql+psycopg://"
-            ;;
+# test_ui resolves its DB the same way config.py does: TEST_UI_DATABASE_URL
+# (explicit, wins) -> DATABASE_URL (shared name; Railway gives each service its
+# own env, so it still resolves to a separate Postgres) -> SQLite fallback.
+# Normalize whichever one is in effect to the psycopg3 driver — the app ships
+# psycopg[binary] (psycopg3), so a bare postgresql:// (which SQLAlchemy maps to
+# psycopg2) would crash with ModuleNotFoundError: No module named 'psycopg2'.
+normalize_pg_url() {
+    case "$1" in
+        postgres://*) echo "postgresql+psycopg://${1#postgres://}" ;;
+        postgresql://*) echo "postgresql+psycopg://${1#postgresql://}" ;;
+        *) echo "$1" ;; # already postgresql+psycopg:// or non-postgres — leave as-is
     esac
+}
+
+if [ -n "${TEST_UI_DATABASE_URL:-}" ]; then
+    TEST_UI_DATABASE_URL="$(normalize_pg_url "$TEST_UI_DATABASE_URL")"
+    export TEST_UI_DATABASE_URL
+    echo "[startup] ✓ TEST_UI_DATABASE_URL is set: ${TEST_UI_DATABASE_URL%@*}@..." # Hide password in logs
+elif [ -n "${DATABASE_URL:-}" ]; then
+    DATABASE_URL="$(normalize_pg_url "$DATABASE_URL")"
     export DATABASE_URL
     echo "[startup] ✓ DATABASE_URL is set: ${DATABASE_URL%@*}@..." # Hide password in logs
 else
-    echo "[startup] ⚠ DATABASE_URL not set, will use SQLite (development mode)"
+    echo "[startup] ⚠ Neither TEST_UI_DATABASE_URL nor DATABASE_URL set, will use SQLite (development mode)"
 fi
 
 # test_ui builds its schema with Base.metadata.create_all on boot (no Alembic),

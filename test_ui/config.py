@@ -26,13 +26,19 @@ class Config:
 
 def load_config() -> Config:
     secret_key = os.environ.get("TEST_UI_SECRET_KEY", "dev-insecure-key")
-    # Reads the same DATABASE_URL name as main_ui. On Railway each service has
-    # its own environment, so the two apps still point at separate Postgres
-    # instances. The SQLite fallback stays test-specific (test_ui.db) so that
-    # with DATABASE_URL UNSET locally the two apps still use different files.
-    # CAUTION: if DATABASE_URL *is* set in the shared local .env, both apps use
-    # it — keep test pointed at a throwaway DB when running locally.
-    database_url = os.environ.get("DATABASE_URL", "sqlite:///./test_ui.db")
+    # Resolution order: TEST_UI_DATABASE_URL (explicit, wins) -> DATABASE_URL
+    # (shared name; on Railway each service's env resolves it to its own DB) ->
+    # local SQLite. The explicit-first order is what keeps local dev safe: both
+    # apps load the same root .env, so if DATABASE_URL there points at main_ui's
+    # Postgres, setting TEST_UI_DATABASE_URL keeps the Sandbox on its own DB
+    # instead of writing into production's (whose conversations table lacks
+    # test_ui's syllabus_enabled/custom_* columns). On Railway you can set just
+    # DATABASE_URL and it still works.
+    database_url = (
+        os.environ.get("TEST_UI_DATABASE_URL")
+        or os.environ.get("DATABASE_URL")
+        or "sqlite:///./test_ui.db"
+    )
     port = int(os.environ.get("PORT", "5000"))
     # This is a local developer/TA tool, usually served over plain http on
     # localhost, so cookies must not require Secure by default or identity +

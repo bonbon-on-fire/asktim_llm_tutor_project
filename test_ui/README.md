@@ -73,7 +73,8 @@ curl http://127.0.0.1:5000/health
 | --- | --- | --- |
 | `OPENAI_API_KEY` | — | Required for the tutor LLM call. |
 | `ANTHROPIC_API_KEY` | — | Required only if a tutor prompt points at Claude. |
-| `DATABASE_URL` | `sqlite:///./test_ui.db` (fallback) | Postgres URL for the Sandbox's **own** database (e.g. `asktim_test`). Same var name as main_ui, but on Railway each service's env resolves it to a different Postgres. ⚠️ Locally the two apps share the root `.env`, so if `DATABASE_URL` is set there, point it at a throwaway DB — otherwise the Sandbox writes into whatever production uses. Unset → SQLite `test_ui.db`. |
+| `TEST_UI_DATABASE_URL` | — | **Preferred.** Postgres URL for the Sandbox's own DB (e.g. `asktim_test`). Set this locally so the Sandbox stays off the `DATABASE_URL` that main_ui uses in the shared `.env`. |
+| `DATABASE_URL` | `sqlite:///./test_ui.db` (final fallback) | Used **only if `TEST_UI_DATABASE_URL` is unset**. On Railway each service's env resolves this to its own Postgres, so setting just `DATABASE_URL` on the test service works. Resolution order: `TEST_UI_DATABASE_URL` → `DATABASE_URL` → SQLite `test_ui.db`. |
 | `TEST_UI_SECRET_KEY` | `dev-insecure-key` | Flask session signing key. |
 | `TEST_UI_COOKIE_SECURE` | `false` | Defaults off so identity/history work over local http. Set `true` behind HTTPS. |
 | `TEST_UI_COOKIE_MAX_AGE` | `15552000` (180 days) | Cookie lifetime in seconds. |
@@ -93,29 +94,28 @@ The database must already exist (`CREATE DATABASE asktim_test;`); `create_all`
 then builds the tables. To reset the sandbox data, drop and recreate that
 database.
 
-> **Design decision (2026-06-04) — why `DATABASE_URL`, not `TEST_UI_DATABASE_URL`.**
-> test_ui originally read a prefixed `TEST_UI_DATABASE_URL` so that, with both
-> apps loading the *same* root `.env`, you couldn't accidentally point the
-> Sandbox at the production DB. In practice this caused a recurring deploy
-> footgun: the Railway test service was set up with a plain `DATABASE_URL`
-> variable (matching Railway's default Postgres reference), the app didn't read
-> it, silently fell back to ephemeral SQLite, and "data wasn't saving."
+> **Design decision (2026-06-04) — DB env-var resolution order.**
+> test_ui resolves its database as: **`TEST_UI_DATABASE_URL` → `DATABASE_URL` →
+> SQLite `test_ui.db`.**
 >
-> We unified on `DATABASE_URL` for both apps. On Railway each service has its own
-> isolated environment, so `humanities-main` and `humanities-test` still resolve
-> the same var name to **different** Postgres instances — and whatever Railway
-> wires up by default just works.
+> *Why both names.* It originally read only the prefixed `TEST_UI_DATABASE_URL`
+> so that, with both apps loading the *same* root `.env`, you couldn't point the
+> Sandbox at the production DB by accident. But the Railway test service was set
+> up with a plain `DATABASE_URL` (Railway's default Postgres reference) that the
+> app didn't read, so it silently fell back to ephemeral SQLite and "data wasn't
+> saving." Briefly unifying on `DATABASE_URL` fixed Railway but then broke *local*
+> dev: the shared `.env` has `DATABASE_URL` pointing at main_ui's Postgres, so the
+> Sandbox started writing there and hit "column syllabus_enabled does not exist."
 >
-> **The trade-off we accepted:** locally both apps share one `.env`, so a
-> `DATABASE_URL` set there is used by *both*. The SQLite fallback is still
-> test-specific (`test_ui.db`), so an *unset* local env keeps them separate; but
-> if you set `DATABASE_URL` locally, point it at a throwaway DB or the Sandbox
-> will write into whatever it names. If you ever run both apps locally against
-> two real Postgres DBs at once, revisit this (per-app prefixes, or separate
-> `.env` files / processes).
+> *The resolution.* Read `TEST_UI_DATABASE_URL` **first**, fall back to
+> `DATABASE_URL`. Best of both: on Railway you can set just `DATABASE_URL` on the
+> test service and it works (each service has its own env); locally you set
+> `TEST_UI_DATABASE_URL` and the Sandbox stays on its own DB regardless of the
+> shared `DATABASE_URL`. `config.py` and `railway-entrypoint-test.sh` both follow
+> this order.
 >
-> **Unrelated reminder:** the Sandbox needs its **own empty** Postgres. Pointing
-> `DATABASE_URL` at a main_ui-shaped DB fails — that `conversations` table lacks
+> **Related reminder:** the Sandbox needs its **own empty** Postgres. Pointing it
+> at a main_ui-shaped DB fails — that `conversations` table lacks
 > `syllabus_enabled`/`custom_*`, and `create_all` only creates missing *tables*,
 > it never adds columns to existing ones.
 

@@ -525,11 +525,10 @@
 
     if (step === "course") {
       options = [
-        { value: CUSTOM, label: "Create course" },
-        ...contextOptions.courses.map((c) => ({
-          value: c.slug,
-          label: c.name || c.slug,
-        })),
+        ...contextOptions.courses
+          .map((c) => ({ value: c.slug, label: c.name || c.slug }))
+          .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
+        { value: CUSTOM, label: "Create custom course" },
       ];
       const d = createDraft.course;
       currentValue = d.mode === "custom" ? CUSTOM : d.existing;
@@ -540,11 +539,11 @@
       const courseObj = cd.mode === "existing" ? courseBySlug(cd.existing) : null;
       const exs = courseObj ? courseObj.exercises : [];
       options = [
-        { value: CUSTOM, label: "Create exercise" },
         ...exs.map((n) => ({
           value: n,
           label: "Exercise " + (parseInt(n, 10) || n),
         })),
+        { value: CUSTOM, label: "Create custom exercise" },
       ];
       const d = createDraft.exercise;
       if (cd.mode === "custom") {
@@ -557,11 +556,10 @@
       placeholder = "Paste or write the exercise…";
     } else if (step === "tutor") {
       options = [
-        { value: CUSTOM, label: "Create prompt" },
-        ...contextOptions.tutors.map((t) => ({
-          value: t,
-          label: tutorLabel(t),
-        })),
+        ...contextOptions.tutors
+          .map((t) => ({ value: t, label: tutorLabel(t) }))
+          .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
+        { value: CUSTOM, label: "Create custom prompt" },
       ];
       const d = createDraft.tutor;
       currentValue = d.mode === "custom" ? CUSTOM : d.existing;
@@ -571,11 +569,12 @@
       // syllabus
       const cd = createDraft.course;
       const courseObj = cd.mode === "existing" ? courseBySlug(cd.existing) : null;
-      options = [{ value: CUSTOM, label: "Create syllabus" }];
+      options = [];
       if (courseObj && courseObj.has_syllabus) {
         options.push({ value: "default", label: "Course syllabus" });
       }
       options.push({ value: "none", label: "No syllabus" });
+      options.push({ value: CUSTOM, label: "Create custom syllabus" });
       const d = createDraft.syllabus;
       let v = d.mode === "custom" ? CUSTOM : d.value;
       if (v === "default" && !(courseObj && courseObj.has_syllabus)) v = "none";

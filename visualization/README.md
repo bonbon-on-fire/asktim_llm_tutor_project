@@ -31,6 +31,8 @@ Written to `visualization/outputs/`:
 
 | File | Description |
 | ---- | ----------- |
+| `claude_score_histogram_all.png` | **Histogram** of Claude total scores across all graded transcripts, with mean line and the "answer-giving penalty zone" (≤ max−12) shaded. Annotates n, mean, median, % perfect, and % in the penalty zone. |
+| `claude_mean_score_by_course.png` | **Bar chart** of mean Claude total score **per course** (± standard deviation, with n labels), sorted by mean. Shows how consistently the tutor scores across subjects. Only courses with graded transcripts appear. |
 | `claude_grades_all_transcripts.png` | Line chart of Claude **total score** per transcript, all personas combined (standard pipeline). |
 | `claude_grades_chaotic_transcripts.png` | Same chart restricted to chaotic persona. |
 | `claude_grades_clueless_transcripts.png` | Same chart restricted to clueless persona. |

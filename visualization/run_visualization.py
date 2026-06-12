@@ -1432,6 +1432,143 @@ def _chart_original_vs_mini(
 
 
 # ---------------------------------------------------------------------------
+# Chart: Score distribution histogram (all transcripts)
+# ---------------------------------------------------------------------------
+
+def _chart_score_histogram(
+    rows: list[GradeRow],
+    out_dir: Path,
+    *,
+    output_name: str = "claude_score_histogram_all.png",
+    chart_idx: int,
+) -> None:
+    """Histogram of Claude total scores across all graded transcripts.
+
+    Shades the "answer-giving penalty zone" — scores at or below (max - 12), the
+    band a transcript lands in once it loses the full 12-point section-1.1 penalty
+    for producing near-submission-ready work.
+    """
+    plt = _safe_import_matplotlib()
+
+    scores = [r.total_score for r in rows if math.isfinite(r.total_score)]
+    if not scores:
+        print(f"  [{chart_idx}] {output_name} (skipped: no scores)")
+        return
+
+    max_score = max((r.max_score for r in rows if math.isfinite(r.max_score)), default=40.0)
+    max_int = int(round(max_score))
+    bins = [b - 0.5 for b in range(0, max_int + 2)]  # one integer-wide bin per possible score
+
+    mean_v = sum(scores) / len(scores)
+    median_v = sorted(scores)[len(scores) // 2]
+    perfect = sum(1 for s in scores if s >= max_score)
+    penalty_threshold = max_score - 12.0
+    penalized = sum(1 for s in scores if s <= penalty_threshold)
+
+    fig, ax = plt.subplots(figsize=(11, 6))
+    ax.hist(scores, bins=bins, color="#ff893a", alpha=0.85, edgecolor="white")
+    ax.axvspan(-0.5, penalty_threshold + 0.5, color="#fb5c66", alpha=0.10)
+    ax.axvline(mean_v, color="#1f77b4", linewidth=1.6, linestyle="--", label=f"mean = {mean_v:.1f}")
+    ax.set_title(f"Distribution of Tutor Scores (Claude judge, n={len(scores)}, out of {max_int})")
+    ax.set_xlabel(f"Total score (out of {max_int})")
+    ax.set_ylabel("Number of conversations")
+    ax.set_xlim(-0.5, max_score + 0.5)
+    ax.grid(True, axis="y", alpha=0.3)
+    ax.legend(loc="upper left")
+
+    ax.text(
+        penalty_threshold / 2, ax.get_ylim()[1] * 0.92, "answer-giving\npenalty zone",
+        ha="center", va="top", fontsize=8, color="#b03a44",
+    )
+
+    lines = [
+        f"Transcripts: {len(scores)}",
+        f"Mean: {mean_v:.1f}   Median: {median_v:.0f}",
+        f"Perfect ({max_int}/{max_int}): {perfect} ({100 * perfect / len(scores):.0f}%)",
+        f"<= {int(penalty_threshold)} pts: {penalized} ({100 * penalized / len(scores):.1f}%)",
+    ]
+    ax.text(
+        0.99, 0.98, "\n".join(lines), transform=ax.transAxes, ha="right", va="top",
+        fontsize=9, bbox={"boxstyle": "round,pad=0.3", "facecolor": "white", "alpha": 0.85, "edgecolor": "#ccc"},
+    )
+
+    fig.tight_layout()
+    fig.savefig(out_dir / output_name, dpi=150)
+    plt.close(fig)
+    print(f"  [{chart_idx}] {output_name}")
+
+
+# ---------------------------------------------------------------------------
+# Chart: Mean score by course
+# ---------------------------------------------------------------------------
+
+_COURSE_LABELS: dict[str, str] = {
+    "cities_and_climate_change": "Cities &\nClimate Change",
+    "intro_to_international_development_planning": "Intl Dev\nPlanning",
+    "mathematics_for_cs": "Math for CS",
+    "physics_iii_vibrations_and_waves": "Physics III",
+    "meaning_of_life": "Meaning\nof Life",
+}
+
+
+def _chart_mean_score_by_course(
+    rows: list[GradeRow],
+    out_dir: Path,
+    *,
+    output_name: str = "claude_mean_score_by_course.png",
+    chart_idx: int,
+) -> None:
+    """Bar chart of mean Claude total score per course (± standard deviation), with n labels.
+
+    Shows how consistently the tutor scores across subjects.
+    """
+    plt = _safe_import_matplotlib()
+    from matplotlib.ticker import MaxNLocator
+
+    by_course: dict[str, list[float]] = {}
+    for r in rows:
+        if not r.course or not math.isfinite(r.total_score):
+            continue
+        by_course.setdefault(r.course, []).append(r.total_score)
+    if not by_course:
+        print(f"  [{chart_idx}] {output_name} (skipped: no course data)")
+        return
+
+    max_score = max((r.max_score for r in rows if math.isfinite(r.max_score)), default=40.0)
+    courses = sorted(by_course, key=lambda c: sum(by_course[c]) / len(by_course[c]), reverse=True)
+    means = [sum(by_course[c]) / len(by_course[c]) for c in courses]
+    stds = [
+        (sum((v - m) ** 2 for v in by_course[c]) / len(by_course[c])) ** 0.5
+        for c, m in zip(courses, means)
+    ]
+    counts = [len(by_course[c]) for c in courses]
+    labels = [_COURSE_LABELS.get(c, c.replace("_", " ").title()) for c in courses]
+
+    x = list(range(len(courses)))
+    fig, ax = plt.subplots(figsize=(max(9, len(courses) * 1.7), 6))
+    bars = ax.bar(x, means, yerr=stds, capsize=4, color="#2bcbb9", alpha=0.9, edgecolor="white")
+    for i, b in enumerate(bars):
+        ax.text(
+            b.get_x() + b.get_width() / 2,
+            b.get_height() + (stds[i] if math.isfinite(stds[i]) else 0) + 0.3,
+            f"{means[i]:.1f}\n(n={counts[i]})", ha="center", va="bottom", fontsize=9,
+        )
+    ax.set_title(f"Mean Tutor Score by Course (Claude judge, out of {int(round(max_score))})")
+    ax.set_ylabel(f"Mean total score (out of {int(round(max_score))})")
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_ylim(0, max_score + 4)
+    ax.axhline(max_score, color="gray", linewidth=0.8, linestyle="--", alpha=0.5)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(True, axis="y", alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(out_dir / output_name, dpi=150)
+    plt.close(fig)
+    print(f"  [{chart_idx}] {output_name}")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -1460,6 +1597,22 @@ def main() -> int:
     print(f"Loaded Claude tutor_05: {len(claude_tutor05_rows)} transcripts")
 
     chart_idx = 1
+
+    _chart_score_histogram(
+        claude_all_rows,
+        out_dir,
+        output_name="claude_score_histogram_all.png",
+        chart_idx=chart_idx,
+    )
+    chart_idx += 1
+
+    _chart_mean_score_by_course(
+        claude_all_rows,
+        out_dir,
+        output_name="claude_mean_score_by_course.png",
+        chart_idx=chart_idx,
+    )
+    chart_idx += 1
 
     _chart_provider_total_scores_per_transcript(
         claude_all_rows,

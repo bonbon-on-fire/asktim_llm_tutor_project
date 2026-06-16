@@ -18,6 +18,15 @@ from .figures import (
 )
 from .lectures import load_lecture_transcripts
 from .parsing import extract_json_object
+from .uploads import (
+    MAX_IMAGE_BYTES,
+    MAX_IMAGES_PER_MESSAGE,
+    UploadValidationError,
+    ValidatedImage,
+    images_to_tuples,
+    validate_image,
+    validate_images,
+)
 
 __all__ = [
     "extract_json_object",
@@ -34,4 +43,11 @@ __all__ = [
     "exercises_dir",
     "list_courses",
     "read_exercise",
+    "MAX_IMAGE_BYTES",
+    "MAX_IMAGES_PER_MESSAGE",
+    "UploadValidationError",
+    "ValidatedImage",
+    "images_to_tuples",
+    "validate_image",
+    "validate_images",
 ]

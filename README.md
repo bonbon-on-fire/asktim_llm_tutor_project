@@ -251,7 +251,7 @@ The full pipeline is working end-to-end, with:
 - Judge prompts versioned up to `judge_08`, rubrics up to `rubric_08` (latest/recommended: `judge_08` / `rubric_08`, **40 pts**; in-code default still `judge_05` / `rubric_05`). Claude is the primary judge; GPT judging paused.
 - Dashboard browses every raw transcript with its Claude judge grade — a sortable table (with a Score column) and a per-transcript detail view (full conversation + grade panel), on port 5002
 - Visualization outputs per-persona score charts for standard and tutor_05 runs, original vs mini grouped bar comparisons, and hand-grade Pearson/Spearman correlation charts
-- **AskTIM (`main_ui/`)** is feature-complete through Step 9 (token streaming) — Postgres persistence, email + password identity, cross-browser history, SSE-streamed replies — and is **deployed on Railway** (containerized, migrations run on boot). Steps 10–12 (image uploads, multi-iframe test host, formal test suite) remain.
+- **AskTIM (`main_ui/`)** is feature-complete through Step 10 (image uploads) — Postgres persistence, email + password identity, cross-browser history, SSE-streamed replies, and **student PNG/JPEG uploads** (stored in-DB, streamed to the tutor as multimodal input) — and is **deployed on Railway** (containerized, migrations run on boot). Steps 11–12 (multi-iframe test host, formal test suite) remain.
 - **AskTIM Sandbox (`test_ui/`)** is live for developers/TAs — the same chat as `main_ui` plus an in-app **Edit context** switcher and a **Create context** wizard for one-off custom course/exercise/tutor/syllabus, on its own PostgreSQL database (`asktim_test`).
 
 ## Challenges and How I Solved Them
@@ -268,7 +268,7 @@ The full pipeline is working end-to-end, with:
 - Additional student persona families and course subjects
 - Human-in-the-loop evaluation to calibrate the LLM judge against human graders
 - ML-assisted rubric refinement based on judge disagreement patterns
-- Image uploads in AskTIM (students attaching figures to questions). The Phase 6 multimodal foundation has landed (`utils/figures.py`; curriculum figures flow through the non-streaming tutor/student/judge and are recorded in transcripts), and per-course lecture transcripts (`utils/lectures.py`) are folded into tutor context. Remaining: wire figures into `main_ui`'s streaming path, then student-side uploads (main_ui Step 10)
+- Multimodal context is live: curriculum figures flow through the tutor/student/judge (`utils/figures.py`, recorded in transcripts), per-course lecture transcripts (`utils/lectures.py`) fold into tutor context, and **students can upload PNG/JPEG images** in the AskTIM and Sandbox chat composers (`utils/uploads.py`; stored in `uploaded_images.data`, streamed to the tutor as multimodal input). Remaining multimodal ideas: tutor-generated diagrams, and simulated-student image uploads
 - End-of-course migration of the Railway-hosted AskTIM data to internal storage
 
 ## TL;DR

@@ -13,7 +13,7 @@ from uuid import UUID
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
-from main_ui.db.models import Conversation, Message
+from main_ui.db.models import Conversation, Message, UploadedImage
 
 
 class WrongSessionError(Exception):
@@ -226,10 +226,36 @@ def get_messages_for_conversation(
         .where(Message.conversation_id == conversation.id)
         .order_by(Message.turn, Message.id)
     )
+    messages = db.execute(stmt).scalars().all()
+
+    # Attach image metadata (id + mime only — never the bytes) so the frontend
+    # can render thumbnails via GET /api/image/<id>. One grouped query avoids
+    # N+1 lookups.
+    images_by_message = _images_by_message(db, [m.id for m in messages])
     return [
-        {"turn": m.turn, "role": m.role, "content": m.content}
-        for m in db.execute(stmt).scalars().all()
+        {
+            "turn": m.turn,
+            "role": m.role,
+            "content": m.content,
+            "images": images_by_message.get(m.id, []),
+        }
+        for m in messages
     ]
+
+
+def _images_by_message(db: Session, message_ids: list[int]) -> dict[int, list[dict]]:
+    """Map message_id -> [{"id", "mime_type"}, ...] for the given messages."""
+    if not message_ids:
+        return {}
+    stmt = (
+        select(UploadedImage.id, UploadedImage.message_id, UploadedImage.mime_type)
+        .where(UploadedImage.message_id.in_(message_ids))
+        .order_by(UploadedImage.id)
+    )
+    out: dict[int, list[dict]] = {}
+    for img_id, msg_id, mime in db.execute(stmt).all():
+        out.setdefault(msg_id, []).append({"id": img_id, "mime_type": mime})
+    return out
 
 
 def _summarize_conversation(db: Session, c: Conversation) -> dict:

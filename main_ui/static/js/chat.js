@@ -8,6 +8,18 @@
   const composerForm = document.getElementById("composer");
   const composerInput = document.getElementById("composer-input");
   const sendButton = document.getElementById("send-button");
+  const attachButton = document.getElementById("attach-button");
+  const imageInput = document.getElementById("image-input");
+  const composerPreviews = document.getElementById("composer-previews");
+
+  // Client-side mirror of utils/uploads.py caps. The server re-validates, so
+  // these only exist to give fast, friendly feedback before upload.
+  const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg"];
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+  const MAX_IMAGES_PER_MESSAGE = 5;
+  // Staged uploads for the next send: { file, url } (url is an object URL for
+  // the preview thumbnail, revoked when cleared).
+  let stagedImages = [];
   const errorBanner = document.getElementById("error-banner");
   const errorText = document.getElementById("error-text");
   const errorDismiss = document.getElementById("error-dismiss");
@@ -56,12 +68,74 @@
   let currentChatController = null;
 
   function updateSendButton() {
-    sendButton.disabled = isSending || composerInput.value.trim().length === 0;
+    const hasText = composerInput.value.trim().length > 0;
+    sendButton.disabled = isSending || (!hasText && stagedImages.length === 0);
   }
 
   function setSending(sending) {
     isSending = sending;
     composerInput.disabled = sending;
+    if (attachButton) attachButton.disabled = sending;
+    updateSendButton();
+  }
+
+  function clearStagedImages() {
+    for (const item of stagedImages) {
+      URL.revokeObjectURL(item.url);
+    }
+    stagedImages = [];
+    renderStagedPreviews();
+  }
+
+  function renderStagedPreviews() {
+    if (!composerPreviews) return;
+    composerPreviews.innerHTML = "";
+    if (stagedImages.length === 0) {
+      composerPreviews.hidden = true;
+      return;
+    }
+    composerPreviews.hidden = false;
+    stagedImages.forEach((item, index) => {
+      const thumb = document.createElement("div");
+      thumb.className = "composer-thumb";
+      const img = document.createElement("img");
+      img.src = item.url;
+      img.alt = item.file.name || "attached image";
+      thumb.appendChild(img);
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "composer-thumb-remove";
+      remove.setAttribute("aria-label", "Remove image");
+      remove.textContent = "×";
+      remove.addEventListener("click", () => {
+        URL.revokeObjectURL(item.url);
+        stagedImages.splice(index, 1);
+        renderStagedPreviews();
+        updateSendButton();
+      });
+      thumb.appendChild(remove);
+      composerPreviews.appendChild(thumb);
+    });
+  }
+
+  function addStagedFiles(fileList) {
+    const files = Array.from(fileList || []);
+    for (const file of files) {
+      if (stagedImages.length >= MAX_IMAGES_PER_MESSAGE) {
+        showError("You can attach up to " + MAX_IMAGES_PER_MESSAGE + " images.");
+        break;
+      }
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        showError("Only PNG and JPEG images are supported.");
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        showError("Images must be 10 MB or smaller.");
+        continue;
+      }
+      stagedImages.push({ file: file, url: URL.createObjectURL(file) });
+    }
+    renderStagedPreviews();
     updateSendButton();
   }
 
@@ -83,10 +157,26 @@
     }
   }
 
-  function renderMessage(role, content) {
+  function appendImages(li, srcs) {
+    if (!srcs || srcs.length === 0) return;
+    const wrap = document.createElement("div");
+    wrap.className = "message-images";
+    for (const src of srcs) {
+      const img = document.createElement("img");
+      img.className = "message-image";
+      img.src = src;
+      img.alt = "attached image";
+      img.loading = "lazy";
+      wrap.appendChild(img);
+    }
+    li.appendChild(wrap);
+  }
+
+  function renderMessage(role, content, imageSrcs) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
     setMessageContent(li, role, content);
+    appendImages(li, imageSrcs);
     messageList.appendChild(li);
     // Always auto-scroll to bottom. Known papercut: fights user scrolling.
     messageList.scrollTop = messageList.scrollHeight;
@@ -375,7 +465,8 @@
         (m) => m.role === "student",
       ).length;
       for (const m of data.messages || []) {
-        renderMessage(m.role, m.content);
+        const srcs = (m.images || []).map((img) => `/api/image/${img.id}`);
+        renderMessage(m.role, m.content, srcs);
       }
       highlightActiveEntry();
     } catch (err) {
@@ -556,28 +647,55 @@
 
   async function sendMessage() {
     const text = composerInput.value.trim();
-    if (!text || isSending) return;
+    const outgoingImages = stagedImages.slice();
+    if ((!text && outgoingImages.length === 0) || isSending) return;
 
     hideError();
-    // Optimistically render the student bubble + a "thinking" placeholder.
-    // As soon as the first streamed delta arrives we morph the thinking
-    // bubble into the tutor bubble in-place and append chars to it.
-    const studentBubble = renderMessage("student", text);
+    // Optimistically render the student bubble (with any attached image
+    // thumbnails) + a "thinking" placeholder. As soon as the first streamed
+    // delta arrives we morph the thinking bubble into the tutor bubble.
+    const previewSrcs = outgoingImages.map((item) => item.url);
+    const studentBubble = renderMessage("student", text, previewSrcs);
     const tutorBubble = renderThinking();
     let tutorBubbleActive = false; // false until first delta lands
     const originalText = composerInput.value;
     composerInput.value = "";
+    // Detach staged previews from the composer; the object URLs stay alive on
+    // the rendered bubble and are revoked when the bubble is rolled back/cleared.
+    stagedImages = [];
+    renderStagedPreviews();
     setSending(true);
 
-    const payload = {
-      text: text,
-      course: config.course,
-      exercise: config.exercise,
-      tutor: config.tutor,
-    };
-    if (conversationId) {
-      payload.conversation_id = conversationId;
+    let body;
+    let headers;
+    if (outgoingImages.length > 0) {
+      // Multipart so we can carry image files alongside the text fields.
+      const form = new FormData();
+      form.append("text", text);
+      form.append("course", config.course);
+      form.append("exercise", config.exercise);
+      form.append("tutor", config.tutor);
+      if (conversationId) form.append("conversation_id", conversationId);
+      for (const item of outgoingImages) {
+        form.append("images", item.file, item.file.name);
+      }
+      body = form; // browser sets the multipart Content-Type + boundary
+      headers = undefined;
+    } else {
+      const payload = {
+        text: text,
+        course: config.course,
+        exercise: config.exercise,
+        tutor: config.tutor,
+      };
+      if (conversationId) payload.conversation_id = conversationId;
+      body = JSON.stringify(payload);
+      headers = { "Content-Type": "application/json" };
     }
+
+    const revokeOutgoing = () => {
+      for (const item of outgoingImages) URL.revokeObjectURL(item.url);
+    };
 
     const controller = new AbortController();
     currentChatController = controller;
@@ -587,14 +705,15 @@
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: headers,
+        body: body,
         signal: controller.signal,
       });
 
       if (!response.ok) {
         tutorBubble.remove();
         studentBubble.remove();
+        revokeOutgoing();
         composerInput.value = originalText;
         showError("Something went wrong, please try again");
         return;
@@ -661,6 +780,7 @@
       if (streamError) {
         tutorBubble.remove();
         studentBubble.remove();
+        revokeOutgoing();
         composerInput.value = originalText;
         showError("Something went wrong, please try again");
         return;
@@ -669,6 +789,7 @@
       if (!sawDone) {
         tutorBubble.remove();
         studentBubble.remove();
+        revokeOutgoing();
         composerInput.value = originalText;
         showError("Something went wrong, please try again");
         return;
@@ -686,9 +807,11 @@
         // Roll back the optimistic bubbles without showing an error.
         tutorBubble.remove();
         studentBubble.remove();
+        revokeOutgoing();
       } else {
         tutorBubble.remove();
         studentBubble.remove();
+        revokeOutgoing();
         composerInput.value = originalText;
         showError("Something went wrong, please try again");
       }
@@ -714,6 +837,35 @@
       sendMessage();
     }
   });
+
+  // Image attach: paperclip opens the file picker; selecting files stages them.
+  if (attachButton && imageInput) {
+    attachButton.addEventListener("click", () => imageInput.click());
+    imageInput.addEventListener("change", () => {
+      addStagedFiles(imageInput.files);
+      imageInput.value = ""; // reset so the same file can be re-picked
+    });
+  }
+
+  // Drag-and-drop images onto the composer.
+  if (composerForm) {
+    composerForm.addEventListener("dragover", (event) => {
+      if (event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files")) {
+        event.preventDefault();
+        composerForm.classList.add("composer-dragover");
+      }
+    });
+    composerForm.addEventListener("dragleave", (event) => {
+      if (event.target === composerForm) composerForm.classList.remove("composer-dragover");
+    });
+    composerForm.addEventListener("drop", (event) => {
+      if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length) {
+        event.preventDefault();
+        composerForm.classList.remove("composer-dragover");
+        addStagedFiles(event.dataTransfer.files);
+      }
+    });
+  }
 
   errorDismiss.addEventListener("click", hideError);
 

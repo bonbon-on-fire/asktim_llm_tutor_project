@@ -18,6 +18,7 @@ Branding is deliberately distinct from production: the accent is teal-blue
 - Sanitized-markdown rendering of tutor replies (tables/lists/bold) — `marked` → `DOMPurify`, same `setMessageContent()` path as `main_ui`
 - Conversation / Message / Student tables; email + password identity (bcrypt), cross-browser history sidebar
 - The same tutor pipeline via `tutor.run_tutor` (through `services/tutor_bridge.py`)
+- **Student image uploads** — PNG/JPEG attachments (paperclip or drag-and-drop, up to 5 × 10 MB) sent to the tutor as multimodal input, stored in `uploaded_images.data` (BYTEA) and re-served via `GET /api/image/<id>`. Same shared validation ([`utils/uploads.py`](../utils/uploads.py)) and frontend as `main_ui`
 
 ## What's different
 
@@ -102,6 +103,11 @@ The database must already exist (`CREATE DATABASE asktim_test;`); `create_all`
 then builds the tables. To reset the sandbox data, drop and recreate that
 database.
 
+> **Note:** `create_all` only creates *missing tables* — it never adds columns
+> to existing ones. The image-upload feature added `uploaded_images.data`
+> (BYTEA); a pre-existing `asktim_test` DB must be dropped/recreated (or have the
+> column added by hand) to pick it up.
+
 > **Design decision (2026-06-04) — DB env-var resolution order.**
 > test_ui resolves its database as: **`TEST_UI_DATABASE_URL` → `DATABASE_URL` →
 > SQLite `test_ui.db`.**
@@ -130,14 +136,17 @@ database.
 ## API surface
 
 Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
-`/api/identity[/check]`, `/api/history`, `/api/conversation/<uuid>`), plus:
+`/api/identity[/check]`, `/api/history`, `/api/conversation/<uuid>`,
+`/api/image/<id>`), plus:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/context/options` | Courses (with their exercises + syllabus availability) and tutor prompts, for the Create-context wizard |
 
-`POST /api/chat` additionally accepts an optional `"syllabus": true|false` field
-(defaults to `true`) that gates the syllabus block for a new conversation.
+`POST /api/chat` accepts JSON (text only) or `multipart/form-data` (text +
+`images` files, alongside the same context fields). It additionally accepts an
+optional `"syllabus": true|false` field (defaults to `true`) that gates the
+syllabus block for a new conversation.
 
 ## Deployment
 

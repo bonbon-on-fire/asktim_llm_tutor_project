@@ -154,6 +154,32 @@ def test_with_figures_returns_blocks() -> None:
     _check("figures -> [text, image_url] blocks", ok_shape, f"got {out!r}")
 
 
+def test_build_content_accepts_bytes_tuples_and_data_urls() -> None:
+    # (bytes, mime) tuple — in-memory upload path.
+    out = build_multimodal_content("hi", [(b"\xff\xd8\xff", "image/jpeg")])
+    ok_tuple = (
+        isinstance(out, list)
+        and out[1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+    )
+    _check("(bytes, mime) tuple -> image_url block", ok_tuple, f"got {out!r}")
+
+    # Pre-built data URL string — used verbatim.
+    url = "data:image/png;base64,QUJD"
+    out2 = build_multimodal_content("hi", [url])
+    _check("data-url string passed through verbatim", out2[1]["image_url"]["url"] == url, f"got {out2!r}")
+
+    # Mixed path + tuple + data-url in one call.
+    fig = discover_figures("cities_and_climate_change", "08")[0]
+    out3 = build_multimodal_content("hi", [fig, (b"\xff\xd8\xff", "image/jpeg"), url])
+    ok_mixed = (
+        len(out3) == 4
+        and out3[1]["image_url"]["url"].startswith("data:image/png;base64,")
+        and out3[2]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+        and out3[3]["image_url"]["url"] == url
+    )
+    _check("mixed path/tuple/data-url blocks", ok_mixed, f"got {out3!r}")
+
+
 # ---------------------------------------------------------------------------
 # resolve_figure_filenames
 # ---------------------------------------------------------------------------
@@ -181,6 +207,7 @@ def main() -> int:
         test_unsupported_extension_raises,
         test_no_figures_returns_plain_string,
         test_with_figures_returns_blocks,
+        test_build_content_accepts_bytes_tuples_and_data_urls,
         test_resolve_filenames_round_trips_discovery,
     ]
     for t in tests:

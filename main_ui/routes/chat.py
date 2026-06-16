@@ -40,6 +40,7 @@ from main_ui.routes._validation import (
     validate_exercise,
     validate_tutor,
 )
+from main_ui.services import images as images_service
 from main_ui.services import tutor_bridge
 from main_ui.services.conversation import (
     WrongSessionError,
@@ -49,6 +50,7 @@ from main_ui.services.conversation import (
     get_history_for_tutor,
     start_exchange_student_only,
 )
+from utils.uploads import UploadValidationError, images_to_tuples
 
 
 chat_bp = Blueprint("chat", __name__)
@@ -82,15 +84,32 @@ def _sse_event(name: str, payload: dict) -> str:
 
 @chat_bp.post("/api/chat")
 def chat():
-    data = request.get_json(silent=True) or {}
+    # Accept multipart/form-data (text + image files) or legacy JSON (text only).
+    is_multipart = (request.content_type or "").startswith("multipart/form-data")
+    if is_multipart:
+        src = request.form
+        upload_files = request.files.getlist("images")
+    else:
+        src = request.get_json(silent=True) or {}
+        upload_files = []
 
-    text = (data.get("text") or "").strip()
-    if not text:
-        return _bad_request("text must be a non-empty string", "missing_text")
+    text = (src.get("text") or "").strip()
 
-    course = data.get("course")
-    exercise = data.get("exercise")
-    tutor = data.get("tutor") or DEFAULT_TUTOR
+    # Validate uploads up front so a bad file fails cleanly before any DB write.
+    try:
+        images = images_service.read_and_validate(upload_files)
+    except UploadValidationError as exc:
+        return _bad_request(str(exc), "bad_image")
+
+    if not text and not images:
+        return _bad_request("text or an image is required", "missing_text")
+    # Image-only turns get a placeholder so the bubble/history read cleanly and
+    # the non-student-like guard (which checks the text portion) doesn't fire.
+    student_text = text or "(Image attached.)"
+
+    course = src.get("course")
+    exercise = src.get("exercise")
+    tutor = src.get("tutor") or DEFAULT_TUTOR
 
     err = validate_course(course)
     if err:
@@ -102,7 +121,7 @@ def chat():
     if err:
         return _bad_param(err)
 
-    convo_id_raw = data.get("conversation_id")
+    convo_id_raw = src.get("conversation_id")
     convo_id: UUID | None = None
     if convo_id_raw is not None:
         try:
@@ -148,9 +167,15 @@ def chat():
     # Insert the student row up front and commit it. That way the student's
     # message survives even if the tutor stream errors out partway through.
     student_msg = start_exchange_student_only(
-        db, conversation=convo, student_text=text
+        db, conversation=convo, student_text=student_text
     )
     student_turn = student_msg.turn
+
+    # Persist uploaded images linked to the student row (bytes in-DB). Committed
+    # together with the student message below, so a mid-stream tutor failure
+    # still leaves the student turn + its images intact.
+    if images:
+        images_service.persist_images(db, message=student_msg, images=images)
 
     # Capture all values we'll need inside the generator BEFORE commit, since
     # SQLAlchemy expires loaded attributes on commit by default.
@@ -176,7 +201,8 @@ def chat():
         exercise=stream_exercise,
         tutor=stream_tutor,
         history=history,
-        new_student_message=text,
+        new_student_message=student_text,
+        images=images_to_tuples(images),
     )
 
     def event_stream():

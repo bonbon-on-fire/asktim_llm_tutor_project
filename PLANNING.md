@@ -537,12 +537,30 @@ Absent `figures` field = no figures attached (treated as empty list). Existing t
 
 ---
 
-### Phase 7: Human-uploaded figures via test_ui ✦ PROPOSED (NOT STARTED)
+### Phase 7: Human-uploaded images in the chat apps ✦ COMPLETED (2026-06-15)
 
-> **Status (2026-06-04):** Not yet built; depends on Phase 6 landing first. Note
-> also that `test_ui/` has since been reshaped into the AskTIM Sandbox (see
-> Phase 9), so when this work happens the upload control lands in the Sandbox's
-> streaming chat composer rather than the old config-panel `index.html`.
+> **Status (2026-06-15):** Built for **both** `main_ui/` (production) and
+> `test_ui/` (Sandbox) — this also completes `main_ui` Step 10. Students attach
+> PNG/JPEG images in the chat composer (paperclip + drag-and-drop, ≤5 × 10 MB);
+> they stream to the tutor as multimodal content on that turn. What shipped vs
+> the original plan below:
+>
+> - **Persisted, not live-only.** The original plan said "no disk persistence."
+>   Instead images are stored **in Postgres** (`uploaded_images.data` BYTEA) —
+>   Railway's filesystem is ephemeral, so disk uploads would vanish on redeploy.
+>   In-DB bytes survive redeploys and are re-served via `GET /api/image/<id>`
+>   (ownership-checked) for history rendering.
+> - **Shared validation** lives in [`utils/uploads.py`](utils/uploads.py)
+>   (PNG/JPEG by magic bytes, size + count caps); multimodal content is built by
+>   the generalized [`utils/figures.py`](utils/figures.py)
+>   `build_multimodal_content` (now accepts `(bytes, mime)` tuples and data-URLs).
+> - **Streaming path is multimodal.** `tutor.run_tutor.stream_tutor_reply`
+>   already tolerated list content (Phase 6 sanitizer fix); the bridges build a
+>   multimodal `HumanMessage` for the new student turn.
+> - **Attach-on-upload-turn only** — prior turns stay text-only (token-cost
+>   decision, 2026-06-15). Simulated student bots remain text-only.
+> - `POST /api/chat` now accepts `multipart/form-data` (text + `images`) as well
+>   as the legacy JSON body.
 
 **Problem:** Phase 6 makes figures part of the curriculum *context*. But real OCW learners using the web chat will also want to attach their own images — a photo of handwritten work, a screenshot of their Excel table, a phone-camera capture of a hand-drawn Power/Actors Map — and have the tutor respond to that visual content. The current `test_ui` chat composer accepts text only.
 

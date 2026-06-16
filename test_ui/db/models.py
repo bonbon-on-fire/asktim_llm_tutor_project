@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     Uuid,
@@ -138,6 +139,10 @@ class UploadedImage(Base):
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     mime_type: Mapped[str] = mapped_column(Text, nullable=False)
     size_bytes: Mapped[int] = mapped_column(nullable=False)
+    # Raw image bytes stored in-DB (BYTEA on Postgres). No Alembic here — the
+    # Sandbox builds its schema via create_all on a throwaway DB, so an existing
+    # test DB needs a drop/recreate to pick up this new column.
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )

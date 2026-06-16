@@ -25,6 +25,7 @@ from tutor.run_tutor import (
 from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
 from utils.curriculum import exercise_path
+from utils.figures import build_multimodal_content
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -249,6 +250,15 @@ def _history_to_langchain(history: list[dict]) -> list:
     return messages
 
 
+def _new_student_message(text: str, images: list | None) -> HumanMessage:
+    """Build the new student turn, multimodal when *images* are attached.
+
+    *images* is a list of ``(bytes, mime)`` tuples. With none, this is a plain
+    text HumanMessage. Images attach only to this turn; prior turns stay text.
+    """
+    return HumanMessage(content=build_multimodal_content(text, images))
+
+
 def get_tutor_reply(
     *,
     course: str,
@@ -256,6 +266,7 @@ def get_tutor_reply(
     tutor: str,
     history: list[dict],
     new_student_message: str,
+    images: list | None = None,
     include_syllabus: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
@@ -290,7 +301,7 @@ def get_tutor_reply(
         custom_tutor_prompt=custom_tutor_prompt,
     )
     messages = _history_to_langchain(history)
-    messages.append(HumanMessage(content=new_student_message))
+    messages.append(_new_student_message(new_student_message, images))
 
     out_messages, reply_text = _upstream_get_tutor_reply(messages, graph=graph)
 
@@ -311,6 +322,7 @@ def stream_tutor_reply(
     tutor: str,
     history: list[dict],
     new_student_message: str,
+    images: list | None = None,
     include_syllabus: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
@@ -337,7 +349,7 @@ def stream_tutor_reply(
         custom_tutor_prompt=custom_tutor_prompt,
     )
     messages = _history_to_langchain(history)
-    messages.append(HumanMessage(content=new_student_message))
+    messages.append(_new_student_message(new_student_message, images))
 
     full_raw: str | None = None
     for item in _upstream_stream_tutor_reply(

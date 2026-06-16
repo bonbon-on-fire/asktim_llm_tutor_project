@@ -93,9 +93,25 @@ def image_to_data_url(source: Path | str | bytes, *, mime_type: str | None = Non
     return f"data:{mime};base64,{encoded}"
 
 
+def _figure_to_data_url(fig) -> str:
+    """Coerce one figure item into a ``data:`` URL.
+
+    Accepts any of:
+    - a filesystem path (``Path``/``str``) to a PNG/JPG file,
+    - an already-built ``data:`` URL string (used verbatim),
+    - a ``(bytes, mime_type)`` tuple (used for in-memory uploads).
+    """
+    if isinstance(fig, str) and fig.startswith("data:"):
+        return fig
+    if isinstance(fig, tuple):
+        raw, mime = fig
+        return image_to_data_url(raw, mime_type=mime)
+    return image_to_data_url(fig)
+
+
 def build_multimodal_content(
     text: str,
-    figures: list[Path] | list[str] | list[bytes] | None = None,
+    figures: list | None = None,
 ):
     """Build LangChain message content for *text* plus optional *figures*.
 
@@ -110,16 +126,19 @@ def build_multimodal_content(
             ...
         ]
 
-    This list-of-blocks shape is the format LangChain normalizes for both the
-    OpenAI and Anthropic providers, so the same content works regardless of
-    which model the tutor / student / judge is using.
+    Each figure item may be a filesystem path (curriculum figures), an
+    already-built ``data:`` URL string, or a ``(bytes, mime_type)`` tuple
+    (in-memory student uploads). This list-of-blocks shape is the format
+    LangChain normalizes for both the OpenAI and Anthropic providers, so the
+    same content works regardless of which model the tutor / student / judge
+    is using.
     """
     if not figures:
         return text
 
     blocks: list[dict] = [{"type": "text", "text": text}]
     for fig in figures:
-        url = image_to_data_url(fig)
+        url = _figure_to_data_url(fig)
         blocks.append({"type": "image_url", "image_url": {"url": url}})
     return blocks
 

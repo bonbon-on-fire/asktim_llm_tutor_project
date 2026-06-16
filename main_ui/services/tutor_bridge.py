@@ -24,6 +24,7 @@ from tutor.run_tutor import (
 from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
 from utils.curriculum import exercise_path
+from utils.figures import build_multimodal_content
 from utils.lectures import load_lecture_transcripts
 
 
@@ -118,6 +119,17 @@ def _history_to_langchain(history: list[dict]) -> list:
     return messages
 
 
+def _new_student_message(text: str, images: list | None) -> HumanMessage:
+    """Build the new student turn, multimodal when *images* are attached.
+
+    *images* is a list of ``(bytes, mime)`` tuples (or anything
+    :func:`utils.figures.build_multimodal_content` accepts). With no images this
+    is a plain-text HumanMessage — identical to the text-only path. Images are
+    attached only to this (current) turn; prior turns stay text-only.
+    """
+    return HumanMessage(content=build_multimodal_content(text, images))
+
+
 def get_tutor_reply(
     *,
     course: str,
@@ -125,6 +137,7 @@ def get_tutor_reply(
     tutor: str,
     history: list[dict],
     new_student_message: str,
+    images: list | None = None,
 ) -> dict:
     """Return one tutor reply for the given conversation state.
 
@@ -134,6 +147,7 @@ def get_tutor_reply(
         tutor: tutor prompt stem (e.g. ``"tutor_05"``)
         history: prior conversation as ``[{"role": "student"|"tutor", "content": str}, ...]``
         new_student_message: the latest student turn to respond to
+        images: optional ``(bytes, mime)`` tuples attached to this student turn
 
     Returns:
         ``{"reply": str, "reasoning": str | None}`` — reasoning is the
@@ -142,7 +156,7 @@ def get_tutor_reply(
     """
     graph = _get_or_build_graph(tutor, course, exercise)
     messages = _history_to_langchain(history)
-    messages.append(HumanMessage(content=new_student_message))
+    messages.append(_new_student_message(new_student_message, images))
 
     out_messages, reply_text = _upstream_get_tutor_reply(messages, graph=graph)
 
@@ -163,6 +177,7 @@ def stream_tutor_reply(
     tutor: str,
     history: list[dict],
     new_student_message: str,
+    images: list | None = None,
 ):
     """Stream a tutor reply as a sequence of event dicts.
 
@@ -171,11 +186,13 @@ def stream_tutor_reply(
         student-facing characters, then exactly one terminal event:
         ``{"type": "done", "reply": "...", "reasoning": "..." | None}``.
 
-    Routes are responsible for re-shaping these into SSE frames.
+    *images* (``(bytes, mime)`` tuples) attach to this student turn as
+    multimodal content. Routes are responsible for re-shaping these into SSE
+    frames.
     """
     model, system_prompt = _get_or_build_stream_context(tutor, course, exercise)
     messages = _history_to_langchain(history)
-    messages.append(HumanMessage(content=new_student_message))
+    messages.append(_new_student_message(new_student_message, images))
 
     full_raw: str | None = None
     for item in _upstream_stream_tutor_reply(

@@ -12,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     Uuid,
@@ -124,6 +125,10 @@ class UploadedImage(Base):
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     mime_type: Mapped[str] = mapped_column(Text, nullable=False)
     size_bytes: Mapped[int] = mapped_column(nullable=False)
+    # Raw image bytes. Stored in-DB (BYTEA on Postgres) rather than on disk
+    # because Railway's filesystem is ephemeral — disk uploads would vanish on
+    # every redeploy. Durable here and re-servable via GET /api/image/<id>.
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )

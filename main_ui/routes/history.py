@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request
 
 from main_ui.cookies import EMAIL_COOKIE_NAME
 from main_ui.services.conversation import (
@@ -23,6 +23,7 @@ from main_ui.services.conversation import (
     get_messages_for_conversation,
     list_conversations_for_email,
 )
+from main_ui.services.images import get_image_for_viewer
 
 
 history_bp = Blueprint("history", __name__)
@@ -64,4 +65,22 @@ def conversation_detail(conversation_id: str):
             ),
             "messages": get_messages_for_conversation(g.db, convo),
         }
+    )
+
+
+@history_bp.get("/api/image/<int:image_id>")
+def image(image_id: int):
+    """Serve a student-uploaded image's bytes if the viewer owns its conversation.
+
+    Ownership is by session_id or email (same rule as conversation detail).
+    Unauthorized/unknown ids return 404 so they can't be probed.
+    """
+    email = request.cookies.get(EMAIL_COOKIE_NAME)
+    img = get_image_for_viewer(g.db, image_id, g.session_id, email)
+    if img is None:
+        return jsonify({"error": "not_found"}), 404
+    return Response(
+        img.data,
+        mimetype=img.mime_type,
+        headers={"Cache-Control": "private, max-age=86400"},
     )

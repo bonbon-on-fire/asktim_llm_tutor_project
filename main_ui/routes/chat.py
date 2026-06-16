@@ -173,9 +173,23 @@ def chat():
 
     # Persist uploaded images linked to the student row (bytes in-DB). Committed
     # together with the student message below, so a mid-stream tutor failure
-    # still leaves the student turn + its images intact.
+    # still leaves the student turn + its images intact. Surface storage/schema
+    # problems as a clean JSON reason rather than an opaque 500.
     if images:
-        images_service.persist_images(db, message=student_msg, images=images)
+        try:
+            images_service.persist_images(db, message=student_msg, images=images)
+        except Exception as exc:
+            return _abort_with(
+                (
+                    jsonify(
+                        {
+                            "error": "image_persist_failed",
+                            "reason": f"{type(exc).__name__}: {exc}",
+                        }
+                    ),
+                    500,
+                )
+            )
 
     # Capture all values we'll need inside the generator BEFORE commit, since
     # SQLAlchemy expires loaded attributes on commit by default.

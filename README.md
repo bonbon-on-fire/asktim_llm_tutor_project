@@ -234,7 +234,10 @@ asktim_llm_tutor_project_2026/
 │   └── run_visualization.py # Score charts: per-prompt, original vs mini, hand-grade correlation
 │
 └── utils/
-    └── parsing.py           # Shared JSON extraction helper
+    ├── parsing.py           # Shared JSON extraction helper
+    ├── curriculum.py        # Canonical exercise/course path resolution (exercises/ layout)
+    ├── figures.py           # Figure discovery + multimodal content blocks (GPT/Claude)
+    └── lectures.py          # Per-course lecture-transcript loader
 ```
 
 ## Current Status
@@ -265,7 +268,7 @@ The full pipeline is working end-to-end, with:
 - Additional student persona families and course subjects
 - Human-in-the-loop evaluation to calibrate the LLM judge against human graders
 - ML-assisted rubric refinement based on judge disagreement patterns
-- Image uploads in AskTIM (students attaching figures to questions; tutor receiving exercise figures as context — Phase 6 + main_ui Step 10)
+- Image uploads in AskTIM (students attaching figures to questions). The Phase 6 multimodal foundation has landed (`utils/figures.py`; curriculum figures flow through the non-streaming tutor/student/judge and are recorded in transcripts), and per-course lecture transcripts (`utils/lectures.py`) are folded into tutor context. Remaining: wire figures into `main_ui`'s streaming path, then student-side uploads (main_ui Step 10)
 - End-of-course migration of the Railway-hosted AskTIM data to internal storage
 
 ## TL;DR

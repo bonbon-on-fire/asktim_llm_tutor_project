@@ -59,9 +59,10 @@ In `compiled grading`, rows for `faizan`/`romain`/`nishita` auto-pull deduction 
 1. Load prompt from `prompts/<prompt_name>.txt`.
 2. Inject rubric text from `rubrics/<rubric_name>.md` and the expected output schema.
 3. Read transcript JSON from `transcripts/<relative_stem>.json`.
-4. Call model, parse JSON output, normalize explanation fields, sanitize numeric fields, and validate schema.
-5. If validation fails, retry with repair prompting (up to 3 total attempts).
-6. Write `grade` back into the transcript file.
+4. If the transcript has a `figures` field (filenames of curriculum images), re-resolve those names to paths under `curriculum/<course>/figures/` via [`utils.figures.resolve_figure_filenames`](../utils/figures.py) and attach the images to the grading prompt — so the judge grades against the same figure the tutor saw. Empty/absent `figures` = text-only grading (unchanged).
+5. Call model, parse JSON output, normalize explanation fields, sanitize numeric fields, and validate schema.
+6. If validation fails, retry with repair prompting (up to 3 total attempts).
+7. Write `grade` back into the transcript file.
 
 ## Usage
 

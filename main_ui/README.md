@@ -18,6 +18,7 @@ What works today:
 - Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats
 - "Add email" sidebar entry point so students who skipped the modal can come back later
 - MIT crimson branding, AskTIM Beta header, "MIT 11.270x Cities and Climate Change" course banner
+- Per-course lecture transcripts (`curriculum/<course>/lectures/*.txt`) auto-folded into tutor context when present (text-only, no-op until a course adds them) — via [`utils.lectures`](../utils/lectures.py)
 
 ## Quick start
 
@@ -178,6 +179,6 @@ by side (`main_ui` on `5001`, `test_ui` on `5000`).
 
 ## What's still pending
 
-- **Step 10:** Image uploads (multipart chat, `uploaded_images` rows). Depends on Phase 6 figures-in-tutor-context work.
+- **Step 10:** Image uploads (multipart chat, `uploaded_images` rows). The Phase 6 figures foundation now exists (`utils/figures.py`; figures flow through the non-streaming tutor/student/judge), but `main_ui`'s **streaming** path is still text-only — wiring figures into `stream_tutor_reply` is the remaining prerequisite for student image uploads.
 - **Step 11:** Multi-iframe `test_host.html` for local responsiveness checks.
 - **Step 12:** Pytest suite + this README's "production checklist."

@@ -22,6 +22,25 @@ tutor/
 - Prompt versions are selected by name (for example `tutor_03`, `tutor_05`) and loaded from `tutor/prompts/`.
 - `stream_tutor_reply()` exposes a token-streaming entry point used by [`main_ui/`](../main_ui/README.md). It yields visible answer characters as they arrive, hiding the JSON envelope and the `pedagogical-reasoning` field server-side via the `StudentAnswerExtractor` state machine.
 
+### Multimodal figures (non-streaming path)
+
+When an exercise ships figures under `curriculum/<course>/figures/` (see [`curriculum/README.md`](../curriculum/README.md)), the tutor can reason over the real image. Pass them via the `figures=` kwarg — a list of figure paths from [`utils.figures.discover_figures`](../utils/figures.py):
+
+```python
+from tutor import create_tutor_graph, load_system_prompt
+from utils.figures import discover_figures
+
+figures = discover_figures("cities_and_climate_change", "08")   # [Path(...spider_diagram.png)]
+prompt = load_system_prompt("tutor_05", assignment_override="...")
+graph = create_tutor_graph(prompt, figures=figures)             # figures bound to the graph
+```
+
+The figures are attached to the **latest student turn** as multimodal content (a `[text, image_url…]` block list that works for both GPT and Claude via LangChain) on every tutor call — one copy per turn. The message sanitizers handle both plain-string and multimodal-list content. Figures are **not** wired into the streaming path yet (the deployed `main_ui/` stays text-only); see Phase 6 in the root [PLANNING.md](../PLANNING.md).
+
+### Lecture transcripts
+
+If a course ships `curriculum/<course>/lectures/*.txt`, those transcripts are folded into the assignment context by the caller's context builder (`internal_ui` and `main_ui`) via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py) before being passed as `assignment_override`. The tutor module itself needs no change — it just receives the enriched assignment text.
+
 ## How the tutor works
 
 1. The system prompt is loaded from `prompts/<prompt_name>.txt`.

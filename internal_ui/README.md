@@ -29,9 +29,11 @@ This will prompt you to select from numbered options:
 - **Tutor provider**: `gpt` or `claude` (required)
 - **Tutor prompts**: Available from `tutor/prompts/*.txt` (empty input = all)
 - **Student personas**: Available from `students/personas/*.txt` (empty input = all)
-- **Course/exercise combinations**: Available from `curriculum/` (empty input = all)
+- **Course/exercise combinations**: Available from `curriculum/<course>/exercises/` (empty input = all)
 - **Turn size**: Number of student+tutor exchanges per conversation
 - **Trials**: Number of trials per configuration
+
+Exercise prompts are read from `curriculum/<course>/exercises/exercise_<NN>.txt` (path resolution centralized in [`utils/curriculum.py`](../utils/curriculum.py)). Any figures under `curriculum/<course>/figures/` matching the exercise are auto-discovered, passed to both tutor and student as multimodal input, and recorded in the transcript's `figures` field. Per-course lecture transcripts under `curriculum/<course>/lectures/` are folded into the assignment context.
 
 **Command-line mode:**
 ```powershell
@@ -175,9 +177,10 @@ All transcript flows include run metadata and exchanges:
   "student_persona": "chaotic_01",
   "course": "cities_and_climate_change",
   "exercise_number": "01",
+  "figures": ["exercise_08_spider_diagram.png"],
   "turn_size": 10,
-  "context": "Course-level context loaded from curriculum/<course>/course.txt",
-  "exercise": "Combined assignment text (course context + exercise + run configuration)...",
+  "context": "Course-level context loaded from curriculum/<course>/course.txt (+ syllabus + lecture transcripts when present)",
+  "exercise": "Combined assignment text (course context + syllabus + lecture transcripts + exercise + run configuration)...",
   "turns": 10,
   "exchanges": [
     {

@@ -54,14 +54,18 @@ All personas also inherit shared role constraints from the engine (student voice
 
 ```python
 from students.run_student import get_next_student_message
+from utils.figures import discover_figures
 
 msg = get_next_student_message(
     messages,                    # conversation so far (list of BaseMessage)
     prompt_name="chaotic_04",    # persona to use (texting/slang variant)
     assignment="...",            # optional assignment text
     turn_size=10,                # optional planned student+tutor exchanges
+    figures=discover_figures("cities_and_climate_change", "08"),  # optional exercise figures
 )
 ```
+
+When `figures` are supplied (the same exercise figures the tutor sees), they're attached to the tutor's latest turn as multimodal content so the simulated student can reason over the image too. Plain-string and multimodal-list message content are both handled. Figures are optional — omit the kwarg for text-only runs.
 
 ## Environment variables
 

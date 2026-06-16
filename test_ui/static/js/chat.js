@@ -1274,6 +1274,26 @@
     });
   }
 
+  // Paste images straight into the composer (e.g. a clipboard screenshot).
+  // Only intercepts when the clipboard actually carries image files, so a
+  // normal text paste falls through to the textarea untouched.
+  if (composerInput) {
+    composerInput.addEventListener("paste", (event) => {
+      const items = (event.clipboardData && event.clipboardData.items) || [];
+      const files = [];
+      for (const item of items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length) {
+        event.preventDefault();
+        addStagedFiles(files);
+      }
+    });
+  }
+
   errorDismiss.addEventListener("click", hideError);
 
   // Email + password modal wiring

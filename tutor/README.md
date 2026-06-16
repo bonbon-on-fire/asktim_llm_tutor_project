@@ -35,7 +35,7 @@ prompt = load_system_prompt("tutor_05", assignment_override="...")
 graph = create_tutor_graph(prompt, figures=figures)             # figures bound to the graph
 ```
 
-The figures are attached to the **latest student turn** as multimodal content (a `[text, image_url…]` block list that works for both GPT and Claude via LangChain) on every tutor call — one copy per turn. The message sanitizers handle both plain-string and multimodal-list content. Figures are **not** wired into the streaming path yet (the deployed `main_ui/` stays text-only); see Phase 6 in the root [PLANNING.md](../PLANNING.md).
+The figures are attached to the **latest student turn** as multimodal content (a `[text, image_url…]` block list that works for both GPT and Claude via LangChain) on every tutor call — one copy per turn. The message sanitizers handle both plain-string and multimodal-list content. **Curriculum figures** are still wired only into the non-streaming/batch path (transcript generation + judging); the deployed `main_ui/` streaming path does not auto-attach exercise figures yet. It does, however, carry multimodal **student-uploaded** images on the latest turn (same `[text, image_url…]` block shape, via [`utils/uploads.py`](../utils/uploads.py) → `build_multimodal_content`), so the streaming path is no longer text-only. See Phase 6 in the root [PLANNING.md](../PLANNING.md).
 
 ### Lecture transcripts
 

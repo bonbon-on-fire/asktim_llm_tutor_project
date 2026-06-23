@@ -1,6 +1,6 @@
 # database_ui
 
-**🔗 Live: <https://asktim-review.up.railway.app/>** (password-gated)
+**🔗 Live: <https://asktim-database.up.railway.app/>** (password-gated)
 
 A **read-only** dashboard for reviewing real AskTIM conversation data. It looks
 like the `main_ui` chat UI (same MIT-crimson styling) but strips every input
@@ -48,7 +48,7 @@ inside Railway).
 
 ## Deploy (Railway)
 
-Deployed as the **askTIM-database** service (→ <https://asktim-review.up.railway.app/>),
+Deployed as the **askTIM-database** service (→ <https://asktim-database.up.railway.app/>),
 reading the same Postgres as **askTIM-main**. To reproduce:
 
 1. New service in the `tutors (UW, humanities)` project, built from

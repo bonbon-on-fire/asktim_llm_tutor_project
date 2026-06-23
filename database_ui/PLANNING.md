@@ -1,6 +1,6 @@
 # Plan: `database_ui` — read-only conversation review for AskTIM
 
-> Status: **live on Railway** at <https://asktim-review.up.railway.app/> (service
+> Status: **live on Railway** at <https://asktim-database.up.railway.app/> (service
 > `askTIM-database`, password-gated, reading askTIM-main's Postgres read-only).
 > Action item from the 06/16 meeting: "Build a small interface for reviewing real
 > AskTIM conversation data." Phases 1–7 complete and deployed.

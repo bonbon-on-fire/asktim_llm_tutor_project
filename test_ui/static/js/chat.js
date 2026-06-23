@@ -10,6 +10,9 @@
   if (typeof config.exerciseCustom === "undefined") config.exerciseCustom = null;
   if (typeof config.tutorCustom === "undefined") config.tutorCustom = null;
   if (typeof config.syllabusCustom === "undefined") config.syllabusCustom = null;
+  // Per-conversation RAG toggle (Create-context wizard). null = let the server
+  // resolve by default; "rag" / "full_context" force the mode.
+  if (typeof config.contextMode === "undefined") config.contextMode = null;
 
   const courseNameEl = document.querySelector(".course-name");
 
@@ -607,6 +610,19 @@
 
   const CREATE_STEPS = ["course", "exercise", "tutor", "syllabus"];
   const CREATE_LABELS = ["Course", "Exercise", "Tutor prompt", "Syllabus"];
+  const STEP_LABELS = {
+    course: "Course",
+    exercise: "Exercise",
+    tutor: "Tutor prompt",
+    syllabus: "Syllabus",
+  };
+  // When the RAG toggle is on, the syllabus step is skipped — course, syllabus,
+  // and lectures all come from retrieval, so there's nothing to pick there.
+  function activeSteps() {
+    return createDraft && createDraft.useRag
+      ? CREATE_STEPS.filter((s) => s !== "syllabus")
+      : CREATE_STEPS;
+  }
   const CUSTOM = "__custom__";
   const LOCKED_TUTOR = "tutor_05"; // the tutor prompt is locked to this in the wizard
   const LOCK_ICON_SVG =
@@ -652,9 +668,10 @@
 
   function renderCreateStep() {
     createError.hidden = true;
-    const step = CREATE_STEPS[createStep];
+    const steps = activeSteps();
+    const step = steps[createStep];
     const stepLabelText =
-      `Step ${createStep + 1} of ${CREATE_STEPS.length}: ${CREATE_LABELS[createStep]}`;
+      `Step ${createStep + 1} of ${steps.length}: ${STEP_LABELS[step]}`;
     if (step === "tutor") {
       // Tutor prompt is locked to tutor_05 — show a small lock icon by the label.
       createStepLabel.innerHTML = `${stepLabelText} ${LOCK_ICON_SVG}`;
@@ -744,6 +761,48 @@
     ta.placeholder = placeholder;
     createStepBody.appendChild(ta);
 
+    // RAG toggle — course step only, and only for courses with a built index.
+    // When on, course/syllabus/lectures are retrieved and the syllabus step is
+    // skipped.
+    let ragToggleRow = null;
+    if (step === "course") {
+      ragToggleRow = document.createElement("label");
+      ragToggleRow.className = "rag-toggle";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = "create-rag-toggle";
+      cb.checked = !!createDraft.useRag;
+      const span = document.createElement("span");
+      span.textContent = "Use RAG — retrieve course material (skips the syllabus step)";
+      ragToggleRow.appendChild(cb);
+      ragToggleRow.appendChild(span);
+      createStepBody.appendChild(ragToggleRow);
+      cb.addEventListener("change", () => {
+        createDraft.useRag = cb.checked;
+        const s = activeSteps();
+        createStepLabel.textContent =
+          `Step ${createStep + 1} of ${s.length}: ${STEP_LABELS[step]}`;
+        createNext.textContent =
+          createStep === s.length - 1 ? "Create & start chat" : "Continue";
+      });
+    }
+
+    function updateRagToggleVisibility() {
+      if (!ragToggleRow) return;
+      const v = sel.value;
+      const courseObj = v && v !== CUSTOM ? courseBySlug(v) : null;
+      const hasRag = !!(courseObj && courseObj.has_rag);
+      ragToggleRow.hidden = !hasRag;
+      if (!hasRag && createDraft.useRag) {
+        // A custom or un-indexed course can't use RAG — force it off.
+        createDraft.useRag = false;
+        const cb = document.getElementById("create-rag-toggle");
+        if (cb) cb.checked = false;
+        createStepLabel.textContent =
+          `Step ${createStep + 1} of ${activeSteps().length}: ${STEP_LABELS[step]}`;
+      }
+    }
+
     const stepKey = step;
 
     // Keep the draft's typed text in sync, so toggling to an existing option
@@ -782,6 +841,7 @@
         const text = await fetchPreviewText(stepKey, val);
         if (token === syncToken) ta.value = text;
       }
+      updateRagToggleVisibility();
       updateCreateNextEnabled();
     }
     sel.addEventListener("change", syncTextarea);
@@ -789,7 +849,7 @@
 
     createBack.hidden = createStep === 0;
     createNext.textContent =
-      createStep === CREATE_STEPS.length - 1 ? "Create & start chat" : "Continue";
+      createStep === steps.length - 1 ? "Create & start chat" : "Continue";
     updateCreateNextEnabled();
   }
 
@@ -807,7 +867,7 @@
     const sel = document.getElementById("create-select");
     const ta = document.getElementById("create-custom-input");
     if (!sel) return;
-    const step = CREATE_STEPS[createStep];
+    const step = activeSteps()[createStep];
     if (step === "syllabus") {
       if (sel.value === CUSTOM) {
         createDraft.syllabus.mode = "custom";
@@ -854,6 +914,7 @@
       exercise: { mode: "existing", existing: "", custom: "" },
       tutor: { mode: "existing", existing: "", custom: "" },
       syllabus: { mode: "builtin", value: "", custom: "" },
+      useRag: false,
     };
     createStep = 0;
     renderCreateStep();
@@ -880,7 +941,7 @@
     const sel = document.getElementById("create-select");
     const ta = document.getElementById("create-custom-input");
     if (sel && sel.value === CUSTOM && !(ta && ta.value.trim())) return;
-    if (createStep < CREATE_STEPS.length - 1) {
+    if (createStep < activeSteps().length - 1) {
       createStep += 1;
       renderCreateStep();
     } else {
@@ -928,6 +989,17 @@
     } else {
       config.syllabusCustom = null;
       config.syllabus = false;
+    }
+
+    // RAG toggle → per-conversation context mode. When on, course/syllabus/
+    // lectures are retrieved (the syllabus step was skipped), so force syllabus
+    // off; when off, pin full_context so an indexed course isn't silently RAG'd.
+    if (createDraft.useRag) {
+      config.contextMode = "rag";
+      config.syllabus = false;
+      config.syllabusCustom = null;
+    } else {
+      config.contextMode = "full_context";
     }
 
     if (config.courseCustom != null) {
@@ -1122,6 +1194,7 @@
     if (config.exerciseCustom != null) fields.exercise_custom = config.exerciseCustom;
     if (config.tutorCustom != null) fields.tutor_custom = config.tutorCustom;
     if (config.syllabusCustom != null) fields.syllabus_custom = config.syllabusCustom;
+    if (config.contextMode != null) fields.context_mode = config.contextMode;
     if (conversationId) fields.conversation_id = conversationId;
 
     let body;

@@ -129,6 +129,13 @@ def chat():
     custom_tutor_prompt = src.get("tutor_custom")
     custom_syllabus_text = src.get("syllabus_custom")
 
+    # test_ui RAG toggle: per-conversation context mode ("rag" | "full_context").
+    # None = let the bridge resolve by default (rag when the course has an index).
+    # Only honored when creating a new conversation; continuations replay it.
+    context_mode = src.get("context_mode")
+    if context_mode is not None:
+        context_mode = str(context_mode).strip().lower() or None
+
     convo_id_raw = src.get("conversation_id")
     convo_id: UUID | None = None
     if convo_id_raw is not None:
@@ -200,6 +207,7 @@ def chat():
             custom_exercise_text=custom_exercise_text,
             custom_tutor_prompt=custom_tutor_prompt,
             custom_syllabus_text=custom_syllabus_text,
+            context_mode=context_mode,
         )
     except WrongSessionError:
         return _abort_with(_wrong_session())
@@ -247,6 +255,7 @@ def chat():
     stream_exercise_text = convo.custom_exercise_text
     stream_custom_tutor_prompt = convo.custom_tutor_prompt
     stream_syllabus_text = convo.custom_syllabus_text
+    stream_context_mode = convo.context_mode
 
     try:
         db.commit()
@@ -272,6 +281,7 @@ def chat():
         exercise_text=stream_exercise_text,
         syllabus_text=stream_syllabus_text,
         custom_tutor_prompt=stream_custom_tutor_prompt,
+        context_mode=stream_context_mode,
     )
 
     def event_stream():

@@ -50,18 +50,26 @@ _graph_cache: dict[tuple[str, str, str, bool, str], object] = {}
 _stream_cache: dict[tuple[str, str, str, bool, str], tuple[object, str]] = {}
 
 
-def _resolve_context_mode(course: str, has_custom: bool) -> str:
+def _resolve_context_mode(
+    course: str, has_custom: bool, requested: str | None = None
+) -> str:
     """Decide how much course material to put in the prompt for this call.
 
-    - ``TUTOR_CONTEXT_MODE`` (``rag`` | ``full_context`` | ``exercise_only``)
-      wins when set.
-    - Otherwise default to ``rag`` when the course has a built index and there's
-      no one-off custom context, else ``full_context`` (today's behavior).
-    - ``rag`` degrades to ``full_context`` if there's no index or custom context
-      is in play (a tester's typed-in course/exercise can't be retrieved).
+    Precedence:
+    - ``requested`` (the per-conversation choice from the Sandbox RAG toggle)
+      wins when valid — it's the most specific signal.
+    - else ``TUTOR_CONTEXT_MODE`` env (deploy-wide override).
+    - else default to ``rag`` when the course has a built index and there's no
+      one-off custom context, else ``full_context`` (historical behavior).
+
+    ``rag`` degrades to ``full_context`` if there's no index or custom context is
+    in play (a tester's typed-in course/exercise can't be retrieved).
     """
+    requested = (requested or "").strip().lower()
     env = os.environ.get("TUTOR_CONTEXT_MODE", "").strip().lower()
-    if env in _VALID_CONTEXT_MODES:
+    if requested in _VALID_CONTEXT_MODES:
+        mode = requested
+    elif env in _VALID_CONTEXT_MODES:
         mode = env
     else:
         mode = "rag" if (not has_custom and course and rag_has_index(course)) else "full_context"
@@ -368,6 +376,7 @@ def get_tutor_reply(
     exercise_text: str | None = None,
     syllabus_text: str | None = None,
     custom_tutor_prompt: str | None = None,
+    context_mode: str | None = None,
 ) -> dict:
     """Return one tutor reply for the given conversation state.
 
@@ -387,7 +396,7 @@ def get_tutor_reply(
         the tutor's JSON failed.
     """
     has_custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt)
-    context_mode = _resolve_context_mode(course, has_custom)
+    context_mode = _resolve_context_mode(course, has_custom, requested=context_mode)
     graph = _get_or_build_graph(
         tutor,
         course,
@@ -439,6 +448,7 @@ def stream_tutor_reply(
     exercise_text: str | None = None,
     syllabus_text: str | None = None,
     custom_tutor_prompt: str | None = None,
+    context_mode: str | None = None,
 ):
     """Stream a tutor reply as a sequence of event dicts.
 
@@ -450,7 +460,7 @@ def stream_tutor_reply(
     Routes are responsible for re-shaping these into SSE frames.
     """
     has_custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt)
-    context_mode = _resolve_context_mode(course, has_custom)
+    context_mode = _resolve_context_mode(course, has_custom, requested=context_mode)
     model, system_prompt = _get_or_build_stream_context(
         tutor,
         course,

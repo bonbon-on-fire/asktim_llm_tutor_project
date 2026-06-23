@@ -127,6 +127,15 @@ def course_has_syllabus(course) -> bool:
     return (_CURRICULUM_DIR / course / "syllabus.txt").is_file()
 
 
+def course_has_rag(course) -> bool:
+    """True if the course has a built RAG index (enables the wizard's RAG toggle)."""
+    if not course:
+        return False
+    from rag.retrieve import has_index as _rag_has_index  # lazy: avoid import cost at boot
+
+    return _rag_has_index(course)
+
+
 def list_tutors() -> list[str]:
     """Sorted tutor prompt stems available under tutor/prompts/."""
     if not _TUTOR_PROMPTS_DIR.is_dir():
@@ -140,7 +149,7 @@ def list_context_options() -> dict:
     Shape:
         {
           "courses": [
-            {"slug": ..., "name": ..., "exercises": ["01", ...], "has_syllabus": bool},
+            {"slug": ..., "name": ..., "exercises": [...], "has_syllabus": bool, "has_rag": bool},
             ...
           ],
           "tutors": ["tutor_01", ...],
@@ -154,6 +163,7 @@ def list_context_options() -> dict:
                 "name": load_course_name(slug),
                 "exercises": list_exercises(slug),
                 "has_syllabus": course_has_syllabus(slug),
+                "has_rag": course_has_rag(slug),
             }
         )
     return {"courses": courses, "tutors": list_tutors()}

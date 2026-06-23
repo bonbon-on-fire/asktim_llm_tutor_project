@@ -60,6 +60,11 @@ class Conversation(Base):
     custom_exercise_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     custom_tutor_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     custom_syllabus_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # test_ui-only: per-conversation context mode chosen via the Create-context
+    # wizard's RAG toggle ("rag" | "full_context"). NULL = resolve by default
+    # (rag when the course has an index, else full_context). create_all can't add
+    # this to a pre-existing table, but _reconcile_columns() in run_app does.
+    context_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )

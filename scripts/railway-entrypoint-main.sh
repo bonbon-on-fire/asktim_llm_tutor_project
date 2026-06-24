@@ -42,10 +42,33 @@ else
 fi
 
 echo "[startup] Running database migrations..."
-if ! alembic -c main_ui/db/migrations/alembic.ini upgrade head; then
-    echo "[error] Database migrations failed" >&2
-    exit 1
+ALEMBIC="alembic -c main_ui/db/migrations/alembic.ini"
+MIGRATION_LOG=$(mktemp)
+# Capture alembic's own exit status (don't pipe: under POSIX sh a pipeline's
+# status is the last command's, which would hide an alembic failure).
+if $ALEMBIC upgrade head >"$MIGRATION_LOG" 2>&1; then
+    cat "$MIGRATION_LOG"
+else
+    cat "$MIGRATION_LOG"
+    # Recoverable case: the DB's alembic_version points to a revision that no
+    # longer exists in our migration scripts (e.g. history was squashed or a
+    # branch's migration was removed). Alembic fails with "Can't locate
+    # revision". The schema itself is intact, so we only need to re-point the
+    # version table to head. Any OTHER failure is a real error and aborts.
+    if grep -q "Can't locate revision" "$MIGRATION_LOG"; then
+        echo "[startup] ⚠ DB references an unknown migration revision; re-stamping to head and retrying..."
+        if ! $ALEMBIC stamp head || ! $ALEMBIC upgrade head; then
+            echo "[error] Database migrations failed after re-stamp" >&2
+            rm -f "$MIGRATION_LOG"
+            exit 1
+        fi
+    else
+        echo "[error] Database migrations failed" >&2
+        rm -f "$MIGRATION_LOG"
+        exit 1
+    fi
 fi
+rm -f "$MIGRATION_LOG"
 echo "[startup] ✓ Database migrations completed"
 
 PORT="${PORT:-5001}"

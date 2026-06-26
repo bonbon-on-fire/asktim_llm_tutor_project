@@ -43,15 +43,18 @@ The solid-blue **Create context** button (top of the sidebar, above "Add email")
 opens a step-by-step wizard. At each step you either pick an existing built-in or
 paste your own custom text:
 
-- **Course** — any folder under `curriculum/`, or custom course text
+- **Course** — any folder under `curriculum/`, **No course description** (keeps
+  the course for exercises/figures/RAG but drops its `course.txt` from context),
+  or custom course text
 - **Exercise** — an exercise for the chosen course, or custom exercise text
 - **Tutor prompt** — any `tutor_*` prompt, or custom prompt text
 - **Syllabus** — the course's `syllabus.txt`, none, or custom syllabus text
 
 Finishing the wizard **starts a fresh conversation** under the new settings; the
 previous chat stays in history. Custom values are stored per conversation (in the
-`custom_*` columns) and the syllabus flag in `syllabus_enabled`, so reopening a
-past chat replays it with the same context.
+`custom_*` columns) and the course/syllabus flags in
+`course_enabled`/`syllabus_enabled`, so reopening a past chat replays it with the
+same context.
 
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
 > wizard. It was removed in June 2026 because the Create-context wizard does
@@ -149,7 +152,8 @@ Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
 `POST /api/chat` accepts JSON (text only) or `multipart/form-data` (text +
 `images` files, alongside the same context fields). It additionally accepts an
 optional `"syllabus": true|false` field (defaults to `true`) that gates the
-syllabus block for a new conversation.
+syllabus block, and a matching `"course_enabled": true|false` field (defaults to
+`true`) that gates the course-description block, for a new conversation.
 
 ## Deployment
 

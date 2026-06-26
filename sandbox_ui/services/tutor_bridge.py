@@ -42,12 +42,12 @@ _ABOUT_ASKTIM_PATH = Path(__file__).resolve().parents[1] / "about_asktim.txt"
 _VALID_CONTEXT_MODES = {"rag", "full_context", "exercise_only"}
 
 
-_graph_cache: dict[tuple[str, str, str, bool, str], object] = {}
+_graph_cache: dict[tuple[str, str, str, bool, bool, str], object] = {}
 # Parallel cache for the streaming path. The non-streaming path drives a
 # compiled LangGraph; the streaming path drives the raw model with the same
-# system prompt. We cache both per (tutor, course, exercise, include_syllabus,
-# context_mode) so successive turns reuse the same prompt build.
-_stream_cache: dict[tuple[str, str, str, bool, str], tuple[object, str]] = {}
+# system prompt. We cache both per (tutor, course, exercise, include_course,
+# include_syllabus, context_mode) so successive turns reuse the same prompt build.
+_stream_cache: dict[tuple[str, str, str, bool, bool, str], tuple[object, str]] = {}
 
 
 def _resolve_context_mode(
@@ -82,6 +82,7 @@ def build_assignment_text(
     course: str,
     exercise: str,
     *,
+    include_course: bool = True,
     include_syllabus: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
@@ -104,9 +105,11 @@ def build_assignment_text(
     it lives at `sandbox_ui/about_asktim.txt` and is only read here so
     `tutor/` and the bulk-transcript runners stay unaware of it.
 
-    ``include_syllabus`` is a sandbox_ui addition: when False, the course
-    ``syllabus.txt`` block is dropped so testers can compare tutor behaviour
-    with and without the syllabus in context.
+    ``include_course`` / ``include_syllabus`` are sandbox_ui additions: when
+    False, the course ``course.txt`` description / ``syllabus.txt`` block is
+    dropped so testers can compare tutor behaviour with and without that
+    material in context. Both gate only the built-in on-disk files; a custom
+    ``course_text`` / ``syllabus_text`` override is always included verbatim.
 
     The ``*_text`` overrides carry one-off custom context typed in the
     "Create context" wizard. When a given override is not ``None`` it is used
@@ -126,12 +129,13 @@ def build_assignment_text(
         if about_text:
             parts.append("About yourself:\n" + about_text)
 
-    # Course context — custom text wins; otherwise read course.txt.
+    # Course context — custom text wins; otherwise the include_course toggle
+    # gates the built-in course.txt (mirrors the syllabus handling below).
     if include_course_material:
         if course_text is not None:
             if course_text.strip():
                 parts.append("Course context:\n" + course_text.strip())
-        elif course_dir is not None:
+        elif include_course and course_dir is not None:
             course_path = course_dir / "course.txt"
             if course_path.is_file():
                 parts.append(
@@ -200,6 +204,7 @@ def _resolve_system_prompt(
     exercise: str,
     include_syllabus: bool,
     *,
+    include_course: bool = True,
     course_text: str | None,
     exercise_text: str | None,
     syllabus_text: str | None,
@@ -209,6 +214,7 @@ def _resolve_system_prompt(
     assignment_text = build_assignment_text(
         course,
         exercise,
+        include_course=include_course,
         include_syllabus=include_syllabus,
         course_text=course_text,
         exercise_text=exercise_text,
@@ -226,6 +232,7 @@ def _get_or_build_graph(
     exercise: str,
     include_syllabus: bool,
     *,
+    include_course: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
     syllabus_text: str | None = None,
@@ -233,7 +240,7 @@ def _get_or_build_graph(
     context_mode: str = "full_context",
 ):
     custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt)
-    key = (tutor, course, exercise, include_syllabus, context_mode)
+    key = (tutor, course, exercise, include_course, include_syllabus, context_mode)
     if not custom:
         cached = _graph_cache.get(key)
         if cached is not None:
@@ -243,6 +250,7 @@ def _get_or_build_graph(
         course,
         exercise,
         include_syllabus,
+        include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,
         syllabus_text=syllabus_text,
@@ -262,6 +270,7 @@ def _get_or_build_stream_context(
     exercise: str,
     include_syllabus: bool,
     *,
+    include_course: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
     syllabus_text: str | None = None,
@@ -270,7 +279,7 @@ def _get_or_build_stream_context(
 ) -> tuple[object, str]:
     """Return ``(model, system_prompt)`` for the streaming path."""
     custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt)
-    key = (tutor, course, exercise, include_syllabus, context_mode)
+    key = (tutor, course, exercise, include_course, include_syllabus, context_mode)
     if not custom:
         cached = _stream_cache.get(key)
         if cached is not None:
@@ -280,6 +289,7 @@ def _get_or_build_stream_context(
         course,
         exercise,
         include_syllabus,
+        include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,
         syllabus_text=syllabus_text,
@@ -371,6 +381,7 @@ def get_tutor_reply(
     history: list[dict],
     new_student_message: str,
     images: list | None = None,
+    include_course: bool = True,
     include_syllabus: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
@@ -402,6 +413,7 @@ def get_tutor_reply(
         course,
         exercise,
         include_syllabus,
+        include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,
         syllabus_text=syllabus_text,
@@ -443,6 +455,7 @@ def stream_tutor_reply(
     history: list[dict],
     new_student_message: str,
     images: list | None = None,
+    include_course: bool = True,
     include_syllabus: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
@@ -466,6 +479,7 @@ def stream_tutor_reply(
         course,
         exercise,
         include_syllabus,
+        include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,
         syllabus_text=syllabus_text,

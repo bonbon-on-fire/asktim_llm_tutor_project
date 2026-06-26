@@ -4,6 +4,9 @@
   const configEl = document.getElementById("tutor-config");
   const config = JSON.parse(configEl.textContent);
   if (typeof config.syllabus === "undefined") config.syllabus = true;
+  // Whether the built-in course.txt description is folded into context. Like
+  // `syllabus`, defaults on; the wizard's "No course description" turns it off.
+  if (typeof config.courseEnabled === "undefined") config.courseEnabled = true;
   // One-off custom context (from the Create-context wizard). null = use the
   // built-in field above; a string = send as custom text with each /api/chat.
   if (typeof config.courseCustom === "undefined") config.courseCustom = null;
@@ -642,6 +645,10 @@
       : CREATE_STEPS;
   }
   const CUSTOM = "__custom__";
+  // Course-step sentinel: keep the selected course (for exercises/figures/RAG)
+  // but drop its course.txt description from context — the course analog of the
+  // syllabus step's "No syllabus" option.
+  const NO_COURSE = "__no_course__";
   const LOCKED_TUTOR = "tutor_05"; // the tutor prompt is locked to this in the wizard
   const LOCK_ICON_SVG =
     '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
@@ -708,10 +715,16 @@
         ...contextOptions.courses
           .map((c) => ({ value: c.slug, label: c.name || c.slug }))
           .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
+        { value: NO_COURSE, label: "No course description" },
         { value: CUSTOM, label: "Create custom course" },
       ];
       const d = createDraft.course;
-      currentValue = d.mode === "custom" ? CUSTOM : d.existing;
+      currentValue =
+        d.mode === "custom"
+          ? CUSTOM
+          : d.enabled === false
+            ? NO_COURSE
+            : d.existing;
       customValue = d.custom;
       placeholder = "Paste or write the course context…";
     } else if (step === "exercise") {
@@ -808,7 +821,8 @@
     function updateRagToggleVisibility() {
       if (!ragToggleRow) return;
       const v = sel.value;
-      const courseObj = v && v !== CUSTOM ? courseBySlug(v) : null;
+      const courseObj =
+        v && v !== CUSTOM && v !== NO_COURSE ? courseBySlug(v) : null;
       const hasRag = !!(courseObj && courseObj.has_rag);
       ragToggleRow.hidden = !hasRag;
       if (!hasRag && createDraft.useRag) {
@@ -846,8 +860,11 @@
           (stepKey === "syllabus"
             ? createDraft.syllabus.custom
             : createDraft[stepKey].custom) || "";
-      } else if (stepKey === "syllabus" && val === "none") {
-        // No syllabus — nothing to preview.
+      } else if (
+        (stepKey === "syllabus" && val === "none") ||
+        (stepKey === "course" && val === NO_COURSE)
+      ) {
+        // No syllabus / no course description — nothing to preview.
         ta.readOnly = true;
         ta.hidden = true;
         ta.value = "";
@@ -896,6 +913,31 @@
       }
       return;
     }
+    if (step === "course") {
+      const cd = createDraft.course;
+      if (sel.value === CUSTOM) {
+        cd.mode = "custom";
+        cd.custom = ta.value;
+        cd.enabled = true;
+      } else if (sel.value === NO_COURSE) {
+        // Keep a real course as the identity (exercises/figures/RAG need one),
+        // but drop its description. Fall back to the first listed course when
+        // none was picked yet.
+        cd.mode = "existing";
+        cd.enabled = false;
+        if (!cd.existing) {
+          const first = Array.from(sel.options).find(
+            (o) => o.value !== NO_COURSE && o.value !== CUSTOM
+          );
+          cd.existing = first ? first.value : "";
+        }
+      } else {
+        cd.mode = "existing";
+        cd.existing = sel.value;
+        cd.enabled = true;
+      }
+      return;
+    }
     const d = createDraft[step];
     if (sel.value === CUSTOM) {
       d.mode = "custom";
@@ -928,7 +970,7 @@
     // first and "Create custom …" is last, so leaving existing/value empty means
     // no explicit match and the <select> falls back to its first <option>.
     createDraft = {
-      course: { mode: "existing", existing: "", custom: "" },
+      course: { mode: "existing", existing: "", custom: "", enabled: true },
       exercise: { mode: "existing", existing: "", custom: "" },
       tutor: { mode: "existing", existing: "", custom: "" },
       syllabus: { mode: "builtin", value: "", custom: "" },
@@ -976,9 +1018,13 @@
     if (c.mode === "custom") {
       config.course = null;
       config.courseCustom = c.custom;
+      config.courseEnabled = true;
     } else {
+      // Keep the real slug even when the description is off — exercises,
+      // figures, and RAG all key off the course identity.
       config.course = c.existing;
       config.courseCustom = null;
+      config.courseEnabled = c.enabled !== false;
     }
 
     // A custom course has no built-in exercises, so its exercise is custom too.
@@ -1205,6 +1251,7 @@
       course: config.course,
       exercise: config.exercise,
       tutor: config.tutor,
+      course_enabled: config.courseEnabled,
       syllabus: config.syllabus,
     };
     // One-off custom context (Create-context wizard) — only sent when set.

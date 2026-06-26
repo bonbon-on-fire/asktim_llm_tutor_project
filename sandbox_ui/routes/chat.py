@@ -122,6 +122,17 @@ def chat():
     else:
         syllabus_enabled = bool(raw_syllabus)
 
+    # Same shape as syllabus: whether the built-in course.txt description is
+    # folded into context. Defaults ON; "No course description" in the wizard
+    # sends it off. Only honored when creating a new convo.
+    raw_course_enabled = src.get("course_enabled")
+    if raw_course_enabled is None:
+        course_enabled = True
+    elif isinstance(raw_course_enabled, str):
+        course_enabled = raw_course_enabled.strip().lower() not in {"0", "false", "no", "off", ""}
+    else:
+        course_enabled = bool(raw_course_enabled)
+
     # One-off custom context from the "Create context" wizard. A non-None value
     # means "use this text verbatim instead of the on-disk file" for that field.
     custom_course_text = src.get("course_custom")
@@ -202,6 +213,7 @@ def chat():
             exercise_number=exercise,
             tutor_prompt=tutor,
             email=email,
+            course_enabled=course_enabled,
             syllabus_enabled=syllabus_enabled,
             custom_course_text=custom_course_text,
             custom_exercise_text=custom_exercise_text,
@@ -250,6 +262,9 @@ def chat():
     stream_course = convo.course
     stream_exercise = convo.exercise_number
     stream_tutor = convo.tutor_prompt
+    # Legacy rows predating this column read back NULL; treat that as ON so
+    # continuing an old conversation keeps the course description it had.
+    stream_course_enabled = convo.course_enabled is None or bool(convo.course_enabled)
     stream_syllabus = convo.syllabus_enabled
     stream_course_text = convo.custom_course_text
     stream_exercise_text = convo.custom_exercise_text
@@ -276,6 +291,7 @@ def chat():
         history=history,
         new_student_message=student_text,
         images=images_to_tuples(images),
+        include_course=stream_course_enabled,
         include_syllabus=stream_syllabus,
         course_text=stream_course_text,
         exercise_text=stream_exercise_text,

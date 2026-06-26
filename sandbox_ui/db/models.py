@@ -47,6 +47,13 @@ class Conversation(Base):
     course: Mapped[str] = mapped_column(Text, nullable=False)
     exercise_number: Mapped[str] = mapped_column(Text, nullable=False)
     tutor_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    # sandbox_ui-only: whether the course course.txt description was folded into
+    # the tutor context for this conversation (toggled via the Create-context
+    # wizard, "No course description" option). create_all can't add this to a
+    # pre-existing table, but _reconcile_columns() in run_app does.
+    course_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
     # sandbox_ui-only: whether the course syllabus.txt was folded into the tutor
     # context for this conversation (toggled via the Edit-context switcher).
     syllabus_enabled: Mapped[bool] = mapped_column(

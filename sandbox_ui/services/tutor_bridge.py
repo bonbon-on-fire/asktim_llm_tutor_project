@@ -28,7 +28,7 @@ from tutor.run_tutor import (
 )
 from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
-from utils.curriculum import exercise_path
+from utils.curriculum import exercise_path, practice_path
 from utils.figures import build_multimodal_content, discover_figures
 
 
@@ -42,12 +42,12 @@ _ABOUT_ASKTIM_PATH = Path(__file__).resolve().parents[1] / "about_asktim.txt"
 _VALID_CONTEXT_MODES = {"rag", "full_context", "exercise_only"}
 
 
-_graph_cache: dict[tuple[str, str, str, bool, bool, str], object] = {}
+_graph_cache: dict[tuple[str, str, str, bool, bool, str, str], object] = {}
 # Parallel cache for the streaming path. The non-streaming path drives a
 # compiled LangGraph; the streaming path drives the raw model with the same
 # system prompt. We cache both per (tutor, course, exercise, include_course,
-# include_syllabus, context_mode) so successive turns reuse the same prompt build.
-_stream_cache: dict[tuple[str, str, str, bool, bool, str], tuple[object, str]] = {}
+# include_syllabus, exercise_kind, context_mode) so successive turns reuse the same prompt build.
+_stream_cache: dict[tuple[str, str, str, bool, bool, str, str], tuple[object, str]] = {}
 
 
 def _resolve_context_mode(
@@ -82,6 +82,7 @@ def build_assignment_text(
     course: str,
     exercise: str,
     *,
+    exercise_kind: str = "exercise",
     include_course: bool = True,
     include_syllabus: bool = True,
     course_text: str | None = None,
@@ -153,11 +154,16 @@ def build_assignment_text(
                     "Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip()
                 )
 
-    # Exercise — custom text wins; otherwise read exercise_<NN>.txt.
+    # Exercise — custom text wins; otherwise read exercise_<NN>.txt or practice_<NN>.txt.
     if exercise_text is not None:
         resolved_exercise = exercise_text.strip()
     else:
-        resolved_exercise = exercise_path(course, exercise).read_text(encoding="utf-8").strip()
+        _path = (
+            practice_path(course, exercise)
+            if exercise_kind == "practice"
+            else exercise_path(course, exercise)
+        )
+        resolved_exercise = _path.read_text(encoding="utf-8").strip()
     parts.append("Exercise:\n" + resolved_exercise)
 
     return "\n\n".join(parts)
@@ -204,6 +210,7 @@ def _resolve_system_prompt(
     exercise: str,
     include_syllabus: bool,
     *,
+    exercise_kind: str = "exercise",
     include_course: bool = True,
     course_text: str | None,
     exercise_text: str | None,
@@ -214,6 +221,7 @@ def _resolve_system_prompt(
     assignment_text = build_assignment_text(
         course,
         exercise,
+        exercise_kind=exercise_kind,
         include_course=include_course,
         include_syllabus=include_syllabus,
         course_text=course_text,
@@ -232,6 +240,7 @@ def _get_or_build_graph(
     exercise: str,
     include_syllabus: bool,
     *,
+    exercise_kind: str = "exercise",
     include_course: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
@@ -240,7 +249,7 @@ def _get_or_build_graph(
     context_mode: str = "full_context",
 ):
     custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt)
-    key = (tutor, course, exercise, include_course, include_syllabus, context_mode)
+    key = (tutor, course, exercise, include_course, include_syllabus, exercise_kind, context_mode)
     if not custom:
         cached = _graph_cache.get(key)
         if cached is not None:
@@ -250,6 +259,7 @@ def _get_or_build_graph(
         course,
         exercise,
         include_syllabus,
+        exercise_kind=exercise_kind,
         include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,
@@ -270,6 +280,7 @@ def _get_or_build_stream_context(
     exercise: str,
     include_syllabus: bool,
     *,
+    exercise_kind: str = "exercise",
     include_course: bool = True,
     course_text: str | None = None,
     exercise_text: str | None = None,
@@ -279,7 +290,7 @@ def _get_or_build_stream_context(
 ) -> tuple[object, str]:
     """Return ``(model, system_prompt)`` for the streaming path."""
     custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt)
-    key = (tutor, course, exercise, include_course, include_syllabus, context_mode)
+    key = (tutor, course, exercise, include_course, include_syllabus, exercise_kind, context_mode)
     if not custom:
         cached = _stream_cache.get(key)
         if cached is not None:
@@ -289,6 +300,7 @@ def _get_or_build_stream_context(
         course,
         exercise,
         include_syllabus,
+        exercise_kind=exercise_kind,
         include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,
@@ -381,6 +393,7 @@ def get_tutor_reply(
     history: list[dict],
     new_student_message: str,
     images: list | None = None,
+    exercise_kind: str = "exercise",
     include_course: bool = True,
     include_syllabus: bool = True,
     course_text: str | None = None,
@@ -413,6 +426,7 @@ def get_tutor_reply(
         course,
         exercise,
         include_syllabus,
+        exercise_kind=exercise_kind,
         include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,
@@ -455,6 +469,7 @@ def stream_tutor_reply(
     history: list[dict],
     new_student_message: str,
     images: list | None = None,
+    exercise_kind: str = "exercise",
     include_course: bool = True,
     include_syllabus: bool = True,
     course_text: str | None = None,
@@ -479,6 +494,7 @@ def stream_tutor_reply(
         course,
         exercise,
         include_syllabus,
+        exercise_kind=exercise_kind,
         include_course=include_course,
         course_text=course_text,
         exercise_text=exercise_text,

@@ -648,10 +648,6 @@
       : CREATE_STEPS;
   }
   const CUSTOM = "__custom__";
-  // Course-step sentinel: keep the selected course (for exercises/figures/RAG)
-  // but drop its course.txt description from context — the course analog of the
-  // syllabus step's "No syllabus" option.
-  const NO_COURSE = "__no_course__";
   const LOCKED_TUTOR = "tutor_05"; // the tutor prompt is locked to this in the wizard
   const LOCK_ICON_SVG =
     '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
@@ -732,16 +728,10 @@
         ...contextOptions.courses
           .map((c) => ({ value: c.slug, label: c.name || c.slug }))
           .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
-        { value: NO_COURSE, label: "No course description" },
         { value: CUSTOM, label: "Create custom course" },
       ];
       const d = createDraft.course;
-      currentValue =
-        d.mode === "custom"
-          ? CUSTOM
-          : d.enabled === false
-            ? NO_COURSE
-            : d.existing;
+      currentValue = d.mode === "custom" ? CUSTOM : d.existing;
       customValue = d.custom;
       placeholder = "Paste or write the course context…";
     } else if (step === "exercise") {
@@ -750,20 +740,16 @@
       const exs = (courseObj && courseObj.exercises) || [];
       const pracs = (courseObj && courseObj.practice) || [];
       options = [
-        {
-          group: "Exercises",
-          options: exs.map((n) => ({
-            value: "exercise:" + n,
-            label: "Exercise " + (parseInt(n, 10) || n),
-          })),
-        },
-        {
-          group: "Practice problems",
-          options: pracs.map((n) => ({
-            value: "practice:" + n,
-            label: "Practice " + (parseInt(n, 10) || n),
-          })),
-        },
+        // Flat list: exercises first, then practice problems, then custom (no
+        // group headers). The value prefix (exercise:/practice:) carries the kind.
+        ...exs.map((n) => ({
+          value: "exercise:" + n,
+          label: "Exercise " + (parseInt(n, 10) || n),
+        })),
+        ...pracs.map((n) => ({
+          value: "practice:" + n,
+          label: "Practice " + (parseInt(n, 10) || n),
+        })),
         { value: CUSTOM, label: "Create custom exercise" },
       ];
       const d = createDraft.exercise;
@@ -832,7 +818,25 @@
     // When on, course/syllabus/lectures are retrieved and the syllabus step is
     // skipped.
     let ragToggleRow = null;
+    let courseDescRow = null;
     if (step === "course") {
+      // "Include course description" toggle — gates the built-in course.txt.
+      // Mirrors the RAG toggle; hidden for a custom course or when RAG is on.
+      courseDescRow = document.createElement("label");
+      courseDescRow.className = "rag-toggle";
+      const dcb = document.createElement("input");
+      dcb.type = "checkbox";
+      dcb.id = "create-course-desc-toggle";
+      dcb.checked = createDraft.course.enabled !== false;
+      const dspan = document.createElement("span");
+      dspan.textContent = "Include course description";
+      courseDescRow.appendChild(dcb);
+      courseDescRow.appendChild(dspan);
+      createStepBody.appendChild(courseDescRow);
+      dcb.addEventListener("change", () => {
+        createDraft.course.enabled = dcb.checked;
+      });
+
       ragToggleRow = document.createElement("label");
       ragToggleRow.className = "rag-toggle";
       const cb = document.createElement("input");
@@ -846,6 +850,7 @@
       createStepBody.appendChild(ragToggleRow);
       cb.addEventListener("change", () => {
         createDraft.useRag = cb.checked;
+        updateCourseDescVisibility();
         const s = activeSteps();
         createStepLabel.textContent =
           `Step ${createStep + 1} of ${s.length}: ${STEP_LABELS[step]}`;
@@ -857,8 +862,7 @@
     function updateRagToggleVisibility() {
       if (!ragToggleRow) return;
       const v = sel.value;
-      const courseObj =
-        v && v !== CUSTOM && v !== NO_COURSE ? courseBySlug(v) : null;
+      const courseObj = v && v !== CUSTOM ? courseBySlug(v) : null;
       const hasRag = !!(courseObj && courseObj.has_rag);
       ragToggleRow.hidden = !hasRag;
       if (!hasRag && createDraft.useRag) {
@@ -869,6 +873,14 @@
         createStepLabel.textContent =
           `Step ${createStep + 1} of ${activeSteps().length}: ${STEP_LABELS[step]}`;
       }
+    }
+
+    function updateCourseDescVisibility() {
+      if (!courseDescRow) return;
+      const v = sel.value;
+      // Show only for a real (built-in) course with RAG off — a custom course's
+      // text is always included, and RAG retrieves course material instead.
+      courseDescRow.hidden = !(v && v !== CUSTOM && !createDraft.useRag);
     }
 
     const stepKey = step;
@@ -896,11 +908,8 @@
           (stepKey === "syllabus"
             ? createDraft.syllabus.custom
             : createDraft[stepKey].custom) || "";
-      } else if (
-        (stepKey === "syllabus" && val === "none") ||
-        (stepKey === "course" && val === NO_COURSE)
-      ) {
-        // No syllabus / no course description — nothing to preview.
+      } else if (stepKey === "syllabus" && val === "none") {
+        // No syllabus — nothing to preview.
         ta.readOnly = true;
         ta.hidden = true;
         ta.value = "";
@@ -913,6 +922,7 @@
         if (token === syncToken) ta.value = text;
       }
       updateRagToggleVisibility();
+      updateCourseDescVisibility();
       updateCreateNextEnabled();
     }
     sel.addEventListener("change", syncTextarea);
@@ -955,22 +965,10 @@
         cd.mode = "custom";
         cd.custom = ta.value;
         cd.enabled = true;
-      } else if (sel.value === NO_COURSE) {
-        // Keep a real course as the identity (exercises/figures/RAG need one),
-        // but drop its description. Fall back to the first listed course when
-        // none was picked yet.
-        cd.mode = "existing";
-        cd.enabled = false;
-        if (!cd.existing) {
-          const first = Array.from(sel.options).find(
-            (o) => o.value !== NO_COURSE && o.value !== CUSTOM
-          );
-          cd.existing = first ? first.value : "";
-        }
       } else {
         cd.mode = "existing";
         cd.existing = sel.value;
-        cd.enabled = true;
+        // cd.enabled is set by the "Include course description" toggle.
       }
       return;
     }

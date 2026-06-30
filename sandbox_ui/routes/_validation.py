@@ -13,6 +13,9 @@ from pathlib import Path
 from utils.curriculum import discover_exercises as _discover_exercises
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import read_exercise as _read_exercise
+from utils.curriculum import discover_practice as _discover_practice
+from utils.curriculum import practice_exists as _practice_exists
+from utils.curriculum import read_practice as _read_practice
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +63,21 @@ def validate_exercise(course, exercise) -> dict | None:
     return None
 
 
+def validate_practice(course, practice) -> dict | None:
+    if not practice:
+        return _err("practice", practice, "missing")
+    if not (isinstance(practice, str) and len(practice) == 2 and practice.isdigit()):
+        return _err(
+            "practice", practice, "must be a zero-padded 2-digit number (e.g. 04)"
+        )
+    if not _practice_exists(course, practice):
+        return _err(
+            "practice", practice,
+            f"no practice_{practice}.txt under curriculum/{course}/exercises/",
+        )
+    return None
+
+
 def validate_tutor(tutor) -> dict | None:
     if not tutor:
         return _err("tutor", tutor, "missing")
@@ -97,6 +115,13 @@ def load_exercise_text(course, exercise) -> str:
     return _read_exercise(course, exercise)
 
 
+def load_practice_text(course, practice) -> str:
+    """Raw practice_<NN>.txt for a built-in course/practice problem."""
+    if not course or not practice:
+        return ""
+    return _read_practice(course, practice)
+
+
 def load_tutor_text(tutor) -> str:
     """Raw tutor prompt text for a built-in tutor stem."""
     if not tutor:
@@ -118,6 +143,13 @@ def list_exercises(course) -> list[str]:
     if not course:
         return []
     return _discover_exercises(course)
+
+
+def list_practice(course) -> list[str]:
+    """Sorted zero-padded 2-digit practice-problem numbers for a course."""
+    if not course:
+        return []
+    return _discover_practice(course)
 
 
 def course_has_syllabus(course) -> bool:
@@ -149,7 +181,7 @@ def list_context_options() -> dict:
     Shape:
         {
           "courses": [
-            {"slug": ..., "name": ..., "exercises": [...], "has_syllabus": bool, "has_rag": bool},
+            {"slug": ..., "name": ..., "exercises": [...], "practice": [...], "has_syllabus": bool, "has_rag": bool},
             ...
           ],
           "tutors": ["tutor_01", ...],
@@ -162,8 +194,16 @@ def list_context_options() -> dict:
                 "slug": slug,
                 "name": load_course_name(slug),
                 "exercises": list_exercises(slug),
+                "practice": list_practice(slug),
                 "has_syllabus": course_has_syllabus(slug),
                 "has_rag": course_has_rag(slug),
             }
         )
     return {"courses": courses, "tutors": list_tutors()}
+
+
+def validate_selection(course, number, kind) -> dict | None:
+    """Validate a (kind, number) assignment selection against the right prefix."""
+    if kind == "practice":
+        return validate_practice(course, number)
+    return validate_exercise(course, number)

@@ -73,7 +73,7 @@ def validate_practice(course, practice) -> dict | None:
     if not _practice_exists(course, practice):
         return _err(
             "practice", practice,
-            f"no practice_{practice}.txt under curriculum/{course}/exercises/",
+            f"no practice_{practice}.txt under curriculum/{course}/practices/",
         )
     return None
 

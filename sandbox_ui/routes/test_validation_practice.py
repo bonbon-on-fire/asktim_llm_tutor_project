@@ -26,9 +26,9 @@ def _check(name, cond, detail=""):
 
 def main() -> int:
     course = "tmp_course_validate_practice"
-    exdir = V._CURRICULUM_DIR / course / "exercises"
-    exdir.mkdir(parents=True, exist_ok=True)
-    (exdir / "practice_01.txt").write_text("PRACTICE BODY", encoding="utf-8")
+    prdir = V._CURRICULUM_DIR / course / "practices"
+    prdir.mkdir(parents=True, exist_ok=True)
+    (prdir / "practice_01.txt").write_text("PRACTICE BODY", encoding="utf-8")
     try:
         _check("list_practice finds it", V.list_practice(course) == ["01"], V.list_practice(course))
         _check("validate_practice ok", V.validate_practice(course, "01") is None)

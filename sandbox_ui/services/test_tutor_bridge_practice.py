@@ -35,7 +35,9 @@ def main() -> int:
         exdir = _CURRICULUM / course / "exercises"
         exdir.mkdir(parents=True, exist_ok=True)
         (exdir / "exercise_01.txt").write_text("EXERCISE ONE BODY", encoding="utf-8")
-        (exdir / "practice_01.txt").write_text("PRACTICE ONE BODY", encoding="utf-8")
+        prdir = _CURRICULUM / course / "practices"
+        prdir.mkdir(parents=True, exist_ok=True)
+        (prdir / "practice_01.txt").write_text("PRACTICE ONE BODY", encoding="utf-8")
         try:
             ex_text = build_assignment_text(course, "01", exercise_kind="exercise")
             pr_text = build_assignment_text(course, "01", exercise_kind="practice")

@@ -10,6 +10,7 @@ from .curriculum import (
     list_courses,
     practice_exists,
     practice_path,
+    practices_dir,
     read_exercise,
     read_practice,
 )
@@ -49,6 +50,7 @@ __all__ = [
     "list_courses",
     "practice_exists",
     "practice_path",
+    "practices_dir",
     "read_exercise",
     "read_practice",
     "MAX_IMAGE_BYTES",

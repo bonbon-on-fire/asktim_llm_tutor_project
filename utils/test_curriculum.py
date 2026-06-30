@@ -34,16 +34,22 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 def test_discover_practice_filters_and_sorts() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
+        # Practice problems live in their own practices/ folder.
+        prdir = root / "demo" / "practices"
+        prdir.mkdir(parents=True)
+        (prdir / "practice_02.txt").write_text("p2", encoding="utf-8")
+        (prdir / "practice_01.txt").write_text("p1", encoding="utf-8")
+        (prdir / "practice_1_bad.txt").write_text("x", encoding="utf-8")
+        (prdir / "practice_01.md").write_text("x", encoding="utf-8")
+        # Exercises live in exercises/; a stray practice_* there must be ignored
+        # by both discoverers (each reads only its own folder).
         exdir = root / "demo" / "exercises"
         exdir.mkdir(parents=True)
-        (exdir / "practice_02.txt").write_text("p2", encoding="utf-8")
-        (exdir / "practice_01.txt").write_text("p1", encoding="utf-8")
         (exdir / "exercise_01.txt").write_text("e1", encoding="utf-8")
-        (exdir / "practice_1_bad.txt").write_text("x", encoding="utf-8")
-        (exdir / "practice_01.md").write_text("x", encoding="utf-8")
+        (exdir / "practice_99.txt").write_text("x", encoding="utf-8")
 
         prac = discover_practice("demo", curriculum_root=root)
-        _check("practice sorted + filtered", prac == ["01", "02"], f"got {prac}")
+        _check("practice sorted + filtered, only practices/", prac == ["01", "02"], f"got {prac}")
         ex = discover_exercises("demo", curriculum_root=root)
         _check("exercises ignore practice_*", ex == ["01"], f"got {ex}")
 
@@ -51,9 +57,9 @@ def test_discover_practice_filters_and_sorts() -> None:
 def test_practice_path_exists_and_read() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        exdir = root / "demo" / "exercises"
-        exdir.mkdir(parents=True)
-        (exdir / "practice_03.txt").write_text("hello practice", encoding="utf-8")
+        prdir = root / "demo" / "practices"
+        prdir.mkdir(parents=True)
+        (prdir / "practice_03.txt").write_text("hello practice", encoding="utf-8")
 
         p = practice_path("demo", "03", curriculum_root=root)
         _check("practice_path points at file", p.name == "practice_03.txt", f"got {p.name}")

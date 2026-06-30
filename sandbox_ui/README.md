@@ -46,10 +46,11 @@ paste your own custom text:
 - **Course** — any folder under `curriculum/`, **No course description** (keeps
   the course for exercises/figures/RAG but drops its `course.txt` from context),
   or custom course text
-- **Exercise** — an exercise (`exercise_<NN>.txt`) or a **practice problem**
-  (`practice_<NN>.txt`) for the chosen course, shown as separate "Exercises" and
-  "Practice problems" groups, or custom exercise text. The chosen kind is stored
-  per conversation in `exercise_kind` (defaults to `exercise`)
+- **Exercise** — an exercise (`exercises/exercise_<NN>.txt`) or a **practice
+  problem** (`practices/practice_<NN>.txt`) for the chosen course, shown as
+  separate "Exercises" and "Practice problems" groups, or custom exercise text.
+  The chosen kind is stored per conversation in `exercise_kind` (defaults to
+  `exercise`)
 - **Tutor prompt** — any `tutor_*` prompt, or custom prompt text
 - **Syllabus** — the course's `syllabus.txt`, none, or custom syllabus text
 

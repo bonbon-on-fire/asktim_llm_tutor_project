@@ -15,6 +15,10 @@ curriculum/
       exercise_01.txt
       exercise_02.txt
       ...
+    practices/                       # optional — ungraded practice problems (sandbox_ui)
+      practice_01.txt
+      practice_02.txt
+      ...
     figures/
       exercise_04_power_actors_map.png   # naming: exercise_<NN>_<slug>.png
       ...
@@ -29,6 +33,7 @@ curriculum/
 - `syllabus.txt` (optional) is appended to the assignment block in `main_ui/`'s context build (see [main_ui/services/tutor_bridge.py](../main_ui/services/tutor_bridge.py)).
 - `online_link.txt` (optional) holds the course's MIT OpenCourseWare URL — the canonical source link for **RAG ingestion** of fuller course materials. The [`rag/`](../rag/) pipeline reads it (`python -m rag.ingest --course <c> --source ocw`) to crawl the OCW site's HTML pages **and linked PDFs** (lecture notes, problem sets) into the per-course `rag_index/`. See **Phase 11** in the root [PLANNING.md](../PLANNING.md) and [`rag/README.md`](../rag/README.md).
 - `exercises/exercise_XX.txt` stores the assignment prompt for a specific exercise (zero-padded two-digit numbering). Path resolution for all readers (web apps + runners) is centralized in [`utils/curriculum.py`](../utils/curriculum.py).
+- `practices/practice_XX.txt` (optional) holds **ungraded practice problems** — a parallel content kind to exercises, selectable as a distinct "Practice problems" group in the `sandbox_ui/` Create-context wizard. Same zero-padded two-digit numbering; resolved via `practices_dir()` / `discover_practice()` in [`utils/curriculum.py`](../utils/curriculum.py).
 - `figures/` holds visual context that belongs to a specific exercise. Files must start with `exercise_<NN>_` so the framework (Phase 6 — see root [PLANNING.md](../PLANNING.md)) attaches the matching figures as multimodal input when the tutor/student/judge see that exercise — both in batch runs and in the live AskTIM/Sandbox chat (auto-attached per turn via `services/tutor_bridge.py`). Supported extensions: `.png`, `.jpg`, `.jpeg`. Loaded by [`utils/figures.py`](../utils/figures.py).
 - `lectures/` (optional) holds **per-course** lecture transcripts as plain `.txt` files. Every file in the folder is read (sorted by filename, labeled by stem) and folded into the tutor's context for **all** exercises in the course — mirroring how `syllabus.txt` is treated. Loaded by [`utils/lectures.py`](../utils/lectures.py); absent folder = no transcripts.
 

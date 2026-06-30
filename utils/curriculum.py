@@ -36,6 +36,11 @@ def exercises_dir(course: str, curriculum_root: Path | str | None = None) -> Pat
     return course_dir(course, curriculum_root) / "exercises"
 
 
+def practices_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the practice-problems folder path (``curriculum/<course>/practices/``)."""
+    return course_dir(course, curriculum_root) / "practices"
+
+
 def exercise_path(
     course: str,
     exercise_number: str,
@@ -72,7 +77,7 @@ def practice_path(
     curriculum_root: Path | str | None = None,
 ) -> Path:
     """Return the path to a course's practice-problem file (existence not guaranteed)."""
-    return exercises_dir(course, curriculum_root) / f"practice_{practice_number}.txt"
+    return practices_dir(course, curriculum_root) / f"practice_{practice_number}.txt"
 
 
 def practice_exists(
@@ -101,7 +106,7 @@ def discover_practice(
     curriculum_root: Path | str | None = None,
 ) -> list[str]:
     """Return sorted zero-padded 2-digit practice-problem numbers for a course."""
-    folder = exercises_dir(course, curriculum_root)
+    folder = practices_dir(course, curriculum_root)
     if not folder.is_dir():
         return []
     nums: list[str] = []

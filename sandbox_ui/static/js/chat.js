@@ -832,7 +832,6 @@
       dspan.textContent = "Include course description";
       courseDescRow.appendChild(dcb);
       courseDescRow.appendChild(dspan);
-      createStepBody.appendChild(courseDescRow);
       dcb.addEventListener("change", () => {
         createDraft.course.enabled = dcb.checked;
       });
@@ -848,6 +847,7 @@
       ragToggleRow.appendChild(cb);
       ragToggleRow.appendChild(span);
       createStepBody.appendChild(ragToggleRow);
+      createStepBody.appendChild(courseDescRow);
       cb.addEventListener("change", () => {
         createDraft.useRag = cb.checked;
         updateCourseDescVisibility();

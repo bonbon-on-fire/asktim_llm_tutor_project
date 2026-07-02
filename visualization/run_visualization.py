@@ -5,7 +5,7 @@ Reads judged transcripts from:
     transcripts/<persona_type>/<persona_type>_claude/transcript_*.json
 
 Each run generates every configured chart (no prompts). Current charts:
-    * SC2x persona-type evaluation charts 01-06 (bar/heatmap/boxplot by persona
+    * Persona-type evaluation charts 01-06 (bar/heatmap/boxplot by persona
       and problem).
     * Score-distribution histogram across all graded transcripts (07).
     * Claude total score per transcript (08, plus one chart per persona family).
@@ -37,7 +37,7 @@ class GradeRow:
     transcript_name: str
     total_score: float
     max_score: float
-    kind: str = "?"  # "exercise" | "practice" | "?" — content kind for SC2x charts
+    kind: str = "?"  # "exercise" | "practice" | "?" — content kind for persona-type charts
     section_scores: dict[str, float] = field(default_factory=dict)
     section_maxes: dict[str, float] = field(default_factory=dict)
     subsection_scores: dict[str, float] = field(default_factory=dict)
@@ -409,50 +409,51 @@ def _chart_score_histogram(
 
 
 # ---------------------------------------------------------------------------
-# SC2x persona-type evaluation charts (01-06)
+# Persona-type evaluation charts (01-06)
 #
-# These summarize the SC2x simulation (3 exercises + 3 practices x 18 personas,
-# graded by judge_08/rubric_08) from the shared GradeRow model — the same rows
-# the 07-11 charts use, so transcripts are read only once.
+# These summarize tutor quality by student persona type from the shared GradeRow
+# model — the same rows the 07-11 charts use, so transcripts are read only once.
+# The current corpus is the MIT CTL.SC2x run (3 exercises + 3 practices x 18
+# personas, graded by judge_08/rubric_08).
 # ---------------------------------------------------------------------------
 
 # Persona types in a fixed display order, with stable colors.
-_SC2X_TYPES = ["cooperative", "chaotic", "clueless"]
-_SC2X_TYPE_COLOR = {"cooperative": "#2ca25f", "chaotic": "#ff893a", "clueless": "#3a7bd5"}
-_SC2X_SECTIONS = [
+_PERSONA_TYPES = ["cooperative", "chaotic", "clueless"]
+_PERSONA_TYPE_COLOR = {"cooperative": "#2ca25f", "chaotic": "#ff893a", "clueless": "#3a7bd5"}
+_RUBRIC_SECTIONS = [
     ("1_pedagogy", "Pedagogy"),
     ("2_dialogue_quality", "Dialogue"),
     ("3_communication_quality", "Communication"),
 ]
 
 
-def _sc2x_mean(xs) -> float:
+def _mean(xs) -> float:
     """Mean of an iterable, or 0.0 when empty."""
     xs = list(xs)
     return sum(xs) / len(xs) if xs else 0.0
 
 
-def _sc2x_num(x: float) -> float:
+def _num(x: float) -> float:
     """Numerator value: the score if finite, else 0.0."""
     return x if math.isfinite(x) else 0.0
 
 
-def _sc2x_den(x: float) -> float:
+def _den(x: float) -> float:
     """Denominator value: the max if finite and positive, else 1.0 (avoids /0)."""
     return x if math.isfinite(x) and x > 0 else 1.0
 
 
-def _sc2x_chart_total_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
+def _chart_total_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
     """01: Mean total score by persona type (with spread)."""
     fig, ax = plt.subplots(figsize=(7, 5))
     means, stds = [], []
-    for t in _SC2X_TYPES:
-        vals = [_sc2x_num(r.total_score) for r in rows if r.persona_type == t]
-        m = _sc2x_mean(vals)
+    for t in _PERSONA_TYPES:
+        vals = [_num(r.total_score) for r in rows if r.persona_type == t]
+        m = _mean(vals)
         means.append(m)
-        stds.append((_sc2x_mean([(v - m) ** 2 for v in vals])) ** 0.5)
-    bars = ax.bar(_SC2X_TYPES, means, yerr=stds, capsize=6,
-                  color=[_SC2X_TYPE_COLOR[t] for t in _SC2X_TYPES])
+        stds.append((_mean([(v - m) ** 2 for v in vals])) ** 0.5)
+    bars = ax.bar(_PERSONA_TYPES, means, yerr=stds, capsize=6,
+                  color=[_PERSONA_TYPE_COLOR[t] for t in _PERSONA_TYPES])
     ax.set_ylim(0, 40)
     ax.set_ylabel("Mean total score (/40)")
     ax.set_title("Tutor score by student persona type (Claude judge, 36 convos each)")
@@ -463,25 +464,25 @@ def _sc2x_chart_total_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
     plt.close(fig)
 
 
-def _sc2x_chart_sections_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
+def _chart_sections_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
     """02: Rubric-section attainment (% of max) by persona type."""
     import numpy as np
     fig, ax = plt.subplots(figsize=(9, 5))
-    x = np.arange(len(_SC2X_SECTIONS))
+    x = np.arange(len(_RUBRIC_SECTIONS))
     width = 0.26
-    for i, t in enumerate(_SC2X_TYPES):
+    for i, t in enumerate(_PERSONA_TYPES):
         trows = [r for r in rows if r.persona_type == t]
         pct = [
             100
-            * _sc2x_mean([_sc2x_num(r.section_scores.get(sid, float("nan"))) for r in trows])
-            / _sc2x_mean([_sc2x_den(r.section_maxes.get(sid, float("nan"))) for r in trows])
-            for sid, _ in _SC2X_SECTIONS
+            * _mean([_num(r.section_scores.get(sid, float("nan"))) for r in trows])
+            / _mean([_den(r.section_maxes.get(sid, float("nan"))) for r in trows])
+            for sid, _ in _RUBRIC_SECTIONS
         ]
-        ax.bar(x + (i - 1) * width, pct, width, label=t, color=_SC2X_TYPE_COLOR[t])
+        ax.bar(x + (i - 1) * width, pct, width, label=t, color=_PERSONA_TYPE_COLOR[t])
     ax.set_xticks(x)
     ax.set_xticklabels([
-        f"{lbl}\n(/{int(_sc2x_den(rows[0].section_maxes.get(sid, float('nan'))))})"
-        for sid, lbl in _SC2X_SECTIONS
+        f"{lbl}\n(/{int(_den(rows[0].section_maxes.get(sid, float('nan'))))})"
+        for sid, lbl in _RUBRIC_SECTIONS
     ])
     ax.set_ylim(0, 100)
     ax.set_ylabel("Attainment (% of section max)")
@@ -493,26 +494,26 @@ def _sc2x_chart_sections_by_type(plt, rows: list[GradeRow], out_dir: Path) -> No
     plt.close(fig)
 
 
-def _sc2x_chart_kind_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
+def _chart_kind_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
     """03: Exercise vs practice attainment by persona type."""
     import numpy as np
     fig, ax = plt.subplots(figsize=(8, 5))
     kinds = ["exercise", "practice"]
-    x = np.arange(len(_SC2X_TYPES))
+    x = np.arange(len(_PERSONA_TYPES))
     width = 0.36
     for i, k in enumerate(kinds):
         pct = []
-        for t in _SC2X_TYPES:
+        for t in _PERSONA_TYPES:
             krows = [r for r in rows if r.persona_type == t and r.kind == k]
             pct.append(
                 100
-                * _sc2x_mean([_sc2x_num(r.total_score) for r in krows])
-                / _sc2x_mean([_sc2x_den(r.max_score) for r in krows])
+                * _mean([_num(r.total_score) for r in krows])
+                / _mean([_den(r.max_score) for r in krows])
             )
         ax.bar(x + (i - 0.5) * width, pct, width, label=k,
                color="#6a51a3" if k == "exercise" else "#e6a000")
     ax.set_xticks(x)
-    ax.set_xticklabels(_SC2X_TYPES)
+    ax.set_xticklabels(_PERSONA_TYPES)
     ax.set_ylim(0, 100)
     ax.set_ylabel("Mean total attainment (% of 40)")
     ax.set_title("Exercises vs practice problems, by persona type")
@@ -522,13 +523,13 @@ def _sc2x_chart_kind_by_type(plt, rows: list[GradeRow], out_dir: Path) -> None:
     plt.close(fig)
 
 
-def _sc2x_chart_distribution(plt, rows: list[GradeRow], out_dir: Path) -> None:
+def _chart_distribution(plt, rows: list[GradeRow], out_dir: Path) -> None:
     """04: Total-score distribution by persona type (boxplot)."""
     fig, ax = plt.subplots(figsize=(7, 5))
-    data = [[_sc2x_num(r.total_score) for r in rows if r.persona_type == t] for t in _SC2X_TYPES]
-    bp = ax.boxplot(data, tick_labels=_SC2X_TYPES, patch_artist=True, showmeans=True)
-    for patch, t in zip(bp["boxes"], _SC2X_TYPES):
-        patch.set_facecolor(_SC2X_TYPE_COLOR[t]); patch.set_alpha(0.6)
+    data = [[_num(r.total_score) for r in rows if r.persona_type == t] for t in _PERSONA_TYPES]
+    bp = ax.boxplot(data, tick_labels=_PERSONA_TYPES, patch_artist=True, showmeans=True)
+    for patch, t in zip(bp["boxes"], _PERSONA_TYPES):
+        patch.set_facecolor(_PERSONA_TYPE_COLOR[t]); patch.set_alpha(0.6)
     ax.set_ylim(0, 40)
     ax.set_ylabel("Total score (/40)")
     ax.set_title("Score distribution by persona type")
@@ -537,24 +538,24 @@ def _sc2x_chart_distribution(plt, rows: list[GradeRow], out_dir: Path) -> None:
     plt.close(fig)
 
 
-def _sc2x_chart_heatmap(plt, rows: list[GradeRow], out_dir: Path) -> None:
+def _chart_heatmap(plt, rows: list[GradeRow], out_dir: Path) -> None:
     """05: Heatmap of persona type x rubric section (% of max)."""
     import numpy as np
-    grid = np.zeros((len(_SC2X_TYPES), len(_SC2X_SECTIONS)))
-    for i, t in enumerate(_SC2X_TYPES):
+    grid = np.zeros((len(_PERSONA_TYPES), len(_RUBRIC_SECTIONS)))
+    for i, t in enumerate(_PERSONA_TYPES):
         trows = [r for r in rows if r.persona_type == t]
-        for j, (sid, _) in enumerate(_SC2X_SECTIONS):
+        for j, (sid, _) in enumerate(_RUBRIC_SECTIONS):
             grid[i, j] = (
                 100
-                * _sc2x_mean([_sc2x_num(r.section_scores.get(sid, float("nan"))) for r in trows])
-                / _sc2x_mean([_sc2x_den(r.section_maxes.get(sid, float("nan"))) for r in trows])
+                * _mean([_num(r.section_scores.get(sid, float("nan"))) for r in trows])
+                / _mean([_den(r.section_maxes.get(sid, float("nan"))) for r in trows])
             )
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     im = ax.imshow(grid, cmap="RdYlGn", vmin=60, vmax=100, aspect="auto")
-    ax.set_xticks(range(len(_SC2X_SECTIONS))); ax.set_xticklabels([l for _, l in _SC2X_SECTIONS])
-    ax.set_yticks(range(len(_SC2X_TYPES))); ax.set_yticklabels(_SC2X_TYPES)
-    for i in range(len(_SC2X_TYPES)):
-        for j in range(len(_SC2X_SECTIONS)):
+    ax.set_xticks(range(len(_RUBRIC_SECTIONS))); ax.set_xticklabels([l for _, l in _RUBRIC_SECTIONS])
+    ax.set_yticks(range(len(_PERSONA_TYPES))); ax.set_yticklabels(_PERSONA_TYPES)
+    for i in range(len(_PERSONA_TYPES)):
+        for j in range(len(_RUBRIC_SECTIONS)):
             ax.text(j, i, f"{grid[i, j]:.0f}%", ha="center", va="center", fontweight="bold")
     ax.set_title("Attainment heatmap: persona type x rubric section (% of max)")
     fig.colorbar(im, ax=ax, label="% of max")
@@ -563,7 +564,7 @@ def _sc2x_chart_heatmap(plt, rows: list[GradeRow], out_dir: Path) -> None:
     plt.close(fig)
 
 
-def _sc2x_chart_by_problem(plt, rows: list[GradeRow], out_dir: Path) -> None:
+def _chart_by_problem(plt, rows: list[GradeRow], out_dir: Path) -> None:
     """06: Mean attainment by problem (exercise/practice 01..03)."""
     fig, ax = plt.subplots(figsize=(9, 5))
     labels, pcts, colors = [], [], []
@@ -575,8 +576,8 @@ def _sc2x_chart_by_problem(plt, rows: list[GradeRow], out_dir: Path) -> None:
             labels.append(f"{kind[:4]} {int(n)}")
             pcts.append(
                 100
-                * _sc2x_mean([_sc2x_num(r.total_score) for r in nrows])
-                / _sc2x_mean([_sc2x_den(r.max_score) for r in nrows])
+                * _mean([_num(r.total_score) for r in nrows])
+                / _mean([_den(r.max_score) for r in nrows])
             )
             colors.append(color)
     bars = ax.bar(labels, pcts, color=colors)
@@ -590,8 +591,8 @@ def _sc2x_chart_by_problem(plt, rows: list[GradeRow], out_dir: Path) -> None:
     plt.close(fig)
 
 
-def _render_sc2x_charts(rows: list[GradeRow], out_dir: Path) -> int:
-    """Generate the six SC2x charts (01-06) into *out_dir* from graded rows.
+def _render_charts(rows: list[GradeRow], out_dir: Path) -> int:
+    """Generate the six persona-type charts (01-06) into *out_dir* from graded rows.
 
     Returns the number of rows used (0 when empty, in which case nothing is
     written).
@@ -599,12 +600,12 @@ def _render_sc2x_charts(rows: list[GradeRow], out_dir: Path) -> int:
     if not rows:
         return 0
     plt = _safe_import_matplotlib()
-    _sc2x_chart_total_by_type(plt, rows, out_dir)
-    _sc2x_chart_sections_by_type(plt, rows, out_dir)
-    _sc2x_chart_kind_by_type(plt, rows, out_dir)
-    _sc2x_chart_distribution(plt, rows, out_dir)
-    _sc2x_chart_heatmap(plt, rows, out_dir)
-    _sc2x_chart_by_problem(plt, rows, out_dir)
+    _chart_total_by_type(plt, rows, out_dir)
+    _chart_sections_by_type(plt, rows, out_dir)
+    _chart_kind_by_type(plt, rows, out_dir)
+    _chart_distribution(plt, rows, out_dir)
+    _chart_heatmap(plt, rows, out_dir)
+    _chart_by_problem(plt, rows, out_dir)
     return len(rows)
 
 
@@ -641,12 +642,12 @@ def main() -> int:
         )
         return 1
 
-    # SC2x persona-type evaluation charts (01-06), from the same rows.
-    n_sc2x = _render_sc2x_charts(claude_all_rows, out_dir)
-    print(f"  [1-6] SC2x charts from {n_sc2x} graded transcripts")
+    # Persona-type evaluation charts (01-06), from the same rows.
+    n_persona = _render_charts(claude_all_rows, out_dir)
+    print(f"  [1-6] persona-type charts from {n_persona} graded transcripts")
 
     # Charts are numbered with a zero-padded ``##_`` prefix that continues after
-    # the sc2x charts (01-06); start at 07 to avoid colliding with them.
+    # the persona-type charts (01-06); start at 07 to avoid colliding with them.
     chart_idx = 7
 
     _chart_score_histogram(

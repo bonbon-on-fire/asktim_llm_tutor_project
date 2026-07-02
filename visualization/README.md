@@ -1,7 +1,7 @@
 # Visualization
 
 Generate Claude transcript grading charts. Each run produces **all 11** configured
-outputs (no prompts or modes): the six SC2x persona-type evaluation charts
+outputs (no prompts or modes): the six persona-type evaluation charts
 (`01`–`06`) followed by the score-distribution and per-transcript grade charts
 (`07`–`11`).
 
@@ -22,7 +22,7 @@ pip install -r requirements.txt
 python -m visualization.run_visualization
 ```
 
-This generates all 11 charts, including the SC2x persona-type evaluation charts
+This generates all 11 charts, including the persona-type evaluation charts
 (`01`–`06`, bar/heatmap/boxplot by persona and problem).
 
 ### RAG grades
@@ -55,9 +55,9 @@ All 11 charts are written to `visualization/outputs/` (or `.../outputs/rag/` wit
 | `11_grades_cooperative_transcripts.png` | Same chart restricted to cooperative persona. |
 
 All charts are built from one shared `GradeRow` model, so transcripts are read
-once per run and fed to both the SC2x (`01`–`06`) and line/histogram (`07`–`11`)
-families. The per-transcript line charts annotate transcript count and mean score
-with integer y-ticks.
+once per run and fed to both the persona-type (`01`–`06`) and line/histogram
+(`07`–`11`) families. The per-transcript line charts annotate transcript count and
+mean score with integer y-ticks.
 
 ## Sorting
 

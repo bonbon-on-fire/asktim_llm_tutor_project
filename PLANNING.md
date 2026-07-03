@@ -907,7 +907,7 @@ Postgres.
   `ModuleNotFoundError: No module named 'psycopg2'`), runs `alembic upgrade head`,
   then starts gunicorn.
 - [`Procfile`](Procfile): `web: gunicorn main_ui.run_app:app --bind 0.0.0.0:$PORT`.
-- **Verified 2026-06-01** (meeting `meeting_notes/06_01_2026.md`): production
+- **Verified 2026-06-01** (meeting `meeting_notes/2026-06-01.md`): production
   confirmed synced with `main`, Dockerfile/build reviewed, Railway Postgres
   connectivity checked.
 
@@ -1135,7 +1135,7 @@ The core n limitation is Claude's ~13% per-criterion coverage. Re-grading the ~3
 ### 04/2026 — Prompt iteration + mini-continuation pipeline (completed)
 
 - Tightened focus on **prompt iteration** ahead of the **May 12, 2026 hard
-  deadline** (per `meeting_notes/04_22_2026.md`). `tutor_05` / `rubric_05` (46 pts,
+  deadline** (per `meeting_notes/2026-04-22.md`). `tutor_05` / `rubric_05` (46 pts,
   no malus) became the active pair.
 - `run_ui_raw_mini` (fork a raw transcript at a pivot turn, regenerate the tutor
   with a new prompt/provider) became the primary evaluation tool for iterating on

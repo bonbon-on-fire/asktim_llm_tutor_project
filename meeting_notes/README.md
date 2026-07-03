@@ -1,10 +1,10 @@
 # Meetings
 
-This folder contains project meeting notes (one `MM_DD_YYYY.md` per meeting).
+This folder contains project meeting notes (one `YYYY-MM-DD.md` per meeting).
 
 ## Naming convention
 
-- Prefer: `MM_DD_YYYY.md` (example: `02_24_2026.md`)
+- Prefer: `YYYY-MM-DD.md` (example: `2026-02-24.md`)
 
 ## Recommended structure
 

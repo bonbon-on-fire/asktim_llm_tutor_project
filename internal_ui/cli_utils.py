@@ -203,11 +203,15 @@ def confirm_proceed(summary: str) -> bool:
 
 
 def parse_persona_type_and_version(persona: str) -> tuple[str, str]:
-    """Parse persona name into type and version (e.g. 'chaotic_01' -> ('chaotic', '01'))."""
-    match = re.match(r"^([a-zA-Z0-9]+)_(\d{2})$", persona)
+    """Parse a persona name into (type, version).
+
+    Accepts a bare type ('clueless' -> ('clueless', '')) and the legacy
+    versioned form ('clueless_01' -> ('clueless', '01')).
+    """
+    match = re.match(r"^([a-zA-Z0-9]+)(?:_(\d{2}))?$", persona)
     if not match:
-        raise ValueError(f"Persona '{persona}' must use '<type>_<NN>' format")
-    return match.group(1), match.group(2)
+        raise ValueError(f"Persona '{persona}' must use '<type>' or '<type>_<NN>' format")
+    return match.group(1), (match.group(2) or "")
 
 
 def group_personas_by_type(personas: list[str]) -> dict[str, list[str]]:

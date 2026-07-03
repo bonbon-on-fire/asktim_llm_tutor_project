@@ -83,8 +83,8 @@ class RunConfig:
 
     @property
     def student_persona(self) -> str:
-        """Full persona identifier combining type and zero-padded version (e.g. chaotic_01)."""
-        return f"{self.persona_type}_{self.persona_version}"
+        """Persona identifier: bare type, or 'type_NN' for legacy versioned personas."""
+        return f"{self.persona_type}_{self.persona_version}" if self.persona_version else self.persona_type
 
 
 @dataclass(frozen=True)

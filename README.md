@@ -350,7 +350,7 @@ asktim_llm_tutor_project_2026/
 
 The full pipeline is working end-to-end, with:
 
-- 3 persona families × 6 variants each (chaotic, cooperative, clueless) — 18 student personas total
+- 3 personas (chaotic, cooperative, clueless), one per type — variety comes from temperature=0.7, not multiple files
 - 6 courses: `cities_and_climate_change` (12 exercises, live in AskTIM), `intro_to_international_development_planning` (24), `mathematics_for_cs` (10), `physics_iii_vibrations_and_waves` (10), `meaning_of_life` (3), and `supply_chain_design` (MIT CTL.SC2x)
 - Current on-disk transcript corpus: SC2x "with-lecture-context" run (course `supply_chain_design`, `tutor_05`) — each persona family has `*_raw/` (ungraded) and `*_claude/` (Claude-graded), 108 files each, 324 total
 - Judge prompts versioned up to `judge_08`, rubrics up to `rubric_08` (latest/recommended: `judge_08` / `rubric_08`, **40 pts**; in-code default still `judge_05` / `rubric_05`). Claude is the primary judge; GPT judging paused.

@@ -42,7 +42,7 @@
 
 ## How we test the tutor
 
-- **Student bots** — 18 personas in 3 families, each probes one failure mode:
+- **Student bots** — 3 personas (one per type), each probes one failure mode:
   - **chaotic** → demands the answer / tries to jailbreak
 
   - **clueless** → plays lost, invites over-explaining

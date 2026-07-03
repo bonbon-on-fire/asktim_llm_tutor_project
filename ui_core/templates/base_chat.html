@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AskTIM{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/chat.css') }}">
+{% block head_extra %}{% endblock %}</head>
+<body data-has-email="{{ 'true' if has_email else 'false' }}">
+    <script type="application/json" id="tutor-config">{{ tutor_config | tojson }}</script>
+
+    <header class="course-banner">
+        <span class="course-name">{% block banner %}{{ course_name }}{% endblock %}</span>
+    </header>
+
+    <button type="button" class="history-toggle" id="history-toggle" aria-label="Open sidebar" title="Open sidebar">
+        <svg class="history-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <line x1="9" y1="4" x2="9" y2="20"/>
+        </svg>
+    </button>
+
+    <div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Past conversations">
+        <div class="sidebar-inner">
+            <div class="sidebar-header">
+                <h2 id="sidebar-title" class="sidebar-title">AskTIM <span class="beta-tag">{% block beta_tag %}· Beta{% endblock %}</span></h2>
+                <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Close sidebar" title="Close sidebar">
+                    <svg class="sidebar-close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="16" rx="2"/>
+                        <line x1="9" y1="4" x2="9" y2="20"/>
+                    </svg>
+                </button>
+            </div>
+{% block sidebar_cta_extra %}{% endblock %}            <button type="button" class="sidebar-cta sidebar-cta-primary" id="add-email" title="Log in" hidden>
+                <svg class="sidebar-cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                <span>Log in</span>
+            </button>
+            <button type="button" class="sidebar-cta" id="new-chat" title="Start a new chat">
+                <svg class="sidebar-cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                <span>New chat</span>
+            </button>
+            <div class="sidebar-empty" id="sidebar-empty" hidden></div>
+            <ul class="sidebar-list" id="sidebar-list"></ul>
+        </div>
+    </aside>
+
+    <main class="chat">
+        <ol class="message-list" id="message-list" aria-live="polite" aria-label="Conversation"></ol>
+
+        <div class="error-banner" id="error-banner" role="alert" hidden>
+            <span class="error-text" id="error-text"></span>
+            <button class="error-dismiss" id="error-dismiss" type="button" aria-label="Dismiss error">&times;</button>
+        </div>
+
+        <form class="composer" id="composer" autocomplete="off">
+            <div class="composer-previews" id="composer-previews" hidden aria-label="Attached images"></div>
+            <div class="composer-bar">
+                <input type="file" id="image-input" class="image-input" accept="image/png,image/jpeg" multiple hidden>
+                <button type="button" id="attach-button" class="attach-button" aria-label="Attach image" title="Attach image">
+                    <svg class="attach-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                    </svg>
+                </button>
+                <textarea
+                    id="composer-input"
+                    class="composer-input"
+                    placeholder="Ask anything"
+                    rows="1"
+                    aria-label="Your message to AskTIM"></textarea>
+                <button type="submit" id="send-button" class="send-button" aria-label="Send prompt" title="Send prompt" disabled>
+                    <svg class="send-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </main>
+    </div>
+
+    <div class="detail-view" id="detail-view" hidden>
+        <div class="detail-header">
+            <button type="button" class="detail-back" id="detail-back">&larr; Back</button>
+            <div class="detail-meta" id="detail-meta"></div>
+        </div>
+        <ol class="detail-messages" id="detail-messages" aria-label="Past conversation"></ol>
+    </div>
+
+    <div class="modal-overlay" id="email-modal" role="dialog" aria-modal="true"
+         aria-labelledby="email-modal-title" aria-describedby="email-modal-body" hidden>
+        <div class="modal-card">
+            <h2 id="email-modal-title" class="modal-title">Help AskTIM improve response quality</h2>
+            <p id="email-modal-body" class="modal-body">
+                Log in to save your chats and help AskTIM provide you with
+                better and more consistent help.
+            </p>
+            <form id="email-form" class="modal-form" autocomplete="off" novalidate>
+                <input
+                    type="text"
+                    id="email-input"
+                    class="email-input"
+                    placeholder="Enter your username"
+                    aria-label="Your username"
+                    autocomplete="username"
+                    title="">
+                <div id="password-stage" class="password-stage" hidden>
+                    <div class="email-recap">
+                        <span id="email-display" class="email-display-value"></span>
+                        <button type="button" id="email-change" class="email-change">Change</button>
+                    </div>
+                    <input
+                        type="password"
+                        id="password-input"
+                        class="email-input"
+                        placeholder="Create a password (6+ characters)"
+                        aria-label="Your password"
+                        autocomplete="current-password"
+                        title="">
+                    <p id="password-hint" class="password-hint"></p>
+                </div>
+                <div class="modal-error" id="email-error" role="alert" hidden></div>
+                <div class="modal-actions">
+                    <button type="button" id="email-skip" class="modal-skip">Skip</button>
+                    <button type="submit" id="email-submit" class="modal-submit" disabled>Next</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% block modals_extra %}{% endblock %}    <!-- Markdown rendering for tutor messages: marked parses GFM (incl. tables),
+         DOMPurify sanitizes the HTML to keep the no-raw-innerHTML XSS guarantee.
+         Vendored locally (not a CDN) so they always load offline / behind a VPN
+         and bake into the container image. Loaded with defer so they run, in
+         order, before chat.js. -->
+    <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
+    <script src="{% block chat_js_src %}{{ url_for('static', filename='js/chat.js') }}{% endblock %}" defer></script>
+</body>
+</html>

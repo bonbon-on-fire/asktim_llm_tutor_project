@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from flask import Flask, Response, g, jsonify, request
+from jinja2 import ChoiceLoader, FileSystemLoader
 from sqlalchemy import inspect, text
 
+import ui_core
 from sandbox_ui.config import load_config
 from sandbox_ui.cookies import (
     SESSION_COOKIE_NAME,
@@ -66,6 +70,11 @@ def create_app() -> Flask:
     config = load_config()
     app = Flask(__name__)
     app.config["SECRET_KEY"] = config.secret_key
+
+    ui_core_templates = Path(ui_core.__file__).resolve().parent / "templates"
+    app.jinja_loader = ChoiceLoader(
+        [app.jinja_loader, FileSystemLoader(str(ui_core_templates))]
+    )
 
     # sandbox_ui owns a separate, throwaway database and skips Alembic — the
     # schema is created directly from the models on boot. create_all makes

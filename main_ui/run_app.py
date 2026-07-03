@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-from flask import Flask, Response, g, jsonify, request
+from pathlib import Path
 
+from flask import Flask, Response, g, jsonify, request
+from jinja2 import ChoiceLoader, FileSystemLoader
+
+import ui_core
 from main_ui.config import load_config
 from main_ui.cookies import (
     SESSION_COOKIE_NAME,
@@ -22,6 +26,11 @@ def create_app() -> Flask:
     config = load_config()
     app = Flask(__name__)
     app.config["SECRET_KEY"] = config.secret_key
+
+    ui_core_templates = Path(ui_core.__file__).resolve().parent / "templates"
+    app.jinja_loader = ChoiceLoader(
+        [app.jinja_loader, FileSystemLoader(str(ui_core_templates))]
+    )
 
     app.register_blueprint(static_bp)
     app.register_blueprint(embed_bp)

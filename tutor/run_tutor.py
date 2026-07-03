@@ -178,7 +178,7 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt", figures: li
     def tutor_node(state: TutorState) -> dict:
         """Generate one tutor turn from current conversation state."""
 
-        messages = [SystemMessage(content=_sanitize_text_for_transport(system_prompt))]
+        messages = [_build_system_message(system_prompt, model)]
         state_messages = state.get("messages") or []
         for msg in state_messages:
             messages.append(_sanitize_message_content(msg))
@@ -359,6 +359,28 @@ def _sanitize_message_content(msg: BaseMessage) -> BaseMessage:
     if isinstance(msg, SystemMessage):
         return SystemMessage(content=safe)
     return HumanMessage(content=safe)
+
+
+def _build_system_message(system_prompt: str, model) -> SystemMessage:
+    """Build the tutor system message, prompt-cached on Anthropic.
+
+    The system prompt (assignment context: about + course/syllabus/lectures +
+    exercise) is large and constant across every turn of a conversation, so it is
+    the ideal prompt-cache target. Anthropic (Claude) does not cache unless the
+    block is explicitly marked with ``cache_control``, so we mark it here — the
+    cached prefix is reused on every subsequent turn (and across conversations
+    that share the same prompt) within the cache TTL, at a fraction of the input
+    cost. OpenAI caches long prefixes automatically, so a plain string is left
+    as-is there (and for any other provider). Marking is billing/latency-only —
+    it never changes the model's output. Anthropic silently ignores the marker
+    when the prompt is under its minimum cacheable length, so this is always safe.
+    """
+    text = _sanitize_text_for_transport(system_prompt)
+    if isinstance(model, ChatAnthropic):
+        return SystemMessage(
+            content=[{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+        )
+    return SystemMessage(content=text)
 
 
 # ---------------------------------------------------------------------------
@@ -561,8 +583,7 @@ def stream_tutor_reply(
         Finally ``("__done__", full_raw_json)`` so callers can run
         :func:`parse_tutor_response` to recover the hidden reasoning.
     """
-    safe_system = _sanitize_text_for_transport(system_prompt)
-    safe_messages = [SystemMessage(content=safe_system)]
+    safe_messages = [_build_system_message(system_prompt, model)]
     for msg in messages:
         safe_messages.append(_sanitize_message_content(msg))
 

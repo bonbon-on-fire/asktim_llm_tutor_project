@@ -24,6 +24,41 @@ Branding is deliberately distinct from production: the accent is teal-blue
 - **Per-course lecture transcripts** — a course's `lectures/*.txt` fold into the tutor context via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py). In the Sandbox this is a dedicated **Lectures** wizard step, toggleable per conversation (and skipped in RAG mode, where lecture material is retrieved instead)
 - **Student image uploads** — PNG/JPEG attachments (paperclip, drag-and-drop, or clipboard paste, up to 5 × 10 MB) sent to the tutor as multimodal input, stored in `uploaded_images.data` (BYTEA) and re-served via `GET /api/image/<id>`. Same shared validation ([`utils/uploads.py`](../utils/uploads.py)) and frontend as `main_ui`, including the click-to-enlarge image lightbox (staged or sent; backdrop / × / Esc to close)
 
+## Architecture: a thin shell over `ui_core`
+
+Like `main_ui`, `sandbox_ui` is a thin app built on the shared `ui_core`
+package, plus its own sandbox-specific additions on top:
+
+- `run_app.py` builds the app via `ui_core.app_factory.create_app(...)`
+  (Flask construction, template loader, session/db-session hooks, `/health`).
+  Its `on_startup` runs `Base.metadata.create_all(engine)` then
+  `_reconcile_columns()` — sandbox_ui has no Alembic, so `_reconcile_columns()`
+  `ALTER TABLE ... ADD COLUMN`s any model column missing from an
+  already-existing table on the long-lived Sandbox DB (see
+  [Database](#database) below).
+- `services/conversation.py`, `services/students.py`, and `services/images.py`
+  are thin wrappers that bind sandbox_ui's own model classes to the shared,
+  app-agnostic logic in `ui_core.services.*`. `services/tutor_bridge.py`
+  defines `SandboxTutorBridge`, a subclass of `ui_core.tutor_bridge.TutorBridge`
+  that overrides its hooks (`prepare_ctx`, `cache_key`, `build_assignment_text`,
+  `build_system_prompt`, `retrieved_context`, `turn_attachments`) to add
+  sandbox_ui's RAG / custom-context / include-toggle behavior.
+- `db/models.py` defines sandbox_ui's own `Conversation` (carrying its 10
+  sandbox-only columns — `exercise_kind`, the `*_enabled` toggles, `context_mode`,
+  and the `custom_*` snapshots) but pulls `Message`, `Student`, and
+  `UploadedImage` from the shared mixins in `ui_core.db.models_common`, since
+  those tables are schema-identical across the web apps.
+- `routes/identity.py` and `routes/history.py` are just wiring around the
+  shared blueprint factories `ui_core.web.blueprints.identity.make_identity_bp`
+  and `...history.make_history_bp`. `routes/chat.py`, `routes/embed.py`, and
+  `routes/_validation.py` stay sandbox-specific — the wizard/context/RAG
+  endpoints have no main_ui equivalent.
+- `templates/embed.html` extends the shared `ui_core/templates/base_chat.html`.
+  CSS is layered the same way: the shared `ui_core/static/css/chat.css` (served
+  at `/ui-core/css/chat.css` by `ui_core.web.static_blueprint`) plus sandbox_ui's
+  own small `static/css/sandbox-extra.css` override — the teal palette and the
+  context-wizard-specific styles.
+
 ## What's different
 
 | | `main_ui/` (production) | `sandbox_ui/` (this app) |
@@ -40,10 +75,11 @@ Both apps can run side by side.
 
 ## The "Create context" wizard
 
-The solid-blue **Create context** button (top of the sidebar, above "Add username")
-opens a step-by-step wizard. The steps are **Course → Exercise → Tutor prompt →
-Syllabus → Lectures**. At each step you either pick an existing built-in or
-paste your own custom text:
+The solid-blue **Edit context** button (top of the sidebar, above "Log in")
+opens a step-by-step wizard — internally still called the "Create context"
+wizard in code/routes, since it also starts a fresh conversation. The steps
+are **Course → Exercise → Tutor prompt → Syllabus → Lectures**. At each step
+you either pick an existing built-in or paste your own custom text:
 
 - **Course** — any folder under `curriculum/`, **No course description** (keeps
   the course for exercises/figures/RAG but drops its `course.txt` from context),
@@ -205,27 +241,26 @@ off the `DATABASE_URL` main_ui uses in the shared `.env`.
 sandbox_ui/
   __main__.py             # python -m sandbox_ui entry point (127.0.0.1, port 5000)
   config.py               # env-driven Config (SANDBOX_UI_* vars, separate DB)
-  run_app.py              # Flask factory; create_all + _reconcile_columns on boot; blueprints
-  cookies.py              # session/username cookie names + kwargs
-  about_asktim.txt        # "About yourself" block folded into the tutor prompt
+  run_app.py              # ui_core.app_factory.create_app(...) wiring; create_all + _reconcile_columns on boot; blueprints
+  cookies.py              # session/username cookie names + kwargs (thin wrapper over ui_core.cookies)
   db/
-    models.py             # SQLAlchemy models (course/syllabus/lectures flags, custom_*, context_mode)
+    models.py             # sandbox-only Conversation (course/syllabus/lectures flags, custom_*, context_mode) + shared Message/Student/UploadedImage from ui_core.db.models_common
     session.py            # engine + SessionLocal
     reset_uploaded_images.py # one-off: rebuild uploaded_images table (python -m sandbox_ui.db.reset_uploaded_images)
   routes/
-    embed.py              # GET /embed, GET / , GET /api/context/options, GET /api/context/preview
-    chat.py               # POST /api/chat (SSE; syllabus/lectures/course/RAG passthrough, images)
-    history.py            # GET /api/history, /api/conversation/<uuid>
-    identity.py           # GET /api/whoami, POST /api/identity[/check]
+    embed.py              # GET /embed, GET / , GET /api/context/options, GET /api/context/preview (sandbox-specific)
+    chat.py               # POST /api/chat (SSE; syllabus/lectures/course/RAG passthrough, images) (sandbox-specific)
+    history.py            # GET /api/history, /api/conversation/<uuid> (wraps ui_core.web.blueprints.history)
+    identity.py           # GET /api/whoami, POST /api/identity[/check] (wraps ui_core.web.blueprints.identity)
     _validation.py        # validators + context-option/preview listing helpers
   services/
-    conversation.py       # persistence (stores the sandbox context flags + custom_*)
-    students.py           # bcrypt identity
-    images.py             # validate/persist/serve uploaded images
-    tutor_bridge.py       # talks to tutor.run_tutor (include_course/syllabus/lectures + RAG aware)
-  static/css/chat.css     # #126f9a accent + create-context wizard styles
+    conversation.py       # thin wrapper over ui_core.services.conversation (adds the sandbox context flags + custom_*)
+    students.py           # thin wrapper over ui_core.services.students (bcrypt identity)
+    images.py             # thin wrapper over ui_core.services.images (validate/persist/serve uploaded images)
+    tutor_bridge.py       # SandboxTutorBridge(ui_core.tutor_bridge.TutorBridge) — adds RAG/custom-context/include-toggle hooks
+  static/css/sandbox-extra.css # #126f9a accent + create-context wizard styles, layered on top of ui_core's shared chat.css
   static/js/chat.js       # streaming + sidebar + Create-context wizard
   static/js/marked.min.js # vendored markdown parser (GFM tables)
   static/js/dompurify.min.js # vendored HTML sanitizer (XSS-safe tutor markdown)
-  templates/embed.html    # chat page (Sandbox Beta, Create context wizard)
+  templates/embed.html    # extends ui_core/templates/base_chat.html (Sandbox Beta, Create context wizard)
 ```

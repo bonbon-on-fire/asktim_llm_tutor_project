@@ -18,11 +18,20 @@ What works today:
 - Postgres-backed persistence (Conversation / Message / Student tables, Alembic migrations)
 - Two-stage username + password identity (`/api/identity/check` → `/api/identity`) with bcrypt hashing
 - Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats
-- "Add username" sidebar entry point so students who skipped the modal can come back later
+- "Log in" sidebar entry point (button text + tooltip) so students who skipped the modal can come back later
 - MIT crimson branding, AskTIM Beta header, "MIT 11.270x Cities and Climate Change" course banner
 - Per-course lecture transcripts (`curriculum/<course>/lectures/*.txt`) auto-folded into tutor context when present (text-only, no-op until a course adds them) — via [`utils.lectures`](../utils/lectures.py)
 - **Curriculum figures** auto-attached to the tutor: any `curriculum/<course>/figures/exercise_<NN>_*.{png,jpg,jpeg}` matching the conversation's exercise is sent to the tutor as multimodal input on every turn (re-attached each call since per-call history is text-only) — via [`utils.figures.discover_figures`](../utils/figures.py) in [`services/tutor_bridge.py`](services/tutor_bridge.py); no-op for exercises with no figure
 - **Student image uploads** (Step 10): the composer accepts PNG/JPEG attachments (paperclip, drag-and-drop, or clipboard paste, up to 5 × 10 MB), streamed to the tutor as multimodal input on that turn. Bytes are stored in-DB (`uploaded_images.data`, BYTEA) so they survive Railway redeploys, re-rendered in history via `GET /api/image/<id>`. Validation is shared with `sandbox_ui` in [`utils/uploads.py`](../utils/uploads.py); images attach only to the turn they're sent on (prior turns stay text-only). Clicking any chat image — a staged composer thumbnail or one already sent — opens it enlarged and centered in a lightbox (backdrop / × / Esc to close)
+
+## Architecture
+
+`main_ui/` is a thin shell over the shared [`ui_core/`](../ui_core/) package, which also backs [`sandbox_ui/`](../sandbox_ui/). `run_app.py` builds the Flask app via `ui_core.app_factory.create_app(...)` — one factory owns `SECRET_KEY` setup, the session-id/db-session before/teardown hooks, the session-cookie `after_request`, `/health`, and blueprint registration, so the two apps no longer duplicate that plumbing.
+
+- `services/{conversation,students,images}.py` are thin wrappers binding main_ui's own model classes to the shared, app-agnostic logic in `ui_core.services.*`; `services/tutor_bridge.py` wraps a single `ui_core.tutor_bridge.TutorBridge()` instance.
+- `db/models.py` keeps main_ui's own `Conversation` (its schema is the minimal one — sandbox_ui's adds columns) but gets `Message`, `Student`, and `UploadedImage` from mixins in `ui_core.db.models_common`; `db/session.py` and `cookies.py` are thin wrappers over `ui_core.db.session` / `ui_core.cookies`.
+- `routes/identity.py` and `routes/history.py` are built from shared blueprint factories — `ui_core.web.blueprints.identity.make_identity_bp` and `.history.make_history_bp` — parameterized with main_ui's own `cookies`/`services` modules. `routes/{chat,embed,_validation}.py` remain main_ui-specific.
+- The page template `templates/embed.html` is just `{% extends "base_chat.html" %}`, pulling in the shared shell at [`ui_core/templates/base_chat.html`](../ui_core/templates/base_chat.html). The stylesheet is served from the shared `ui_core` static blueprint at `/ui-core/css/chat.css` (source: [`ui_core/static/css/chat.css`](../ui_core/static/css/chat.css)) — main_ui's own `static/` now holds only `js/`.
 
 ## Quick start
 
@@ -121,38 +130,37 @@ main_ui/
   __init__.py             # package marker + .env auto-load
   __main__.py             # python -m main_ui entry point
   config.py               # env-driven Config dataclass
-  cookies.py              # session + username cookie helpers (HttpOnly, SameSite=None, Partitioned)
-  run_app.py              # Flask factory, before/teardown hooks, blueprint registration
+  cookies.py              # thin wrapper over ui_core.cookies (adds main_ui's secure/max-age config)
+  run_app.py              # builds the app via ui_core.app_factory.create_app(...)
   README.md               # this file
   PLANNING.md             # step-by-step build log
 
   db/
     __init__.py           # re-exports models + session helpers
-    models.py             # SQLAlchemy 2.x models: Conversation, Message, Student, UploadedImage
-    session.py            # engine + SessionLocal + SQLite PRAGMA foreign_keys=ON hook
+    models.py             # Conversation (main_ui's own schema); Message/Student/UploadedImage via ui_core.db.models_common mixins
+    session.py            # thin wrapper over ui_core.db.session (engine + SessionLocal)
     migrations/           # Alembic env + versioned migrations
 
   routes/
-    chat.py               # POST /api/chat (SSE stream, owns its own DB session)
-    embed.py              # GET /embed (renders the chat template)
-    history.py            # GET /api/history, /api/conversation/<uuid>
-    identity.py           # GET /api/whoami, POST /api/identity[/check]
-    _validation.py        # shared course/exercise/tutor validators
+    chat.py               # POST /api/chat (SSE stream, owns its own DB session) — main_ui-specific
+    embed.py              # GET /embed (renders the chat template) — main_ui-specific
+    history.py            # GET /api/history, /api/conversation/<uuid> — built from ui_core.web.blueprints.history
+    identity.py           # GET /api/whoami, POST /api/identity[/check] — built from ui_core.web.blueprints.identity
+    _validation.py        # shared course/exercise/tutor validators — main_ui-specific
 
   services/
-    conversation.py       # find/create/append/list/backfill helpers for Conversation+Message
-    students.py           # bcrypt create + verify helpers for Student
-    images.py             # validate + persist uploaded images; ownership-checked fetch
-    tutor_bridge.py       # the one place that talks to tutor.run_tutor
+    conversation.py       # thin wrapper binding Conversation/Message to ui_core.services.conversation
+    students.py           # thin wrapper binding Student to ui_core.services.students
+    images.py             # thin wrapper binding UploadedImage to ui_core.services.images
+    tutor_bridge.py       # thin wrapper around one shared ui_core.tutor_bridge.TutorBridge()
 
   static/
-    css/chat.css          # all chat-page styling
     js/chat.js            # vanilla JS: streaming consumer, sidebar, modal, etc.
     js/marked.min.js      # vendored markdown parser (GFM tables) — tutor message rendering
     js/dompurify.min.js   # vendored HTML sanitizer — XSS-safe innerHTML for tutor markdown
 
   templates/
-    embed.html            # iframe-embeddable chat page
+    embed.html            # {% extends "base_chat.html" %} — the shared chat shell lives in ui_core/templates/
 ```
 
 ## Deployment (Railway)
@@ -182,6 +190,11 @@ It runs on its **own** PostgreSQL database (`asktim_test`) so test chats never
 mix with production data, builds its schema with `create_all` (no Alembic), and
 uses a teal-blue (`#126f9a`) accent instead of crimson. Both apps can run side
 by side (`main_ui` on `5001`, `sandbox_ui` on `5000`).
+
+Both apps are thin shells over the shared [`ui_core/`](../ui_core/) package —
+see [Architecture](#architecture) above — which is where the Flask app
+factory, DB/cookie/session plumbing, identity + history blueprints, the tutor
+bridge, and the base chat template/stylesheet actually live.
 
 ## What's still pending
 

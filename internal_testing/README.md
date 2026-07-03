@@ -7,6 +7,7 @@ Internal runners for testing the tutor: bulk transcript generation and judge sco
 ```text
 internal_testing/
   run_transcript.py             — generate raw transcripts in bulk (interactive or CLI)
+  run_transcript_rag.py         — batch runner for RAG-context tutor simulations (SC2x exercises + practice problems)
   run_transcript_judge.py           — grade transcripts with the GPT or Claude judge
   cli_utils.py              — shared interactive numbered-selection prompt helpers
 ```
@@ -160,11 +161,11 @@ Judged transcripts additionally include:
 
 ## Interactive CLI Features
 
-`run_ui_raw` and `run_ui_judge` support both interactive and command-line modes.
+`run_transcript` and `run_transcript_judge` support both interactive and command-line modes.
 
 - **Interactive mode**: Run without arguments to get numbered selection prompts
 - **Command-line mode**: Provide all required arguments to skip prompts
-- **Smart defaults**: `run_ui_raw` allows empty input (defaults to "all available")
+- **Smart defaults**: `run_transcript` allows empty input (defaults to "all available")
 - **Required inputs**: Judge scripts require explicit selection of all options
 - **Confirmation**: Interactive mode shows summary and asks for confirmation
 - **Range support**: Select multiple items with ranges like `1-5` or `1,3,5-7`

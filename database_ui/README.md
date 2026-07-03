@@ -14,11 +14,32 @@ checklist in [`PLANNING.md`](PLANNING.md).
 
 ## Read-only by construction
 
-- The models map only the columns shared by `main_ui` and `sandbox_ui`, so the same
-  code reads either DB unchanged.
-- No `create_all`, no migrations. The session always rolls back, never commits.
-- Every route is behind a shared-password gate; the API endpoints intentionally
+- `db/models.py` maps only the columns shared by `main_ui` and `sandbox_ui`
+  (all-nullable, `viewonly=True` relationships), so the same code reads either
+  DB unchanged and never crashes on sandbox-only columns.
+- No `create_all`, no migrations. The per-request session (`run_app.py`) always
+  rolls back, never commits.
+- Every route is behind a shared-password gate (`auth.py`'s `init_auth`
+  before-request guard + `_PUBLIC_ENDPOINTS`); the API endpoints intentionally
   drop the per-viewer ownership checks the live apps use (review sees everyone).
+
+## Architecture: what's shared with `main_ui` / `sandbox_ui`, what isn't
+
+Unlike `main_ui`/`sandbox_ui`, this app keeps its **own** `run_app.py::create_app()`
+instead of the shared `ui_core.app_factory` — it's read-only, auth-gated, and has
+no chat, so the shared factory's chat/session wiring doesn't apply. It does still
+share some of `ui_core`:
+
+- `db/session.py` is a thin wrapper over `ui_core.db.session` (engine + session
+  factory, with `pool_pre_ping` and Postgres-URL normalization).
+- It registers the shared `ui_core.web.static_blueprint` to serve `chat.css` at
+  `/ui-core/css/chat.css` (so the review shell matches `main_ui`'s styling); that
+  blueprint's endpoint (`ui_core.static`) is allowlisted in `auth.py`'s
+  `_PUBLIC_ENDPOINTS` so the login page can load it before authing.
+
+Routes live in `routes/database.py`; the read-only queries backing them (list
+all conversations, one conversation's full transcript including
+`pedagogical_reasoning`, image bytes) live in `services/conversations.py`.
 
 ## Run locally
 
@@ -44,6 +65,7 @@ inside Railway).
 | `DATABASE_UI_SECRET_KEY` | Recommended | Flask session signing key. Has an insecure dev default. |
 | `DATABASE_UI_TITLE` | No | Header + tab title. Default `AskTIM · Database Beta`. |
 | `DATABASE_UI_ACCENT` | No | Accent color. Default `#8c1a1b` (MIT crimson, = main_ui). |
+| `DATABASE_UI_COOKIE_MAX_AGE` | No | Login-session cookie lifetime, in seconds. Default 30 days. |
 | `PORT` | No | Default `5003`. |
 
 ## Deploy (Railway)

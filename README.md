@@ -19,11 +19,12 @@ The primary deliverable is now **AskTIM** — an iframe-embeddable chat app live
 
 ### System Architecture
 
-The system has six loosely coupled layers:
+The system has seven loosely coupled layers:
 
 - **Conversation pipeline**: two LangGraph agents (tutor + student) trade messages in a structured multi-turn loop, each independently configurable via system prompt files
 - **Judge pipeline**: a separate LangGraph agent reads a finished transcript and returns a structured JSON grade against a rubric, with up to 3 automatic repair-and-retry cycles
-- **Dashboard + visualization**: a Flask web app for browsing the raw transcripts and their Claude judge grades (sortable score table + per-transcript conversation/grade view), and a matplotlib chart module (`visualization.run_visualization` for score histogram + per-transcript line charts; `visualization.sc2x_eval_charts` for SC2x persona-type breakdowns)
+- **Dashboard + visualization**: `dashboard_ui/`, a Flask web app that reads raw transcripts + Claude judge grades straight from disk (no DB) for browsing (sortable score table + per-transcript conversation/grade view), and a matplotlib chart module (`visualization.run_visualization` for score histogram + per-transcript line charts; `visualization.sc2x_eval_charts` for SC2x persona-type breakdowns)
+- **Shared web layer (`ui_core/`)**: common infrastructure the three Flask web apps below are built on, so persistence/session/identity plumbing isn't duplicated three times. Includes DB engine/session helpers (`db/session.py`), shared `Message`/`Student`/`UploadedImage` SQLAlchemy mixins (`db/models_common.py`), app-agnostic conversation/image/student services parameterized by each app's own models (`services/`), a `TutorBridge` base class with overridable hooks for the tutor pipeline (`tutor_bridge.py`), a static blueprint serving the shared `chat.css` at `/ui-core` (`web/static_blueprint.py`), identity/history blueprint factories (`web/blueprints/`), a shared page shell (`templates/base_chat.html`), and a `create_app` Flask-assembly factory (`app_factory.py`). `main_ui` and `sandbox_ui` are thin shells over `ui_core` (built via `create_app`, with their own models/services/tutor_bridge as thin wrappers or subclasses); `database_ui` reuses `ui_core`'s DB session helpers and static blueprint but keeps its own read-only `run_app` (it's structurally different — no chat, no writes).
 - **Student-facing app (`main_ui/`)**: iframe-embeddable chat for real OCW students, **live on Railway → [asktim.up.railway.app](https://asktim.up.railway.app/)**. PostgreSQL persistence (`asktim`), bcrypt-hashed username+password identity, Server-Sent Events streaming, sanitized-markdown tutor replies (tables/lists render cleanly), cross-browser conversation history. See [`main_ui/README.md`](main_ui/README.md).
 - **Testing sandbox (`sandbox_ui/`)**: "AskTIM Sandbox" — a developer/TA chat app that mirrors `main_ui` but adds a step-by-step **Create context** wizard (custom course / exercise / tutor prompt / syllabus / lectures, plus a per-conversation RAG toggle). Its own PostgreSQL database (`asktim_test`) and teal-blue (`#126f9a`) branding keep it isolated from production. **Live on Railway → [asktim-sandbox.up.railway.app](https://asktim-sandbox.up.railway.app/)**. See [`sandbox_ui/README.md`](sandbox_ui/README.md).
 - **Conversation review (`database_ui/`)**: read-only dashboard for browsing real `main_ui` conversations live from its Postgres — looks like `main_ui` (MIT crimson) but with no inputs, lists every conversation (most recent first, each labeled by student username), shows transcripts with tutor reasoning + uploaded images. Shared-password gated, strictly read-only. **Live on Railway → [asktim-database.up.railway.app](https://asktim-database.up.railway.app/)**. See [`database_ui/README.md`](database_ui/README.md) and [`database_ui/PLANNING.md`](database_ui/PLANNING.md).
@@ -124,13 +125,15 @@ flowchart TD
 
 **Judge (`judge/run_judge.py`):** Reads a transcript, constructs a grading prompt by injecting the rubric and output schema, and calls the selected provider (`gpt` or `claude`). Validates the JSON response against the rubric spec, auto-repairs on failure up to 3 attempts, and writes the grade back into the transcript file. The latest rubric (`rubric_08`, 40 pts) scores three sections: Pedagogy (20 pts — Socratic method/no direct work, scaffolding, meta-learning), Dialogue Quality (12 pts — redundancy, assignment anchoring), and Communication Quality (8 pts — bite-sized responses, tone). (The earlier `rubric_05` was 46 pts and remains the in-code default.)
 
-**UI Runners (`internal_testing/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_ui_raw`), transcript judging (`run_ui_judge`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
+**UI Runners (`internal_testing/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_transcript.py`), transcript judging (`run_transcript_judge.py`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
+
+**Shared web layer (`ui_core/`):** Common infrastructure factored out of `main_ui` and `sandbox_ui` (and partly reused by `database_ui`) so it isn't duplicated three times — DB engine/session helpers (`db/session.py`), shared `Message`/`Student`/`UploadedImage` model mixins (`db/models_common.py`), app-agnostic conversation/image/student services parameterized by each app's own models (`services/`), a `TutorBridge` base class exposing hooks like `prepare_ctx`, `cache_key`, `build_assignment_text`, and `retrieved_context` for subclasses to override (`tutor_bridge.py`), an identity/history blueprint factory pair (`web/blueprints/identity.py`, `web/blueprints/history.py`), a static blueprint serving the shared `chat.css` at `/ui-core` (`web/static_blueprint.py`), a shared page shell (`templates/base_chat.html`), and the `create_app` Flask-assembly factory (`app_factory.py`) that both chat apps build on.
 
 **Dashboard (`dashboard_ui/`):** Flask app (port 5002) that discovers all raw transcripts on disk, attaches each one's Claude judge grade, and serves a sortable table (with a Score column) plus a per-transcript detail view (full conversation + grade panel) via a single-page JS frontend.
 
-**Conversation review (`database_ui/`):** Read-only Flask dashboard (port 5003) for browsing real `main_ui` conversation data live from its Postgres, **deployed on Railway at <https://asktim-database.up.railway.app/>**. Looks like the `main_ui` chat (MIT-crimson) but with no composer/inputs — lists every conversation (most recent first, each labeled by student username), and renders a selected transcript with the tutor's pedagogical reasoning and uploaded images. Shared-password gated; strictly read-only (no schema writes). See [`database_ui/README.md`](database_ui/README.md).
+**Conversation review (`database_ui/`):** Read-only Flask dashboard (port 5003) for browsing real `main_ui` conversation data live from its Postgres, **deployed on Railway at <https://asktim-database.up.railway.app/>**. Looks like the `main_ui` chat (MIT-crimson) but with no composer/inputs — lists every conversation (most recent first, each labeled by student username), and renders a selected transcript with the tutor's pedagogical reasoning and uploaded images. Shared-password gated; strictly read-only (no schema writes). Reuses `ui_core`'s DB session helpers and static blueprint, but — being structurally different (no chat, no writes) — keeps its own `run_app` rather than going through `ui_core.app_factory.create_app`. See [`database_ui/README.md`](database_ui/README.md).
 
-**Student app (`main_ui/`):** Production-shape Flask app for the live OCW deployment. Streams tutor replies token-by-token via SSE while keeping the `pedagogical-reasoning` field hidden server-side. Persists conversations and messages to Postgres (Alembic-managed schema). Soft identity via a two-stage username + password modal that reappears after every message until the student signs up — passwords are bcrypt-hashed in a separate `students` table, and the username cookie carries forward across browsers for chat-history continuity.
+**Student app (`main_ui/`):** Production-shape Flask app for the live OCW deployment, built as a thin shell over `ui_core` (assembled via `create_app`; its own `db/models.py`, `services/`, and `services/tutor_bridge.py` are thin wrappers/subclasses of the shared layer). Streams tutor replies token-by-token via SSE while keeping the `pedagogical-reasoning` field hidden server-side. Persists conversations and messages to Postgres (Alembic-managed schema). Soft identity via a two-stage username + password modal that reappears after every message until the student signs up — passwords are bcrypt-hashed in a separate `students` table, and the username cookie carries forward across browsers for chat-history continuity.
 
 ## Code in Action: Conversation Flow Example
 
@@ -308,29 +311,40 @@ asktim_llm_tutor_project_2026/
 │   ├── railway-entrypoint-sandbox.sh    # sandbox_ui: normalize DATABASE_URL, create_all, gunicorn
 │   └── railway-entrypoint-database.sh  # database_ui: require DATABASE_UI_PASSWORD, normalize URL, gunicorn (no migrations)
 │
+├── ui_core/                 # Shared web layer main_ui + sandbox_ui are built on (database_ui reuses part of it)
+│   ├── app_factory.py       # create_app(...) — Flask assembly used by main_ui + sandbox_ui
+│   ├── cookies.py           # Session-cookie helpers
+│   ├── tutor_bridge.py      # TutorBridge base class (hooks: prepare_ctx, cache_key, build_assignment_text, retrieved_context, turn_attachments)
+│   ├── db/                  # session.py (engine/session helpers); models_common.py (Message/Student/UploadedImage mixins)
+│   ├── services/            # images.py, conversation.py, students.py — app-agnostic, parameterized by each app's own models
+│   ├── web/
+│   │   ├── static_blueprint.py   # serves shared chat.css at /ui-core
+│   │   └── blueprints/           # identity.py, history.py — blueprint factories
+│   └── templates/base_chat.html # shared page shell
+│
 ├── main_ui/                 # Student-facing AskTIM app (iframe-embed, Postgres `asktim`, SSE)
-│   ├── run_app.py           # Flask factory; SSE /api/chat; identity routes
-│   ├── db/                  # SQLAlchemy models + Alembic migrations
+│   ├── run_app.py           # Assembled via ui_core.app_factory.create_app; SSE /api/chat; identity routes
+│   ├── db/                  # SQLAlchemy models (Message/Student/UploadedImage from ui_core mixins) + Alembic migrations
 │   ├── routes/              # embed, chat (SSE), identity, history
-│   ├── services/            # conversation persistence, students (bcrypt), tutor_bridge
+│   ├── services/            # thin wrappers over ui_core.services; tutor_bridge subclasses ui_core.tutor_bridge.TutorBridge
 │   ├── static/              # chat.css, chat.js (streaming consumer)
 │   └── templates/embed.html # iframe-embeddable chat page
 │
 ├── sandbox_ui/                 # AskTIM Sandbox: developer/TA chat, own Postgres `asktim_test`
-│   ├── run_app.py           # Flask factory; create_all on boot (no Alembic)
-│   ├── db/                  # models (adds syllabus_enabled + custom_* columns)
+│   ├── run_app.py           # Assembled via ui_core.app_factory.create_app; create_all on boot (no Alembic)
+│   ├── db/                  # models (adds syllabus_enabled + custom_* columns) built on ui_core mixins
 │   ├── routes/              # embed (+ /api/context/options, /preview), chat, identity, history
-│   ├── services/            # conversation, students, tutor_bridge (custom-context aware)
+│   ├── services/            # thin wrappers over ui_core.services; tutor_bridge subclasses ui_core.tutor_bridge.TutorBridge (custom-context/RAG aware)
 │   ├── static/              # chat.css (#126f9a accent), chat.js (Edit/Create context)
 │   └── templates/embed.html # chat page: Create context wizard
 │
 ├── database_ui/               # Read-only conversation review dashboard (reads main_ui's Postgres)
-│   ├── run_app.py           # Flask factory; read-only session, no create_all/migrations
+│   ├── run_app.py           # Own Flask factory (not ui_core.app_factory); read-only session via ui_core.db.session, no create_all/migrations
 │   ├── auth.py              # shared-password gate (DATABASE_UI_PASSWORD)
 │   ├── db/                  # minimal read-only models (columns common to main_ui + sandbox_ui)
 │   ├── routes/database.py     # list-all-conversations, transcript, image endpoints
 │   ├── services/            # read-only conversation queries
-│   ├── static/              # main_ui's chat.css + lean database.js (list + transcript)
+│   ├── static/              # ui_core's shared chat.css + lean database.js (list + transcript)
 │   ├── templates/           # index.html (sidebar + transcript), login.html
 │   ├── README.md            # run/env/deploy notes
 │   └── PLANNING.md          # design + implementation checklist

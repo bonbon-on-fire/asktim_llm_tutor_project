@@ -1,30 +1,30 @@
-"""Student identity (username + password) helpers.
+"""Student identity (username + password) helpers for main_ui.
 
-Not a real auth system — just enough to stop someone who knows another
-student's username from claiming their chat history on a different browser.
-The browser cookie (`tutor_username`) remains the day-to-day session-identity
-carrier; the password is checked exactly once, when a username is first
-linked to a session.
+Thin wrapper over :mod:`ui_core.services.students`: binds main_ui's own
+``Student`` model class to the shared, app-agnostic logic.
 """
 
 from __future__ import annotations
 
-import bcrypt
 from sqlalchemy.orm import Session
 
 from main_ui.db.models import Student
+from ui_core.services import students as _shared
+from ui_core.services.students import MIN_PASSWORD_LENGTH, WeakPasswordError
 
-
-MIN_PASSWORD_LENGTH = 6
-
-
-class WeakPasswordError(Exception):
-    """Raised when a chosen password fails the minimum-length rule."""
+# Re-exported unchanged.
+__all__ = [
+    "MIN_PASSWORD_LENGTH",
+    "WeakPasswordError",
+    "get_student",
+    "create_student",
+    "verify_password",
+]
 
 
 def get_student(db: Session, username: str) -> Student | None:
     """Return the Student row for the given username, or None if absent."""
-    return db.get(Student, username)
+    return _shared.get_student(db, username, student_cls=Student)
 
 
 def create_student(db: Session, *, username: str, password: str) -> Student:
@@ -33,22 +33,11 @@ def create_student(db: Session, *, username: str, password: str) -> Student:
     Raises:
         WeakPasswordError: if ``password`` is shorter than the minimum.
     """
-    if len(password) < MIN_PASSWORD_LENGTH:
-        raise WeakPasswordError(
-            f"password must be at least {MIN_PASSWORD_LENGTH} characters"
-        )
-    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("ascii")
-    student = Student(username=username, password_hash=hashed)
-    db.add(student)
-    db.flush()
-    return student
+    return _shared.create_student(
+        db, username=username, password=password, student_cls=Student
+    )
 
 
 def verify_password(student: Student, password: str) -> bool:
     """Constant-time check that ``password`` matches the stored hash."""
-    try:
-        return bcrypt.checkpw(
-            password.encode("utf-8"), student.password_hash.encode("ascii")
-        )
-    except (ValueError, TypeError):
-        return False
+    return _shared.verify_password(student, password)

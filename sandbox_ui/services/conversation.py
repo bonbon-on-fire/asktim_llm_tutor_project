@@ -1,24 +1,25 @@
-"""Conversation persistence helpers.
+"""Conversation persistence helpers for sandbox_ui.
 
-The one place that creates / resolves / appends to `Conversation` and
-`Message` rows. Route handlers call these helpers; they never construct DB
-models inline.
+Thin wrapper over :mod:`ui_core.services.conversation`: binds sandbox_ui's own
+model classes (its ``Conversation`` schema carries extra columns — see
+``sandbox_ui/db/models.py``) to the shared, app-agnostic logic. Route handlers
+call these; they never construct DB models inline.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from sandbox_ui.db.models import Conversation, Message, UploadedImage
+from ui_core.services import conversation as _shared
+from ui_core.services.conversation import Models, WrongSessionError
 
+_MODELS = Models(Conversation=Conversation, Message=Message, UploadedImage=UploadedImage)
 
-class WrongSessionError(Exception):
-    """Raised when a request supplies a conversation_id that isn't owned by
-    the current session_id (or doesn't exist at all)."""
+# Re-exported unchanged so `except WrongSessionError` keeps working at call sites.
+WrongSessionError = WrongSessionError
 
 
 def find_or_create_conversation(
@@ -47,39 +48,28 @@ def find_or_create_conversation(
         WrongSessionError: if `conversation_id` was provided but either
             doesn't exist or belongs to a different session.
     """
-    if conversation_id is not None:
-        existing = db.get(Conversation, conversation_id)
-        if existing is None:
-            raise WrongSessionError()
-        # Accept if the current session owns it OR if the current username
-        # matches the conversation's username (enables cross-browser continuity
-        # once the student has linked their username).
-        same_session = existing.session_id == session_id
-        same_username = bool(username) and existing.username == username
-        if not (same_session or same_username):
-            raise WrongSessionError()
-        return existing
-
-    convo = Conversation(
+    return _shared.find_or_create_conversation(
+        db,
+        models=_MODELS,
         session_id=session_id,
-        username=username,
+        conversation_id=conversation_id,
         course=course,
         exercise_number=exercise_number,
-        exercise_kind=exercise_kind,
         tutor_prompt=tutor_prompt,
-        course_enabled=course_enabled,
-        syllabus_enabled=syllabus_enabled,
-        lectures_enabled=lectures_enabled,
-        custom_course_text=custom_course_text,
-        custom_exercise_text=custom_exercise_text,
-        custom_tutor_prompt=custom_tutor_prompt,
-        custom_syllabus_text=custom_syllabus_text,
-        custom_lectures_text=custom_lectures_text,
-        context_mode=context_mode,
+        username=username,
+        extra_fields={
+            "exercise_kind": exercise_kind,
+            "course_enabled": course_enabled,
+            "syllabus_enabled": syllabus_enabled,
+            "lectures_enabled": lectures_enabled,
+            "custom_course_text": custom_course_text,
+            "custom_exercise_text": custom_exercise_text,
+            "custom_tutor_prompt": custom_tutor_prompt,
+            "custom_syllabus_text": custom_syllabus_text,
+            "custom_lectures_text": custom_lectures_text,
+            "context_mode": context_mode,
+        },
     )
-    db.add(convo)
-    db.flush()  # populate convo.id before the caller uses it
-    return convo
 
 
 def append_exchange(
@@ -90,31 +80,15 @@ def append_exchange(
     tutor_text: str,
     pedagogical_reasoning: str | None,
 ) -> tuple[Message, Message]:
-    """Insert the student/tutor message pair for the next turn.
-
-    Both messages share a single turn number (1-indexed). Bumps
-    `conversation.last_active_at`.
-    """
-    next_turn = _next_turn_number(db, conversation)
-
-    student_msg = Message(
-        conversation_id=conversation.id,
-        turn=next_turn,
-        role="student",
-        content=student_text,
-    )
-    tutor_msg = Message(
-        conversation_id=conversation.id,
-        turn=next_turn,
-        role="tutor",
-        content=tutor_text,
+    """Insert the student/tutor message pair for the next turn."""
+    return _shared.append_exchange(
+        db,
+        models=_MODELS,
+        conversation=conversation,
+        student_text=student_text,
+        tutor_text=tutor_text,
         pedagogical_reasoning=pedagogical_reasoning,
     )
-    db.add(student_msg)
-    db.add(tutor_msg)
-    conversation.last_active_at = datetime.now(timezone.utc)
-    db.flush()
-    return student_msg, tutor_msg
 
 
 def start_exchange_student_only(
@@ -123,24 +97,10 @@ def start_exchange_student_only(
     conversation: Conversation,
     student_text: str,
 ) -> Message:
-    """Insert just the student message at the start of a streaming turn.
-
-    Used by the SSE chat path so the student message is persisted before
-    we begin streaming the tutor reply. If the stream fails mid-flight,
-    the student row remains (no orphan tutor row) and the next call
-    naturally picks the next turn number.
-    """
-    next_turn = _next_turn_number(db, conversation)
-    student_msg = Message(
-        conversation_id=conversation.id,
-        turn=next_turn,
-        role="student",
-        content=student_text,
+    """Insert just the student message at the start of a streaming turn."""
+    return _shared.start_exchange_student_only(
+        db, models=_MODELS, conversation=conversation, student_text=student_text
     )
-    db.add(student_msg)
-    conversation.last_active_at = datetime.now(timezone.utc)
-    db.flush()
-    return student_msg
 
 
 def complete_exchange_tutor(
@@ -154,62 +114,43 @@ def complete_exchange_tutor(
     """Insert the tutor reply for a turn previously opened by
     :func:`start_exchange_student_only`.
     """
-    tutor_msg = Message(
-        conversation_id=conversation.id,
+    return _shared.complete_exchange_tutor(
+        db,
+        models=_MODELS,
+        conversation=conversation,
         turn=turn,
-        role="tutor",
-        content=tutor_text,
+        tutor_text=tutor_text,
         pedagogical_reasoning=pedagogical_reasoning,
     )
-    db.add(tutor_msg)
-    conversation.last_active_at = datetime.now(timezone.utc)
-    db.flush()
-    return tutor_msg
 
 
 def get_history_for_tutor(db: Session, conversation: Conversation) -> list[dict]:
-    """Return prior messages as [{role, content}, ...] in chronological order.
-
-    Shape matches what `tutor_bridge.get_tutor_reply` expects, so callers can
-    pass the result straight through.
-    """
-    stmt = (
-        select(Message)
-        .where(Message.conversation_id == conversation.id)
-        .order_by(Message.turn, Message.id)
-    )
-    return [
-        {"role": m.role, "content": m.content}
-        for m in db.execute(stmt).scalars().all()
-    ]
+    """Return prior messages as [{role, content}, ...] in chronological order."""
+    return _shared.get_history_for_tutor(db, conversation, models=_MODELS)
 
 
 def count_student_messages(db: Session, conversation: Conversation) -> int:
-    """Number of student-role messages in this conversation.
+    """Number of student-role messages in this conversation."""
+    return _shared.count_student_messages(db, conversation, models=_MODELS)
 
-    Step 7's username modal triggers when this reaches 3.
-    """
-    stmt = (
-        select(func.count(Message.id))
-        .where(Message.conversation_id == conversation.id)
-        .where(Message.role == "student")
-    )
-    return int(db.execute(stmt).scalar_one())
+
+def _summarize_extra(c: Conversation) -> dict:
+    """Sandbox-only summary keys layered on top of the shared summary dict."""
+    return {
+        "exercise_kind": c.exercise_kind or "exercise",
+        "course_enabled": c.course_enabled is None or bool(c.course_enabled),
+        "syllabus_enabled": bool(c.syllabus_enabled),
+        "lectures_enabled": c.lectures_enabled is None or bool(c.lectures_enabled),
+    }
 
 
 def list_conversations_for_username(db: Session, username: str) -> list[dict]:
     """Return all conversations linked to the given username, most-recently-active
     first. Each entry is a JSON-serializable dict suitable for the history API.
     """
-    if not username:
-        return []
-    convos = (
-        db.query(Conversation)
-        .filter(Conversation.username == username)
-        .order_by(Conversation.last_active_at.desc())
-        .all()
+    return _shared.list_conversations_for_username(
+        db, username, models=_MODELS, summarize_extra=_summarize_extra
     )
-    return [_summarize_conversation(db, c) for c in convos]
 
 
 def get_conversation_for_viewer(
@@ -220,17 +161,10 @@ def get_conversation_for_viewer(
 ) -> Conversation | None:
     """Return a Conversation if the viewer either owns it via `session_id`
     (anonymous, same browser) or has the matching username (cross-browser).
-    Otherwise return None so callers can map to 404 without leaking
-    existence.
     """
-    convo = db.get(Conversation, conversation_id)
-    if convo is None:
-        return None
-    if convo.session_id == session_id:
-        return convo
-    if username and convo.username == username:
-        return convo
-    return None
+    return _shared.get_conversation_for_viewer(
+        db, conversation_id, session_id, username, models=_MODELS
+    )
 
 
 def get_messages_for_conversation(
@@ -242,79 +176,9 @@ def get_messages_for_conversation(
     Sandbox is a dev/TA tool, so reviewers may inspect it — same policy as the
     database_ui review dashboard, unlike the student-facing main_ui.
     """
-    stmt = (
-        select(Message)
-        .where(Message.conversation_id == conversation.id)
-        .order_by(Message.turn, Message.id)
+    return _shared.get_messages_for_conversation(
+        db, conversation, models=_MODELS, include_reasoning=True
     )
-    messages = db.execute(stmt).scalars().all()
-
-    # Attach image metadata (id + mime only — never bytes) so the frontend can
-    # render thumbnails via GET /api/image/<id>. One grouped query avoids N+1.
-    images_by_message = _images_by_message(db, [m.id for m in messages])
-    return [
-        {
-            "turn": m.turn,
-            "role": m.role,
-            "content": m.content,
-            "pedagogical_reasoning": m.pedagogical_reasoning,
-            "images": images_by_message.get(m.id, []),
-        }
-        for m in messages
-    ]
-
-
-def _images_by_message(db: Session, message_ids: list[int]) -> dict[int, list[dict]]:
-    """Map message_id -> [{"id", "mime_type"}, ...] for the given messages."""
-    if not message_ids:
-        return {}
-    stmt = (
-        select(UploadedImage.id, UploadedImage.message_id, UploadedImage.mime_type)
-        .where(UploadedImage.message_id.in_(message_ids))
-        .order_by(UploadedImage.id)
-    )
-    out: dict[int, list[dict]] = {}
-    for img_id, msg_id, mime in db.execute(stmt).all():
-        out.setdefault(msg_id, []).append({"id": img_id, "mime_type": mime})
-    return out
-
-
-def _summarize_conversation(db: Session, c: Conversation) -> dict:
-    """Build the summary dict used by the history endpoint."""
-    msg_count = db.execute(
-        select(func.count(Message.id)).where(Message.conversation_id == c.id)
-    ).scalar_one()
-
-    last_message_stmt = (
-        select(Message.content)
-        .where(Message.conversation_id == c.id)
-        .order_by(Message.id.desc())
-        .limit(1)
-    )
-    last_message = db.execute(last_message_stmt).scalar_one_or_none()
-
-    snippet: str | None
-    if last_message:
-        snippet = last_message.strip()[:80]
-        if len(last_message) > 80:
-            snippet = snippet.rstrip() + "…"
-    else:
-        snippet = None
-
-    return {
-        "id": str(c.id),
-        "course": c.course,
-        "exercise_number": c.exercise_number,
-        "exercise_kind": c.exercise_kind or "exercise",
-        "tutor_prompt": c.tutor_prompt,
-        "course_enabled": c.course_enabled is None or bool(c.course_enabled),
-        "syllabus_enabled": bool(c.syllabus_enabled),
-        "lectures_enabled": c.lectures_enabled is None or bool(c.lectures_enabled),
-        "started_at": c.started_at.isoformat() if c.started_at else None,
-        "last_active_at": c.last_active_at.isoformat() if c.last_active_at else None,
-        "message_count": int(msg_count),
-        "last_message_snippet": snippet,
-    }
 
 
 def backfill_username_for_session(
@@ -322,25 +186,7 @@ def backfill_username_for_session(
 ) -> int:
     """Set `username` on every Conversation row for this session that doesn't
     already have one. Returns the number of rows touched.
-
-    Used by Step 7's username modal to retroactively link anonymous
-    conversations to a student once they provide their username.
     """
-    stmt = (
-        update(Conversation)
-        .where(Conversation.session_id == session_id)
-        .where(Conversation.username.is_(None))
-        .values(username=username)
-        .execution_options(synchronize_session="fetch")
+    return _shared.backfill_username_for_session(
+        db, session_id, username, models=_MODELS
     )
-    result = db.execute(stmt)
-    db.flush()
-    return int(result.rowcount or 0)
-
-
-def _next_turn_number(db: Session, conversation: Conversation) -> int:
-    stmt = select(func.max(Message.turn)).where(
-        Message.conversation_id == conversation.id
-    )
-    current_max = db.execute(stmt).scalar_one()
-    return (current_max or 0) + 1

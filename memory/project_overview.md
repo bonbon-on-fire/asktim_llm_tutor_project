@@ -19,7 +19,7 @@ Socratic LLM tutor for MIT OpenCourseWare (OCW) humanities/social-science course
 
 **Rubric:** latest `judge_08`/`rubric_08` (40 pts: Pedagogy 20 / Dialogue 12 / Communication 8). In-code DEFAULT is still older `rubric_05` (46 pts). Active tutor prompt `tutor_05`. Claude is primary judge; GPT judging paused.
 
-**Scale:** 18 personas (chaotic/cooperative/clueless × 6), **5 courses** (cities_and_climate_change live in AskTIM; plus intro_to_international_development_planning, mathematics_for_cs, physics_iii_vibrations_and_waves, meaning_of_life as June-2026 test contexts). ~927 graded transcripts migrated to canonical criterion format.
+**Scale:** 3 personas (chaotic, cooperative, clueless — one per type, variety from `temperature=0.7`), **5 courses** (cities_and_climate_change live in AskTIM; plus intro_to_international_development_planning, mathematics_for_cs, physics_iii_vibrations_and_waves, meaning_of_life as June-2026 test contexts). ~927 graded transcripts migrated to canonical criterion format.
 
 **Phase status (PLANNING.md):** Phases 1–5, 8, 9, 10 COMPLETE. **Phase 6 (figures/multimodal) and Phase 7 (human image uploads) PROPOSED, NOT STARTED** — `utils/figures.py` does not exist; main_ui ships text-only. Phase 6 is the prerequisite for image inputs. See [[tutor-context-expansion]].
 

@@ -9,9 +9,12 @@ students/
   __init__.py      — package exports
   run_student.py   — shared LangGraph engine (one file, all personas)
   personas/
-    chaotic_01.txt — LLM system prompt
-    chaotic_01.md  — human-readable summary of what the persona tests
-    ...
+    cooperative.txt — LLM system prompt
+    cooperative.md  — human-readable summary of what the persona tests
+    chaotic.txt
+    chaotic.md
+    clueless.txt
+    clueless.md
 ```
 
 - `run_student.py` is the shared engine for all personas.
@@ -29,24 +32,17 @@ No code changes needed. The bot engine discovers personas automatically.
 
 ## Available personas
 
-Each family now has six variants:
-- `_01` scripted baseline
-- `_02` unscripted baseline
-- `_03` strategy-sweep / tester baseline
-- `_04` scripted baseline with casual texting/slang style
-- `_05` unscripted baseline with casual texting/slang style
-- `_06` strategy-sweep baseline with stronger "genz" texting/slang style
+One persona per type (variety comes from `temperature=0.7`, not multiple files):
 
-| Name pattern | Tests |
+| Name | Tests |
 | ---- | ----- |
-| `chaotic_01..06` | Academic integrity and tutor/assistant boundary stress testing |
-| `cooperative_01..06` | Good-student baseline behavior for compliant, non-adversarial tutoring runs |
-| `clueless_01..06` | Lost-student support and diagnosis-first handling stress testing |
+| `cooperative` | Good-student baseline: sincere, imperfect, non-adversarial. |
+| `chaotic` | Academic-integrity / tutor-vs-assistant boundary stressing (persistent answer-extraction, anti-capitulation). |
+| `clueless` | Lost-student, diagnosis-first: holds a stated misconception until specifically corrected. |
 
-Texting/slang variants (`_04`/`_05`/`_06`) enforce realistic chat length plus abbreviation-heavy style:
-- one or two brief sentences per turn
-- short, natural messages (no long paragraphs)
-- natural shorthand/slang (for example `idk`, `ngl`, `tbh`, `rn`, `u`, `fr`)
+Each persona encodes an epistemic level, an error budget, a per-type behavior
+contract, casual texting voice, and a per-turn micro-structure. See
+`docs/superpowers/specs/2026-07-02-student-persona-consolidation-design.md`.
 
 All personas also inherit shared role constraints from the engine (student voice only, no tutor-like framing, concise replies).
 
@@ -58,7 +54,7 @@ from utils.figures import discover_figures
 
 msg = get_next_student_message(
     messages,                    # conversation so far (list of BaseMessage)
-    prompt_name="chaotic_04",    # persona to use (texting/slang variant)
+    prompt_name="chaotic",       # persona to use
     assignment="...",            # optional assignment text
     turn_size=10,                # optional planned student+tutor exchanges
     figures=discover_figures("cities_and_climate_change", "08"),  # optional exercise figures

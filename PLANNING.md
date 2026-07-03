@@ -157,14 +157,12 @@ students/
   run_student.py       — single shared LangGraph engine for all student personas
   README.md            — module documentation
   personas/
-    chaotic_01.txt     — LLM system prompt for chaotic persona v1
-    chaotic_01.md      — human-readable summary (few sentences: what this persona tests)
-    chaotic_02.txt
-    chaotic_02.md
-    cooperative_01.txt
-    cooperative_01.md
-    clueless_01.txt
-    clueless_01.md
+    chaotic.txt        — LLM system prompt for chaotic persona
+    chaotic.md         — human-readable summary (few sentences: what this persona tests)
+    cooperative.txt
+    cooperative.md
+    clueless.txt
+    clueless.md
 ```
 
 **Public API** (from `students.bot`):
@@ -175,7 +173,7 @@ from students.bot import get_next_student_message, build_graph, load_prompt
 # Get next student message given a persona name
 msg = get_next_student_message(
     messages,
-    prompt_name="chaotic_01",   # maps to students/personas/chaotic_01.txt
+    prompt_name="chaotic",      # maps to students/personas/chaotic.txt
     exercise="...",             # optional exercise text
 )
 ```
@@ -316,7 +314,7 @@ judge/
 
 ```
 transcripts/           — moved from judge/transcripts/
-  chaotic_01_exercise_01_01.json
+  chaotic_exercise_01_01.json
   ...
 ```
 
@@ -504,7 +502,7 @@ sandbox_ui/
 ```json
 {
   "tutor_prompt": "tutor_05",
-  "student_persona": "chaotic_01",
+  "student_persona": "chaotic",
   "course": "cities_and_climate_change",
   "exercise_number": "04",
   "figures": ["exercise_04_power_actors_map.png"],

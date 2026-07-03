@@ -140,7 +140,7 @@ flowchart TD
 - Requires guided questions that move the student toward insights themselves
 - Limits responses to one or two focused questions or observations per turn
 
-### 2. Student Persona (`students/personas/chaotic_01.txt`)
+### 2. Student Persona (`students/personas/chaotic.txt`)
 
 - Simulates a student who pushes back against Socratic questioning
 - Demands direct answers and complains the method is unhelpful
@@ -211,7 +211,7 @@ flowchart TD
 ```python
 system_prompt = load_system_prompt("tutor_05", assignment_override=assignment_text)
 tutor_graph = create_tutor_graph(system_prompt)
-student_graph = build_graph(prompt_name="chaotic_01")
+student_graph = build_graph(prompt_name="chaotic")
 ```
 
 **2. Run the multi-turn conversation loop**
@@ -226,7 +226,7 @@ for turn_index in range(config.turn_size):
 
 ```python
 payload = {
-    "tutor_prompt": "tutor_03", "student_persona": "chaotic_01",
+    "tutor_prompt": "tutor_03", "student_persona": "chaotic",
     "course": "cities_and_climate_change", "exercise_number": "01",
     "exchanges": transcript_exchanges,
 }
@@ -272,7 +272,7 @@ asktim_llm_tutor_project_2026/
 │
 ├── students/
 │   ├── run_student.py       # Shared LangGraph engine for all personas
-│   └── personas/            # chaotic_01..06, cooperative_01..06, clueless_01..06
+│   └── personas/            # chaotic, cooperative, clueless (one per type)
 │
 ├── tutor/
 │   ├── run_tutor.py         # LangGraph engine + prompt loading + response parsing

@@ -57,7 +57,7 @@ Every transcript file (`transcript_NNNN.json`) follows this structure:
 ```json
 {
   "tutor_prompt": "tutor_03",
-  "student_persona": "chaotic_01",
+  "student_persona": "chaotic",
   "course": "cities_and_climate_change",
   "exercise_number": "01",
   "figures": [],
@@ -102,7 +102,7 @@ Graded transcripts additionally contain a top-level `grade` object:
 | Field | Description |
 | ----- | ----------- |
 | `tutor_prompt` | Tutor system prompt version used |
-| `student_persona` | Student persona identifier (e.g. `chaotic_01`, `cooperative_02`) |
+| `student_persona` | Student persona identifier (e.g. `chaotic`, `cooperative`) |
 | `course` | Course folder name under `curriculum/` (e.g. `cities_and_climate_change`, `mathematics_for_cs`, `meaning_of_life`, `physics_iii_vibrations_and_waves`, `intro_to_international_development_planning`) |
 | `exercise_number` | Exercise identifier within the course |
 | `figures` | Filenames of curriculum figures (under `curriculum/<course>/figures/`) attached to this run as multimodal input; `[]` when the exercise has none. The judge re-resolves these names to re-attach the same images at grading time. Absent on pre-June-2026 transcripts (treated as `[]`). |
@@ -120,7 +120,7 @@ Graded transcripts additionally contain a top-level `grade` object:
 | **cooperative** | Good-student baseline that stays on-task and follows guidance |
 | **clueless** | Genuinely confused, needs scaffolding and patience |
 
-Each persona has multiple versions (e.g. `chaotic_01`, `chaotic_02`).
+There is one persona per type (`chaotic`, `cooperative`, `clueless`); the legacy on-disk corpus used a `<type>_NN` form.
 
 ## Transcript Naming
 

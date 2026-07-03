@@ -35,13 +35,13 @@ Exercise prompts are read from `curriculum/<course>/exercises/exercise_<NN>.txt`
 **Command-line mode:**
 ```powershell
 # Generate with GPT tutor (default output: *_raw/)
-python -m internal_ui.run_ui_raw --provider gpt --tutor tutor_03 --personas clueless_01 chaotic_02 --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
+python -m internal_ui.run_ui_raw --provider gpt --tutor tutor_03 --personas clueless chaotic --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
 
 # Generate with Claude tutor
-python -m internal_ui.run_ui_raw --provider claude --tutor tutor_05 --personas clueless_01 --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
+python -m internal_ui.run_ui_raw --provider claude --tutor tutor_05 --personas clueless --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
 
 # Custom output folder: writes to *_raw_tutor_05/ instead of *_raw/ (--yes skips confirmation)
-python -m internal_ui.run_ui_raw --provider claude --tutor tutor_05 --personas chaotic_01 --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 10 --output-suffix raw_tutor_05 --yes
+python -m internal_ui.run_ui_raw --provider claude --tutor tutor_05 --personas chaotic --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 10 --output-suffix raw_tutor_05 --yes
 ```
 
 Run matrix: `tutor_prompts x student_personas x course_exercises x trials`
@@ -133,7 +133,7 @@ All transcript flows include run metadata and exchanges:
 {
   "tutor_provider": "gpt",
   "tutor_prompt": "tutor_03",
-  "student_persona": "chaotic_01",
+  "student_persona": "chaotic",
   "course": "cities_and_climate_change",
   "exercise_number": "01",
   "figures": ["exercise_08_spider_diagram.png"],

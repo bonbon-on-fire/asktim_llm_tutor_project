@@ -1151,14 +1151,8 @@
       config.contextMode = "full_context";
     }
 
-    if (config.courseCustom != null) {
-      if (courseNameEl) courseNameEl.textContent = "Custom context";
-    } else {
-      const chosen = courseBySlug(config.course);
-      if (courseNameEl) {
-        courseNameEl.textContent = chosen ? chosen.name || "" : "Custom context";
-      }
-    }
+    // sandbox_ui: the course banner is intentionally left blank.
+    if (courseNameEl) courseNameEl.textContent = "";
 
     closeCreateModal();
     startNewChat();

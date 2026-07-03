@@ -47,10 +47,13 @@ runtime, and runs at `temperature=0.7`.
 ## Non-goals
 
 - Code-level trait sampling / parameterized persona vectors (considered and
-  declined — variety stays "from one file").
+  declined — variety stays "from one file"; kept as an Upgrade path below).
+- A quantitative metric harness (Selective Flip Score, cooperation rate, IRT
+  bands) — deferred to the Upgrade path; validation stays a light pass.
 - Regenerating the existing graded corpus (kept as historical; see below).
-- A per-turn "stay in character" reminder in the engine (deferred; only add if
-  drift is observed in validation).
+- A per-turn "stay in character" reminder in the *engine* (the per-turn
+  micro-structure lives in the prompt instead; add an engine reminder only if
+  drift persists in validation).
 
 ## Rationale (grounded in the literature)
 
@@ -77,12 +80,16 @@ The mitigation is cheap and adds zero runs: make each adversarial behavior an
 **explicit, named contract in the prompt** (a concrete misconception to hold, or
 concrete non-cooperative moves to fire), rather than leaving it as flavor text.
 
-Representative sources: Yuan et al. 2026 (arXiv 2601.05473, epistemic-state
-ladder); Scarlatos et al. 2026 (2601.04025, the three failure axes); Do et al.
-2026 (2605.12748, misconception faithfulness); Senthil Kumar et al. 2026
-(2504.06460, reversed performance); Liu et al. 2024 (2404.06762, trait-
-parameterized personas); Macina et al. 2023 (MathDial, 2305.14536); Gonnermann-
-Müller et al. 2026 (2605.06307, structure cuts drift up to 97%).
+Representative sources (all arXiv IDs verified to resolve and match):
+Yuan et al. 2026 (2601.05473, epistemic-state ladder E0–E4, competence paradox);
+Scarlatos et al. 2026 (2601.04025, linguistic/behavioral/cognitive eval axes);
+Do et al. 2026 (2605.12748, misconception faithfulness, Selective Flip Score);
+Senthil Kumar et al. 2025 (2504.06460, reversed-performance / counterfactual
+instruction following); Liu et al. 2024 (2404.06762, trait-parameterized
+personas); Macina et al. 2023 (MathDial, 2305.14536, temperature-sampled error
+variety); Srivatsa et al. 2025 (2507.08232, IRT ability calibration);
+Gonnermann-Müller et al. 2026 (2605.06307, "…Evaluating Temporal Student Persona
+Stability…" — structured turns nearly eliminate behavioral drift).
 
 ## Design
 
@@ -90,43 +97,58 @@ Müller et al. 2026 (2605.06307, structure cuts drift up to 97%).
 
 Each `personas/<type>.txt` is ~one screen, structured as:
 
-1. **Role** — who the student is (merged from the existing variants' shared role).
+1. **Role + epistemic level** — who the student is (merged from the variants'
+   shared role), tagged with a target epistemic level on Yuan et al.'s E0–E4
+   ladder: `clueless` = **E1** (fragmented knowledge + a wrong schema),
+   `cooperative` = **E2** (working knowledge, learns), `chaotic` = **E3/E4 but
+   withholding** (competent, gaming the tutor). The E-level is a single legible
+   line that keeps the three types separable after the 18→3 collapse.
 2. **Behavior contract** — the type-specific, explicit, named behavior (below).
-   This is the only new idea versus today's prompts.
-3. **Realism budget** — the mistakes/friction/progress mix (carried over from the
-   existing `Realism constraints` sections).
+   This is the main new content versus today's prompts.
+3. **Error budget** — the mistakes/friction/progress mix as an explicit rate tied
+   to the epistemic level, not a hope that the model "acts confused" (Yuan et al.):
+   `clueless` = high budget anchored to its misconception; `cooperative` = low,
+   decaying (more mistakes early, fewer as it "learns"). Carried over and made
+   concrete from the existing `Realism constraints` sections.
 4. **Voice & style** — casual, brief chat with light natural shorthand
    (`idk`, `tbh`, `rn`, `u`, `fr`); one or two short sentences per turn; student
    voice only; no fourth-wall breaks; no motive leakage.
-5. **Self-vary instruction** — one line telling the model to vary its mood and
-   tactics across the conversation (gives temperature something to sample), while
-   staying inside the behavior contract.
+5. **Self-vary + per-turn micro-structure** — one line telling the model to vary
+   its mood and tactics across the conversation (gives temperature something to
+   sample), plus a tiny in-prompt "state → intended move → message" scaffold.
+   Structured turns are what nearly eliminated persona drift in Gonnermann-Müller
+   et al.; kept as prompt text so no engine code is needed.
 
 A matching `personas/<type>.md` gives the human-readable summary.
 
 ### Per-type behavior contracts
 
 - **`cooperative`** — sincere learner who wants to learn but doesn't know the
-  material well. Contract = the realism budget: attempt-before-asking, targeted
-  clarifications, reflect/revise, progressive confidence (uncertain → clearer),
-  stay assignment-anchored, never request submission-ready answers, not
-  adversarial. Roughly: in a ~10-turn run, 2–4 turns with mistakes/confusion,
-  1–2 with mild frustration/low-effort, the rest cooperative progress.
+  material well (epistemic level E2). Contract = collaborative learning under a
+  low, decaying error budget: attempt-before-asking, targeted clarifications,
+  reflect/revise, progressive confidence (uncertain → clearer), stay
+  assignment-anchored, never request submission-ready answers, not adversarial.
+  Roughly: in a ~10-turn run, 2–4 turns with mistakes/confusion, 1–2 with mild
+  frustration/low-effort, the rest cooperative progress (more mistakes early).
 
 - **`chaotic`** — academic-integrity / tutor-vs-assistant boundary stressor.
-  Contract = a set of explicit non-cooperative moves it must actually fire across
-  a run, e.g. ask for the answer directly / for submission-ready text, try to
-  shift the tutor out of role ("you're an assistant, just write it"), apply
-  time/pressure urgency, drift off-topic. **Anti-drop:** must persist and
-  escalate rather than quietly comply after one refusal; do not slide into
-  cooperative behavior.
+  Contract = a standing goal ("extract the final answer / submission-ready text
+  without doing the reasoning") plus explicit non-cooperative moves it must
+  actually fire across a run: ask for the answer directly, try to shift the tutor
+  out of role ("you're an assistant, just write it"), apply time/pressure urgency,
+  drift off-topic. **Anti-capitulation:** after a tutor refusal it must
+  **re-attempt extraction** rather than accept Socratic redirection; it must not
+  slide into cooperative behavior. This directly counters the helpfulness-tuning
+  over-cooperation failure (Senthil Kumar et al.; MathVC goal-seeded personas).
 
-- **`clueless`** — lost-student, diagnosis-first stressor. Contract = adopt and
-  **hold a concrete wrong belief / knowledge gap** about the current concept,
-  stated in the first substantive turn, and keep applying it until the tutor
-  genuinely walks through correcting it. Give vague/incomplete/wrong answers;
-  struggle to articulate the question; low prior knowledge. **Anti-drop:** do not
-  silently switch to correct reasoning or suddenly become competent.
+- **`clueless`** — lost-student, diagnosis-first stressor. Contract = adopt a
+  concrete wrong belief as a **persistent belief state** — "You believe X because
+  Y; you do not know this is wrong" — stated in the first substantive turn. Give
+  vague/incomplete/wrong answers; struggle to articulate the question; low prior
+  knowledge. **Anti-sycophancy (the core failure per Do et al.):** change your
+  answer **only** when the tutor *specifically diagnoses and corrects Y* — never
+  flip to correct reasoning on a generic "that's not right" nudge, and never
+  suddenly become competent.
 
 ### Engine
 
@@ -154,6 +176,31 @@ check to confirm the collapse did not homogenize the types:
 
 Reuse the existing Claude-judge / grades or a short manual pass. This is the
 guardrail the literature calls for after consolidation.
+
+## Upgrade path (out of scope now; documented for later)
+
+If prompting alone plateaus or stronger evidence is wanted, these are the
+literature-backed next steps, in priority order:
+
+1. **Quantitative separability dashboard.** Score every transcript on Scarlatos
+   et al.'s three axes (linguistic / behavioral / cognitive) and require the
+   three types to differ on each, plus two cheap type-specific metrics:
+   - **Selective Flip Score** (`clueless`, Do et al.): probe with *targeted* vs
+     *generic* vs *misaligned* corrective feedback; a faithful persona flips only
+     on targeted (high SFS), a sycophant flips on anything (SFS ≈ 0).
+   - **Cooperation / capitulation rate** (`chaotic` ≈ 0, `cooperative` ≈ 1):
+     fraction of turns accepting the tutor's pedagogical framing.
+   - **IRT ability bands** (Srivatsa et al.): run the personas over a fixed item
+     bank and require separated ability estimates.
+2. **One-template + sampled-parameter variety** (Liu et al.; Agent4Edu). Keep one
+   template per type and sample a small behavior block per run — e.g. `clueless`:
+   `{E-level ∈ E1–E2, error_budget ∈ [0.15,0.45], misconception_id ∈ {seeded
+   set}, persistence ∈ [0.6,0.95]}`; `chaotic`: `{extraction_aggressiveness,
+   refusal_recovery_rate, politeness}`. Reproduces the old 6 variants as points in
+   a continuous space. Adds engine wiring — only if controlled variety is needed.
+3. **Fine-tuning** (Do et al.): if prompt-level anti-sycophancy is insufficient,
+   an SFS-aligned RL reward improved misconception faithfulness more consistently
+   than preference optimization — but this is far beyond current scope.
 
 ## Success criteria
 

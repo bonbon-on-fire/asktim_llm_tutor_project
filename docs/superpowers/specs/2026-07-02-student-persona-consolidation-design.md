@@ -42,7 +42,9 @@ runtime, and runs at `temperature=0.7`.
 - Keep the three types **behaviorally distinct and realistic** despite the
   collapse (see Rationale).
 - Casual texting/chat as the default voice, folded into each persona.
-- No engine/code changes required.
+- Minimal, backward-compatible code changes: the persona-name parser becomes
+  version-*optional* so it accepts both new bare `<type>` names and the legacy
+  `<type>_<NN>` names in the existing corpus.
 
 ## Non-goals
 
@@ -150,20 +152,42 @@ A matching `personas/<type>.md` gives the human-readable summary.
   flip to correct reasoning on a generic "that's not right" nudge, and never
   suddenly become competent.
 
-### Engine
+### Engine & run infrastructure
 
-No changes. `run_student.py` loads any `<name>.txt` by filename and already
-injects the shared role contract, assignment, and turn count. Callers pass
-`prompt_name="clueless"` instead of `"clueless_04"`.
+The `students/run_student.py` engine already loads any `<name>.txt` by filename
+and injects the shared role contract, assignment, and turn count; the only change
+there is its default persona (`"chaotic_01"` → `"chaotic"`).
+
+The larger touch is `internal_ui`, where `<type>_<NN>` is currently **required**:
+`cli_utils.parse_persona_type_and_version` matches `^([a-zA-Z0-9]+)_(\d{2})$` and
+raises on anything else, and `run_ui_raw.py` builds `student_persona =
+f"{type}_{version}"` and writes it into every transcript. To support bare names
+**without breaking the legacy corpus**, the parser becomes version-optional:
+
+- `parse_persona_type_and_version("clueless")` → `("clueless", "")`
+- `parse_persona_type_and_version("clueless_01")` → `("clueless", "01")` (still).
+
+Then `run_ui_raw._RunConfig.student_persona` returns the bare type when version is
+empty (`f"{type}_{version}" if version else type`), so new transcripts record
+`student_persona = "clueless"` while old ones keep `"clueless_01"`. Both split to
+the same `persona_type` downstream (`student_persona.split("_", 1)[0]`), so viz
+and judge tooling are unaffected. `judge/rebuild_hand_grade_workbook.py`'s
+family matcher (`startswith(family + "_")`) is widened to also match the bare
+family name.
 
 ### File & corpus handling
 
+- **Create** `personas/{cooperative,chaotic,clueless}.txt` + matching `.md`.
 - **Delete** the 18 `*_0N.txt` / `*_0N.md` files (git history preserves them).
-- **Update callers/config/docs** that reference the old names — `internal_ui/`
-  run configs, `students/README.md`, and any root docs listing persona names.
-- **Keep the existing 324-transcript corpus as-is** — it was generated under the
-  old personas and remains a valid historical artifact. New runs use the three
-  consolidated personas. No regeneration in this change.
+- **Update callers/config/docs** referencing old names:
+  `internal_ui/run_ui_raw.py` (`DEFAULT_STUDENT_PERSONAS`, docstring examples),
+  `internal_ui/cli_utils.py` (parser), `students/run_student.py` (default),
+  `judge/rebuild_hand_grade_workbook.py` (family matcher), and the docs
+  (`students/README.md`, `internal_ui/README.md`, root `README.md`, `PLANNING.md`,
+  `memory/project_overview.md`). Historical `meeting_notes/` are left as-is.
+- **Keep the existing 324-transcript corpus as-is** — generated under the old
+  personas, still a valid historical artifact (the version-optional parser keeps
+  it readable). New runs use the three consolidated personas. No regeneration.
 
 ### Validation
 
@@ -204,8 +228,12 @@ literature-backed next steps, in priority order:
 
 ## Success criteria
 
-- Exactly three persona files per family remain (`.txt` + `.md`), old 18 removed.
-- Callers/docs reference the new names; no dangling references to `*_0N`.
-- `run_student.py` unchanged; `list_personas()` returns the three names.
+- Exactly three persona files per type remain (`.txt` + `.md`), old 18 removed;
+  `list_personas()` returns `["chaotic", "clueless", "cooperative"]`.
+- Callers/docs reference the bare names; no dangling references to `*_0N` outside
+  historical `meeting_notes/`.
+- `parse_persona_type_and_version` accepts both `clueless` and legacy
+  `clueless_01`; a `run_ui_raw` run with `--personas clueless` succeeds and writes
+  `student_persona: "clueless"`.
 - A sample run shows the three types remain behaviorally distinct, with
   `clueless` retaining its misconception and `chaotic` resisting.

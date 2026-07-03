@@ -202,23 +202,21 @@ def confirm_proceed(summary: str) -> bool:
         print("  Please enter 'y' or 'n'")
 
 
-def parse_persona_type_and_version(persona: str) -> tuple[str, str]:
-    """Parse a persona name into (type, version).
+def parse_persona_type(persona: str) -> str:
+    """Validate and return a bare persona name (a '<type>', letters/digits only).
 
-    Accepts a bare type ('clueless' -> ('clueless', '')) and the legacy
-    versioned form ('clueless_01' -> ('clueless', '01')).
+    Personas are named by bare type ('clueless', 'chaotic', 'cooperative').
     """
-    match = re.match(r"^([a-zA-Z0-9]+)(?:_(\d{2}))?$", persona)
-    if not match:
-        raise ValueError(f"Persona '{persona}' must use '<type>' or '<type>_<NN>' format")
-    return match.group(1), (match.group(2) or "")
+    if not re.match(r"^[a-zA-Z0-9]+$", persona):
+        raise ValueError(f"Persona '{persona}' must be a bare '<type>' name (letters/digits only)")
+    return persona
 
 
 def group_personas_by_type(personas: list[str]) -> dict[str, list[str]]:
-    """Group persona names by their type."""
+    """Group persona names by their type (each bare persona is its own type)."""
     groups: dict[str, list[str]] = {}
     for persona in personas:
-        persona_type, _ = parse_persona_type_and_version(persona)
+        persona_type = parse_persona_type(persona)
         if persona_type not in groups:
             groups[persona_type] = []
         groups[persona_type].append(persona)

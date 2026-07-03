@@ -33,7 +33,7 @@ from tutor.run_tutor import (
 from internal_testing.cli_utils import (
     confirm_proceed,
     group_personas_by_type,
-    parse_persona_type_and_version,
+    parse_persona_type,
     prompt_integer,
     prompt_numbered_selection,
     prompt_single_selection,
@@ -75,7 +75,6 @@ class RunConfig:
 
     tutor_prompt: str
     persona_type: str
-    persona_version: str
     course: str
     exercise_number: str
     turn_size: int
@@ -83,8 +82,8 @@ class RunConfig:
 
     @property
     def student_persona(self) -> str:
-        """Persona identifier: bare type, or 'type_NN' for legacy versioned personas."""
-        return f"{self.persona_type}_{self.persona_version}" if self.persona_version else self.persona_type
+        """Persona identifier — the bare persona type."""
+        return self.persona_type
 
 
 @dataclass(frozen=True)
@@ -141,9 +140,9 @@ def _discover_exercises(course: str) -> list[str]:
     return _discover_course_exercises(course)
 
 
-def _parse_persona_name(prompt_name: str) -> tuple[str, str]:
-    """Split a persona name like 'chaotic_01' into (type, version) tuple; raises ValueError on bad format."""
-    return parse_persona_type_and_version(prompt_name)
+def _parse_persona_name(persona_name: str) -> str:
+    """Validate a bare persona name and return its type; raises ValueError on bad format."""
+    return parse_persona_type(persona_name)
 
 
 def _load_course_context(course: str) -> str:
@@ -228,7 +227,7 @@ def _validate_bundle_config(config: BundleConfig) -> None:
     for persona in config.student_personas:
         if persona not in available_personas:
             raise ValueError(f"Unknown student persona: {persona}")
-        persona_type, _ = _parse_persona_name(persona)
+        persona_type = _parse_persona_name(persona)
         if persona_type not in _RAW_SUBDIR_BY_PERSONA_TYPE:
             raise ValueError(
                 f"Persona type '{persona_type}' is not supported. "
@@ -389,13 +388,12 @@ def _iter_runs(bundle_config: BundleConfig):
     """Yield (RunConfig, trial_number) for every combination in the bundle config matrix."""
     for tutor_prompt in bundle_config.tutor_prompts:
         for persona_name in bundle_config.student_personas:
-            persona_type, persona_version = _parse_persona_name(persona_name)
+            persona_type = _parse_persona_name(persona_name)
             for course, exercise_number in bundle_config.course_exercises:
                 for trial in range(1, bundle_config.trials + 1):
                     config = RunConfig(
                         tutor_prompt=tutor_prompt,
                         persona_type=persona_type,
-                        persona_version=persona_version,
                         course=course,
                         exercise_number=exercise_number,
                         turn_size=bundle_config.turn_size,

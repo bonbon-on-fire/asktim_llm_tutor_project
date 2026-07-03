@@ -138,7 +138,7 @@ Maximum total score: **40** (`rubric_08`). The earlier `rubric_05` was **46** (P
 ## Output contract (current)
 
 - Scores are whole integers only.
-- Top-level key order ends with `total_score`, then `judge_llm_calls`.
+- Top-level key order ends with `total_score`, `max_score`, `model`, then `judge_llm_calls` (plus `timestamp_utc` last, if `JUDGE_INCLUDE_TIMESTAMP` is set).
 - `overview` replaces `justifications` and appears near the end.
 - `judge_reasoning` is included in each graded output as explicit scoring rationale.
 - `judge_reasoning` normalization mirrors tutor-style fallback behavior:

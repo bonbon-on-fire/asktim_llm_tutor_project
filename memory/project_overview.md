@@ -12,7 +12,7 @@ Socratic LLM tutor for MIT OpenCourseWare (OCW) humanities/social-science course
 **Six loosely-coupled layers:**
 1. Conversation pipeline — LangGraph tutor + adversarial student agents trading messages (`tutor/run_tutor.py`, `students/run_student.py`)
 2. Judge pipeline — separate LangGraph agent scores transcripts against a rubric (validated JSON, up to 3 repair retries) (`judge/run_judge.py`)
-3. Internal runners — `internal_ui/run_ui_raw.py` (bulk generation), `run_ui_judge.py` (grading), `run_ui_raw_mini.py` (fork at a pivot turn); parallelized via ThreadPoolExecutor
+3. Internal runners — `internal_ui/run_ui_raw.py` (bulk generation), `run_ui_judge.py` (grading); parallelized via ThreadPoolExecutor
 4. Dashboard + visualization — Flask grade browser (port 5002) + matplotlib correlation charts
 5. `main_ui/` — production AskTIM: Postgres (`asktim`, Alembic), SSE token streaming, bcrypt email+password identity, cross-browser history, sanitized markdown. **Deployed on Railway** (`Dockerfile_main`, entrypoint normalizes DATABASE_URL to `postgresql+psycopg://`).
 6. `sandbox_ui/` — "AskTIM Sandbox" for devs/TAs: mirrors main_ui + Edit-context switcher + Create-context wizard, own `asktim_test` DB (`create_all`, no Alembic), teal `#126f9a`, port 5000. Railway deploy deferred (local-only).

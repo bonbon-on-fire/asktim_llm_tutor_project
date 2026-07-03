@@ -124,7 +124,7 @@ flowchart TD
 
 **Judge (`judge/run_judge.py`):** Reads a transcript, constructs a grading prompt by injecting the rubric and output schema, and calls the selected provider (`gpt` or `claude`). Validates the JSON response against the rubric spec, auto-repairs on failure up to 3 attempts, and writes the grade back into the transcript file. The latest rubric (`rubric_08`, 40 pts) scores three sections: Pedagogy (20 pts — Socratic method/no direct work, scaffolding, meta-learning), Dialogue Quality (12 pts — redundancy, assignment anchoring), and Communication Quality (8 pts — bite-sized responses, tone). (The earlier `rubric_05` was 46 pts and remains the in-code default.)
 
-**UI Runners (`internal_ui/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_ui_raw`), mini-continuation generation (`run_ui_raw_mini`), transcript judging (`run_ui_judge`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
+**UI Runners (`internal_ui/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_ui_raw`), transcript judging (`run_ui_judge`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
 
 **Dashboard (`dashboard_ui/`):** Flask app (port 5002) that discovers all raw transcripts on disk, attaches each one's Claude judge grade, and serves a sortable table (with a Score column) plus a per-transcript detail view (full conversation + grade panel) via a single-page JS frontend.
 
@@ -276,7 +276,6 @@ asktim_llm_tutor_project_2026/
 │
 ├── tutor/
 │   ├── run_tutor.py         # LangGraph engine + prompt loading + response parsing
-│   ├── run_tutor_mini.py    # Fork a raw transcript at a pivot turn with a new tutor
 │   └── prompts/             # tutor_01.txt .. tutor_05.txt (versioned system prompts)
 │
 ├── judge/
@@ -287,8 +286,6 @@ asktim_llm_tutor_project_2026/
 │
 ├── internal_ui/
 │   ├── run_ui_raw.py            # Generate raw transcripts in bulk (--output-suffix, --yes)
-│   ├── run_ui_raw_mini.py       # Interactive wrapper for mini-continuation runs
-│   ├── run_ui_raw_mini_batch.py # Batch mini-continuation over a reference transcript table
 │   ├── run_ui_judge.py          # Grade transcripts (--provider, --source-suffix, --output-suffix, --yes)
 │   └── cli_utils.py             # Shared interactive selection-prompt helpers
 │

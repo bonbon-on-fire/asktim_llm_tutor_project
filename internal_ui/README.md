@@ -7,9 +7,6 @@ Internal terminal runners for bulk transcript generation and judge scoring, with
 ```text
 internal_ui/
   run_ui_raw.py             — generate raw transcripts in bulk (interactive or CLI)
-  run_ui_raw_mini.py        — interactive wrapper for single mini-continuation runs
-  run_ui_raw_mini_batch.py  — batch mini-continuation runner over the reference transcript
-                              table in meeting_notes/04_28_2026.md (supports --dry-run)
   run_ui_judge.py           — grade transcripts with the GPT or Claude judge
   cli_utils.py              — shared interactive numbered-selection prompt helpers
 ```
@@ -55,30 +52,7 @@ Run matrix: `tutor_prompts x student_personas x course_exercises x trials`
 - Automatic API key validation
 - Interactive confirmation before processing
 
-### 2) Mini continuation (pivot a raw transcript, new tutor)
-
-For quick experiments: fork a **raw** transcript at a **pivot turn** `X`, keep full student+tutor for turns `1 .. X-1`, keep **only** the saved **student** line for turn `X`, then run the **new tutor** first (regenerating the tutor side of turn `X`). After that, append more full student+tutor exchanges. The student model stays **OpenAI** (same as `run_student`); you choose the **tutor** provider (`gpt` or `claude`) for continuation.
-
-**Interactive (recommended):**
-```powershell
-python -m internal_ui.run_ui_raw_mini
-```
-
-**Command-line** (same flags as the tutor module; `internal_ui.run_ui_raw_mini` forwards any arguments):
-```powershell
-python -m tutor.run_tutor_mini --persona-type chaotic --transcript transcript_01 --resume-from-turn 5 --additional-turns 3 --tutor-prompt tutor_04 --tutor-provider gpt
-```
-
-**Options (`tutor.run_tutor_mini`):**
-- `--persona-type`: Folder under `transcripts/` (`chaotic`, `clueless`, `cooperative`)
-- `--transcript`: Stem in the persona’s `*_raw` folder (e.g. `transcript_01`)
-- `--resume-from-turn`: Pivot `X` — full history through turn `X-1`; turn `X` uses file student text only, then tutor replies first
-- `--additional-turns`: Count of **full** student+tutor exchanges **after** that new tutor reply (`0` = only regenerate tutor at turn `X`)
-- `--tutor-prompt`, `--tutor-provider`: Tutor prompt stem and `gpt` or `claude` for continuation
-
-**Output:** `transcripts/<type>/<type>_mini/transcript_NN.json`. Saved JSON includes `mini_continuation` (source path, `resume_from_turn`, `additional_turns`, original tutor fields).
-
-### 3) Judge raw transcripts (GPT or Claude)
+### 2) Judge raw transcripts (GPT or Claude)
 
 **Interactive mode (default):**
 ```powershell
@@ -101,10 +75,6 @@ python -m internal_ui.run_ui_judge --provider claude --prompt judge_08 --rubric 
 # Read from *_raw_tutor_05/, write to *_claude_tutor_05/ (--yes skips confirmation)
 python -m internal_ui.run_ui_judge --provider claude --prompt judge_08 --rubric rubric_08 \
   --source-suffix raw_tutor_05 --output-suffix tutor_05 --yes
-
-# Read from *_mini/, write to *_claude_mini/
-python -m internal_ui.run_ui_judge --provider claude --prompt judge_08 --rubric rubric_08 \
-  --source-suffix mini --output-suffix mini --yes
 ```
 
 The script discovers all transcripts matching `*_{source-suffix}/transcript_*.json`, copies each to the provider+suffix-specific folder, then applies judging in-place.
@@ -153,18 +123,7 @@ Judged transcripts are saved to provider-specific folders:
 - `transcripts/clueless/clueless_claude_tutor_05/`
 - `transcripts/cooperative/cooperative_claude_tutor_05/`
 
-**Claude judged mini** (`--source-suffix mini --output-suffix mini`):
-- `transcripts/chaotic/chaotic_claude_mini/`
-- `transcripts/clueless/clueless_claude_mini/`
-
 Each output file uses the same stem as the source input: `transcript_NN.json`
-
-### Mini continuation outputs (`internal_ui.run_ui_raw_mini` / `tutor.run_tutor_mini`)
-
-- `transcripts/chaotic/chaotic_mini/`
-- `transcripts/clueless/clueless_mini/`
-
-Output file is named using the same stem as the source raw transcript.
 
 ## Transcript schema (core fields)
 
@@ -199,14 +158,9 @@ Judged transcripts additionally include:
 - `judge_rubric`
 - `grade`
 
-Mini continuation outputs additionally include:
-
-- `student_provider`: `gpt` (student stack is always OpenAI here)
-- `mini_continuation` (object): `source_transcript`, `source_stem`, `resume_from_turn`, `additional_turns`, `original_tutor_prompt`, `original_tutor_provider`
-
 ## Interactive CLI Features
 
-`run_ui_raw` and `run_ui_judge` support both interactive and command-line modes. **`run_ui_raw_mini`** is interactive when run with **no** arguments; with arguments it delegates to **`tutor.run_tutor_mini`** (same parser as `python -m tutor.run_tutor_mini`).
+`run_ui_raw` and `run_ui_judge` support both interactive and command-line modes.
 
 - **Interactive mode**: Run without arguments to get numbered selection prompts
 - **Command-line mode**: Provide all required arguments to skip prompts

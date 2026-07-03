@@ -8,7 +8,6 @@ LangGraph-based Socratic tutor for MIT OCW humanities courses. The tutor guides 
 tutor/
   __init__.py               — package exports
   run_tutor.py              — LangGraph engine, system-prompt loading, response parsing
-  run_tutor_mini.py         — resume/replay a raw transcript from a pivot turn with a new tutor
   prompts/
     tutor_01.txt            — baseline system prompt
     tutor_02.txt            — revised system prompt variant
@@ -18,7 +17,6 @@ tutor/
 ```
 
 - `run_tutor.py` builds the LangGraph, invokes the LLM, and parses structured JSON response fields (pedagogical reasoning + student-facing answer).
-- `run_tutor_mini.py` forks a raw transcript at a pivot turn, replays the student side from file, and regenerates the tutor response using a new prompt or provider.
 - Prompt versions are selected by name (for example `tutor_03`, `tutor_05`) and loaded from `tutor/prompts/`.
 - `stream_tutor_reply()` exposes a token-streaming entry point used by [`main_ui/`](../main_ui/README.md). It yields visible answer characters as they arrive, hiding the JSON envelope and the `pedagogical-reasoning` field server-side via the `StudentAnswerExtractor` state machine.
 
@@ -72,20 +70,6 @@ prompt = load_system_prompt("tutor_01", assignment_override="...")
 graph = create_tutor_graph(prompt)
 messages, answer_text = get_tutor_reply(messages, graph=graph)
 ```
-
-### Mini continuation (resume from pivot turn)
-
-```powershell
-python -m tutor.run_tutor_mini \
-  --persona-type chaotic \
-  --transcript transcript_01 \
-  --resume-from-turn 5 \
-  --additional-turns 3 \
-  --tutor-prompt tutor_05 \
-  --tutor-provider gpt
-```
-
-See `internal_ui/run_ui_raw_mini` for the interactive wrapper.
 
 ### Streaming (used by `main_ui/`)
 

@@ -16,6 +16,7 @@ from database_ui.auth import init_auth
 from database_ui.config import load_config
 from database_ui.db import SessionLocal
 from database_ui.routes.database import database_bp
+from ui_core.web.static_blueprint import static_bp
 
 
 def create_app() -> Flask:
@@ -51,6 +52,7 @@ def create_app() -> Flask:
         return jsonify({"status": "ok", "service": "database_ui"})
 
     init_auth(app)
+    app.register_blueprint(static_bp)
     app.register_blueprint(database_bp)
 
     return app

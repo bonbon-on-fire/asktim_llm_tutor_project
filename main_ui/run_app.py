@@ -15,6 +15,7 @@ from main_ui.routes.chat import chat_bp
 from main_ui.routes.embed import embed_bp
 from main_ui.routes.history import history_bp
 from main_ui.routes.identity import identity_bp
+from ui_core.web.static_blueprint import static_bp
 
 
 def create_app() -> Flask:
@@ -22,6 +23,7 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = config.secret_key
 
+    app.register_blueprint(static_bp)
     app.register_blueprint(embed_bp)
     app.register_blueprint(identity_bp)
     app.register_blueprint(chat_bp)

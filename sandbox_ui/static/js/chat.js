@@ -414,7 +414,7 @@
   function renderHistoryEntries(email, conversations) {
     sidebarList.innerHTML = "";
     if (!email) {
-      showSidebarEmpty("Add your username to save chat history");
+      showSidebarEmpty("Log in to save chat history");
       return;
     }
     if (!conversations || conversations.length === 0) {

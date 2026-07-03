@@ -1,35 +1,26 @@
-"""SQLAlchemy 2.x models for sandbox_ui."""
+"""SQLAlchemy 2.x models for sandbox_ui.
+
+``Message``, ``Student``, and ``UploadedImage`` are schema-identical across the
+web apps and come from the shared mixins in ``ui_core.db.models_common``. Only
+``Conversation`` is defined here, on sandbox_ui's own ``Base`` — it carries
+sandbox-only columns (exercise_kind, *_enabled toggles, custom_* snapshots,
+context_mode) that main_ui's does not.
+"""
 
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
-from sqlalchemy import (
-    BigInteger,
-    Boolean,
-    CheckConstraint,
-    DateTime,
-    ForeignKey,
-    Index,
-    Integer,
-    LargeBinary,
-    String,
-    Text,
-    Uuid,
-)
-
-
-# SQLite only auto-increments columns typed exactly INTEGER PRIMARY KEY.
-# Use BigInteger on real backends (Postgres) and fall back to Integer on SQLite
-# so autoincrement works in local dev.
-_BigIntPk = BigInteger().with_variant(Integer(), "sqlite")
+from sqlalchemy import Boolean, DateTime, Index, Text, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-
-def _utcnow() -> datetime:
-    """tz-aware UTC datetime; used as a Python-side default for timestamp columns."""
-    return datetime.now(timezone.utc)
+from ui_core.db.models_common import (
+    _utcnow,
+    MessageMixin,
+    StudentMixin,
+    UploadedImageMixin,
+)
 
 
 class Base(DeclarativeBase):
@@ -105,74 +96,13 @@ class Conversation(Base):
     )
 
 
-class Message(Base):
-    __tablename__ = "messages"
-
-    id: Mapped[int] = mapped_column(_BigIntPk, primary_key=True, autoincrement=True)
-    conversation_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("conversations.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    turn: Mapped[int] = mapped_column(nullable=False)
-    role: Mapped[str] = mapped_column(String(16), nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    pedagogical_reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=_utcnow
-    )
-
-    conversation: Mapped["Conversation"] = relationship(back_populates="messages")
-    uploaded_images: Mapped[list["UploadedImage"]] = relationship(
-        back_populates="message",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-    __table_args__ = (
-        CheckConstraint("role IN ('student', 'tutor')", name="ck_messages_role"),
-        Index("idx_messages_conversation", "conversation_id"),
-    )
+class Message(MessageMixin, Base):
+    pass
 
 
-class Student(Base):
-    """Soft-identity record: one row per username that's been linked to a password.
-
-    Not a real auth system — just a proof-of-ownership check that prevents
-    casual impersonation when a student claims an existing username from a new
-    browser. The `username` cookie remains the active session-identity carrier;
-    this row exists so we can verify the claim on first link.
-    """
-
-    __tablename__ = "students"
-
-    username: Mapped[str] = mapped_column(Text, primary_key=True)
-    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=_utcnow
-    )
+class Student(StudentMixin, Base):
+    pass
 
 
-class UploadedImage(Base):
-    __tablename__ = "uploaded_images"
-
-    id: Mapped[int] = mapped_column(_BigIntPk, primary_key=True, autoincrement=True)
-    message_id: Mapped[int] = mapped_column(
-        _BigIntPk,
-        ForeignKey("messages.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    filename: Mapped[str] = mapped_column(Text, nullable=False)
-    mime_type: Mapped[str] = mapped_column(Text, nullable=False)
-    size_bytes: Mapped[int] = mapped_column(nullable=False)
-    # Raw image bytes stored in-DB (BYTEA on Postgres). No Alembic here — the
-    # Sandbox builds its schema via create_all on a throwaway DB, so an existing
-    # test DB needs a drop/recreate to pick up this new column.
-    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=_utcnow
-    )
-
-    message: Mapped["Message"] = relationship(back_populates="uploaded_images")
-
-    __table_args__ = (Index("idx_uploaded_images_message", "message_id"),)
+class UploadedImage(UploadedImageMixin, Base):
+    pass

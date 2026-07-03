@@ -16,8 +16,16 @@ from flask import Flask, current_app, redirect, request, session, url_for
 _SESSION_KEY = "database_authed"
 
 # Endpoints reachable without auth: the login form/submit and the health check.
-# Flask's static endpoint is also allowed so the login page can load CSS.
-_PUBLIC_ENDPOINTS = {"database.login", "database.login_submit", "health", "static"}
+# Both this app's own static endpoint (database.css) and the shared
+# ui_core.static endpoint (chat.css) are also allowed so the login page can
+# load all of its CSS.
+_PUBLIC_ENDPOINTS = {
+    "database.login",
+    "database.login_submit",
+    "health",
+    "static",
+    "ui_core.static",
+}
 
 
 def password_required() -> bool:

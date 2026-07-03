@@ -112,18 +112,20 @@ def test_build_engine_sqlite_fk_enforced() -> None:
         __tablename__ = "parent"
         id = Column(Integer, primary_key=True)
 
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         url = f"sqlite:///{Path(tmp) / 'fk.db'}"
         eng_on = build_engine(url, sqlite_fk=True)
         Base.metadata.create_all(eng_on)
         with eng_on.connect() as conn:
             fk = conn.execute(text("PRAGMA foreign_keys")).scalar()
+        eng_on.dispose()
         _check("sqlite_fk=True turns PRAGMA foreign_keys on", fk == 1, f"got {fk}")
 
         url2 = f"sqlite:///{Path(tmp) / 'nofk.db'}"
         eng_off = build_engine(url2, sqlite_fk=False)
         with eng_off.connect() as conn:
             fk_off = conn.execute(text("PRAGMA foreign_keys")).scalar()
+        eng_off.dispose()
         _check("sqlite_fk=False leaves PRAGMA off", fk_off == 0, f"got {fk_off}")
 
 
@@ -134,7 +136,7 @@ def test_session_scope_commit_vs_readonly() -> None:
         __tablename__ = "row"
         id = Column(Integer, primary_key=True)
 
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         url = f"sqlite:///{Path(tmp) / 'scope.db'}"
         engine = build_engine(url)
         Base.metadata.create_all(engine)
@@ -151,6 +153,7 @@ def test_session_scope_commit_vs_readonly() -> None:
         with session_scope(factory) as s:
             rolled_back = s.get(Row, 2) is None
         _check("read_only scope rolls back", rolled_back)
+        engine.dispose()
 
 
 def main() -> int:

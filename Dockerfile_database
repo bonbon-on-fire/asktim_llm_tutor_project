@@ -18,7 +18,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code (database_ui = read-only conversation review dashboard).
 # No tutor/ rag/ curriculum/ — this app never runs the tutor; it only reads the DB.
+# ui_core/ is required: database_ui imports ui_core.db.session and registers the
+# shared ui_core static blueprint (serves chat.css at /ui-core/css/chat.css).
 COPY database_ui/ database_ui/
+COPY ui_core/ ui_core/
 COPY scripts/railway-entrypoint-database.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh

@@ -88,7 +88,7 @@ def load_by_persona() -> dict[str, list[str]]:
 
 
 def sample_family(by_persona: dict[str, list[str]], family: str, n_target: int) -> list[str]:
-    keys = sorted(k for k in by_persona if k.startswith(family + "_"))
+    keys = sorted(k for k in by_persona if k == family or k.startswith(family + "_"))
     selected: list[str] = []
     seen: set[str] = set()
     while len(selected) < n_target:

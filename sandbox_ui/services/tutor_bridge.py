@@ -7,6 +7,14 @@ needs updating.
 
 No HTTP, no DB, no Flask state — just a thin function from
 ``(course, exercise, tutor, history, new_student_message)`` to a tutor reply.
+
+The shared control flow (build/cache a graph or model+system_prompt, convert
+history, append the new turn, call upstream, parse reasoning) lives in
+:class:`ui_core.tutor_bridge.TutorBridge`. ``SandboxTutorBridge`` below
+overrides that base's hooks to add sandbox_ui's RAG / custom-context /
+include-toggle behavior; the module-level functions at the bottom are a thin
+wrapper around one shared instance, preserving the exact public names and
+call signatures `sandbox_ui/routes/*` import.
 """
 
 from __future__ import annotations
@@ -15,21 +23,13 @@ import os
 import re
 from pathlib import Path
 
-from langchain_core.messages import AIMessage, HumanMessage
-
 from rag.retrieve import format_context
 from rag.retrieve import has_index as rag_has_index
 from rag.retrieve import retrieve as rag_retrieve
-from tutor.run_tutor import (
-    build_tutor_model,
-    create_tutor_graph,
-    load_system_prompt,
-    parse_tutor_response,
-)
-from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
-from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
+from tutor.run_tutor import load_system_prompt
+from ui_core.tutor_bridge import TutorBridge
 from utils.curriculum import exercise_path, load_about_asktim, practice_path
-from utils.figures import build_multimodal_content, discover_figures
+from utils.figures import discover_figures
 from utils.lectures import load_lecture_transcripts
 
 
@@ -40,14 +40,6 @@ _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
 # var; otherwise default to "rag" when a course has a built index, else fall
 # back to the historical "full_context" behavior.
 _VALID_CONTEXT_MODES = {"rag", "full_context", "exercise_only"}
-
-
-_graph_cache: dict[tuple[str, str, str, bool, bool, bool, str, str], object] = {}
-# Parallel cache for the streaming path. The non-streaming path drives a
-# compiled LangGraph; the streaming path drives the raw model with the same
-# system prompt. We cache both per (tutor, course, exercise, include_course,
-# include_syllabus, include_lectures, exercise_kind, context_mode) so successive turns reuse the same prompt build.
-_stream_cache: dict[tuple[str, str, str, bool, bool, bool, str, str], tuple[object, str]] = {}
 
 
 def _resolve_context_mode(
@@ -220,162 +212,6 @@ def _has_custom(
     )
 
 
-def _resolve_system_prompt(
-    tutor: str,
-    course: str,
-    exercise: str,
-    include_syllabus: bool,
-    *,
-    exercise_kind: str = "exercise",
-    include_course: bool = True,
-    include_lectures: bool = True,
-    course_text: str | None,
-    exercise_text: str | None,
-    syllabus_text: str | None,
-    lectures_text: str | None = None,
-    custom_tutor_prompt: str | None,
-    context_mode: str = "full_context",
-) -> str:
-    assignment_text = build_assignment_text(
-        course,
-        exercise,
-        exercise_kind=exercise_kind,
-        include_course=include_course,
-        include_syllabus=include_syllabus,
-        include_lectures=include_lectures,
-        course_text=course_text,
-        exercise_text=exercise_text,
-        syllabus_text=syllabus_text,
-        lectures_text=lectures_text,
-        context_mode=context_mode,
-    )
-    if custom_tutor_prompt is not None:
-        return _render_custom_tutor_prompt(custom_tutor_prompt, assignment_text)
-    return load_system_prompt(tutor, assignment_override=assignment_text)
-
-
-def _get_or_build_graph(
-    tutor: str,
-    course: str,
-    exercise: str,
-    include_syllabus: bool,
-    *,
-    exercise_kind: str = "exercise",
-    include_course: bool = True,
-    include_lectures: bool = True,
-    course_text: str | None = None,
-    exercise_text: str | None = None,
-    syllabus_text: str | None = None,
-    lectures_text: str | None = None,
-    custom_tutor_prompt: str | None = None,
-    context_mode: str = "full_context",
-):
-    custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt, lectures_text)
-    key = (tutor, course, exercise, include_course, include_syllabus, include_lectures, exercise_kind, context_mode)
-    if not custom:
-        cached = _graph_cache.get(key)
-        if cached is not None:
-            return cached
-    system_prompt = _resolve_system_prompt(
-        tutor,
-        course,
-        exercise,
-        include_syllabus,
-        exercise_kind=exercise_kind,
-        include_course=include_course,
-        include_lectures=include_lectures,
-        course_text=course_text,
-        exercise_text=exercise_text,
-        syllabus_text=syllabus_text,
-        lectures_text=lectures_text,
-        custom_tutor_prompt=custom_tutor_prompt,
-        context_mode=context_mode,
-    )
-    graph = create_tutor_graph(system_prompt)
-    if not custom:
-        # Only cache reusable built-in builds — custom context is one-off.
-        _graph_cache[key] = graph
-    return graph
-
-
-def _get_or_build_stream_context(
-    tutor: str,
-    course: str,
-    exercise: str,
-    include_syllabus: bool,
-    *,
-    exercise_kind: str = "exercise",
-    include_course: bool = True,
-    include_lectures: bool = True,
-    course_text: str | None = None,
-    exercise_text: str | None = None,
-    syllabus_text: str | None = None,
-    lectures_text: str | None = None,
-    custom_tutor_prompt: str | None = None,
-    context_mode: str = "full_context",
-) -> tuple[object, str]:
-    """Return ``(model, system_prompt)`` for the streaming path."""
-    custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt, lectures_text)
-    key = (tutor, course, exercise, include_course, include_syllabus, include_lectures, exercise_kind, context_mode)
-    if not custom:
-        cached = _stream_cache.get(key)
-        if cached is not None:
-            return cached
-    system_prompt = _resolve_system_prompt(
-        tutor,
-        course,
-        exercise,
-        include_syllabus,
-        exercise_kind=exercise_kind,
-        include_course=include_course,
-        include_lectures=include_lectures,
-        course_text=course_text,
-        exercise_text=exercise_text,
-        syllabus_text=syllabus_text,
-        lectures_text=lectures_text,
-        custom_tutor_prompt=custom_tutor_prompt,
-        context_mode=context_mode,
-    )
-    model = build_tutor_model()
-    if not custom:
-        _stream_cache[key] = (model, system_prompt)
-    return model, system_prompt
-
-
-def _history_to_langchain(history: list[dict]) -> list:
-    """Convert [{role, content}, ...] dicts to LangChain BaseMessage instances."""
-    messages: list = []
-    for entry in history:
-        role = entry["role"]
-        content = entry["content"]
-        if role == "student":
-            messages.append(HumanMessage(content=content))
-        elif role == "tutor":
-            messages.append(AIMessage(content=content))
-        else:
-            raise ValueError(f"Unknown role: {role!r} (expected 'student' or 'tutor')")
-    return messages
-
-
-def _new_student_message(
-    text: str, images: list | None, retrieved_context: str = ""
-) -> HumanMessage:
-    """Build the new student turn, multimodal when *images* are attached.
-
-    *images* is a list of ``(bytes, mime)`` tuples. With none, this is a plain
-    text HumanMessage. Images attach only to this turn; prior turns stay text.
-
-    When ``retrieved_context`` is provided (RAG mode), it is prepended as a
-    clearly-delimited reference block ahead of the student's actual message, so
-    the tutor treats it as background material rather than as the student
-    speaking. Only the LLM message is augmented — the stored/displayed student
-    message (handled by the route) is unchanged.
-    """
-    if retrieved_context:
-        text = f"{retrieved_context}\n\n---\n\nStudent message:\n{text}"
-    return HumanMessage(content=build_multimodal_content(text, images))
-
-
 def _retrieved_context(course: str, mode: str, query: str) -> str:
     """Retrieve and format course-material chunks for this turn (RAG mode only)."""
     if mode != "rag":
@@ -388,29 +224,81 @@ def _retrieved_context(course: str, mode: str, query: str) -> str:
         return ""
 
 
-def _turn_attachments(
-    course: str,
-    exercise: str,
-    images: list | None,
-    *,
-    course_text: str | None,
-    exercise_text: str | None,
-) -> list | None:
-    """Attachments for the latest student turn: curriculum figures + uploads.
+class SandboxTutorBridge(TutorBridge):
+    """Adds sandbox_ui's RAG / custom-context / include-toggle behavior."""
 
-    Curriculum figures attach only when the course *and* exercise are built-ins
-    (no custom override) — a tester's typed-in custom exercise has no figures
-    folder on disk. When they apply, figures are filesystem paths attached on
-    every call (the per-call history is text-only, so the tutor would otherwise
-    lose the figure after the first turn). Student uploads (``(bytes, mime)``
-    tuples) ride on the same turn, after the figures. Returns ``None`` when
-    there's nothing to attach, keeping the message a plain-text HumanMessage.
-    """
-    figures: list = []
-    if course and course_text is None and exercise_text is None:
-        figures = discover_figures(course, exercise)
-    combined = [*figures, *(images or [])]
-    return combined or None
+    def prepare_ctx(self, course: str, **ctx) -> dict:
+        course_text = ctx.get("course_text")
+        exercise_text = ctx.get("exercise_text")
+        syllabus_text = ctx.get("syllabus_text")
+        lectures_text = ctx.get("lectures_text")
+        custom_tutor_prompt = ctx.get("custom_tutor_prompt")
+        has_custom = _has_custom(
+            course_text, exercise_text, syllabus_text, custom_tutor_prompt, lectures_text
+        )
+        ctx["has_custom"] = has_custom
+        ctx["context_mode"] = _resolve_context_mode(
+            course, has_custom, requested=ctx.get("context_mode")
+        )
+        return ctx
+
+    def cache_key(self, tutor: str, course: str, exercise: str, **ctx):
+        # Custom context is one-off — never cache it (mirrors the original
+        # `if not custom: ...` gating around cache reads/writes).
+        if ctx.get("has_custom"):
+            return None
+        return (
+            tutor,
+            course,
+            exercise,
+            ctx.get("include_course", True),
+            ctx.get("include_syllabus", True),
+            ctx.get("include_lectures", True),
+            ctx.get("exercise_kind", "exercise"),
+            ctx.get("context_mode", "full_context"),
+        )
+
+    def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
+        return build_assignment_text(
+            course,
+            exercise,
+            exercise_kind=ctx.get("exercise_kind", "exercise"),
+            include_course=ctx.get("include_course", True),
+            include_syllabus=ctx.get("include_syllabus", True),
+            include_lectures=ctx.get("include_lectures", True),
+            course_text=ctx.get("course_text"),
+            exercise_text=ctx.get("exercise_text"),
+            syllabus_text=ctx.get("syllabus_text"),
+            lectures_text=ctx.get("lectures_text"),
+            context_mode=ctx.get("context_mode", "full_context"),
+        )
+
+    def build_system_prompt(self, tutor: str, assignment_text: str, **ctx) -> str:
+        custom_tutor_prompt = ctx.get("custom_tutor_prompt")
+        if custom_tutor_prompt is not None:
+            return _render_custom_tutor_prompt(custom_tutor_prompt, assignment_text)
+        return load_system_prompt(tutor, assignment_override=assignment_text)
+
+    def retrieved_context(self, course: str, query: str, **ctx) -> str:
+        return _retrieved_context(course, ctx.get("context_mode", "full_context"), query)
+
+    def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):
+        """Curriculum figures + uploads, with figures gated off for custom exercises.
+
+        Curriculum figures attach only when the course *and* exercise are
+        built-ins (no custom override) — a tester's typed-in custom exercise
+        has no figures folder on disk.
+        """
+        course_text = ctx.get("course_text")
+        exercise_text = ctx.get("exercise_text")
+        figures: list = []
+        if course and course_text is None and exercise_text is None:
+            figures = discover_figures(course, exercise)
+        combined = [*figures, *(images or [])]
+        return combined or None
+
+
+_bridge = SandboxTutorBridge()
 
 
 def get_tutor_reply(
@@ -449,15 +337,16 @@ def get_tutor_reply(
         tutor's hidden ``pedagogical-reasoning`` field; ``None`` if parsing
         the tutor's JSON failed.
     """
-    has_custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt, lectures_text)
-    context_mode = _resolve_context_mode(course, has_custom, requested=context_mode)
-    graph = _get_or_build_graph(
-        tutor,
-        course,
-        exercise,
-        include_syllabus,
+    return _bridge.get_tutor_reply(
+        course=course,
+        exercise=exercise,
+        tutor=tutor,
+        history=history,
+        new_student_message=new_student_message,
+        images=images,
         exercise_kind=exercise_kind,
         include_course=include_course,
+        include_syllabus=include_syllabus,
         include_lectures=include_lectures,
         course_text=course_text,
         exercise_text=exercise_text,
@@ -466,31 +355,6 @@ def get_tutor_reply(
         custom_tutor_prompt=custom_tutor_prompt,
         context_mode=context_mode,
     )
-    messages = _history_to_langchain(history)
-    messages.append(
-        _new_student_message(
-            new_student_message,
-            _turn_attachments(
-                course,
-                exercise,
-                images,
-                course_text=course_text,
-                exercise_text=exercise_text,
-            ),
-            _retrieved_context(course, context_mode, new_student_message),
-        )
-    )
-
-    out_messages, reply_text = _upstream_get_tutor_reply(messages, graph=graph)
-
-    reasoning: str | None = None
-    if out_messages:
-        last = out_messages[-1]
-        if isinstance(last, AIMessage):
-            raw = last.content if isinstance(last.content, str) else str(last.content)
-            reasoning, _ = parse_tutor_response(raw)
-
-    return {"reply": reply_text, "reasoning": reasoning}
 
 
 def stream_tutor_reply(
@@ -521,15 +385,16 @@ def stream_tutor_reply(
 
     Routes are responsible for re-shaping these into SSE frames.
     """
-    has_custom = _has_custom(course_text, exercise_text, syllabus_text, custom_tutor_prompt, lectures_text)
-    context_mode = _resolve_context_mode(course, has_custom, requested=context_mode)
-    model, system_prompt = _get_or_build_stream_context(
-        tutor,
-        course,
-        exercise,
-        include_syllabus,
+    return _bridge.stream_tutor_reply(
+        course=course,
+        exercise=exercise,
+        tutor=tutor,
+        history=history,
+        new_student_message=new_student_message,
+        images=images,
         exercise_kind=exercise_kind,
         include_course=include_course,
+        include_syllabus=include_syllabus,
         include_lectures=include_lectures,
         course_text=course_text,
         exercise_text=exercise_text,
@@ -538,34 +403,3 @@ def stream_tutor_reply(
         custom_tutor_prompt=custom_tutor_prompt,
         context_mode=context_mode,
     )
-    messages = _history_to_langchain(history)
-    messages.append(
-        _new_student_message(
-            new_student_message,
-            _turn_attachments(
-                course,
-                exercise,
-                images,
-                course_text=course_text,
-                exercise_text=exercise_text,
-            ),
-            _retrieved_context(course, context_mode, new_student_message),
-        )
-    )
-
-    full_raw: str | None = None
-    for item in _upstream_stream_tutor_reply(
-        messages, model=model, system_prompt=system_prompt
-    ):
-        if isinstance(item, tuple) and item and item[0] == "__done__":
-            full_raw = item[1]
-            break
-        if isinstance(item, str) and item:
-            yield {"type": "delta", "text": item}
-
-    reasoning: str | None = None
-    reply_text = ""
-    if full_raw:
-        reasoning, answer = parse_tutor_response(full_raw)
-        reply_text = answer or ""
-    yield {"type": "done", "reply": reply_text, "reasoning": reasoning}

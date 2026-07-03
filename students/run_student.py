@@ -2,7 +2,7 @@
 Shared student bot engine.
 
 All student personas use the same LangGraph pipeline — only the system prompt
-differs.  Select a persona by passing ``prompt_name`` (e.g. "chaotic_01"),
+differs.  Select a persona by passing ``prompt_name`` (e.g. "chaotic"),
 which maps to ``students/personas/<prompt_name>.txt``.
 """
 
@@ -51,7 +51,7 @@ def list_personas() -> list[str]:
 
 
 def load_prompt(prompt_name: str) -> str:
-    """Load a student persona prompt by name (e.g. 'chaotic_01' → personas/chaotic_01.txt)."""
+    """Load a student persona prompt by name (e.g. 'chaotic' → personas/chaotic.txt)."""
     path = PERSONAS_DIR / f"{prompt_name}.txt"
     if not path.exists():
         available = list_personas()
@@ -262,7 +262,7 @@ def build_graph(
 
     Provide either ``prompt_name`` (looks up the .txt file) or ``persona``
     (raw prompt text).  If neither is given, ``prompt_name`` defaults to
-    ``"chaotic_01"``.
+    ``"chaotic"``.
     """
     if model is None:
         model = ChatOpenAI(
@@ -304,7 +304,7 @@ def get_next_student_message(
     Parameters
     ----------
     prompt_name : str
-        Persona prompt to use (e.g. "chaotic_01").  Maps to
+        Persona prompt to use (e.g. "chaotic").  Maps to
         ``students/personas/<prompt_name>.txt``.
     assignment : str, optional
         Assignment text the student can reference.

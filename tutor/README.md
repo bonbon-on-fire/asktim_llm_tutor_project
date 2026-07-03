@@ -54,6 +54,84 @@ If a course ships `curriculum/<course>/lectures/*.txt`, those transcripts are fo
    ```
 4. `parse_tutor_response()` extracts both fields. The student-facing answer is returned; reasoning is available for debugging.
 
+## Function reference (`run_tutor.py`)
+
+Everything in `__init__.py`'s `__all__` is public; the rest is internal (leading
+underscore) but documented here for maintainers.
+
+### Model & system prompt
+
+- **`build_tutor_model(provider="gpt")`** — construct the LangChain chat model.
+  `"gpt"` → `ChatOpenAI` (`OPENAI_MODEL`, default `gpt-5.4`); `"claude"` →
+  `ChatAnthropic` (`ANTHROPIC_MODEL`, default `claude-sonnet-4-6`). Exposed so the
+  streaming path can call `model.stream(...)` directly.
+- **`load_system_prompt(prompt_name="tutor_01", assignment_override=None)`** — read
+  `prompts/<prompt_name>.txt`; when `assignment_override` is given, replace the
+  `<Assignment>…</Assignment>` block with it. Uses a regex *replacement function*
+  so LaTeX backslashes in the assignment aren't interpreted as escapes. Raises
+  `FileNotFoundError` (listing available prompts) if the prompt is missing.
+- **`_require_openai_api_key()` / `_require_anthropic_api_key()`** — return the key
+  from the environment or raise `RuntimeError`.
+
+### Graph & tutor turn
+
+- **`TutorState`** — the LangGraph state: a `TypedDict` with `messages` accumulated
+  via `operator.add`.
+- **`create_tutor_graph(system_prompt, *, provider="gpt", figures=None)`** — build
+  and compile the single-node graph. Its `tutor_node` sanitizes messages, runs the
+  non-student-like guard, optionally attaches `figures` to the latest student turn,
+  invokes the model, and normalizes the reply. `figures` is bound at build time
+  (constant per conversation), so each turn re-sends exactly one copy.
+- **`get_tutor_reply(messages, assignment_override=None, *, graph=None, prompt_name="tutor_01", figures=None)`**
+  — main non-streaming entry point. Builds its own graph when none is passed;
+  returns `(updated_messages, student_facing_answer_text)`. `figures` applies only
+  when it builds its own graph.
+- **`_looks_non_student_like(text)`** — heuristic that flags empty input or
+  tutor/system artifacts (e.g. `pedagogical-reasoning`, `<assignment>`, ` ```json `)
+  — i.e. prompt-injection or malformed input.
+- **`_build_invalid_input_reply()`** — canned strict-JSON `AIMessage` asking the
+  student to restate their message; returned when the guard trips.
+
+### Response parsing & normalization
+
+- **`parse_tutor_response(content)`** — extract `(reasoning, answer)` from the
+  tutor's JSON. Tries raw JSON → fenced code block → balanced-brace extraction, and
+  parses with `strict=False` so literal newlines inside string values (multi-line
+  markdown tables) don't break it. Either field may be `None` on failure.
+- **`_normalize_tutor_ai_message(msg)`** — force any model output into the strict
+  two-field JSON shape, filling fallback text when a field is missing, so
+  downstream consumers always see `pedagogical-reasoning` + `Student-facing-answer`.
+- **`_fenced_json(text)`** — pull JSON out of the first ` ```json … ``` ` fence.
+
+### Message sanitizing & multimodal content
+
+- **`_sanitize_text_for_transport(text)`** — drop control chars and UTF-16
+  surrogate code points that break JSON request encoding (keeps tab/newline/CR).
+- **`_content_text(content)`** — extract the plain-text portion of a message whose
+  content may be a string or a multimodal block list (image blocks contribute none).
+- **`_sanitize_content(content)`** — sanitize a string, or the `text` blocks of a
+  multimodal list, leaving `image_url` blocks untouched.
+- **`_sanitize_message_content(msg)`** — return a clean copy of a `BaseMessage`
+  preserving its type (`Human`/`AI`/`System`).
+- **`_attach_figures_to_last_human(messages, figures)`** — rewrite the last
+  `HumanMessage` in place to carry `figures` as multimodal content; no-op if none.
+
+### Streaming
+
+- **`StudentAnswerExtractor`** — a character-level state machine
+  (`find_field → find_colon → find_open_quote → in_value → done`) that walks the
+  accumulating token buffer and emits **only** the chars inside the
+  `Student-facing-answer` string value, with full JSON escape handling (including
+  `\uXXXX`, waiting for split escape sequences across chunks). `feed(chunk)` returns
+  newly-visible chars; `.found_answer` and `.buffer` expose progress and the full
+  raw text for the final parse.
+- **`stream_tutor_reply(messages, *, model, system_prompt)`** — generator that
+  yields visible answer chunks, then a final `("__done__", full_raw_json)` tuple so
+  the caller can recover the hidden reasoning via `parse_tutor_response`. Bypasses
+  the graph to use `model.stream(...)`; mirrors the non-student-like guard; falls
+  back to emitting the parsed answer if the incremental extractor never locates the
+  field.
+
 ## Usage
 
 ```python

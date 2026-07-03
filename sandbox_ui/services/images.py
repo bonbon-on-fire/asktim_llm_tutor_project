@@ -1,30 +1,20 @@
-"""Student image-upload helpers for sandbox_ui (mirrors main_ui/services/images.py).
+"""Student image-upload helpers for sandbox_ui.
 
-Bridges Flask's uploaded files to the shared validation in
-:mod:`utils.uploads`, persists accepted images as `UploadedImage` rows (bytes
-stored in-DB), and serves them back with an ownership check.
+Thin wrapper over :mod:`ui_core.services.images`: binds sandbox_ui's own model
+classes (its ``Conversation`` schema differs from main_ui's) to the shared,
+app-agnostic logic.
 """
 
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
-from werkzeug.datastructures import FileStorage
 
 from sandbox_ui.db.models import Conversation, Message, UploadedImage
-from utils.uploads import ValidatedImage, validate_images
+from ui_core.services import images as _shared
+from utils.uploads import ValidatedImage
 
-
-def read_and_validate(files: list[FileStorage]) -> list[ValidatedImage]:
-    """Read Flask uploads into validated images (PNG/JPEG, size + count caps).
-
-    Raises ``utils.uploads.UploadValidationError`` on the first bad file.
-    """
-    items: list[tuple[str, str | None, bytes]] = []
-    for fs in files:
-        if fs is None or not fs.filename:
-            continue
-        items.append((fs.filename, fs.mimetype, fs.read()))
-    return validate_images(items)
+# Model-free helper — re-exported unchanged.
+read_and_validate = _shared.read_and_validate
 
 
 def persist_images(
@@ -34,19 +24,9 @@ def persist_images(
     images: list[ValidatedImage],
 ) -> list[UploadedImage]:
     """Insert one `UploadedImage` row per validated image, linked to *message*."""
-    rows: list[UploadedImage] = []
-    for img in images:
-        row = UploadedImage(
-            message_id=message.id,
-            filename=img.filename,
-            mime_type=img.mime_type,
-            size_bytes=img.size_bytes,
-            data=img.data,
-        )
-        db.add(row)
-        rows.append(row)
-    db.flush()
-    return rows
+    return _shared.persist_images(
+        db, message=message, images=images, uploaded_image_cls=UploadedImage
+    )
 
 
 def get_image_for_viewer(
@@ -55,21 +35,13 @@ def get_image_for_viewer(
     session_id: str,
     username: str | None,
 ) -> UploadedImage | None:
-    """Return an `UploadedImage` if the viewer owns the parent conversation.
-
-    Ownership = same session_id OR matching username. Returns ``None`` otherwise.
-    """
-    img = db.get(UploadedImage, image_id)
-    if img is None:
-        return None
-    message = db.get(Message, img.message_id)
-    if message is None:
-        return None
-    convo = db.get(Conversation, message.conversation_id)
-    if convo is None:
-        return None
-    if convo.session_id == session_id:
-        return img
-    if username and convo.username == username:
-        return img
-    return None
+    """Return an `UploadedImage` if the viewer owns the parent conversation."""
+    return _shared.get_image_for_viewer(
+        db,
+        image_id,
+        session_id,
+        username,
+        uploaded_image_cls=UploadedImage,
+        message_cls=Message,
+        conversation_cls=Conversation,
+    )

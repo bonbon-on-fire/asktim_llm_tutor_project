@@ -28,14 +28,13 @@ from tutor.run_tutor import (
 )
 from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
-from utils.curriculum import exercise_path, practice_path
+from utils.curriculum import exercise_path, load_about_asktim, practice_path
 from utils.figures import build_multimodal_content, discover_figures
 from utils.lectures import load_lecture_transcripts
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
-_ABOUT_ASKTIM_PATH = Path(__file__).resolve().parents[1] / "about_asktim.txt"
 
 # Context modes (Phase 11). Override per-deploy with the TUTOR_CONTEXT_MODE env
 # var; otherwise default to "rag" when a course has a built index, else fall
@@ -106,7 +105,7 @@ def build_assignment_text(
     `Run configuration` block — sandbox_ui chats are open-ended, no planned
     turn count. The leading block describes the AskTIM deployment so the
     tutor can coherently answer "what are you?" / "where am I?" questions;
-    it lives at `sandbox_ui/about_asktim.txt` and is only read here so
+    it lives at `curriculum/about_asktim.txt` and is only read here so
     `tutor/` and the bulk-transcript runners stay unaware of it.
 
     ``include_course`` / ``include_syllabus`` are sandbox_ui additions: when
@@ -128,10 +127,9 @@ def build_assignment_text(
 
     parts: list[str] = []
 
-    if _ABOUT_ASKTIM_PATH.is_file():
-        about_text = _ABOUT_ASKTIM_PATH.read_text(encoding="utf-8").strip()
-        if about_text:
-            parts.append("About yourself:\n" + about_text)
+    about_text = load_about_asktim()
+    if about_text:
+        parts.append("About yourself:\n" + about_text)
 
     # Course context — custom text wins; otherwise the include_course toggle
     # gates the built-in course.txt (mirrors the syllabus handling below).

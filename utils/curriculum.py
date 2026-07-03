@@ -139,3 +139,20 @@ def list_courses(curriculum_root: Path | str | None = None) -> list[str]:
     if not root.is_dir():
         return []
     return sorted(p.name for p in root.iterdir() if p.is_dir())
+
+
+def about_asktim_path(curriculum_root: Path | str | None = None) -> Path:
+    """Return the path to the shared AskTIM self-description (``curriculum/about_asktim.txt``)."""
+    return _root(curriculum_root) / "about_asktim.txt"
+
+
+def load_about_asktim(curriculum_root: Path | str | None = None) -> str:
+    """Read the AskTIM deployment blurb, stripped, or ``""`` when absent.
+
+    Describes the AskTIM deployment so the tutor can coherently answer
+    "what are you?" / "where am I?" questions. Shared by main_ui and sandbox_ui
+    and prepended to the tutor context; it lives beside the course content
+    rather than inside any single app so both read one source of truth.
+    """
+    path = about_asktim_path(curriculum_root)
+    return path.read_text(encoding="utf-8").strip() if path.is_file() else ""

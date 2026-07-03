@@ -1,0 +1,211 @@
+/* sandbox_ui overrides + additions on top of the shared ui_core/static/css/chat.css
+   base. Loaded AFTER the base, so same-selector rules here override it and new
+   selectors here add to it. Keep this file limited to sandbox's deltas — do not
+   duplicate rules that are byte-identical to the base. */
+
+:root {
+    /* AskTIM Sandbox palette. Teal-blue accent (#126f9a) for the student
+       bubbles and the Send button distinguishes the sandbox from the
+       crimson production app; tutor bubble stays neutral grey so replies
+       are easy to read. Error states keep their own red. */
+    --bg: #fafafa;
+    --text: #2a2a2a;
+    --muted: #888;
+    --border: #e2e2e2;
+    --student-bg: #126f9a;          /* sandbox accent */
+    --student-text: #ffffff;
+    --tutor-bg: #f0f0f0;
+    --tutor-text: #1a1a1a;
+    --error-bg: #e3eff5;            /* blue-tinted error surface */
+    --error-text: #0e587b;          /* blue-tinted error text */
+    --send-bg: #126f9a;
+    --send-bg-hover: #0e587b;
+    --send-bg-disabled: #c0c0c0;
+    --focus-ring: #126f9a;
+}
+
+.message-list:empty::before {
+    content: "AskTIM Sandbox is here to help";
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin: auto;
+}
+
+.sidebar-entry-active {
+    background: #e3eff5;            /* light teal tint, matches the sandbox accent */
+    border-left: 3px solid var(--send-bg);
+    padding-left: calc(1rem - 3px);
+}
+
+.sidebar-entry-active:hover {
+    background: #d3e6f0;
+}
+
+.email-change {
+    background: none;
+    border: none;
+    color: var(--accent, #126f9a);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0;
+    text-decoration: underline;
+}
+
+/* Context switcher modal (sandbox_ui only) ---------------------------------- */
+
+.context-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.context-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.context-select {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font: inherit;
+    color: var(--text);
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.context-select:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+}
+
+.context-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.context-checkbox input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--send-bg);
+    cursor: pointer;
+}
+
+.context-checkbox input:disabled {
+    cursor: not-allowed;
+}
+
+/* RAG toggle on the Create-context wizard's Course step. */
+.rag-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.rag-toggle[hidden] {
+    display: none;
+}
+
+.rag-toggle input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--send-bg);
+    cursor: pointer;
+}
+
+/* Tutor pedagogical reasoning — dev/TA-only, collapsed by default. Same minimal
+   formatting as the database_ui review dashboard: no box, a small muted
+   disclosure with the text indented behind a thin rule. */
+.review-reasoning {
+    margin-top: 0.3rem;
+    font-size: 0.76rem;
+}
+.review-reasoning > summary {
+    cursor: pointer;
+    color: var(--muted, #888);
+    font-weight: 500;
+    user-select: none;
+}
+.review-reasoning > summary:hover {
+    color: var(--text, #2a2a2a);
+}
+.review-reasoning-body {
+    margin: 0.25rem 0 0 0.3rem;
+    padding-left: 0.6rem;
+    border-left: 2px solid var(--border, #e2e2e2);
+    color: var(--muted, #666);
+    white-space: pre-wrap;
+}
+
+/* Locked (read-only) fields in the Edit-context modal. */
+.lock-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-left: 0.3rem;
+    vertical-align: -0.1rem;
+    opacity: 0.65;
+}
+
+.context-select:disabled {
+    background: #f0f1f3;
+    color: #9a9a9a;
+    -webkit-text-fill-color: #9a9a9a;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.context-checkbox input:disabled + span {
+    color: #9a9a9a;
+}
+
+/* Create-context wizard (sandbox_ui only) ----------------------------------- */
+
+.create-step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.create-custom {
+    width: 100%;
+    min-height: 150px;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font: inherit;
+    color: var(--text);
+    background: #ffffff;
+    resize: vertical;
+    line-height: 1.4;
+}
+
+.create-custom:focus {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+}
+
+/* Read-only preview of a selected built-in course/exercise/tutor/syllabus. */
+.create-custom:read-only {
+    background: #f4f5f7;
+    color: var(--text);
+    cursor: default;
+}
+
+.create-actions {
+    justify-content: flex-end;
+}
+
+.create-actions-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}

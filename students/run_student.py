@@ -271,7 +271,7 @@ def build_graph(
             api_key=_require_openai_api_key(),
         )
     if persona is None:
-        persona = load_prompt(prompt_name or "chaotic_01")
+        persona = load_prompt(prompt_name or "chaotic")
 
     node_fn = _build_student_agent_node(persona, model)
     builder = StateGraph(StudentBotState)

@@ -5,7 +5,7 @@ Run with interactive CLI:
     python -m internal_ui.run_ui_raw
 
 Or run with command-line arguments:
-    python -m internal_ui.run_ui_raw --provider claude --tutor tutor_03 --personas clueless_01 --course philosophy --exercise 01 --turn-size 10 --trials 2
+    python -m internal_ui.run_ui_raw --provider claude --tutor tutor_03 --personas clueless --course philosophy --exercise 01 --turn-size 10 --trials 2
 """
 
 from __future__ import annotations
@@ -63,7 +63,7 @@ _SAVE_LOCK = threading.Lock()
 # ---------------------------------------------------------------------------
 
 DEFAULT_TUTOR_PROMPTS: list[str] = ["tutor_03"]
-DEFAULT_STUDENT_PERSONAS: list[str] = ["clueless_01"]
+DEFAULT_STUDENT_PERSONAS: list[str] = ["clueless"]
 DEFAULT_COURSE_EXERCISES: list[tuple[str, str]] = [("philosophy", "01")]
 DEFAULT_TURN_SIZE: int = 10
 DEFAULT_TRIALS: int = 2
@@ -495,7 +495,7 @@ Examples:
   python -m internal_ui.run_ui_raw
   
   # Command-line mode
-  python -m internal_ui.run_ui_raw --tutor tutor_03 --personas clueless_01 chaotic_02 --course philosophy --exercise 01 --turn-size 10 --trials 2
+  python -m internal_ui.run_ui_raw --tutor tutor_03 --personas clueless chaotic --course philosophy --exercise 01 --turn-size 10 --trials 2
         """,
     )
     

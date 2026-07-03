@@ -1,12 +1,12 @@
 """SQLAlchemy engine + session factory for sandbox_ui.
 
-Thin wrapper over web_core.db.session (same behavior as main_ui: SQLite FK on,
+Thin wrapper over ui_core.db.session (same behavior as main_ui: SQLite FK on,
 commit-on-success). Public names unchanged.
 """
 
 from __future__ import annotations
 
-from web_core.db.session import build_engine, make_session_factory, session_scope
+from ui_core.db.session import build_engine, make_session_factory, session_scope
 from sandbox_ui.config import load_config
 
 engine = build_engine(load_config().database_url, sqlite_fk=True)

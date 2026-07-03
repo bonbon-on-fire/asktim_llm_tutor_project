@@ -1,10 +1,10 @@
-# web_core Phase 1 — DB session + cookies Implementation Plan
+# ui_core Phase 1 — DB session + cookies Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Scaffold the `web_core` package and extract the two pure-infra web files — DB engine/session and cookie policy — into shared helpers, with each app reduced to a thin wrapper that keeps its public names.
+**Goal:** Scaffold the `ui_core` package and extract the two pure-infra web files — DB engine/session and cookie policy — into shared helpers, with each app reduced to a thin wrapper that keeps its public names.
 
-**Architecture:** Shared helper functions in `web_core` capture behavior that was hard-coded per app, exposed as explicit parameters. Each app's `db/session.py` and `cookies.py` become thin wrappers that call the shared helpers with their per-app values and re-export the same names (`engine`, `SessionLocal`, `get_session`, `SESSION_COOKIE_NAME`, `USERNAME_COOKIE_NAME`, `new_session_id`, `default_cookie_kwargs`), so no call sites change. Behavior-preserving.
+**Architecture:** Shared helper functions in `ui_core` capture behavior that was hard-coded per app, exposed as explicit parameters. Each app's `db/session.py` and `cookies.py` become thin wrappers that call the shared helpers with their per-app values and re-export the same names (`engine`, `SessionLocal`, `get_session`, `SESSION_COOKIE_NAME`, `USERNAME_COOKIE_NAME`, `new_session_id`, `default_cookie_kwargs`), so no call sites change. Behavior-preserving.
 
 **Tech Stack:** Python 3.12, SQLAlchemy 2.x (`future=True`), Flask, `psycopg` (psycopg3). Repo test style is **standalone, no pytest**: a `main()` + `_check()` harness returning non-zero on failure, run via `python -m <module>`.
 
@@ -21,12 +21,12 @@
 
 ## File structure
 
-- `web_core/__init__.py` — CREATE (empty package marker).
-- `web_core/db/__init__.py` — CREATE (empty).
-- `web_core/db/session.py` — CREATE: `normalize_pg_url`, `build_engine`, `make_session_factory`, `session_scope`.
-- `web_core/db/test_session.py` — CREATE: standalone tests.
-- `web_core/cookies.py` — CREATE: shared cookie constants + policy.
-- `web_core/test_cookies.py` — CREATE: standalone tests.
+- `ui_core/__init__.py` — CREATE (empty package marker).
+- `ui_core/db/__init__.py` — CREATE (empty).
+- `ui_core/db/session.py` — CREATE: `normalize_pg_url`, `build_engine`, `make_session_factory`, `session_scope`.
+- `ui_core/db/test_session.py` — CREATE: standalone tests.
+- `ui_core/cookies.py` — CREATE: shared cookie constants + policy.
+- `ui_core/test_cookies.py` — CREATE: standalone tests.
 - `main_ui/db/session.py` — REPLACE with thin wrapper.
 - `sandbox_ui/db/session.py` — REPLACE with thin wrapper.
 - `database_ui/db/session.py` — REPLACE with thin wrapper.
@@ -35,11 +35,11 @@
 
 ---
 
-### Task 1: Shared DB session helpers (`web_core.db.session`)
+### Task 1: Shared DB session helpers (`ui_core.db.session`)
 
 **Files:**
-- Create: `web_core/__init__.py`, `web_core/db/__init__.py`, `web_core/db/session.py`
-- Test: `web_core/db/test_session.py`
+- Create: `ui_core/__init__.py`, `ui_core/db/__init__.py`, `ui_core/db/session.py`
+- Test: `ui_core/db/test_session.py`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -51,22 +51,22 @@
 
 - [ ] **Step 1: Create the empty package markers**
 
-Create `web_core/__init__.py`:
+Create `ui_core/__init__.py`:
 ```python
 """Shared web layer (Flask app factory, blueprints, db, cookies) for the UIs."""
 ```
-Create `web_core/db/__init__.py`:
+Create `ui_core/db/__init__.py`:
 ```python
 ```
 
 - [ ] **Step 2: Write the failing test**
 
-Create `web_core/db/test_session.py`:
+Create `ui_core/db/test_session.py`:
 ```python
-"""Standalone tests for web_core.db.session (no pytest).
+"""Standalone tests for ui_core.db.session (no pytest).
 
 Run with:
-    python -m web_core.db.test_session
+    python -m ui_core.db.test_session
 """
 
 from __future__ import annotations
@@ -77,7 +77,7 @@ from pathlib import Path
 from sqlalchemy import Column, Integer, text
 from sqlalchemy.orm import declarative_base
 
-from web_core.db.session import (
+from ui_core.db.session import (
     normalize_pg_url,
     build_engine,
     make_session_factory,
@@ -170,12 +170,12 @@ if __name__ == "__main__":
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `python -m web_core.db.test_session`
-Expected: FAIL — `ModuleNotFoundError: No module named 'web_core.db.session'` (module not created yet).
+Run: `python -m ui_core.db.test_session`
+Expected: FAIL — `ModuleNotFoundError: No module named 'ui_core.db.session'` (module not created yet).
 
 - [ ] **Step 4: Write the shared helpers**
 
-Create `web_core/db/session.py`:
+Create `ui_core/db/session.py`:
 ```python
 """Shared SQLAlchemy engine + session helpers for the web apps.
 
@@ -263,14 +263,14 @@ def session_scope(session_factory: sessionmaker, *, read_only: bool = False) -> 
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `python -m web_core.db.test_session`
+Run: `python -m ui_core.db.test_session`
 Expected: PASS — `3 test functions`, `9 passed, 0 failed`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add web_core/__init__.py web_core/db/__init__.py web_core/db/session.py web_core/db/test_session.py
-git commit -m "feat(web_core): add shared DB engine/session helpers"
+git add ui_core/__init__.py ui_core/db/__init__.py ui_core/db/session.py ui_core/db/test_session.py
+git commit -m "feat(ui_core): add shared DB engine/session helpers"
 ```
 
 ---
@@ -281,7 +281,7 @@ git commit -m "feat(web_core): add shared DB engine/session helpers"
 - Modify (replace whole file): `main_ui/db/session.py`, `sandbox_ui/db/session.py`, `database_ui/db/session.py`
 
 **Interfaces:**
-- Consumes: `web_core.db.session.{build_engine, make_session_factory, session_scope}` (Task 1).
+- Consumes: `ui_core.db.session.{build_engine, make_session_factory, session_scope}` (Task 1).
 - Produces: each module still exposes `engine`, `SessionLocal`, `get_session` (unchanged names/behavior).
 
 - [ ] **Step 1: Replace `main_ui/db/session.py`**
@@ -289,13 +289,13 @@ git commit -m "feat(web_core): add shared DB engine/session helpers"
 ```python
 """SQLAlchemy engine + session factory for main_ui.
 
-Thin wrapper over web_core.db.session: SQLite FK enforcement on, commit-on-success
+Thin wrapper over ui_core.db.session: SQLite FK enforcement on, commit-on-success
 sessions. Public names (engine, SessionLocal, get_session) are unchanged.
 """
 
 from __future__ import annotations
 
-from web_core.db.session import build_engine, make_session_factory, session_scope
+from ui_core.db.session import build_engine, make_session_factory, session_scope
 from main_ui.config import load_config
 
 engine = build_engine(load_config().database_url, sqlite_fk=True)
@@ -312,13 +312,13 @@ def get_session():
 ```python
 """SQLAlchemy engine + session factory for sandbox_ui.
 
-Thin wrapper over web_core.db.session (same behavior as main_ui: SQLite FK on,
+Thin wrapper over ui_core.db.session (same behavior as main_ui: SQLite FK on,
 commit-on-success). Public names unchanged.
 """
 
 from __future__ import annotations
 
-from web_core.db.session import build_engine, make_session_factory, session_scope
+from ui_core.db.session import build_engine, make_session_factory, session_scope
 from sandbox_ui.config import load_config
 
 engine = build_engine(load_config().database_url, sqlite_fk=True)
@@ -335,14 +335,14 @@ def get_session():
 ```python
 """SQLAlchemy engine + session factory for database_ui (read-only).
 
-Thin wrapper over web_core.db.session: normalizes Railway/Heroku postgres URLs to
+Thin wrapper over ui_core.db.session: normalizes Railway/Heroku postgres URLs to
 psycopg3, uses pool_pre_ping for a long-lived remote DB, and a read-only session
 that always rolls back (this app never writes). Public names unchanged.
 """
 
 from __future__ import annotations
 
-from web_core.db.session import build_engine, make_session_factory, session_scope
+from ui_core.db.session import build_engine, make_session_factory, session_scope
 from database_ui.config import load_config
 
 engine = build_engine(
@@ -385,44 +385,44 @@ with get_session() as s:
 print("main_ui commits:", committed == 1)
 PY
 ```
-Expected: prints `main_ui commits: True`. (The `web_core` unit test already proves read-only rollback; this confirms the wrapper wiring.)
+Expected: prints `main_ui commits: True`. (The `ui_core` unit test already proves read-only rollback; this confirms the wrapper wiring.)
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add main_ui/db/session.py sandbox_ui/db/session.py database_ui/db/session.py
-git commit -m "refactor(web): route app db/session through web_core helpers"
+git commit -m "refactor(web): route app db/session through ui_core helpers"
 ```
 
 ---
 
-### Task 3: Shared cookie policy (`web_core.cookies`) + app wrappers
+### Task 3: Shared cookie policy (`ui_core.cookies`) + app wrappers
 
 **Files:**
-- Create: `web_core/cookies.py`, `web_core/test_cookies.py`
+- Create: `ui_core/cookies.py`, `ui_core/test_cookies.py`
 - Modify (replace whole file): `main_ui/cookies.py`, `sandbox_ui/cookies.py`
 
 **Interfaces:**
 - Consumes: nothing.
 - Produces:
-  - `web_core.cookies`: `SESSION_COOKIE_NAME`, `USERNAME_COOKIE_NAME`, `new_session_id() -> str`, `default_cookie_kwargs(*, secure: bool, max_age: int) -> dict`.
+  - `ui_core.cookies`: `SESSION_COOKIE_NAME`, `USERNAME_COOKIE_NAME`, `new_session_id() -> str`, `default_cookie_kwargs(*, secure: bool, max_age: int) -> dict`.
   - `main_ui.cookies` / `sandbox_ui.cookies` still expose `SESSION_COOKIE_NAME`, `USERNAME_COOKIE_NAME`, `new_session_id`, and a **no-arg** `default_cookie_kwargs()` (reads that app's config).
 
 - [ ] **Step 1: Write the failing test**
 
-Create `web_core/test_cookies.py`:
+Create `ui_core/test_cookies.py`:
 ```python
-"""Standalone tests for web_core.cookies (no pytest).
+"""Standalone tests for ui_core.cookies (no pytest).
 
 Run with:
-    python -m web_core.test_cookies
+    python -m ui_core.test_cookies
 """
 
 from __future__ import annotations
 
 import uuid
 
-from web_core.cookies import (
+from ui_core.cookies import (
     SESSION_COOKIE_NAME,
     USERNAME_COOKIE_NAME,
     new_session_id,
@@ -474,10 +474,10 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `python -m web_core.test_cookies`
-Expected: FAIL — `ModuleNotFoundError: No module named 'web_core.cookies'`.
+Run: `python -m ui_core.test_cookies`
+Expected: FAIL — `ModuleNotFoundError: No module named 'ui_core.cookies'`.
 
-- [ ] **Step 3: Create `web_core/cookies.py`**
+- [ ] **Step 3: Create `ui_core/cookies.py`**
 
 ```python
 """Shared cookie policy for the web chat apps.
@@ -518,13 +518,13 @@ def default_cookie_kwargs(*, secure: bool, max_age: int) -> dict:
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `python -m web_core.test_cookies`
+Run: `python -m ui_core.test_cookies`
 Expected: PASS — `2 test functions`, `5 passed, 0 failed`.
 
 - [ ] **Step 5: Replace `main_ui/cookies.py` with a wrapper**
 
 ```python
-"""Cookie names + policy for main_ui — thin wrapper over web_core.cookies.
+"""Cookie names + policy for main_ui — thin wrapper over ui_core.cookies.
 
 Re-exports the shared constants and helpers; ``default_cookie_kwargs()`` stays a
 no-arg call that reads main_ui's config, so route call sites are unchanged.
@@ -532,7 +532,7 @@ no-arg call that reads main_ui's config, so route call sites are unchanged.
 
 from __future__ import annotations
 
-from web_core.cookies import (  # re-exported for existing importers
+from ui_core.cookies import (  # re-exported for existing importers
     SESSION_COOKIE_NAME,
     USERNAME_COOKIE_NAME,
     new_session_id,
@@ -552,11 +552,11 @@ def default_cookie_kwargs() -> dict:
 - [ ] **Step 6: Replace `sandbox_ui/cookies.py` with a wrapper**
 
 ```python
-"""Cookie names + policy for sandbox_ui — thin wrapper over web_core.cookies."""
+"""Cookie names + policy for sandbox_ui — thin wrapper over ui_core.cookies."""
 
 from __future__ import annotations
 
-from web_core.cookies import (  # re-exported for existing importers
+from ui_core.cookies import (  # re-exported for existing importers
     SESSION_COOKIE_NAME,
     USERNAME_COOKIE_NAME,
     new_session_id,
@@ -593,16 +593,16 @@ Expected: prints `cookie wrappers OK`. (If `load_config()` needs more env than `
 - [ ] **Step 8: Commit**
 
 ```bash
-git add web_core/cookies.py web_core/test_cookies.py main_ui/cookies.py sandbox_ui/cookies.py
-git commit -m "refactor(web): share cookie policy via web_core.cookies"
+git add ui_core/cookies.py ui_core/test_cookies.py main_ui/cookies.py sandbox_ui/cookies.py
+git commit -m "refactor(web): share cookie policy via ui_core.cookies"
 ```
 
 ---
 
 ## Notes for the implementer
 
-- This is Phase 1 of a multi-phase `web_core` consolidation (see
-  `docs/superpowers/specs/2026-07-02-web-core-shared-ui-design.md`). Later phases
+- This is Phase 1 of a multi-phase `ui_core` consolidation (see
+  `docs/superpowers/specs/2026-07-02-ui-core-shared-ui-design.md`). Later phases
   extract services, the app factory, and the chat/TutorBridge layer, and add the
   URL-map-snapshot verification harness. Do NOT pull that work forward.
 - `database_ui` has no `cookies.py` — do not create one for it.

@@ -1,4 +1,4 @@
-# Shared Web Core (`web_core`) — Design
+# Shared Web Core (`ui_core`) — Design
 
 **Date:** 2026-07-02
 **Status:** Approved (design), pending implementation plan
@@ -14,7 +14,7 @@ review) shares the DB and conversation-read layer but has its own routes.
 
 The domain layer is already centralized — the apps share `utils`, `tutor`, and
 `rag` (18 / 6 / 4 imports). Only the **web layer** is duplicated. This design
-extracts that layer into a shared `web_core` package, the same way `utils`
+extracts that layer into a shared `ui_core` package, the same way `utils`
 centralizes cross-cutting domain helpers.
 
 ## Current state (measured)
@@ -53,7 +53,7 @@ Railway**, launched via `python -m <app>`.
 
 ## Goals
 
-- One `web_core` package owning the shared web layer; each app shrinks to a
+- One `ui_core` package owning the shared web layer; each app shrinks to a
   config + a few overrides.
 - Behavior of all three apps unchanged, verifiable without API keys.
 - Each migration phase independently shippable; all three apps stay deployable
@@ -71,10 +71,10 @@ Railway**, launched via `python -m <app>`.
 
 ## Architecture
 
-A new `web_core/` package (sibling of `utils/`):
+A new `ui_core/` package (sibling of `utils/`):
 
 ```
-web_core/
+ui_core/
   __init__.py
   app_factory.py     # create_app(config, hooks) -> Flask; registers shared blueprints
   config.py          # AppConfig dataclass (values only)
@@ -105,7 +105,7 @@ web_core/
   feature flags (`enable_rag`, `enable_create_context`, `read_only`), etc. Drives
   branding, DB target, and which optional blueprints/features are registered.
 - **`AppHooks`** (behavior injection): a `tutor_bridge` instance (subclass of the
-  `web_core` `TutorBridge` base), an optional `auth_gate` (for `database_ui`'s
+  `ui_core` `TutorBridge` base), an optional `auth_gate` (for `database_ui`'s
   shared-password gate), and `extra_blueprints` (e.g. sandbox's create-context
   wizard).
 
@@ -125,7 +125,7 @@ custom-context exactly as today.
   enable_create_context=True)` + `SandboxTutorBridge(TutorBridge)` + a
   create-context blueprint via `extra_blueprints`.
 - **`database_ui`** → `AppConfig(read_only=True)` + `auth_gate` hook + its own
-  `database` blueprint; reuses `web_core.db` and the read side of
+  `database` blueprint; reuses `ui_core.db` and the read side of
   `services/conversation`; registers **no** chat blueprint.
 
 Each app package keeps `__init__.py` / `__main__.py` so `python -m <app>` and the
@@ -133,8 +133,8 @@ Railway/Docker entrypoints are unchanged.
 
 ## Migration phases (each independently shippable)
 
-1. **Scaffold `web_core` + extract pure infra** — `cookies`, `db/session`, config
-   base. Apps import from `web_core`; delete local copies.
+1. **Scaffold `ui_core` + extract pure infra** — `cookies`, `db/session`, config
+   base. Apps import from `ui_core`; delete local copies.
 2. **Shared services + read layer** — `conversation`, `images`, `students`, plus
    `database_ui`'s conversation-read.
 3. **App factory + shared blueprints** — `create_app`, `AppConfig`/`AppHooks`,
@@ -151,7 +151,7 @@ Railway/Docker entrypoints are unchanged.
 - **URL-map snapshot:** before phase 1, capture each app's Flask URL map (rules +
   methods + endpoints). After every phase, assert it is unchanged. Cheap,
   offline, and catches accidental route/behavior drift.
-- **Shared-module unit tests:** standalone repo-style tests (`web_core/test_*.py`)
+- **Shared-module unit tests:** standalone repo-style tests (`ui_core/test_*.py`)
   for `cookies`, `db/session`, `conversation`, `config`, factory wiring.
 - **`TutorBridge` tests with a stub model:** inject a fake model via hooks so the
   `chat` / `tutor_bridge` logic is exercised with **zero** OpenAI/Anthropic calls.
@@ -163,9 +163,9 @@ Railway/Docker entrypoints are unchanged.
 - **3 live Railway apps.** Each phase leaves all three runnable and deployable;
   behavior-preserving means responses should not change. Ship/verify per phase.
 - **Alembic migrations** (main/sandbox) reference the model classes. Re-home the
-  models into `web_core.db` **without changing `Base.metadata`** so existing
+  models into `ui_core.db` **without changing `Base.metadata`** so existing
   migrations still resolve; do **not** regenerate migrations.
-- **Import-path churn.** Internal imports move to `web_core.*`; the app packages
+- **Import-path churn.** Internal imports move to `ui_core.*`; the app packages
   remain as thin wrappers, so `python -m <app>`, Dockerfiles, and Railway configs
   are unaffected.
 - **DB divergence** (`db/models.py` differs by 50 lines) — capture the union as a
@@ -174,10 +174,10 @@ Railway/Docker entrypoints are unchanged.
 
 ## Success criteria
 
-- `web_core` exists; `main_ui`, `sandbox_ui`, `database_ui` import their shared
+- `ui_core` exists; `main_ui`, `sandbox_ui`, `database_ui` import their shared
   web layer from it; the duplicated per-app copies are deleted.
 - Each app's Flask URL map is identical to its pre-refactor snapshot.
-- `web_core` shared modules and the `TutorBridge` base/subclass have passing
+- `ui_core` shared modules and the `TutorBridge` base/subclass have passing
   standalone tests (no API keys required).
 - `python -m main_ui` / `sandbox_ui` / `database_ui` still start; Dockerfiles and
   Alembic migrations are unchanged.

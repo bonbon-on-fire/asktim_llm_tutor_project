@@ -1,14 +1,14 @@
-"""Standalone tests for web_core.cookies (no pytest).
+"""Standalone tests for ui_core.cookies (no pytest).
 
 Run with:
-    python -m web_core.test_cookies
+    python -m ui_core.test_cookies
 """
 
 from __future__ import annotations
 
 import uuid
 
-from web_core.cookies import (
+from ui_core.cookies import (
     SESSION_COOKIE_NAME,
     USERNAME_COOKIE_NAME,
     new_session_id,

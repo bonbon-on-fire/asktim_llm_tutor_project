@@ -1,7 +1,7 @@
-"""Standalone tests for web_core.db.session (no pytest).
+"""Standalone tests for ui_core.db.session (no pytest).
 
 Run with:
-    python -m web_core.db.test_session
+    python -m ui_core.db.test_session
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pathlib import Path
 from sqlalchemy import Column, Integer, text
 from sqlalchemy.orm import declarative_base
 
-from web_core.db.session import (
+from ui_core.db.session import (
     normalize_pg_url,
     build_engine,
     make_session_factory,

@@ -1,13 +1,13 @@
 """SQLAlchemy engine + session factory for database_ui (read-only).
 
-Thin wrapper over web_core.db.session: normalizes Railway/Heroku postgres URLs to
+Thin wrapper over ui_core.db.session: normalizes Railway/Heroku postgres URLs to
 psycopg3, uses pool_pre_ping for a long-lived remote DB, and a read-only session
 that always rolls back (this app never writes). Public names unchanged.
 """
 
 from __future__ import annotations
 
-from web_core.db.session import build_engine, make_session_factory, session_scope
+from ui_core.db.session import build_engine, make_session_factory, session_scope
 from database_ui.config import load_config
 
 engine = build_engine(

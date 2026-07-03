@@ -1,4 +1,4 @@
-"""Cookie names + policy for main_ui — thin wrapper over web_core.cookies.
+"""Cookie names + policy for main_ui — thin wrapper over ui_core.cookies.
 
 Re-exports the shared constants and helpers; ``default_cookie_kwargs()`` stays a
 no-arg call that reads main_ui's config, so route call sites are unchanged.
@@ -6,7 +6,7 @@ no-arg call that reads main_ui's config, so route call sites are unchanged.
 
 from __future__ import annotations
 
-from web_core.cookies import (  # re-exported for existing importers
+from ui_core.cookies import (  # re-exported for existing importers
     SESSION_COOKIE_NAME,
     USERNAME_COOKIE_NAME,
     new_session_id,

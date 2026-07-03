@@ -1,6 +1,6 @@
 """Batch runner for RAG-context tutor simulations (SC2x exercises + practice).
 
-Unlike ``internal_ui.run_ui_raw`` — which bakes the full course.txt + syllabus +
+Unlike ``internal_testing.run_transcript`` — which bakes the full course.txt + syllabus +
 *entire* lecture transcripts into the tutor's system prompt — this runner drives
 the tutor in **RAG mode**: the tutor's base prompt carries only the exercise, and
 the relevant lecture chunks are retrieved per student turn (``rag.retrieve``) and
@@ -15,11 +15,11 @@ Run matrix: ``problems x personas x trials`` for one course/tutor/provider.
 Example (the 324-conversation SC2x round: 3 exercises + 3 practice x 18 personas
 x 3 trials, Claude tutor, ~15 workers):
 
-    python -m internal_ui.run_ui_raw_rag --yes
+    python -m internal_testing.run_transcript_rag --yes
 
 Smoke-test a single conversation first:
 
-    python -m internal_ui.run_ui_raw_rag --limit 1 --yes
+    python -m internal_testing.run_transcript_rag --limit 1 --yes
 
 Output: ``transcripts/<type>/<type>_raw_rag/transcript_NN.json`` (judge-compatible
 schema, plus ``context_mode``/``exercise_kind``/``student_context`` metadata).
@@ -43,7 +43,7 @@ load_dotenv(find_dotenv(usecwd=True))
 
 from langchain_core.messages import AIMessage, HumanMessage  # noqa: E402
 
-from internal_ui.run_ui_raw import _next_transcript_number  # noqa: E402
+from internal_testing.run_transcript import _next_transcript_number  # noqa: E402
 from rag.retrieve import format_context, has_index  # noqa: E402
 from rag.retrieve import retrieve as rag_retrieve  # noqa: E402
 from students.run_student import build_graph as build_student_graph  # noqa: E402

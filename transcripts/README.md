@@ -47,7 +47,7 @@ Historical variants (not currently on disk):
 - **`{persona}_gpt/`** — Copies of raw transcripts graded by the GPT judge (`judge/run_judge.py`, provider=`gpt`).
 - **`{persona}_mini/`** — Mini-continuation transcripts: a raw transcript forked at a pivot turn, with the student side replayed from file and the tutor regenerated using a new prompt or provider. Includes a `mini_continuation` metadata object. Output stem matches the source raw transcript stem.
 - **`{persona}_claude_mini/`** — Claude-graded copies of `{persona}_mini/` transcripts.
-- **`{persona}_raw_tutor_05/`** — Ungraded transcripts generated using `tutor_05` as the tutor prompt (produced with `internal_ui.run_ui_raw --output-suffix raw_tutor_05`).
+- **`{persona}_raw_tutor_05/`** — Ungraded transcripts generated using `tutor_05` as the tutor prompt (produced with `internal_testing.run_transcript --output-suffix raw_tutor_05`).
 - **`{persona}_claude_tutor_05/`** — Claude-graded copies of `{persona}_raw_tutor_05/` transcripts.
 
 ## Transcript JSON Schema
@@ -134,7 +134,7 @@ object appended.
 > Note: older transcripts from before June 2026 used two- or four-digit padding
 > (`transcript_01`, `transcript_0001`); such forms may coexist in a folder.
 > Numbering is set by
-> `_next_transcript_number()` in [`internal_ui/run_ui_raw.py`](../internal_ui/run_ui_raw.py).
+> `_next_transcript_number()` in [`internal_testing/run_transcript.py`](../internal_testing/run_transcript.py).
 
 ## How Transcripts Are Generated
 
@@ -148,11 +148,11 @@ Raw transcripts are produced by the tutor-student simulation pipeline:
 
 ```powershell
 # Grade all raw transcripts with Claude (current corpus)
-python -m internal_ui.run_ui_judge --provider claude
+python -m internal_testing.run_transcript_judge --provider claude
 
 # GPT grading is still supported by the tooling but is not part of the
 # current on-disk corpus:
-python -m internal_ui.run_ui_judge --provider gpt
+python -m internal_testing.run_transcript_judge --provider gpt
 ```
 
 Both commands accept `--prompt` and `--rubric` flags. Output goes to the

@@ -109,11 +109,11 @@ Concrete examples that illustrate where the current design can fail and what we 
 ## 6. Tooling / UI (launcher)
 
 > **Updated 2026-06-04.** The old `terminal_ui` launcher has been removed (its
-> generation/judging role moved to the parallelized `internal_ui/` runners), and
+> generation/judging role moved to the parallelized `internal_testing/` runners), and
 > `sandbox_ui/` has been reshaped from a config-panel testing harness into the
 > "AskTIM Sandbox" that mirrors `main_ui/`. Current entrypoints:
 
-- **Bulk runners** (`internal_ui/`): `python -m internal_ui.run_ui_raw` (generate raw transcripts), `python -m internal_ui.run_ui_judge --provider gpt|claude` (grade them). Parallelized (`ThreadPoolExecutor`, 6 workers). See [`internal_ui/README.md`](internal_ui/README.md).
+- **Bulk runners** (`internal_testing/`): `python -m internal_testing.run_transcript` (generate raw transcripts), `python -m internal_testing.run_transcript_judge --provider gpt|claude` (grade them). Parallelized (`ThreadPoolExecutor`, 6 workers). See [`internal_testing/README.md`](internal_testing/README.md).
 - **Student app** (`python -m main_ui`): student-facing **AskTIM** — iframe-embeddable chat, Postgres-backed, SSE-streamed, email+password identity. **Deployed on Railway.** See [`main_ui/README.md`](main_ui/README.md).
 - **Sandbox** (`python -m sandbox_ui`): **AskTIM Sandbox** for developers/TAs — same chat as `main_ui` plus an in-app **Edit context** switcher and **Create context** wizard, on its own database (`asktim_test`). Run locally (port 5000); its Railway deployment is not working yet and is deferred. See [`sandbox_ui/README.md`](sandbox_ui/README.md).
 - **Dashboard** (`python -m dashboard_ui.run_dashboard_ui`): Flask app that uses raw transcripts as the source of truth (`transcripts/{persona}/{persona}_raw`) and attaches Claude Mini (tutor_05) and Claude score panels per row (explicit per-provider errors for missing/ambiguous/mismatched pairs). Pick any port other than 5001. See [`dashboard_ui/README.md`](dashboard_ui/README.md).
@@ -381,8 +381,8 @@ Transcripts are test-run artifacts shared between the UI (producer) and judge (c
 - Uses `judge.judge_transcript()` with selectable judge prompt and rubric versions.
 - Assignment context loaded as `curriculum/{course}/course.txt` + `exercise_{num}.txt` (combined and passed to both tutor and student).
 - Added `python -m terminal_ui.run_bundle` to automate persona × exercise × `N` trials with transcript generation and judge scoring.
-- Added `python -m internal_ui.run_ui_raw` to automate persona × exercise × `N` raw transcript generation before judge evaluation, with outputs routed to `transcripts/{persona_type}/{persona_type}_raw/`.
-- Added `python -m internal_ui.run_ui_judge --provider gpt` and `python -m internal_ui.run_ui_judge --provider claude` to score selected raw transcripts by provider and write judged copies to `transcripts/{persona_type}/{persona_type}_gpt/` and `transcripts/{persona_type}/{persona_type}_claude/`.
+- Added `python -m internal_testing.run_transcript` to automate persona × exercise × `N` raw transcript generation before judge evaluation, with outputs routed to `transcripts/{persona_type}/{persona_type}_raw/`.
+- Added `python -m internal_testing.run_transcript_judge --provider gpt` and `python -m internal_testing.run_transcript_judge --provider claude` to score selected raw transcripts by provider and write judged copies to `transcripts/{persona_type}/{persona_type}_gpt/` and `transcripts/{persona_type}/{persona_type}_claude/`.
 - Transcripts saved to `transcripts/{persona_type}/transcript_XX.json`.
 - Transcript JSON includes: tutor_prompt, student_persona, course, exercise_number, judge_prompt, turns, exchanges.
 - Run turn count (`turn_size`) is now injected into tutor and student context so both roles know the planned conversation length.
@@ -457,7 +457,7 @@ sandbox_ui/
 > `get_tutor_reply(..., figures=)`), the **student** bot
 > (`get_next_student_message(..., figures=)`), the **judge** (reads the
 > transcript `figures` field, re-resolves filenames, re-attaches images), and
-> the **bulk raw runner** (`internal_ui/run_ui_raw.py` discovers figures, feeds
+> the **bulk raw runner** (`internal_testing/run_transcript.py` discovers figures, feeds
 > both roles, and records `"figures": [...]` in each transcript). The string-only
 > message sanitizers in tutor/student were generalized to handle multimodal
 > list content. Figures are attached to the latest student turn each tutor call
@@ -469,7 +469,7 @@ sandbox_ui/
 > the prerequisite for `main_ui` Step 10 image uploads), and **Phase 7** human
 > uploads. Lecture transcripts (a separate 06/09/2026 ask) shipped alongside this
 > via `utils/lectures.py` — per-course `curriculum/<course>/lectures/*.txt` folded
-> into the tutor context by both `internal_ui` and `main_ui` context builders.
+> into the tutor context by both `internal_testing` and `main_ui` context builders.
 
 **Problem:** Several curriculum exercises reference visual diagrams that the current text-only pipeline can't surface to the LLM. `exercise_04` (Power/Actors Map) and `exercise_08` (Spider Diagram) are the immediate cases — the actual PNG sits in `curriculum/<course>/figures/` but only a hand-written prose description in the `.txt` reaches the tutor. The tutor/student/judge therefore guide and grade against a secondhand summary instead of the real figure.
 
@@ -491,7 +491,7 @@ sandbox_ui/
 | File | Change |
 | ---- | ------ |
 | `utils/figures.py` | **NEW** — discovery + encoding helpers |
-| `internal_ui/run_ui_raw.py` | `_build_assignment_text` also discovers figures and returns them alongside text; raw runner passes figures into tutor/student calls; writes `"figures": [filenames]` into transcript JSON |
+| `internal_testing/run_transcript.py` | `_build_assignment_text` also discovers figures and returns them alongside text; raw runner passes figures into tutor/student calls; writes `"figures": [filenames]` into transcript JSON |
 | `tutor/run_tutor.py` | `get_tutor_reply()` accepts optional `figures` kwarg; LangGraph node attaches multimodal content to the HumanMessage when figures are present |
 | `students/run_student.py` | Same shape as tutor: optional `figures` kwarg threaded through to the message construction |
 | `judge/run_judge.py` | Reads `figures` field from the transcript (default `[]`); resolves filenames to paths under `curriculum/<course>/figures/`; attaches multimodal content to the judge prompt |
@@ -519,7 +519,7 @@ Absent `figures` field = no figures attached (treated as empty list). Existing t
 
 **Implementation order:**
 1. `utils/figures.py` + unit tests (discovery edge cases, encoding round-trip)
-2. `internal_ui/run_ui_raw.py` — discovery + transcript field
+2. `internal_testing/run_transcript.py` — discovery + transcript field
 3. `tutor/run_tutor.py` — first multimodal consumer
 4. `students/run_student.py` — same pattern as tutor
 5. `judge/run_judge.py` — transcript-driven consumer
@@ -883,7 +883,7 @@ production. See [`sandbox_ui/README.md`](sandbox_ui/README.md).
 **Non-goals:** Alembic migrations (throwaway DB uses `create_all`); sharing a
 database with `main_ui` (deliberately separate); the simulated-student-bot button
 from the old `sandbox_ui` (the Sandbox is human-driven chat, bots stay in
-`internal_ui`).
+`internal_testing`).
 
 ---
 
@@ -966,7 +966,7 @@ rag/
 3. `rag/ingest.py` — `python -m rag.ingest --course <c> --source local|ocw|both`: gather docs from the selected source(s), chunk → embed → write `rag_index/` artifacts + manifest (records which source built it + source hashes). Source is a **toggle** so we can A/B local-files vs OCW vs both.
 4. `rag/retrieve.py` — `retrieve(course, query, k, max_tokens)`; return chunks with `source` for citation.
 5. Wire into `tutor_bridge.py` (both apps): cached prompt becomes `about_asktim` + exercise only; per-turn retrieval injected on the latest student turn; gated by `TUTOR_CONTEXT_MODE` / index presence; keep `full_context` and `exercise_only` modes for A/B.
-6. Evaluation path: thread the same retrieval into `internal_ui/run_ui_raw.py` so simulated conversations + judge run under each context mode (`exercise_only` vs `full_context` vs `rag`) — feeds the 06/16 research design ("does more/which context make a better tutor", measured by simulated conversations + grading).
+6. Evaluation path: thread the same retrieval into `internal_testing/run_transcript.py` so simulated conversations + judge run under each context mode (`exercise_only` vs `full_context` vs `rag`) — feeds the 06/16 research design ("does more/which context make a better tutor", measured by simulated conversations + grading).
 7. Docs: `rag/README.md`, update `curriculum/README.md` (done — `online_link.txt`), and record retrieved-chunk sources in the transcript schema if we want reproducible eval.
 
 **Cost / perf impact (target):**

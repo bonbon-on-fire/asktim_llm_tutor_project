@@ -85,7 +85,7 @@ class TutorBridge:
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
         """Concatenate about_asktim.txt + course.txt + optional syllabus.txt + optional lecture transcripts + exercise_<NN>.txt.
 
-        Mirrors `internal_ui/run_ui_raw.py:_build_assignment_text` but omits
+        Mirrors `internal_testing/run_transcript.py:_build_assignment_text` but omits
         the `Run configuration` block — chats are open-ended, no planned turn
         count. The leading block describes the AskTIM deployment so the tutor
         can coherently answer "what are you?" / "where am I?" questions; it

@@ -93,7 +93,7 @@ def build_assignment_text(
     (``exercise_only``) — leaving only the about-block and the exercise, which is
     the one thing always kept in context verbatim.
 
-    Mirrors `internal_ui/run_ui_raw.py:_build_assignment_text` but omits the
+    Mirrors `internal_testing/run_transcript.py:_build_assignment_text` but omits the
     `Run configuration` block — sandbox_ui chats are open-ended, no planned
     turn count. The leading block describes the AskTIM deployment so the
     tutor can coherently answer "what are you?" / "where am I?" questions;

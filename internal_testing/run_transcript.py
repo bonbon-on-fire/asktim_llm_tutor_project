@@ -2,10 +2,10 @@
 Interactive runner that generates raw (unjudged) tutor/student transcripts.
 
 Run with interactive CLI:
-    python -m internal_ui.run_ui_raw
+    python -m internal_testing.run_transcript
 
 Or run with command-line arguments:
-    python -m internal_ui.run_ui_raw --provider claude --tutor tutor_03 --personas clueless --course philosophy --exercise 01 --turn-size 10 --trials 2
+    python -m internal_testing.run_transcript --provider claude --tutor tutor_03 --personas clueless --course philosophy --exercise 01 --turn-size 10 --trials 2
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from tutor.run_tutor import (
     load_system_prompt,
     parse_tutor_response,
 )
-from internal_ui.cli_utils import (
+from internal_testing.cli_utils import (
     confirm_proceed,
     group_personas_by_type,
     parse_persona_type_and_version,
@@ -492,10 +492,10 @@ def _parse_args() -> argparse.Namespace:
         epilog="""
 Examples:
   # Interactive mode (default)
-  python -m internal_ui.run_ui_raw
+  python -m internal_testing.run_transcript
   
   # Command-line mode
-  python -m internal_ui.run_ui_raw --tutor tutor_03 --personas clueless chaotic --course philosophy --exercise 01 --turn-size 10 --trials 2
+  python -m internal_testing.run_transcript --tutor tutor_03 --personas clueless chaotic --course philosophy --exercise 01 --turn-size 10 --trials 2
         """,
     )
     

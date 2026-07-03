@@ -98,25 +98,25 @@ print(result.total_score, result.max_score)
 ### Judging All Transcripts Individually
 
 Grade every raw transcript across all persona types using the judge runner
-in `internal_ui/`:
+in `internal_testing/`:
 
 ```powershell
 # GPT judge — grades all *_raw/ transcripts into *_gpt/ folders
-python -m internal_ui.run_ui_judge --provider gpt
+python -m internal_testing.run_transcript_judge --provider gpt
 
 # Claude judge — grades all *_raw/ transcripts into *_claude/ folders
-python -m internal_ui.run_ui_judge --provider claude
+python -m internal_testing.run_transcript_judge --provider claude
 ```
 
 All flags:
 
 ```powershell
 # --prompt and --rubric select versions; --yes skips confirmation prompt
-python -m internal_ui.run_ui_judge --provider gpt --prompt judge_08 --rubric rubric_08 --yes
+python -m internal_testing.run_transcript_judge --provider gpt --prompt judge_08 --rubric rubric_08 --yes
 
 # --source-suffix reads from *_{suffix}/ instead of *_raw/
 # --output-suffix independently overrides the target folder suffix
-python -m internal_ui.run_ui_judge --provider claude --prompt judge_08 --rubric rubric_08 \
+python -m internal_testing.run_transcript_judge --provider claude --prompt judge_08 --rubric rubric_08 \
   --source-suffix raw_tutor_05 --output-suffix tutor_05 --yes
 ```
 

@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-**FOUNDATION BUILT 2026-06-15.** `utils/figures.py` + `utils/lectures.py` exist (with `utils/test_figures.py`, `utils/test_lectures.py`, all passing). Figures threaded through the **non-streaming** tutor (`create_tutor_graph(..., figures=)`), student (`get_next_student_message(..., figures=)`), judge (reads transcript `figures` field, re-resolves + re-attaches), and `internal_ui/run_ui_raw.py` (discovers + writes `"figures": [...]`). Lecture transcripts: per-course `curriculum/<course>/lectures/*.txt`, folded into both internal_ui and main_ui context builders. Message sanitizers in tutor/student now handle multimodal list content.
+**FOUNDATION BUILT 2026-06-15.** `utils/figures.py` + `utils/lectures.py` exist (with `utils/test_figures.py`, `utils/test_lectures.py`, all passing). Figures threaded through the **non-streaming** tutor (`create_tutor_graph(..., figures=)`), student (`get_next_student_message(..., figures=)`), judge (reads transcript `figures` field, re-resolves + re-attaches), and `internal_testing/run_transcript.py` (discovers + writes `"figures": [...]`). Lecture transcripts: per-course `curriculum/<course>/lectures/*.txt`, folded into both internal_testing and main_ui context builders. Message sanitizers in tutor/student now handle multimodal list content.
 
 **STILL OPEN:** the `main_ui` **streaming** path (deployed app still text-only — wiring figures into `stream_tutor_reply`/`StudentAnswerExtractor` is the next step and the prerequisite for main_ui Step 10 uploads); Phase 7 human uploads; image generation (explicitly out of scope — tutor reasons-over only). Decisions made 06/15: foundation-first, reason-over-only, lectures per-course-all-included.
 

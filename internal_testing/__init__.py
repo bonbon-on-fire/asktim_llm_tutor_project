@@ -1,2 +1,2 @@
-"""Terminal UI launcher package."""
+"""Internal tutor-testing runners: bulk transcript generation and judge grading."""
 

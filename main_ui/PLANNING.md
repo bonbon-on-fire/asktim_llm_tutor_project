@@ -431,7 +431,7 @@ Plus a small edit to `main_ui/__init__.py` to auto-load `.env` at import time (s
 **`main_ui/services/tutor_bridge.py`**
 - **Purpose:** the one place in `main_ui/` that knows how to talk to `tutor.run_tutor`. Anything that needs a tutor reply (Step 5's `/api/chat`, future test scripts) calls this module — never the underlying `tutor.run_tutor` API directly.
 - **Owns:**
-  - `build_assignment_text(course, exercise) -> str` — concatenates `curriculum/<course>/course.txt`, optional `curriculum/<course>/syllabus.txt`, and `curriculum/<course>/exercise_<NN>.txt` into the assignment string the tutor's `<Assignment>` slot expects. Mirrors what `internal_ui/run_ui_raw.py:_build_assignment_text` does but without the `turn_size` line (open-ended chat, no planned conversation length).
+  - `build_assignment_text(course, exercise) -> str` — concatenates `curriculum/<course>/course.txt`, optional `curriculum/<course>/syllabus.txt`, and `curriculum/<course>/exercise_<NN>.txt` into the assignment string the tutor's `<Assignment>` slot expects. Mirrors what `internal_testing/run_transcript.py:_build_assignment_text` does but without the `turn_size` line (open-ended chat, no planned conversation length).
   - A module-level graph cache keyed by `(tutor, course, exercise)` so repeat calls don't rebuild the LangGraph.
   - `get_tutor_reply(*, course, exercise, tutor, history, new_student_message) -> dict` — the single public entry point.
   - Internal helpers for converting our simple message dicts (`{"role": "student"|"tutor", "content": str}`) to LangChain `HumanMessage` / `AIMessage` instances.

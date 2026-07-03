@@ -1,4 +1,4 @@
-"""Run the terminal UI entrypoint via ``python -m internal_ui``."""
+"""``python -m internal_testing`` package entrypoint."""
 
 from __future__ import annotations
 

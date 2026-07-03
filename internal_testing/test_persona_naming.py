@@ -1,13 +1,13 @@
 """Standalone tests for version-optional persona naming (no pytest).
 
 Run with:
-    python -m internal_ui.test_persona_naming
+    python -m internal_testing.test_persona_naming
 """
 
 from __future__ import annotations
 
-from internal_ui.cli_utils import parse_persona_type_and_version, group_personas_by_type
-from internal_ui.run_ui_raw import RunConfig
+from internal_testing.cli_utils import parse_persona_type_and_version, group_personas_by_type
+from internal_testing.run_transcript import RunConfig
 
 _PASSED = 0
 _FAILED = 0

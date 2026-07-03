@@ -39,7 +39,7 @@ This now applies to **both** paths. The non-streaming/batch path (transcript gen
 
 ### Lecture transcripts
 
-If a course ships `curriculum/<course>/lectures/*.txt`, those transcripts are folded into the assignment context by the caller's context builder (`internal_ui` and `main_ui`) via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py) before being passed as `assignment_override`. The tutor module itself needs no change — it just receives the enriched assignment text.
+If a course ships `curriculum/<course>/lectures/*.txt`, those transcripts are folded into the assignment context by the caller's context builder (`internal_testing` and `main_ui`) via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py) before being passed as `assignment_override`. The tutor module itself needs no change — it just receives the enriched assignment text.
 
 ## How the tutor works
 

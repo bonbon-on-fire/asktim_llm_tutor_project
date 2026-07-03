@@ -1,13 +1,13 @@
-# internal_ui
+# internal_testing
 
-Internal terminal runners for bulk transcript generation and judge scoring, with interactive CLI support. (Renamed from `ui/`.)
+Internal runners for testing the tutor: bulk transcript generation and judge scoring, with interactive CLI support. (Renamed from `internal_ui/` — earlier `ui/` — since these are CLI test runners, not a web UI.)
 
 ## Files
 
 ```text
-internal_ui/
-  run_ui_raw.py             — generate raw transcripts in bulk (interactive or CLI)
-  run_ui_judge.py           — grade transcripts with the GPT or Claude judge
+internal_testing/
+  run_transcript.py             — generate raw transcripts in bulk (interactive or CLI)
+  run_transcript_judge.py           — grade transcripts with the GPT or Claude judge
   cli_utils.py              — shared interactive numbered-selection prompt helpers
 ```
 
@@ -19,7 +19,7 @@ From repo root in PowerShell:
 
 **Interactive mode (default):**
 ```powershell
-python -m internal_ui.run_ui_raw
+python -m internal_testing.run_transcript
 ```
 
 This will prompt you to select from numbered options:
@@ -35,13 +35,13 @@ Exercise prompts are read from `curriculum/<course>/exercises/exercise_<NN>.txt`
 **Command-line mode:**
 ```powershell
 # Generate with GPT tutor (default output: *_raw/)
-python -m internal_ui.run_ui_raw --provider gpt --tutor tutor_03 --personas clueless chaotic --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
+python -m internal_testing.run_transcript --provider gpt --tutor tutor_03 --personas clueless chaotic --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
 
 # Generate with Claude tutor
-python -m internal_ui.run_ui_raw --provider claude --tutor tutor_05 --personas clueless --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
+python -m internal_testing.run_transcript --provider claude --tutor tutor_05 --personas clueless --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 2
 
 # Custom output folder: writes to *_raw_tutor_05/ instead of *_raw/ (--yes skips confirmation)
-python -m internal_ui.run_ui_raw --provider claude --tutor tutor_05 --personas chaotic --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 10 --output-suffix raw_tutor_05 --yes
+python -m internal_testing.run_transcript --provider claude --tutor tutor_05 --personas chaotic --course cities_and_climate_change --exercise 01 --turn-size 10 --trials 10 --output-suffix raw_tutor_05 --yes
 ```
 
 Run matrix: `tutor_prompts x student_personas x course_exercises x trials`
@@ -56,7 +56,7 @@ Run matrix: `tutor_prompts x student_personas x course_exercises x trials`
 
 **Interactive mode (default):**
 ```powershell
-python -m internal_ui.run_ui_judge
+python -m internal_testing.run_transcript_judge
 ```
 
 This will prompt you to select from numbered options:
@@ -67,13 +67,13 @@ This will prompt you to select from numbered options:
 **Command-line mode:**
 ```powershell
 # Grade with GPT (reads *_raw/, writes *_gpt/)
-python -m internal_ui.run_ui_judge --provider gpt --prompt judge_08 --rubric rubric_08
+python -m internal_testing.run_transcript_judge --provider gpt --prompt judge_08 --rubric rubric_08
 
 # Grade with Claude (reads *_raw/, writes *_claude/)
-python -m internal_ui.run_ui_judge --provider claude --prompt judge_08 --rubric rubric_08
+python -m internal_testing.run_transcript_judge --provider claude --prompt judge_08 --rubric rubric_08
 
 # Read from *_raw_tutor_05/, write to *_claude_tutor_05/ (--yes skips confirmation)
-python -m internal_ui.run_ui_judge --provider claude --prompt judge_08 --rubric rubric_08 \
+python -m internal_testing.run_transcript_judge --provider claude --prompt judge_08 --rubric rubric_08 \
   --source-suffix raw_tutor_05 --output-suffix tutor_05 --yes
 ```
 
@@ -88,7 +88,7 @@ The script discovers all transcripts matching `*_{source-suffix}/transcript_*.js
 
 ## Output paths
 
-### Raw-only runs (`internal_ui.run_ui_raw`)
+### Raw-only runs (`internal_testing.run_transcript`)
 
 Raw transcripts are saved to persona-specific raw folders:
 
@@ -104,7 +104,7 @@ With `--output-suffix raw_tutor_05`, output goes to `*_raw_tutor_05/` instead:
 
 Each file is auto-named as `transcript_NN.json`.
 
-### Judged runs (`internal_ui.run_ui_judge`)
+### Judged runs (`internal_testing.run_transcript_judge`)
 
 Judged transcripts are saved to provider-specific folders:
 
@@ -171,7 +171,7 @@ Judged transcripts additionally include:
 
 ## Parallelism configuration
 
-- `internal_ui.run_ui_raw` and `internal_ui.run_ui_judge` both run with `6` workers by default.
+- `internal_testing.run_transcript` and `internal_testing.run_transcript_judge` both run with `6` workers by default.
 - Adjust `PARALLEL_WORKERS` at the top of each runner file to change concurrency.
 
 ## Environment variables

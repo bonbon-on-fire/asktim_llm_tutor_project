@@ -5,10 +5,10 @@ Reads from transcripts/{persona}/{persona}_raw/ and writes graded copies
 to transcripts/{persona}/{persona}_gpt/ or transcripts/{persona}/{persona}_claude/.
 
 Run with interactive CLI:
-    python -m internal_ui.run_ui_judge
+    python -m internal_testing.run_transcript_judge
 
 Or run with command-line arguments:
-    python -m internal_ui.run_ui_judge --provider gpt --prompt judge_06 --rubric rubric_06
+    python -m internal_testing.run_transcript_judge --provider gpt --prompt judge_06 --rubric rubric_06
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ if str(_REPO_ROOT) not in sys.path:
 load_dotenv(_REPO_ROOT / ".env")
 
 from students.run_student import list_personas
-from internal_ui.cli_utils import (
+from internal_testing.cli_utils import (
     confirm_proceed,
     prompt_single_selection,
 )
@@ -234,10 +234,10 @@ def _parse_args() -> argparse.Namespace:
         epilog="""
 Examples:
   # Interactive mode (default)
-  python -m internal_ui.run_ui_judge
+  python -m internal_testing.run_transcript_judge
   
   # Command-line mode
-  python -m internal_ui.run_ui_judge --provider gpt --prompt judge_05 --rubric rubric_05
+  python -m internal_testing.run_transcript_judge --provider gpt --prompt judge_05 --rubric rubric_05
         """,
     )
     parser.add_argument(

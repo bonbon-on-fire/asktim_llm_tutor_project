@@ -124,7 +124,7 @@ flowchart TD
 
 **Judge (`judge/run_judge.py`):** Reads a transcript, constructs a grading prompt by injecting the rubric and output schema, and calls the selected provider (`gpt` or `claude`). Validates the JSON response against the rubric spec, auto-repairs on failure up to 3 attempts, and writes the grade back into the transcript file. The latest rubric (`rubric_08`, 40 pts) scores three sections: Pedagogy (20 pts — Socratic method/no direct work, scaffolding, meta-learning), Dialogue Quality (12 pts — redundancy, assignment anchoring), and Communication Quality (8 pts — bite-sized responses, tone). (The earlier `rubric_05` was 46 pts and remains the in-code default.)
 
-**UI Runners (`internal_ui/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_ui_raw`), transcript judging (`run_ui_judge`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
+**UI Runners (`internal_testing/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_ui_raw`), transcript judging (`run_ui_judge`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
 
 **Dashboard (`dashboard_ui/`):** Flask app (port 5002) that discovers all raw transcripts on disk, attaches each one's Claude judge grade, and serves a sortable table (with a Score column) plus a per-transcript detail view (full conversation + grade panel) via a single-page JS frontend.
 
@@ -173,7 +173,7 @@ flowchart TD
     end
 
     subgraph gen["1. Generate conversations"]
-        UIRAW["internal_ui.run_ui_raw\n(GPT or Claude tutor)"]
+        UIRAW["internal_testing.run_transcript\n(GPT or Claude tutor)"]
         LOOP["LangGraph loop:\nstudent reply → tutor reply"]
     end
 
@@ -182,7 +182,7 @@ flowchart TD
     end
 
     subgraph judge["2. Grade transcripts"]
-        UIJ["internal_ui.run_ui_judge\n(--provider --source-suffix --output-suffix)"]
+        UIJ["internal_testing.run_transcript_judge\n(--provider --source-suffix --output-suffix)"]
         JG["judge.run_judge\nvalidate + repair JSON"]
     end
 
@@ -284,9 +284,9 @@ asktim_llm_tutor_project_2026/
 │   ├── prompts/             # judge_01.txt .. judge_08.txt (current default: judge_05)
 │   └── rubrics/             # rubric_01.md .. rubric_08.md (latest: rubric_08, 40pt; in-code default: rubric_05)
 │
-├── internal_ui/
-│   ├── run_ui_raw.py            # Generate raw transcripts in bulk (--output-suffix, --yes)
-│   ├── run_ui_judge.py          # Grade transcripts (--provider, --source-suffix, --output-suffix, --yes)
+├── internal_testing/
+│   ├── run_transcript.py            # Generate raw transcripts in bulk (--output-suffix, --yes)
+│   ├── run_transcript_judge.py          # Grade transcripts (--provider, --source-suffix, --output-suffix, --yes)
 │   └── cli_utils.py             # Shared interactive selection-prompt helpers
 │
 ├── transcripts/             # Generated conversations, one folder per persona family.

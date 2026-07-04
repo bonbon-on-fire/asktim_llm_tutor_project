@@ -1,93 +1,39 @@
-Part III
-SC2x - Supply Chain Design
-
-3
-Supply Chain Design
-CONTENTS
-3.1 Introduction to Supply Chain Design ............................ 128
-3.1.1 Summary ................................................ 128
-3.1.2 Key Concepts ............................................ 128
-3.1.3 Review of SC1x Concepts ............................... 128
-3.2 Supply Chain Network Design Models ........................... 131
-3.2.1 Summary ................................................ 131
-3.2.2 Key Concepts ............................................ 131
-3.2.3 Network Models ......................................... 132
-3.2.4 Facility Location Models ................................ 134
-3.2.4.1 Notation ...................................... 135
-3.2.5 Supply Chain Network Design .......................... 137
-3.2.6 Advanced Supply Chain Network Design Topics ........ 138
-3.2.7 Practical Considerations in Supply Chain Network
-Design .................................................... 141
-3.3 Production Planning ............................................. 143
-3.3.1 Summary ................................................ 143
-3.3.2 Key Concepts ............................................ 143
-3.3.3 Fixed Planning Horizon ................................. 143
-3.3.4 Material and Distribution Requirements Planning ...... 148
-3.4 Connecting Sales to Operations .................................. 150
-3.4.1 Summary ................................................ 150
-3.4.2 Key Concepts ............................................ 150
-3.4.3 Aggregate Planning Model .............................. 150
-3.4.4 Monthly Sales & Operations Planning Process ......... 152
-3.4.5 Distribution and Channel Strategies .................... 153
-3.5 Supply Chain Sourcing ........................................... 161
-3.5.1 Summary ................................................ 161
-3.5.2 Key Concepts ............................................ 161
-3.5.3 Procurement Strategy ................................... 162
-3.5.4 Procurement Optimization .............................. 165
-3.6 Supply Chain Finance ........................................... 167
-3.6.1 Summary ................................................ 167
-3.6.2 Key Concepts ............................................ 167
-3.6.3 Accounting Fundamentals ............................... 167
-3.6.4 Costing Systems ......................................... 169
-3.6.5 Supply Chain Cash Flows ............................... 172
-3.6.6 Discounted Cash Flow Analysis ......................... 175
-3.6.7 Deﬁning Supply Chain Finance ......................... 177
-3.6.8 Analyzing Financial Performance ....................... 181
-3.7 Organizational, Process, and Performance Metric Design ....... 186
-3.7.1 Summary ................................................ 187
-3.7.2 Key Concepts ............................................ 187
-3.7.3 Supply Chain Organizational Design .................... 187
-127
-128 MITx MicroMasters Program in SCM Key Concepts
-3.7.4 Supply Chain Metric Design ............................ 188
-3.8 Appendix A How To Debug Your Model - Flowchart ........... 189
 3.1 Introduction to Supply Chain Design
 3.1.1 Summary
 Supply Chain Design is as much an art as it is science. Science because we can quantify the impact of
-diﬀerent choices and ﬁnd the optimal trade-oﬀs between diﬀerent choice parameters. But also, an art
+different choices and find the optimal trade-offs between different choice parameters. But also, an art
 because the assumptions we make are never going to completely match reality, and because the data we
 use for our models is never going to be completely accurate. There is no single right way of making these
 assumptions – doing this in a “good” way for a particular problem is more art than science!
 Still, we learned that there are some frameworks, tools, and methods to aid the design process. The
-course examines the ﬂows in a supply chain, with each design issue discussed in a separate module:
-• Design of Physical Flows. How should materials ﬂow through the supply chain? We will model
-physical ﬂows taking into account the costs of transportation and facilities. We will balance costs and
+course examines the flows in a supply chain, with each design issue discussed in a separate module:
+• Design of Physical Flows. How should materials flow through the supply chain? We will model
+physical flows taking into account the costs of transportation and facilities. We will balance costs and
 service using Mixed Integer Programs. However, key is in not just solving the models, but in interpreting
 the results. Remember, the tools are decision -support tools, they are intended to support decisions, not
 make them for us!
 • Design of Financial Flows. How to translate supply chain concepts and actions into the language of
-the CFO (Chief Financial Oﬃcer)? We will go through activity-based costing, cash ﬂow analysis and
+the CFO (Chief Financial Officer)? We will go through activity-based costing, cash flow analysis and
 capital budgeting to better understand how supply chain design decisions translate to changes in the
 income statement and the balance sheet.
 • Design of Information Flows. For this module, we will follow the SCOR-model’s three phases of
 Source, Make, and Deliver. How should you work with suppliers? How should information be coordinated
-between diﬀerent manufacturers, internal and external? And how should you coordinate and collaborate
+between different manufacturers, internal and external? And how should you coordinate and collaborate
 with customers? In this module strategies and procedures for this is discussed.
 • Designing the organization. How should a supply chain be organized? We will investigate supply
-chain processes and how the measuring of the performance of the processes create diﬀerent incentives.
+chain processes and how the measuring of the performance of the processes create different incentives.
 We will also discuss organizational structure.
 3.1.2 Key Concepts
-• Supply Chains – Two or more parties linked by a ﬂow of resources that ultimately fulﬁll a customer
+• Supply Chains – Two or more parties linked by a flow of resources that ultimately fulfill a customer
 request.
-• Supply Chain Flows – physical ﬂows, ﬁnancial ﬂows, and information ﬂows. All are important to
+• Supply Chain Flows – physical flows, financial flows, and information flows. All are important to
 consider when designing a supply chain.
 3.1.3 Review of SC1x Concepts
 Demand forecasting
 Forecasting truisms:
 • Forecast are always wrong – use ranges and track forecast error
-• Aggregate forecasts are more accurate – risk pooling reduces coeﬃcient of variation
+• Aggregate forecasts are more accurate – risk pooling reduces coefficient of variation
 • Shorter time forecasts are more accurate – postpone customization as late as possible
-Supply Chain Design 129
 FIGURE 3.1: Product forecasting
 Adapted from Kahn & Kennet (2006) New Product Forecasting
 Inventory management
@@ -111,11 +57,10 @@ customer
 this decouples line haul (from e.g. a supplier to a terminal) from local delivery operations (from e.g. a
 terminal to stores)
 Total cost equation
-The total cost equation speciﬁes the total logistics cost for a system for an arbitrary time period:
+The total cost equation specifies the total logistics cost for a system for an arbitrary time period:
 Total cost = Purchase Cost + Order (Set Up) Cost + Holding (Carrying) Cost + Shortage Cost
 • Purchase: Cost per item or total landed cost for acquiring product.
-130 MITx MicroMasters Program in SCM Key Concepts
-• Ordering: It is a ﬁxed cost and contains cost to place, receive and process a batch of goods including
+• Ordering: It is a fixed cost and contains cost to place, receive and process a batch of goods including
 processing invoicing, auditing, labor, etc. In manufacturing this is the set up cost for a run.
 • Holding: Costs required to hold inventory such as storage cost (warehouse space), service costs (in-
 surance, taxes), risk costs (lost, stolen, damaged, obsolete), and capital costs, both for units in-transit
@@ -148,59 +93,57 @@ From the formula we see that transport speed as well as forecast accuracy has an
 through the inventory costs.
 Fisher’s model: Innovative versus functional products
 When designing a supply chain, the design needs to be adapted to the type of products it is intended for.
-In Fisher’s model, products can be classiﬁed as being either more Functional or more Innovative.
+In Fisher’s model, products can be classified as being either more Functional or more Innovative.
 • Functional: predictable demand, long life cycle, low margin, low error in production, low stock-out rates
 • Innovative: unpredictable demand, short life cycle, high margin, high error in production, high stock-out
 rates
-As a rule of thumb, functional products should have a design focusing more on eﬃciency, whereas
+As a rule of thumb, functional products should have a design focusing more on efficiency, whereas
 innovative products should have a supply chain design focusing more on matching supply with demand.
 Remember that these are not hard and fast rules. In practice there are, of course, many products
-that share characteristics with both segments. Most ﬁrms are going to have a portfolio of supply chains.
+that share characteristics with both segments. Most firms are going to have a portfolio of supply chains.
 Further, innovative products often move into becoming more functional as their markets become more
 mature. This requires adaptation of the supply chain design. For instance, when the patent protection
-for the cholesterol lowering drug Lipitor went out, Pﬁzer had to reduce the price to protect the drug
+for the cholesterol lowering drug Lipitor went out, Pfizer had to reduce the price to protect the drug
 from generic competition. With a lower margin, the supply chain must be design with a higher focus on
-eﬃciency.
-Supply Chain Design 131
+efficiency.
 SCOR-model
 The Source-Make-Deliver process of the SCOR-model describes the business processes required to satisfy
 customers’ demand.
 FIGURE 3.2: Supply Chain Operations Reference (SCOR) model
 Source: Supply Chain Council
 Learning Objectives
-• Identify physical, ﬁnancial, and information ﬂows inherent to supply chains
+• Identify physical, financial, and information flows inherent to supply chains
 • Recap SC1x: demand forecasting, inventory management, transportation
-• How to approach Supply Chain Design for diﬀerent products and companies
+• How to approach Supply Chain Design for different products and companies
 References
 • Arntzen, B. (2013) MIT Center for Transportation & Logistics, Hi-Viz Research Project.
 • Fisher, M. (1997) “What Is the Right Supply Chain for Your Product?” Harvard Business Review.
 • Olavsun, Lee, & DeNyse (2010) “A Portfolio Approach to Supply Chain Design,” Supply Chain Man-
-agement Review. Adapted from Sheﬃ (2010) ESD.260 Course Notes
+agement Review. Adapted from Sheffi (2010) ESD.260 Course Notes
 3.2 Supply Chain Network Design Models
 3.2.1 Summary
 We review supply chain network design. Sometimes it is referred to as network modeling because you
 need to build a mathematical model of the supply chain. This model is then solved using optimization
-techniques and then analyzed to pick the best solution. Speciﬁcally, we will focus on modeling the supply
-chain to determine the optimal location of facilities (plants, warehouses, etc.) and the best ﬂow of products
+techniques and then analyzed to pick the best solution. Specifically, we will focus on modeling the supply
+chain to determine the optimal location of facilities (plants, warehouses, etc.) and the best flow of products
 through this facility network structure.
-132 MITx MicroMasters Program in SCM Key Concepts
 3.2.2 Key Concepts
 3.2.3 Network Models
 Network models are a useful class of models that can be utilized to aid many types of supply chain
 decisions. We review the basic notations of these models and show how to set up a simple spreadsheet
-model in Excel or Libre Oﬃce to solve the model. We focus on two types of models that are relatively
+model in Excel or Libre Office to solve the model. We focus on two types of models that are relatively
 simple yet powerful in deriving insights to support supply chain design decisions: the Transportation
 Problem and the Transshipment Problem.
 Both the transportation problem and the transshipment problem consider an underlying network of
-nodes (facilities) and arcs (transport ﬂows between facilities). The objective is to minimize costs for a
-given period (day, week, year) by choosing the number of units to be shipped/transported on diﬀerent
-arcs during the period to fulﬁll demand, while meeting the capacity constraints. Both problems can be
+nodes (facilities) and arcs (transport flows between facilities). The objective is to minimize costs for a
+given period (day, week, year) by choosing the number of units to be shipped/transported on different
+arcs during the period to fulfill demand, while meeting the capacity constraints. Both problems can be
 formulated as linear programs (see below) and solved using your spreadsheet software of choice (e.g. Excel
-or Libre Oﬃce). For details on how to run the solver, please refer to the separate guide for how to setup
+or Libre Office). For details on how to run the solver, please refer to the separate guide for how to setup
 and run the solver, which is found in the course material.
 We discuss some of the limitations to these network models. First, in the models review, we limited
 ourselves to variable costs for the arcs (i.e. transport costs per unit). Clearly, the cost structure for a
-network is, in practice, often more complex, involving costs that are both ﬁxed or vary over diﬀerent
+network is, in practice, often more complex, involving costs that are both fixed or vary over different
 parameters. We also considered a single commodity – all plants produced perfectly substitutable goods.
 The demand was deterministic, that is, we assumed that demand was perfectly known for the entire
 period. Finally, we also assumed there was no capacity limits on the arcs, so that any amount could be
@@ -208,16 +151,16 @@ transported. Clearly, all of these assumptions limit our results, so we have to 
 we make from the models. In the coming lessons we will relax some of these and also discuss how to make
 inference while still using a relatively simple model.
 Also – we noted that transportation and transshipment problems may have several optima (the same
-value of the objective function is found by diﬀerent value on the decision variables).
-Depending on the algorithm and software, diﬀerent optima may be the “ﬁrst choice” of the algorithm.
+value of the objective function is found by different value on the decision variables).
+Depending on the algorithm and software, different optima may be the “first choice” of the algorithm.
 Network terminology
 • Node or vertices – a point (facility, DC, plant, region)
-• Arc or edge – link between two nodes (roads, ﬂows, etc.)
+• Arc or edge – link between two nodes (roads, flows, etc.)
 • Network or graph – a collection of nodes and arcs
 The transportation problem
 The transportation problem considers transports from i supply nodes to j demand nodes over arcs ij.
 With each arc is associated a cost cij. The number of units transported on each arc ij is denoted xij.
-These xij’s are our decision variables – we want to ﬁnd the amounts for each arc that minimizes total
+These xij’s are our decision variables – we want to find the amounts for each arc that minimizes total
 cost.
 Let z be the objective function (i.e., the function expressing the total cost we want to minimize).
 Notation
@@ -228,7 +171,6 @@ Notation
 – Si = Available supply from supply node i (units) ∀i∈S
 – Dj = Demand in demand node j (units) ∀j∈D
 – cij = Cost for sending one unit from supply node i to demand node j ($/unit) ∀i,j
-Supply Chain Design 133
 • Decision variables
 – xij = Flow on arc from supply node i to demand node j ∀i,j
 Mathematical model
@@ -251,7 +193,7 @@ demand constraints - the number of shipped units to a demand nodej from all supp
 least the demand at node j. Equations 3.4 are the non-negativity constraints - we do not allow negative
 volumes on any arc.
 The transshipment problem
-The transshipment problem is similar to the transportation problem. The diﬀerence is that we now
+The transshipment problem is similar to the transportation problem. The difference is that we now
 introduce a set of nodes that are neither supply nodes nor demand nodes, but transshipment nodes,
 meaning that over a period, anything that goes in to the transshipment node needs to come out.
 Notation
@@ -283,32 +225,31 @@ xij−
 ∑
 i
 xji = 0 ∀j /∈D,/∈S (3.8)
-134 MITx MicroMasters Program in SCM Key Concepts
 xij≥ 0 ∀ij (3.9)
-Note that we have the same formulation as for the transportation problem but with one diﬀerence:
+Note that we have the same formulation as for the transportation problem but with one difference:
 Equations 3.8 have been added. This constraint is the constraint forcing the transshipment node to be
-“empty” – the conservation of ﬂow constraint. Consider transshipment node j. The ﬁrst sum in the
+“empty” – the conservation of flow constraint. Consider transshipment node j. The first sum in the
 constraint is then the total number of units shipped to node j from all other nodes i. The second sum is
-the total number of units shipped from nodej to all other nodesi. The constraint says that this diﬀerence
+the total number of units shipped from nodej to all other nodesi. The constraint says that this difference
 must be zero.
 3.2.4 Facility Location Models
 In the previously introduce models we assumed that every facility in the network was used. We now relax
 that assumption. First, we review where to locate a facility, given that we need a single facility. We then
 investigate how many (and which) facilities to use, given a set of candidates. Lastly, we review how to
 incorporate explicit Level Of Service (LOS) constraints in our models, to identify certain cost and service
-trade-oﬀs in more detail.
-For the single facility case we look at two fundamentally diﬀerent ways of approaching the decision.
-The ﬁrst was by considering all points in the Euclidian space as potential candidates, and search for an
+trade-offs in more detail.
+For the single facility case we look at two fundamentally different ways of approaching the decision.
+The first was by considering all points in the Euclidian space as potential candidates, and search for an
 optimal location for a facility anywhere in this space. For this we use both the center-of-gravity- method
 and the Weber method. While the former has an intuitive appeal, the Weber method is more appropriate
 as it minimizes the actual transportation costs. The fundamental problem of relying on either of these
 methods, though, is that the optimal solution may end up in places that are not feasible for a wide
-number of reasons: lack of infrastructure (we could end up in a lake!), high construction costs, diﬃculty
-of getting permits etc. So while these methods are useful to get a ball park ﬁgure of where to locate the
+number of reasons: lack of infrastructure (we could end up in a lake!), high construction costs, difficulty
+of getting permits etc. So while these methods are useful to get a ball park figure of where to locate the
 facility, they provide only a region to target.
 We review another approach where, instead of considering the full Euclidian space, there is only a
-ﬁnite set of candidate locations. This problem can be approached using a Mixed Integer Linear Program
-(MILP), for which we can use a spreadsheet solver to ﬁnd the solution.
+finite set of candidate locations. This problem can be approached using a Mixed Integer Linear Program
+(MILP), for which we can use a spreadsheet solver to find the solution.
 MILP used to solve the single facility problem could be easily extended to investigate the case of
 multiple facilities. The model could then be used to answer both how many facilities to use, and which
 facilities to use.
@@ -317,10 +258,10 @@ were considered: the average weighted distance to customers, and the amount of d
 distance from a DC. We can specify bounds for these performance measures and include them in the
 MILP, to ensure that the optimal solution met the LOS requirements.
 Continuous single facility problem
-With a continuous single facility model, the aim is to ﬁnd one optimal point in the Euclidian space.
+With a continuous single facility model, the aim is to find one optimal point in the Euclidian space.
 Center of gravity . With a center of gravity model, we let the optimal point’s coordinates be given
 by weighted x and y coordinates, where the weight given to each node k is given by the demand in
-that node. For instance, if we want to ﬁnd the optimal location for a DC that will support 3 stores, the
+that node. For instance, if we want to find the optimal location for a DC that will support 3 stores, the
 optimal location will be given by the weighted coordinates of the stores, where each store’s coordinates
 are weighted by the demand at the store.
 x =
@@ -333,8 +274,7 @@ k∈K
 wkyk (3.11)
 Weber method. With the Weber method, instead of taking the weighted coordinates of the nodes, we
 try to minimize the weighted Euclidian distances between nodes k and location (x,y ). The weights are
-still given by the demand at the diﬀerent nodes.
-Supply Chain Design 135
+still given by the demand at the different nodes.
 Min z =
 ∑
 k∈K
@@ -346,15 +286,15 @@ wk
 (x−xk)2 + (y−yk)2 (3.12)
 Where z is optimized by changing the decision variables x and y.
 Network facility location problem
-When we have a number of candidate locations to choose between, we can create a network ﬂow model
-to ﬁnd which of the candidate locations provide the lowest cost. To do this, we formulate a Mixed Integer
+When we have a number of candidate locations to choose between, we can create a network flow model
+to find which of the candidate locations provide the lowest cost. To do this, we formulate a Mixed Integer
 Linear Program (MILP). Our problem is MILP because it has a linear objective function and linear
 constraints, but with some variables being integers instead of continuous. The integer values are the Yi’s
-that describe whether facility i is used (Yi = 1) or not (Yi = 0). Associated with each facility is a ﬁxed
+that describe whether facility i is used (Yi = 1) or not (Yi = 0). Associated with each facility is a fixed
 cost for the time period, fi. As with the transportation problem, the number of units shipped between
 two nodes are given by the xij’s.
 3.2.4.1 Notation
-• Mij : An arbitrary large number, speciﬁc to each arc (could be the same for all arcs)
+• Mij : An arbitrary large number, specific to each arc (could be the same for all arcs)
 • Pmin : Minimum number of facilities
 • Pmax : Maximum number of facilities
 With z being the objective function, the problem is formulated as follows:
@@ -391,11 +331,10 @@ variables will be the total number of facilities in use.
 Equations 3.19 and 3.20 are the non-negativity constraints for ( x’s) and the binary constraints (for
 the Y ’s).
 Note that for a single facility location problem, we let PMIN = PMAX = 1.
-136 MITx MicroMasters Program in SCM Key Concepts
 Multiple location selection model
 For this we use the same MILP as for the network facility location problem above. If we have a given
 number of locations we want to choose, we let PMIN = PMAX =k, where k is the number of locations.
-If we instead want to ﬁnd the optimal number of locations, we remove the constraints on the sum of Y .
+If we instead want to find the optimal number of locations, we remove the constraints on the sum of Y .
 Enforcing LOS
 To enforce LOS, we use the same basic setup as before, with the highlighted addition:
 • Si = Available supply at DC i (units) ∀i∈S
@@ -447,7 +386,6 @@ jDj
 )
 ≥MinPctIn 50 (3.28)
 xij≥ 0 ∀ij (3.29)
-Supply Chain Design 137
 Yi ={0, 1} ∀i (3.30)
 Note that two constraints were added 3.27 and 3.28.
 • A constraint on the average weighted distance: This constraint takes the (demand)-weighted average
@@ -463,81 +401,79 @@ then denotes whether or not a certain link is shorter ( aij = 1) than 50 miles o
 the constraint ensures that not “too many” customers are far away.
 It is also important to note that when we introduce service constraints, we may need to introduce
 binding constraints on the demand. If not, the model may try to enforce the service constraint by delivering
-more than demanded to certain demand nodes. This will however be artiﬁcial (and unsold) demand. To
+more than demanded to certain demand nodes. This will however be artificial (and unsold) demand. To
 ensure this is not the case, let the demand constraint be given by equality, instead of the computationally
-more eﬃcient inequality.
+more efficient inequality.
 3.2.5 Supply Chain Network Design
-We now combine the diﬀerent techniques learned into one model. We take network optimization and
+We now combine the different techniques learned into one model. We take network optimization and
 combine it with the facility location models together into what’s known as a supply chain network design
 model.
 Data collection: Transportation Data
-The ﬁrst step in building the model is to collect data. For transports, we want to know the costs and
+The first step in building the model is to collect data. For transports, we want to know the costs and
 capacities associated with both inbound and outbound transportation.
 With the Supply Chain Network Design Model, transportation costs are assumed linear in transport
-volumes. Clearly, this is not always the case: there may be minimum charges, ﬁxed costs, or many other
-types of ﬁxed and variable cost components. However, in order to build the model, a linear approximation
-must be found. This could be done in several diﬀerent ways:
+volumes. Clearly, this is not always the case: there may be minimum charges, fixed costs, or many other
+types of fixed and variable cost components. However, in order to build the model, a linear approximation
+must be found. This could be done in several different ways:
 • Take average transport cost from historical data
 • Use list prices
-• Use regression analysis to ﬁnd the costs
+• Use regression analysis to find the costs
 • Use benchmark rates from other sources
 Whichever way you use to uncover these costs, you need to be aware of how your linear approximation
-aﬀects the reliability of the model.
+affects the reliability of the model.
 Data collection: Facility Data
-The Supply Chain Network Design Model allows facility costs to be both ﬁxed and variable in volume.
-There will always be people arguing that “all costs are ﬁxed” or “all costs are variable”, but what you
-need to consider is how ﬁxed and variable cost components aﬀect the solution your model searches for .
+The Supply Chain Network Design Model allows facility costs to be both fixed and variable in volume.
+There will always be people arguing that “all costs are fixed” or “all costs are variable”, but what you
+need to consider is how fixed and variable cost components affect the solution your model searches for .
 Fixed costs will make it expensive to have many facilities, so the model will try to reduce the number
-138 MITx MicroMasters Program in SCM Key Concepts
 of facilities. Variable costs will make it costly to have long distances, and the model will therefore try to
 increase the number of facilities (or at least reduce average distances).
-If facilities are owned and/or operated by a third-party, ﬁnding the ﬁxed and variable costs is normally
+If facilities are owned and/or operated by a third-party, finding the fixed and variable costs is normally
 straight-forward – they are given in the contract. If a facility is operated in-house, other techniques have
 to be used. Among them:
-• Activity-based costing to ﬁnd variable costs
-• Regression analysis over volume (note that the intercept is the ﬁxed cost component)
+• Activity-based costing to find variable costs
+• Regression analysis over volume (note that the intercept is the fixed cost component)
 For facilities we also need to understand the capacity. The capacity is the maximum throughput over
-a speciﬁed unit of time (e.g. a week). Note that this can be very diﬃcult to measure in practice, since
+a specified unit of time (e.g. a week). Note that this can be very difficult to measure in practice, since
 shifts can be added, while capacity also depends on planning and scheduling.
 Network Design Baselines
 You should be careful in which baseline you use for comparing your results. Three baselines are important
 to consider:
-• Baseline 1 – Actual costs: what cost does the model give us if we use the actual, current ﬂows? We
+• Baseline 1 – Actual costs: what cost does the model give us if we use the actual, current flows? We
 want to know how well the model matches reality. You use this baseline to calibrate the model.
 • Baseline 2 – Adhere to policy: there may be a policy in place that you are simply not adhering to in
 your operations. With this baseline you want to know how other solutions compare to what you ought
 to be doing according to the policy in place.
 • Baseline 3 – Optimal DC assignment: if you were to use the optimal assignment for the DC – what
-would the solution look like? With this baseline you can isolate the eﬀect of number of DCs since you
+would the solution look like? With this baseline you can isolate the effect of number of DCs since you
 optimize allocation.
 It is important to keep in mind that you compare design changes to the right baseline. For instance,
-if you use the model to ﬁgure out how much you could reduce costs by reducing the number of DCs, you
+if you use the model to figure out how much you could reduce costs by reducing the number of DCs, you
 need to be aware the model will tell you this while, at the same time, optimizing the allocation given the
 number of DCs. Hence you should compare your solution - the “optimal number of DCs under optimal
 allocation” - to Baseline 3, where you have the “current number of DCs under optimal allocation”. Why?
 Because otherwise you compare solutions that have optimal allocations to solutions that do not have
-optimal allocations – you do not isolate the eﬀect of changing the number of DCs.
+optimal allocations – you do not isolate the effect of changing the number of DCs.
 Running Scenarios
-One of the key beneﬁts of the Supply Chain Network Design Model is that it is easy and fast to run
-diﬀerent scenarios. Scenarios can investigate uncertain parameters (sensitivity analysis) or explore how
-diﬀerent constraints aﬀect the optimal solution.
-While this is a great beneﬁt, it is important not to get “analysis paralysis” – just because it is possible
+One of the key benefits of the Supply Chain Network Design Model is that it is easy and fast to run
+different scenarios. Scenarios can investigate uncertain parameters (sensitivity analysis) or explore how
+different constraints affect the optimal solution.
+While this is a great benefit, it is important not to get “analysis paralysis” – just because it is possible
 to run many scenarios does not mean it is the way to go. It is important to understand which scenarios
 are relevant and, most importantly, how to interpret the results. For instance, which baseline should be
 used for comparing the results of the scenario?
 3.2.6 Advanced Supply Chain Network Design Topics
-There are many advanced supply chain network design topics and we introduce several here. The ﬁrst is
+There are many advanced supply chain network design topics and we introduce several here. The first is
 robust optimization using simulation along with optimization. This is a relatively simple and quick way
 to get a handle on the impact of the variability of demand (or other factors) on facility selection. We also
-cover multi-commodity ﬂow problems, which signiﬁcantly increases both the complexity and size of the
-models. While more complicated, multi-commodity ﬂow models are still very similar to the transshipment
-Supply Chain Design 139
+cover multi-commodity flow problems, which significantly increases both the complexity and size of the
+models. While more complicated, multi-commodity flow models are still very similar to the transshipment
 and facility location models explored previously. The concept of Flexibility was introduced following the
 approach developed by Jordan and Graves (1995). Forming chains between plants increases the overall
-ﬂexibility at a much lower cost than if we provided full ﬂexibility. The ﬁnal expansion of the model covers
+flexibility at a much lower cost than if we provided full flexibility. The final expansion of the model covers
 multiple time periods. This is meant for more tactical planning periods – but again, the models were very
 similar to the simpler single commodity transshipment models with the addition of inventory balance
-equations. The ﬁnal section reviews how pipeline inventory, safety stock, and cycle stock can be included
+equations. The final section reviews how pipeline inventory, safety stock, and cycle stock can be included
 in strategic network design models.
 Robustness – demand uncertainty
 Supply Chain Network Design (SCND) models are deterministic. They assume that each input value is
@@ -560,15 +496,15 @@ After each new simulation of input values, the model is run and the results are 
 the resulting runs can help determine which facilities, for example, are more likely to stay open under
 a variety of demand outcomes. This is not an exhaustive method – simply one approach to gauge the
 robustness of the design.
-Multi-commodity ﬂow model
-Multi-commodity ﬂow (MCF) models introduce multiple products. Each product will have its own de-
+Multi-commodity flow model
+Multi-commodity flow (MCF) models introduce multiple products. Each product will have its own de-
 mand, supply and other characteristics. If each product is independent and there are no interactions,
 then we can simply model each commodity individually. Whenever there is a shared resource (common
-capacity constraint, for example), then a multi-commodity ﬂow model is needed.
+capacity constraint, for example), then a multi-commodity flow model is needed.
 The formulation is shown below. The primary addition to the original formulation is the additional
-subscript of k for the diﬀerent commodities for the costs, decision variables, demand, and supply. We
+subscript of k for the different commodities for the costs, decision variables, demand, and supply. We
 added, in this formulation, two types of supply capacity constraints: one that is location-commodity
-speciﬁc and one that is location speciﬁc for all commodities there. These are quite common in practice.
+specific and one that is location specific for all commodities there. These are quite common in practice.
 Min z =
 ∑
 i
@@ -578,7 +514,6 @@ j
 k
 cijkxijk (3.31)
 s.t.
-140 MITx MicroMasters Program in SCM Key Concepts
 ∑
 j
 xijk≤Sik ∀i∈S,k∈K (3.32)
@@ -603,30 +538,30 @@ k
 xijk≤CAPj ∀j /∈D,/∈S (3.36)
 xijk≥ 0 ∀ijk (3.37)
 Solving the MCF models are the same as the single commodity models – they are simply larger and
-more diﬃcult to interpret. The multiple layers of constraints make the calculation of individual costs
-diﬃcult – this is covered in activity based costing and managerial accounting.
-Chain approach to ﬂexibility
+more difficult to interpret. The multiple layers of constraints make the calculation of individual costs
+difficult – this is covered in activity based costing and managerial accounting.
+Chain approach to flexibility
 Supply chain network design (SCND) models do not consider variability of demand. A MILP solution,
 while optimal, can often be quite fragile. This means, that if any of the input values change, the total
-costs could change dramatically. We might want to ﬁnd a SCND that is more ﬂexible in its ability to
+costs could change dramatically. We might want to find a SCND that is more flexible in its ability to
 handle changes in demand – in particular sudden surges or peaks in demand for certain products or
 commodities.
-Full ﬂexibility can be achieved by forcing each plant to manufacture every product. This provides
-complete demand ﬂexibility as capacity can be diverted from any plant to handle surges of a certain
+Full flexibility can be achieved by forcing each plant to manufacture every product. This provides
+complete demand flexibility as capacity can be diverted from any plant to handle surges of a certain
 product. This is very expensive, however. The opposite extreme is to create dedicated plants that only
 manufacture a single product. Dedicated plants are able to leverage economies of scale and tend to
-increase the level of expertise, however, they also increase risk exposure and limit ﬂexibility to respond to
-surges. A clever design called chaining allows manufacturing networks to achieve most of the ﬂexibility
-allowed in fully ﬂexible designs, but at a fraction of the cost.
+increase the level of expertise, however, they also increase risk exposure and limit flexibility to respond to
+surges. A clever design called chaining allows manufacturing networks to achieve most of the flexibility
+allowed in fully flexible designs, but at a fraction of the cost.
 Multiple time period models
 Up to this point, each model assumed a single bucket of time. We have expanded this now to consider
 multiple time periods. This is more common with tactical time frame (weeks to months) models.
 To model multiple time periods, we need to introduce the idea of the inventory level at a location, j,
 at time t, Ijt. This is the quantity available at location j at the end of time t. This allows us to charge
 an inventory holding charge (h) for each time period.
-We also need to include an inventory balance constraint – similar to the conservation of ﬂow constraints
+We also need to include an inventory balance constraint – similar to the conservation of flow constraints
 in transshipment models. This is the 3rd constraint in the formulation below, which states, the sum of all
-ﬂow into node j during time t, minus the sum of all ﬂow out of node j during time t, plus the inventory
+flow into node j during time t, minus the sum of all flow out of node j during time t, plus the inventory
 available at node j at the end of time t-1, minus the inventory available at node j at the end of time t is
 zero.
 Min z =
@@ -646,7 +581,6 @@ s.t.
 ∑
 j
 xijt≤Sit ∀i∈S,t∈T (3.39)
-Supply Chain Design 141
 ∑
 i
 xijt≥Djt ∀j∈D,t∈T (3.40)
@@ -661,15 +595,15 @@ xijt≥ 0 ∀ijt (3.43)
 Inventory considerations
 Thus far, inventory has not been considered in the design of the supply chains. Surprisingly, it is very
 common to ignore inventory considerations when designing a supply chain. This is due to a couple
-diﬀerent reasons. First, inventory policies are based on probabilistic models that do not combine well
+different reasons. First, inventory policies are based on probabilistic models that do not combine well
 with deterministic MILP optimization models. Second, most of the key determinants of inventory levels
 (demand variability, lead time, service level, order size, etc.) are only known tactically not strategically.
 Finally, inventory balance equations, which would be needed to model inventory costs, cannot be used to
 track and optimize strategic inventory decisions that are made at yearlong increments.
-Instead, we oﬀer an approach that leverages the non-linear empirical relationship between inventory
-and throughput. It has been found that average inventory for a speciﬁed time period is equal to: αTβ
-whereT is the throughput in items or value, and α andβ are estimated coeﬃcients. The β parameter is
-typically between 0.5 and 0.8. One can simply add this quantity to diﬀerent runs as a post-hoc analysis
+Instead, we offer an approach that leverages the non-linear empirical relationship between inventory
+and throughput. It has been found that average inventory for a specified time period is equal to: αTβ
+whereT is the throughput in items or value, and α andβ are estimated coefficients. The β parameter is
+typically between 0.5 and 0.8. One can simply add this quantity to different runs as a post-hoc analysis
 or incorporate it into the model with binary variables.
 3.2.7 Practical Considerations in Supply Chain Network Design
 While SCND problems are highly mathematical and depend on optimization, the majority of the problems
@@ -677,44 +611,43 @@ that occur in practice have nothing to do with the actual models. It is usually 
 involved: the objectives were not agreed upon or clearly stated, the scope kept changing, the wrong
 problem was solved, etc.
 It is important to realize that SCND is just one problem in a larger set of supply chain problems that
-need to be solved. As shown in the ﬁgure below, SCND is a strategic decision that is conducted with
+need to be solved. As shown in the figure below, SCND is a strategic decision that is conducted with
 multiple year time horizons and has a very high potential impact on Return on Assets or Investment. The
 transactional and tactical/operational problems are conducted more frequently but have a lower potential
 impact. All of these lower level solutions should align with the overall supply chain strategy and network
 design.
 FIGURE 3.3: Fitting SCND into the bigger picture
 Source: Chainalytics
-142 MITx MicroMasters Program in SCM Key Concepts
 Know Thy Project – It is important that you have a solid understanding of not only the physical
-supply chain (sources, facilities, products, ﬂows, etc.), but also the people involved. You need to know
+supply chain (sources, facilities, products, flows, etc.), but also the people involved. You need to know
 the stakeholders but also the ultimate decision makers. There is an excellent article in the Harvard
-Business Review called “Who has the D?” that discusses how the decision making process in a ﬁrm
+Business Review called “Who has the D?” that discusses how the decision making process in a firm
 can be improved. It is important that you know “who has the D” – that is, the ultimate decision – for
 your project. Scoping meetings with all stakeholders are very critical here to establish the boundaries,
 objectives, and other rules of the road for a large project like a SCND.
 Focus on the Problem – There is always tremendous pressure in a SCND engagement from the
-diﬀerent stakeholders to explore every exception and essentially boil the ocean to explore every possible
+different stakeholders to explore every exception and essentially boil the ocean to explore every possible
 solution. This is impossible to do in reality. So, you need to know how to separate the important aspects
 from the trivial using segmentation and data aggregation as much as possible. Identifying the fewest
 possible number of products to model is critical – be sure to think of supply chain distinctions for products
 – not just marketing distinctions. Many managers (and your future stakeholders) will not understand that
-the model is a caricature of the supply chain, not a high-deﬁnition photograph! You have a variety of
-diﬀerent analysis tools and techniques to address questions of varying importance: from large-scale MILP
+the model is a caricature of the supply chain, not a high-definition photograph! You have a variety of
+different analysis tools and techniques to address questions of varying importance: from large-scale MILP
 models to Side Scenario Runs to Quick Heuristic Analysis. Use them appropriately – if everything is
 equally important, then nothing is important!
 Be Experimental – There are two aspects to this suggestion: building the model and using the
 model. When building the SCND model itself, we recommend using a spiral method (start small, test
 it, evaluate, adapt it, and repeat) versus the traditional waterfall method (collect all input, develop
 complete requirements, build the full model, test the complete model, release to users). By creating the
-model iteratively, you build conﬁdence in it, identify potential outliers, keep stakeholders engaged, and
+model iteratively, you build confidence in it, identify potential outliers, keep stakeholders engaged, and
 might end up with an early and unexpected solution. When running the model, we recommend you try
-as many diﬀerent scenarios and options as possible. This is why you go through the pain of creating
+as many different scenarios and options as possible. This is why you go through the pain of creating
 these complex models! Running multiple scenarios allows you to: test and cost out competing ideas and
-strategies, understand internal trade-oﬀs within the network, uncover opportunities for serendipitous
+strategies, understand internal trade-offs within the network, uncover opportunities for serendipitous
 discovery, and better communicate with stakeholders.
-Separate the Math from the Decision –The ﬁnal suggestion deals with understanding the virtues
+Separate the Math from the Decision –The final suggestion deals with understanding the virtues
 of a mathematical model versus humans. Mathematical models are exceptionally good at making trade-
-oﬀs between accurately quantiﬁed options. However, models will NEVER consider all factors and cannot
+offs between accurately quantified options. However, models will NEVER consider all factors and cannot
 fully represent reality. Humans are needed to determine what aspects are important and to provide the
 options and input for the model to consider. Also, because optimization models will do anything for a
 dollar (penny, euro, ruble, peso, or any other currency) the results should be scrutinized. The absolute
@@ -727,13 +660,12 @@ Learning Objectives
 • Review how formulate the transportation problem and the transshipment problem
 • Learn how to formulate the continuous single facility problem
 • Formulate and solve network facility location problems (discrete candidate selection)
-• Use network ﬂow models to evaluate the number of facilities in a network
+• Use network flow models to evaluate the number of facilities in a network
 • Incorporate Level-Of-Service (LOS) constraints in the network models
 • Identify how to combine previous models to a Supply Chain Network Design Model
 • Construct relevant baselines for the analysis
 • Perform robust optimization using supply network models
-Supply Chain Design 143
-• Construct multi-commodity ﬂow models
+• Construct multi-commodity flow models
 • Review how to expand the model into several time periods
 • Understand when to incorporate inventory costs into the network models
 • Gain an appreciation and understanding of practical considerations when conducting SCND engage-
@@ -744,16 +676,16 @@ Edition, FT Press, 2013
 • Chopra, Sunil and Peter Meindl, Supply Chain Management, Strategy, Planning, and Operation, 5th
 edition, Pearson Prentice Hall, 2012.
 • Ellet, Steve, Conversations and Presentations, Chainalytics, 2005-2015.
-• Jordan and Graves (1995), “Principles on the Beneﬁts of Manufacturing Process Flexibility,” Manage-
+• Jordan and Graves (1995), “Principles on the Benefits of Manufacturing Process Flexibility,” Manage-
 ment Science, 41, (4), p 577-594.
 • Rogers, Paul and Marcia Blenko, “Who Has the D?: How Clear Decision Roles Enhance Organizational
 Performance,” Harvard Business Review, January 2006.
 • Shapiro, Jeremy. Modeling the Supply Chain, 2nd Edition, Duxbury Applied Series, 2007.
 3.3 Production Planning
 3.3.1 Summary
-We now review the information ﬂow within a ﬁrm, and the coordination and planning of production.
+We now review the information flow within a firm, and the coordination and planning of production.
 What is being coordinated? Well, what we want to achieve is to match the demand of our customers with
-the supply from our ﬁrm, which requires components from our suppliers. For this match to be possible,
+the supply from our firm, which requires components from our suppliers. For this match to be possible,
 information about future demand should be used as an input of the master production schedule, which
 is then used to determine the materials requirements.
 3.3.2 Key Concepts
@@ -763,46 +695,44 @@ The MPS is the basic communication between the market and manufacturing. It is a
 duction – not demand. It is a plan to meet the forecasted demand, not a forecast of demand. There are
 several manufacturing or production strategies that determine how the MPS can look like:
 • Level production strategy. This is a strategy aiming at even production levels over time. The major
-beneﬁt is a smooth and stable operations which reduces switching costs and minimizes the need for
-outsourcing, overtime, or other ﬂexibility measures. The downside is that it leads to heavy inventory
+benefit is a smooth and stable operations which reduces switching costs and minimizes the need for
+outsourcing, overtime, or other flexibility measures. The downside is that it leads to heavy inventory
 build-up when demand is low, and possible shortage when demand is high.
 t =Pt = (
 ∑
 Ft−I0)/n
-144 MITx MicroMasters Program in SCM Key Concepts
 • Chase demand strategy. With this strategy the aim is to let production quantities follow demand
-as closely as possible, so that more is produced in times of high demand and vice versa. The beneﬁt of
+as closely as possible, so that more is produced in times of high demand and vice versa. The benefit of
 this is that inventory is kept at a minimum, and so is obsolescence. On the other hand, it tends to lead
 to large swings in production quantities and labor needs.
 t =Pt =Ft
-• Hybrid strategy. A hybrid strategy tries to combine the beneﬁts of the level production strategy and
+• Hybrid strategy. A hybrid strategy tries to combine the benefits of the level production strategy and
 the chase demand strategy, by balancing the costs associated with the strategies. This can be done in
-several ways. Below we report in more detail how this is handled when there is a ﬁxed planning horizon.
+several ways. Below we report in more detail how this is handled when there is a fixed planning horizon.
 Fixed planning horizon (FPH) problem
-The FPH problem considers the problem of ﬁnding the lowest cost production plan over a ﬁxed horizon
+The FPH problem considers the problem of finding the lowest cost production plan over a fixed horizon
 with multiple time periods. Demand is considered deterministic but can vary between periods.
 FIGURE 3.4: Information given to solve a production plan
 There are several ways to solve the FPH problem:
 Simple heuristics.
 These are simple decision rules, for instance that you run only one production run (One time run heuris-
 tic), that you produce in every period exactly what is demanded (lot for lot), or that you produce either
-a ﬁxed “optimal” quantity or according to ﬁxed “optimal” intervals. These heuristics are simple making
+a fixed “optimal” quantity or according to fixed “optimal” intervals. These heuristics are simple making
 decision-making fast, although the results are not necessarily particularly good.
 Specialized heuristics.
 There are several more sophisticated heuristic developed for the FHP, including the Silver-Meal (SM)
 heuristic, the least unit cost heuristic and the part-period balancing heuristic. In this course we focus on
-the SM heuristic. This heuristic searches through the periods to ﬁnd the lowest cost per period. It ﬁrst
+the SM heuristic. This heuristic searches through the periods to find the lowest cost per period. It first
 tests if it is less costly (per period) to produce next period’s demand in this period. If it is, it sees also if it
-Supply Chain Design 145
 is less costly to include the period after next period in this period’s production. It continues this process
 until the cost per period increases. When it does, say in period k, it starts over by considering production
 in period k, and sees if the cost per period is reduced by including also the demand from k + 1 in the
 production of period k. It continues like this until the end of the horizon. While more sophisticated, it is
-not guaranteed to ﬁnd a very good solution.
+not guaranteed to find a very good solution.
 Optimal methods.
 The Wagner-Whitin algorithm provides the optimal solution by relying on dynamic programming. This
-is an eﬃcient method for large problems. For smaller problems, a spreadsheet MILP model is a quick
-way to ﬁnd the optimal solution.
+is an efficient method for large problems. For smaller problems, a spreadsheet MILP model is a quick
+way to find the optimal solution.
 In summary - there are many methods available. Heuristics are fast and easy to implement, but are
 not always good in the sense that they provide a near-optimal solution. Specialty heuristics are more
 sophisticated, a bit harder to set up, but tend to provide better “real-world’ results. Optimal methods
@@ -832,7 +762,6 @@ Example: See Table 3.2
 Fixed order quantity (FOQ) – Order
 Q∗ = EOQ if Ft >IOH (Q is Stable, T varies)
 Example: See Table 3.3
-146 MITx MicroMasters Program in SCM Key Concepts
 Month Forecast Production IOH Holding Cost Set-Up Cost Total Cost
 1 200 200 0 $ - $ 500 $500
 2 150 150 0 $ - $ 500 $500
@@ -864,8 +793,8 @@ Month Forecast Production IOH Holding Cost Set-Up Cost Total Cost
 Total 2,000 2,000 1,900 $ 1,900 $ 2,500 $ 4,400
 TABLE 3.3: Fixed order quantity production plan
 Review of EOQ
-The Economic Order Quantity or EOQ is the most inﬂuential and widely used inventory model in
-existence. Essentially, the EOQ is a trade-oﬀ between ﬁxed (ordering) and variable (holding) costs. The
+The Economic Order Quantity or EOQ is the most influential and widely used inventory model in
+existence. Essentially, the EOQ is a trade-off between fixed (ordering) and variable (holding) costs. The
 minimum of the Total Cost equation is the EOQ or Q∗. The Inventory Replenishment Policy becomes
 “OrderQ∗ everyT∗ time periods” which under our assumptions is the same as “OrderQ∗ when Inventory
 Position (IP)=0”.
@@ -873,11 +802,10 @@ EOQ Model
 • Assumptions
 – Demand is uniform and deterministic.
 – Lead time is instantaneous (0) – although this is not restrictive at all since the lead time, L, does
-not inﬂuence the Order Size, Q.
+not influence the Order Size, Q.
 – Total amount ordered is received.
 • Inventory Replenishment Policy
 – Order Q∗ units every T∗ time periods.
-Supply Chain Design 147
 – Order Q∗ units when inventory on hand (IOH) is zero.
 • Essentially, theQ∗ is the Cycle Stock for each replenishment cycle. It is the expected demand for that
 amount of time between order deliveries.
@@ -889,7 +817,7 @@ Notation
 • T : Order Cycle Time (time/order)
 • T∗ : Optimal Time between Replenishments (time/order)
 Optimal Order Quantity (Q∗)
-Recall that this is the ﬁrst order condition of the TRC equation – where it is a global minimum.
+Recall that this is the first order condition of the TRC equation – where it is a global minimum.
 Q∗ =
 √
 2ctD
@@ -919,11 +847,10 @@ Month Forecast Production IOH Holding Cost Set-Up Cost Total Cost
 12 250 0 0 $ - $ - $ -
 Total 2,000 2,000 2,000 $ 2,000 $ 2,000 $ 4,000
 TABLE 3.4: Periodic order quantity production plan
-148 MITx MicroMasters Program in SCM Key Concepts
 Optimal method
 The FPH can be set up as a MILP problem, similar to the problems discussed previously. With a MILP
 formulation, the objective is to minimize the total costs, which consist of setup costs for every production
-run/batch and holding costs from ﬁnished goods inventory. Index denotes time period.
+run/batch and holding costs from finished goods inventory. Index denotes time period.
 We let Zt be a binary decision variable indicating production in period t, and Qt be the decision
 variable determining production quantity in period t. We thus have that:
 Min z =
@@ -943,20 +870,20 @@ Zt={0,1} ∀t∈T
 where csetup is the setup cost, h is the holding cost per unit and time period, It is inventory level at
 the end of period t, Dt is the (forecasted) demand in period t, M is a large number, and CAPt is the
 production capacity in period t.
-In the above formulation, the initial inventory is zero. As before, we have a conservation of ﬂow
-constraint as well as a linking constraint. The conservation of ﬂow states that the diﬀerence in inven-
-tory between the end and the start of the period must be equal to the diﬀerence between demand and
+In the above formulation, the initial inventory is zero. As before, we have a conservation of flow
+constraint as well as a linking constraint. The conservation of flow states that the difference in inven-
+tory between the end and the start of the period must be equal to the difference between demand and
 production quantity in that period. The linking constraint forces Q to be zero if Z is zero in the same
 period.
 3.3.4 Material and Distribution Requirements Planning
 Available to Promise (ATP)
 The portion of existing inventory and/or planned production that is not committed or consumed is
 considered to be Available to Promise. This means that these units can still be sold to customers.
-There are two slightly diﬀerent ways to calculate this:
+There are two slightly different ways to calculate this:
 • Discrete – meaning that each production cycle is planning independently. Inventory from one produc-
 tion run is not carried over to the next run.
 • Cumulative – meaning that inventory is carried over between periods. That is, inventory from the
-ﬁrst production run which is unsold at the start of the second production run can still be sold during
+first production run which is unsold at the start of the second production run can still be sold during
 and after the second production run.
 Time Fencing is often used to stabilize production planning (demand and planning)
 • if t< Demand Fence then use only committed orders for MPS
@@ -967,8 +894,7 @@ Material Requirements Planning (MRP) systems ensure that all components and part
 end item are on hand when needed. These systems are intended to answer questions about what should
 be ordered or manufactured, how much, and when. These questions are answered by feeding the MRP
 with the MPS, inventory records, and the Bill of Materials (see below).
-Supply Chain Design 149
-• Beneﬁts of MRP
+• Benefits of MRP
 – Leads to lower inventory levels
 – Fewer stock outs
 – Less expediting
@@ -986,59 +912,57 @@ completed product at the top, and all parts and components being the roots. One 
 is shown below:
 FIGURE 3.5: Bill of materials
 MRP coordination
-There are diﬀerent ways to coordinate the MRP between a ﬁrm and its (independent) suppliers. In this
-lesson we went through three diﬀerent approaches:
+There are different ways to coordinate the MRP between a firm and its (independent) suppliers. In this
+lesson we went through three different approaches:
 • Simple MRP rules. This means using simple rules also for coordination with the supplier. For in-
 stance, if there is a lead time ofx weeks to get a component from the supplier, order release is scheduled
-x weeks before the units are needed for the assembly at the ﬁrm. The supplier uses this as the demand
+x weeks before the units are needed for the assembly at the firm. The supplier uses this as the demand
 input for its own production planning.
-• Sequential optimization. With this approach, the ﬁrm optimizes its production ﬁrst, and then feeds
+• Sequential optimization. With this approach, the firm optimizes its production first, and then feeds
 the requirements to the supplier who optimizes its production.
-• Simultaneous optimization. With this approach, the ﬁrm and the supplier’s production are opti-
-mized simultaneously. This means that ﬁrm’s or the suppliers’ costs may increase, while total costs will
+• Simultaneous optimization. With this approach, the firm and the supplier’s production are opti-
+mized simultaneously. This means that firm’s or the suppliers’ costs may increase, while total costs will
 decrease.
-150 MITx MicroMasters Program in SCM Key Concepts
 Distribution Requirements Planning (DRP)
 DRP can be thought of as the application of the MRP principles to distribution inventories. It is used for
 inventory control in a distribution environment with many products, many stockage locations, and mul-
 tiple echelons. In practice, it is an algorithm for scheduling and stocking, however, it does not determine
 lot size or safety stock.
 Learning Objectives
-• Identify how coordinate the internal information ﬂow of a ﬁrm
+• Identify how coordinate the internal information flow of a firm
 • Learn how to use demand information to create the master production schedule (MPS)
-• How to solve the ﬁxed planning horizon problem (FPH) using several diﬀerent algorithms
+• How to solve the fixed planning horizon problem (FPH) using several different algorithms
 • Determine available to promise (ATP)
 • Understand how material requirements planning (MRP) and distribution requirements planning (DRP)
 work
 • Understand the bill of materials (BOM)
-• Understand beneﬁts and limitations of MRP and DRP
+• Understand benefits and limitations of MRP and DRP
 References
 • Jacobs, F. R., Berry, W. L., Whybark, D. C., Vollman, T. E. (2011). Manufacturing planning and
 control for supply chain management. McGraw-Hill.
 3.4 Connecting Sales to Operations
 3.4.1 Summary
-We review how the Sales & Operations Planning (S&OP) process within a ﬁrm can be used to ﬁnd
+We review how the Sales & Operations Planning (S&OP) process within a firm can be used to find
 the right balance between operational capacity and demand. The aggregate planning model allows a
-ﬁrm to set various operational and sales levers in order to determine the best trade-oﬀs to make to
-maximize proﬁtability. The primary levers on the operational side are: workforce, outsourced production,
-inventory, internal production levels, backlogs, and overtime hours. There might be more levers for speciﬁc
+firm to set various operational and sales levers in order to determine the best trade-offs to make to
+maximize profitability. The primary levers on the operational side are: workforce, outsourced production,
+inventory, internal production levels, backlogs, and overtime hours. There might be more levers for specific
 situations, of course. On the demand side, we discussed how sales changes and promotions can be used
 to shape demand and how the aggregate planning model can help determine the operational impact. The
-optimization model can also be used to test out diﬀerent strategies and potential policies.
+optimization model can also be used to test out different strategies and potential policies.
 3.4.2 Key Concepts
 3.4.3 Aggregate Planning Model
 The aggregate planning model is used to plan for the mid-term 3-18 month time frame. It takes as input
-the proposed demand as well as starting inventory, workforce, and costs for diﬀerent options. The longer
+the proposed demand as well as starting inventory, workforce, and costs for different options. The longer
 horizon planning involves more strategic decisions – such as network design etc. – while the closer time
 frame is planned using the Master Production Schedule. The planning unit for the aggregate planning
-model is typically not the individual SKU, but rather a family or related SKUs or general ﬂow unit –
+model is typically not the individual SKU, but rather a family or related SKUs or general flow unit –
 such as tons, or composite units.
-The model is used to ﬁnd the best mix of Production, Inventory, Workforce, Outsourcing, and Capacity
-Levels in order to maximize the ﬁrm’s proﬁt over the 3-18 month planning horizon given the forecasted
+The model is used to find the best mix of Production, Inventory, Workforce, Outsourcing, and Capacity
+Levels in order to maximize the firm’s profit over the 3-18 month planning horizon given the forecasted
 demand over the planning horizon by changing:
-Supply Chain Design 151
 • Production Rate – how much to produce each month
-• Workforce – how many employees to hire or lay oﬀ each month
+• Workforce – how many employees to hire or lay off each month
 • Overtime – how many overtime hours to plan for each month
 • Machine capacity – how much capacity should be allocated to production lines each month
 • Outsourcing – how many items to produce using contract or outsourced manufacturing each month
@@ -1066,7 +990,7 @@ Ot−MWt≤ 0 ∀t∈T
 Wt,Ht,Ft,Ot,It,Bt,Pt,Ct≥ 0 ∀t
 Decision variables
 Ht = Number of employees to hire at start of month t ∀t
-Ft = Number of employees to ﬁre at start of month t ∀t
+Ft = Number of employees to fire at start of month t ∀t
 Wt = Number of employees in month t ∀t
 It = Number of units of inventory on hand in month t ∀t
 Ot = Number of overtime hours to work in month t ∀t
@@ -1077,7 +1001,6 @@ Input Data
 W0 = Size of workforce at start of planning period (month 0)
 WT = Size of workforce at end of planning period (month T)
 I0 = Amount of inventory at start of planning period (month 0)
-152 MITx MicroMasters Program in SCM Key Concepts
 IT = Amount of inventory at end of planning period (month T)
 B0 = Amount of backlog at start of planning period (month 0)
 Bt = Amount of backlog at end of planning period (month T)
@@ -1085,7 +1008,7 @@ Dt = Demand in month t (units)∀T
 ct = Cost of raw material per ( $/unit)
 cI = Cost of holding inventory ( $/unit/month)
 CB = Cost of a backorder ( $/unit/month)
-cF = Cost of ﬁring one employee ( $/person)
+cF = Cost of firing one employee ( $/person)
 cH = Cost of hiring one employee ( $/person)
 cW = Cost of employee ( $/person/month)
 c0 = Cost of overtime ( $/hour)
@@ -1095,10 +1018,10 @@ H = Number of hours each employee can work per month (hours/person)
 M = Maximum hours of overtime allowed per employee per month (hours/person)
 Aggregate Planning Model Levers
 The aggregate planning model is mainly used to determine the best mix or both operational and sales
-based strategies. The operational levers control the supply while the sales levers inﬂuence the demand. On
+based strategies. The operational levers control the supply while the sales levers influence the demand. On
 the operational side, we can manage supply by controlling inventory (common components and pre-build
-Inventory) and/or capacity (workforce ﬂexibility, seasonal workforce, outsourcing production, or product
-ﬂexibility).
+Inventory) and/or capacity (workforce flexibility, seasonal workforce, outsourcing production, or product
+flexibility).
 Managing demand is a little less direct. The objectives on the demand side are to (1) Grow market, (2)
 Steal market share from competitors, or (3) Shift buying patterns of the customers. The levers available
 are:
@@ -1125,24 +1048,23 @@ Recall that the elasticity will almost always be negative. That is, a negative c
 will lead to higher demand. The elasticity of demand for many goods can range from -0.01 to as high
 as -10 or more. The way to interpret an elasticity of, say, -2.5 is that for every 1% change in price, the
 demand will increase by 2.5%.
-Supply Chain Design 153
 3.4.4 Monthly Sales & Operations Planning Process
-There are many ﬂavors of S&OP out there. Most feature a set of structured meetings where speciﬁc tasks
-are performed by diﬀerent functions within the ﬁrm and eventually are presented with recommendations
-to senior leadership to make a ﬁnal decision. We described a ﬁve-step process as follows:
+There are many flavors of S&OP out there. Most feature a set of structured meetings where specific tasks
+are performed by different functions within the firm and eventually are presented with recommendations
+to senior leadership to make a final decision. We described a five-step process as follows:
 Step 1: Data Gathering – the core data on the most recent month’s demand, inventory, production
 levels, sales, etc. is gathered, cleaned, and made ready to distribute. This should be accomplished in the
-ﬁrst few days of a new month.
+first few days of a new month.
 Step 2: Demand Planning – The demand planning team from the sales/marketing organization develops
-the initial set of forecasts. These include their expert opinions or modiﬁcations to any numeric forecasts
+the initial set of forecasts. These include their expert opinions or modifications to any numeric forecasts
 that were made.
 Step 3: Supply Planning – The supply planning/operations team receives the initial forecast and the
-most recent set of data and develop a resource plan to meet the proposed demand forecast. Any conﬂicts
+most recent set of data and develop a resource plan to meet the proposed demand forecast. Any conflicts
 or restrictions are noted.
 Step 4: Pre-Meeting – The supply and demand plans are brought together and compared. This larger
-group makes suggestions and recommendations. Any conﬂicts that cannot be solved at this level are
-identiﬁed.
-Step 5: Executive Meeting – The senior team makes decisions on any outstanding conﬂicts – they
+group makes suggestions and recommendations. Any conflicts that cannot be solved at this level are
+identified.
+Step 5: Executive Meeting – The senior team makes decisions on any outstanding conflicts – they
 have a go no go decision authority.
 3.4.5 Distribution and Channel Strategies
 In this lesson we cover distribution and channel strategies. A distribution channel is the path by which all
@@ -1157,20 +1079,19 @@ tributor, retailer, and consumer:
 assembles, and resells to retailers and others.
 • Retailer: Sells good directly to the consumer
 • Consumer: Person who buys the product
-The diﬀerent types of distribution channels include wholesaler channel, direct to retailer, and direct
-to consumer (see ﬁgure 3.6).
+The different types of distribution channels include wholesaler channel, direct to retailer, and direct
+to consumer (see figure 3.6).
 Distribution Channel Strategies
-To address the diﬀerent distribution channel types, there are various strategies that address needs of the
-business and the actors present in the channel to ensure an eﬃcient ﬂow. Types of strategies include
+To address the different distribution channel types, there are various strategies that address needs of the
+business and the actors present in the channel to ensure an efficient flow. Types of strategies include
 the traditional multi-tiered, mixing/consolidation center, distributor/ wholesaler, direct to store delivery,
-and drop shipping from manufacturer (see ﬁgure 3.7). We further articulate these strategies below by
-describing the product ﬂow and the pros/cons of each.
+and drop shipping from manufacturer (see figure 3.7). We further articulate these strategies below by
+describing the product flow and the pros/cons of each.
 Traditional Multi-Tiered Distribution
 Product Flow
 • Retailer places orders to each manufacturer
-• Product ﬂows from manufacturer to retailer DCs
+• Product flows from manufacturer to retailer DCs
 • Retailer DCs receive product from multiple vendors
-154 MITx MicroMasters Program in SCM Key Concepts
 FIGURE 3.6: Channel type
 FIGURE 3.7: Distribution design options
 • DCs send full truckloads of mixed goods to stores, and
@@ -1186,10 +1107,9 @@ Pros/Cons
 Mixing Centers / Hubs
 Product Flow
 • Retailer places orders to each manufacturer
-• Product ﬂows from manufacturer to Mixing Center
+• Product flows from manufacturer to Mixing Center
 • No (or very little) inventory is held at the Mixing Centers – In-transit Merge
 • Retailer DCs receive full truckloads of goods from multiple manufacturers from the Mixing Center
-Supply Chain Design 155
 • DCs send full truckloads of mixed goods to stores, and
 • Consumers/customers view, select, receive, and pay for goods at store
 Pros/Cons
@@ -1202,7 +1122,7 @@ Pros/Cons
 Distributors
 Product Flow
 • Retailer places orders to distributor
-• Product ﬂows from manufacturer to distributor
+• Product flows from manufacturer to distributor
 • Inventory is held by the distributor
 • Retailer DCs receive full truckloads of goods from multiple manufacturers from the distributor
 • DCs send full truckloads of mixed goods to stores, and
@@ -1218,23 +1138,22 @@ Pros/Cons
 Direct to Store Delivery
 Product Flow
 • Retailer places orders to each manufacturer
-• Product ﬂows from manufacturer directly to the retail stores bypassing the DCs
+• Product flows from manufacturer directly to the retail stores bypassing the DCs
 • Vendor often merchandises, orders, and manages the retailer’s shelf
 • Consumers/customers view, select, receive, and pay for goods at store
 Pros/Cons
 • Flow leverages the vendor’s economics
-156 MITx MicroMasters Program in SCM Key Concepts
 • Bypassing the retail DC reduces congestion
 • Vendor can take over ordering, merchandising, etc.
 • Can lead to congestion and added costs at the retail stores
-• Loss of control of product ﬂow and availability by the retailer
+• Loss of control of product flow and availability by the retailer
 • Used for selected items (beverages, newspapers, snack foods)
 Drop Ship to Customer
 Product Flow
 • Consumer orders from retailer
 • Retailer passes order to manufacturer
 • Manufacturer sends product directly to consumer
-• Manufacturer and retailer could be same ﬁrm
+• Manufacturer and retailer could be same firm
 Pros/Cons
 • Very slow response time to consumer
 • Very strong product availability while keeping inventory levels low
@@ -1242,52 +1161,50 @@ Pros/Cons
 • Transportation cost can be high – small shipment size to consumer
 • Allows for high level of customization
 • Consumer places order – triggers pull operation
-The distribution channel strategies are not mutually exclusive. Most ﬁrms use multiple channels
+The distribution channel strategies are not mutually exclusive. Most firms use multiple channels
 for products. Selection of the strategy is based on several needs including: velocity (demand) of the
 product; desired response time to consumers; physical and other characteristics of products, supplier,
 and customers; and value of products.
 Omni-Channel Distribution
 From around 1995 to 2000 at its earliest stage, e-commerce was largely made up of “pure players”. These
-made up of ﬁrms that allowed customers to buy goods and services over the internet using a website
-(ebay or Amazon). These ﬁrms also did not have a physical presence. This began early discussions that
+made up of firms that allowed customers to buy goods and services over the internet using a website
+(ebay or Amazon). These firms also did not have a physical presence. This began early discussions that
 maybe traditional stores might be unnecessary in the future. Around 2000 – 2010, multi-channel became
-the next wave. In this case, ﬁrms use multiple online and traditional distribution channels. In most cases,
+the next wave. In this case, firms use multiple online and traditional distribution channels. In most cases,
 traditional and online channel operations were kept separate and distinct; referred to as “Bricks and
-Clicks”. This caused ineﬃciencies in traditional distribution channel strategies.
+Clicks”. This caused inefficiencies in traditional distribution channel strategies.
 With the release of the smartphone around 2007 and consumer ability to use the internet on the phone,
 e-commerce grew at a faster rate than ever before, and with that a desire for ease of access across online
-and brick and mortar purchase and returns. As of 2010 on, the new path forward for many ﬁrms has been
-Omni-Channel. This is multi-channel retailing strategy where ﬁrms provide a seamless retailing experience
-through all available shopping channels (online & oﬄine). Operations are mixed between challenges and
+and brick and mortar purchase and returns. As of 2010 on, the new path forward for many firms has been
+Omni-Channel. This is multi-channel retailing strategy where firms provide a seamless retailing experience
+through all available shopping channels (online & offline). Operations are mixed between challenges and
 consumers have multiple options for researching, ordering, receiving, paying, and/or returning products.
 Retail Perspective:
 Where to prepare the orders?
-Supply Chain Design 157
-• Distribution Center vs. Fulﬁllment Center vs. Store
-• Trading oﬀ distance vs eﬃciency vs. eﬀectiveness
+• Distribution Center vs. Fulfillment Center vs. Store
+• Trading off distance vs efficiency vs. effectiveness
 • Changes in packaging requirements and usability
 • Adapting workforce, facilities, and systems to new tasks
 • Maintaining inventory visibility across the channels and facilities
 Where and how does the order meet the customer?
 • Stores vs. Home vs. Third party locations (work, lockers, gas station)
 • Attended vs. Unattended Delivery
-• Own ﬂeet vs. Parcel vs. Crowdsourcing vs. Mobile lockers
+• Own fleet vs. Parcel vs. Crowdsourcing vs. Mobile lockers
 How to handle returns?
 • Product returns∼ 30% for online vs. 8% for traditional
 • At location of purchase vs. Drop points vs. Everywhere
 • Allowable reasons: Damaged, Wrong size/color/style, etc.
 Omni-Channel Network Design
-An omni-channel retailing experience requires ﬂexible delivery networks. Omni, means in “all places”,
-“all ways”, “without limits”. Omni-channel strategies aﬀect ordering, fulﬁllment and returns. An Omni-
-Channel Network Design model formulation is illustrated in the ﬁgure below.
+An omni-channel retailing experience requires flexible delivery networks. Omni, means in “all places”,
+“all ways”, “without limits”. Omni-channel strategies affect ordering, fulfillment and returns. An Omni-
+Channel Network Design model formulation is illustrated in the figure below.
 FIGURE 3.8: Omni-Channel network design model
-158 MITx MicroMasters Program in SCM Key Concepts
 Distribution Channel Strategies
 Reverse Supply Chains (Reverse Logistics)
 Reverse supply chain is all operations related to the reuse of products and materials. It involves collecting
-items at their “end of life” for capturing value or proper disposal. Reverse supply chains are most eﬀective
+items at their “end of life” for capturing value or proper disposal. Reverse supply chains are most effective
 for reusable items.
-Reusable items: Durable products intended to be used multiple times by diﬀerent users in diﬀerent
+Reusable items: Durable products intended to be used multiple times by different users in different
 locations of a supply chain network.
 Reverse supply chains are becoming an increasing focus for consumers and companies alike because:
 Increasing amount of waste generated:
@@ -1302,22 +1219,21 @@ There are emerging regulations:
 Producer Responsibility (EPR)
 • End of life waste framework directives in the EU for batteries, vehicles, tires, etc.
 Product Recovery Options
-There are diﬀerent types of product recover options. The ﬁgure below builds out the traditional supply
+There are different types of product recover options. The figure below builds out the traditional supply
 chain with recovery options at each phase of the supply chain.
 FIGURE 3.9: Product recovery options
-Supply Chain Design 159
-FIGURE 3.10: Reverse ﬂow recovery option
-There are diﬀerent forms of reverse supply chains based on condition of the material:
+FIGURE 3.10: Reverse flow recovery option
+There are different forms of reverse supply chains based on condition of the material:
 Direct Reuse or Resale: This includes both Reusable Articles (containers, totes, pallets, books,
 etc.) and normal (non-reusable) products.
 • Reusable Articles are inspected and, if needed, sterilized/cleaned/prepared for redeployment within
-ﬁrm or across network.
+firm or across network.
 • Non-reusable Products are inspected and deemed ready for re-use or resale to other customers without
 any repair or refurbishing (e.g. wrong size/color/style apparel)
-Repair: Used products returned to working order. Typically involves ﬁxing and/or replacing broken
+Repair: Used products returned to working order. Typically involves fixing and/or replacing broken
 parts (e.g. computers, phones, electronic devices).
-Refurbish: Used products brought up to speciﬁed quality level. Critical modules are inspected and
-ﬁxed or replaced. Sometimes includes technology upgrading (e.g. aircraft).
+Refurbish: Used products brought up to specified quality level. Critical modules are inspected and
+fixed or replaced. Sometimes includes technology upgrading (e.g. aircraft).
 Remanufacture: Used products brought up to quality standards as rigorous as new products. Com-
 plete disassembly, inspection, and part/module replacement as needed (e.g. automotive engines).
 Cannibalization: The returned product is used to recover a limited set of reusable parts and com-
@@ -1325,26 +1241,24 @@ ponents for use in other products. Only a small proportion of the used product i
 remaining parts are recycled or disposed of (e.g. integrated circuits from computers).
 Recycling: Materials from used products and components are processed and can be reused in pro-
 duction of original or other parts (e.g. metals, paper and cardboards, plastics, etc.).
-Diﬀerences Between Forward and Reverse Logistics
-The following ﬁgure illustrates the diﬀerences between forward and reverse logistics. It illustrates that
+Differences Between Forward and Reverse Logistics
+The following figure illustrates the differences between forward and reverse logistics. It illustrates that
 reverse logistics can be considerably changed due to inconsistency, non-uniformity, and uncertainty em-
 bedded in reverse supply chains.
 Network Design for Reverse Logistics
 The following network design example illustrates a MILP for reverse logistics.
-160 MITx MicroMasters Program in SCM Key Concepts
-FIGURE 3.11: Diﬀerences between forward and reverse logistics
+FIGURE 3.11: Differences between forward and reverse logistics
 FIGURE 3.12: Battery recycling network
 Learning Objectives
 • Understand the fundamental concepts of Sales & Operations Planning in balancing supply and demand
 • Formulate and solve an aggregate planning model
-• Understand trade-oﬀs and levers available for making aggregate planning decisions
-• Appreciation for the trade-oﬀs that can be made between sales and operations in terms of supply versus
+• Understand trade-offs and levers available for making aggregate planning decisions
+• Appreciation for the trade-offs that can be made between sales and operations in terms of supply versus
 demand and volume versus product mix
 • Understand what distributions channels are and who the players are
-• Review ﬂow paths for products that are a function of suppliers, customer and product
+• Review flow paths for products that are a function of suppliers, customer and product
 • Introduction to Omni-Channel and how it is impacting the supply chain
 • Understand the important of reverse logistics
-Supply Chain Design 161
 FIGURE 3.13: Battery recycling mathematical formulation
 • Recognize the variety of recovery options
 • Review network design for reverse logistics
@@ -1358,10 +1272,9 @@ D. Clay Whybark, Thomas Vollmann 2011, McGraw-Hill, New York.
 3.5 Supply Chain Sourcing
 3.5.1 Summary
 Sourcing is an important part of a successful supply chain; it often helps a business maintain a competitive
-edge. Eﬀective sourcing keeps the costs down, while providing quality goods and services on time and
-eﬃciently. Sourcing is driven largely by the relationship between the buyer and supplier. We review some
+edge. Effective sourcing keeps the costs down, while providing quality goods and services on time and
+efficiently. Sourcing is driven largely by the relationship between the buyer and supplier. We review some
 of the main components of supply chain sourcing.
-162 MITx MicroMasters Program in SCM Key Concepts
 3.5.2 Key Concepts
 3.5.3 Procurement Strategy
 To further our discussion on Supply Chain Sourcing, we review the basics of procurement and sourcing
@@ -1373,30 +1286,28 @@ cost of the purchase. This is illustrated by the “price Iceberg” – while w
 upfront, there are many aspects that determine the total cost to our business of making the purchase.
 FIGURE 3.14: The price iceberg
 Value and Risk Mapping
-One way to diﬀerentiate the purchasing portfolio is by considering where an item falls along two di-
-mensions: 1) the supply risk and, 2) the annual spend (or proﬁt impact on business). Based on this, a
-two-by-two matrix can be created to describe all items (see ﬁgure 3.15).
-For each quadrant, diﬀerent types of procurement strategies are suitable.
-Supply Chain Design 163
+One way to differentiate the purchasing portfolio is by considering where an item falls along two di-
+mensions: 1) the supply risk and, 2) the annual spend (or profit impact on business). Based on this, a
+two-by-two matrix can be created to describe all items (see figure 3.15).
+For each quadrant, different types of procurement strategies are suitable.
 FIGURE 3.15: Risk-spend framework
 FIGURE 3.16: Procurement strategies
 The Sourcing Process
 On a general level, the sourcing process consist of the following steps:
-• Internal assessment. This is to conﬁrm category deﬁnition, validate baseline information and under-
+• Internal assessment. This is to confirm category definition, validate baseline information and under-
 stand the key constituents. That is, focus is on the own business.
 • Market assessment. This is to analyze market dynamics and identify which potential suppliers that
 may be of interest. It also includes understanding what competitors do.
 • Collect supplier information. In this step information is collected to understand which criteria to
 use in the process as well as to understand current spend.
-• Sourcing strategy. After the initial assessments, the sourcing strategy is developed. This speciﬁes the
-approach, the speciﬁcations, and how to approach the subsequent steps.
+• Sourcing strategy. After the initial assessments, the sourcing strategy is developed. This specifies the
+approach, the specifications, and how to approach the subsequent steps.
 • Bidding process. In the bidding process, request for proposals (RFPs) are developed and sent out.
-The buying ﬁrm decides on a bidding format and short-list suppliers.
-• Negotiate, select. After the bidding process is over, the buying ﬁrm negotiates with selected short-
+The buying firm decides on a bidding format and short-list suppliers.
+• Negotiate, select. After the bidding process is over, the buying firm negotiates with selected short-
 listed suppliers. This step ends with a selection.
 • Contract Implement. This involves developing category implementation plan, communications plan
 as well as measurements and audit plans.
-164 MITx MicroMasters Program in SCM Key Concepts
 There is also a feedback loop, consisting of
 • Measure and report
 • Capture lessons
@@ -1407,13 +1318,13 @@ event. For instance, instead of focusing on price, focus is on value; instead of
 ownership, focus is on total contribution.
 Handling Volatility
 Financial Hedging
-There are primarily three ways to hedge ﬁnancially when buying materials with high price volatility:
-• Simple hedge: Negotiate long term, ﬁxed price contract in the company’s preferred currency
+There are primarily three ways to hedge financially when buying materials with high price volatility:
+• Simple hedge: Negotiate long term, fixed price contract in the company’s preferred currency
 • Forward contract: buy/sell the commodity or a related one for future delivery on a given date at a
 given price
 • Option: a call/put option is the right to buy/sell at a certain price at a certain future date
-Physical Hedging Apart from ﬁnancial hedging, a ﬁrm can use physical hedging to handle volatility.
-Create conditions in which the ﬂuctuations are mitigated “naturally.” (used mainly for currency hedging)
+Physical Hedging Apart from financial hedging, a firm can use physical hedging to handle volatility.
+Create conditions in which the fluctuations are mitigated “naturally.” (used mainly for currency hedging)
 Examples:
 • Build a plant in countries where labor rates and currency are not expected to appreciate
 • Manufacture and sell in the same country
@@ -1422,12 +1333,11 @@ Capital Goods
 Sourcing of capital goods goes beyond standard purchasing in several ways. First, one must focus much
 more on the total life cycle of the good. One must also more explicitly consider the expected value of the
 good at the end of its useful life. Further, aspects such as training, trials, and subsidies may have a large
-impact on the total cost of the good. The lifetime cost of capital items are summarized in ﬁgure 3.17.
+impact on the total cost of the good. The lifetime cost of capital items are summarized in figure 3.17.
 Outsourcing
-There are several reasons why ﬁrms outsource. These include:
+There are several reasons why firms outsource. These include:
 • External supplier has better capability
 • External supplier has greater or more appropriate capacity
-Supply Chain Design 165
 FIGURE 3.17: Lifetime cost of capital items
 Source: AT Kearney
 • Freeing resources for other purposes
@@ -1439,47 +1349,46 @@ Source: AT Kearney
 • Economies of scale of supplier
 When outsourcing, the contract is extremely important. A well written contract makes sure to not
 just have clear decisions about how to handle disputes and how to measure and reward, but also how to
-handle intellectual property, how to deﬁne the service to be performed, and how to handle the evolution
+handle intellectual property, how to define the service to be performed, and how to handle the evolution
 of the relationship. Outsourcing is subject to considerable risk. Some of the key risks are:
 • Creating a competitor
 • Losing control of the channel to a supplier
 • Losing control of the channel to a customer
 Purchasing Social Responsibility
 Corporate social responsibility (CSR)has a wide range of underlying objectives. These include philan-
-thropy, brand image, human resources attraction, mission support, social business and proﬁtable business.
-Based on these, companies work in diﬀerent ways, including using extensive codes of conduct, audit sup-
+thropy, brand image, human resources attraction, mission support, social business and profitable business.
+Based on these, companies work in different ways, including using extensive codes of conduct, audit sup-
 pliers, train suppliers or work hard to ensure supply chain transparency.
-Independently of activity, there is a hierarchy for the diﬀerent responsibilities within CSR. The top
-responsibility for all ﬁrms is the economic responsibility – a ﬁrm cannot survive in the long run if it
+Independently of activity, there is a hierarchy for the different responsibilities within CSR. The top
+responsibility for all firms is the economic responsibility – a firm cannot survive in the long run if it
 does not meet this responsibility. After the economic responsibility follows, in the following order: Legal
 responsibilities, ethical responsibilities, and discretionary responsibilities.
-166 MITx MicroMasters Program in SCM Key Concepts
 3.5.4 Procurement Optimization
 In a way, each procurement is an optimization process in the sense that the procurement department of
 the company tries to get the best set of suppliers to serve you.
-Item-supplier (lane-carrier) speciﬁc constraints
-Item-supplier speciﬁc constraints are constraints that apply to one of the products at one of the suppliers.
+Item-supplier (lane-carrier) specific constraints
+Item-supplier specific constraints are constraints that apply to one of the products at one of the suppliers.
 For instance, when procuring transport services for a number of lanes in a network, each carrier may have
 capacity restrictions for a given lane. In the MILP-formulation of the problem, these constraints are easily
 implemented as a separate matrix.
 Optimizing with service attributes
 Service attributes are often associated with an individual item at a given supplier. For instance, “on time
-delivery performance” may vary between diﬀerent suppliers for a given item as well as between diﬀerent
+delivery performance” may vary between different suppliers for a given item as well as between different
 items from the same supplier.
 There are many types of service attributes that may be important evaluation criteria in the procure-
 ment process. These can be incorporated into the MILP-problem, either as constraints or by attaching a
 dollar value to the service level. For instance, if a certain service measure is believed to represent $10 per
 %-unit of service, a LOS-adjusted cost can be minimized.
 System attributes/constraints
-System attributes are not tied to a speciﬁc item. Such constraints are usually concerned with constraints
+System attributes are not tied to a specific item. Such constraints are usually concerned with constraints
 on the suppliers as a group. These are not as straight-forward to implement in the MILP-formulation
-as the item-supplier speciﬁc constraints. One has to investigate each case individually and may need to
-introduce binary variables for diﬀerent suppliers and/or items. Implementing certain system constraints
+as the item-supplier specific constraints. One has to investigate each case individually and may need to
+introduce binary variables for different suppliers and/or items. Implementing certain system constraints
 in the model is also useful for making sensitivity analyses. For instance, it enables an analysis of how
-reducing the supplier base would aﬀect total cost.
+reducing the supplier base would affect total cost.
 Economies of scope
 In many cases the bid one receives for an item depends on whether or not the supplier believes it will be
-supplying another item. For instance, when buying transport services, a supplier may be willing to oﬀer
+supplying another item. For instance, when buying transport services, a supplier may be willing to offer
 a lower price for a lane if he also gets the return transport on the lane. Similar economies of scope may
 appear in all procurement situations.
 Combinatorial auctions
@@ -1487,10 +1396,9 @@ Combinatorial auctions is a way to capture the potential economies of scope. In 
 let all suppliers bid for all possible combinations of related products.
 Learning Objectives
 • Review how to map items based on risk and spend
-• Diﬀerentiate procurement strategy based on the mapping
+• Differentiate procurement strategy based on the mapping
 • Understand the structured sourcing process
 • Review capital goods purchasing
-Supply Chain Design 167
 • Highlight importance of CSR in procurement
 • Introduce procurement optimization when one evaluates bids for many items from several potential
 suppliers
@@ -1501,21 +1409,21 @@ References
 management science, 11, 227-339.
 3.6 Supply Chain Finance
 3.6.1 Summary
-This review covers some of the most important concepts of accounting and ﬁnance from a supply chain
+This review covers some of the most important concepts of accounting and finance from a supply chain
 manager’s perspective including a short discussion of the role of accounting, the choices and accountant
-can make, the role and diﬃculties of depreciation, and an overview of basic accounting concepts.
+can make, the role and difficulties of depreciation, and an overview of basic accounting concepts.
 3.6.2 Key Concepts
 3.6.3 Accounting Fundamentals
 The Income Statement
-The Income Statement provides a summary of the ﬂows in (revenue) and out (expenses) of the ﬁrm over a
-period of time; the net diﬀerence between the revenue and expense being the proﬁt or loss of the ﬁrm. Put
+The Income Statement provides a summary of the flows in (revenue) and out (expenses) of the firm over a
+period of time; the net difference between the revenue and expense being the profit or loss of the firm. Put
 in another way, the income statement describes how the assets and liabilities are used during a particular
-period. You could also think of it as the sum of income-generating transactions, ﬁnancial transactions
+period. You could also think of it as the sum of income-generating transactions, financial transactions
 over a stated period of time.
 The three main components are:
-• Revenues (turnover, sales, proceeds, ‘top line’) – the incoming ﬂow
-• Expenses (costs) – the outgoing ﬂow
-• Proﬁt (income, earnings, ‘bottom line’) – the diﬀerence between incoming and outgoing ﬂow
+• Revenues (turnover, sales, proceeds, ‘top line’) – the incoming flow
+• Expenses (costs) – the outgoing flow
+• Profit (income, earnings, ‘bottom line’) – the difference between incoming and outgoing flow
 For a supply chain manager, there are several components to Expenses to be aware of:
 • COGS (Cost of Goods Sold, Cost of products sold) – these are the direct costs of producing the
 goods/services that are sold to generate revenues
@@ -1523,18 +1431,17 @@ goods/services that are sold to generate revenues
 any) that can be assigned to the goods sold, e.g. expenses incurred in closing sales, marketing expenses
 • Depreciation – these are non-cash expenses associated with the use of capital equipment (for more
 about this, see below). Related is amortization – this a reduction in goodwill (goodwill is an intangible
-asset that arises when the ﬁrm acquires another ﬁrm at a price higher than the book value of the
-acquired ﬁrm)
+asset that arises when the firm acquires another firm at a price higher than the book value of the
+acquired firm)
 • SG&A (Sales, General, and Administration) – overhead costs associated with generating revenue,
 including the sales force
 • Operating Expenses – the sum of Depreciation and SG&A.
-168 MITx MicroMasters Program in SCM Key Concepts
 The Balance Sheet
-The Balance Sheet presents the ﬁnancial condition of the ﬁrm at one point in time. It lists the assets,
-which is something that is owned by the ﬁrm and has measured value. It also lists the liabilities, which
+The Balance Sheet presents the financial condition of the firm at one point in time. It lists the assets,
+which is something that is owned by the firm and has measured value. It also lists the liabilities, which
 are claims against the assets by other parties. You could also think of these as debts or obligations that
-the ﬁrm has to pay other people. The Balance Sheet gives a snapshot of the assets and obligations of
-the ﬁrm at a single moment in time. Assets always equal liabilities. Remember, the balance sheet report
+the firm has to pay other people. The Balance Sheet gives a snapshot of the assets and obligations of
+the firm at a single moment in time. Assets always equal liabilities. Remember, the balance sheet report
 Book value, not Market value. These could be equal, but as we will see in the next lesson they may not
 be.
 • Assets. You want to separate Current Assets from Long Term Assets. Current assets can be used
@@ -1544,22 +1451,22 @@ Property, Plant and Equipment)
 • Liabilities. Normally liabilities are divided into Current Liabilities, Long-term Liabilities (Debt), and
 Equity. Current liabilities generally have to be paid in the next accounting period and include, e.g.,
 accounts payables. Long-term liabilities include e.g. loans, bonds, or mortgages. Equity is the capital
-that owners have put into the ﬁrm.
+that owners have put into the firm.
 The Role of Accounting
-The role of accounting is to record the transactions of a business. The accountant classiﬁes the sources
+The role of accounting is to record the transactions of a business. The accountant classifies the sources
 and use of funds. There are primarily three types of reports prepared:
-• Financial reports. These are intended for the ﬁrm’s investors, includes the income statement and the
+• Financial reports. These are intended for the firm’s investors, includes the income statement and the
 balance sheet.
 • Tax accounting reports. These are provided for the government, in the US for the IRS.
 • Product costing reports. These are used for management decision making.
 There are certain choices that can be made, as long as the account follow generally accepted accounting
 practice.
-Note that the ﬁnancial reports provided to investors can diﬀer from the tax reports. They serve
-diﬀerent purposes. Financial accounting’s objective is to present fairly the results of operations and the
-ﬁnancial condition of the company to its stockholders, whereas corporate tax accounting’s objective is
+Note that the financial reports provided to investors can differ from the tax reports. They serve
+different purposes. Financial accounting’s objective is to present fairly the results of operations and the
+financial condition of the company to its stockholders, whereas corporate tax accounting’s objective is
 to minimize current tax liability and defer payment of liability as long as possible. This means that the
-tax code allows companies to deviate from ﬁnancial accounting in speciﬁc areas when calculating taxable
-income without having to change the corporate ﬁnancial reports issued to stockholders.
+tax code allows companies to deviate from financial accounting in specific areas when calculating taxable
+income without having to change the corporate financial reports issued to stockholders.
 Depreciation
 Depreciation is a non-cash expense to the business. It can be thought of as the estimated cost of using an
 asset. For instance, if a machine is purchased to be used in a manufacturing setting, the depreciation of
@@ -1567,54 +1474,52 @@ the machine represents the reduction in the value of the machine over the accoun
 that while depreciation is an expense, the value of the corresponding asset reduces by the same amount.
 So if the depreciation of a machine is $10,000 in a year, this will impact the income statement ( $10,000
 expense) as well as the balance sheet (- $10,000 in long-term assets).
-There are diﬀerent ways to construct the rate of depreciation. Most common is straight-line depreci-
+There are different ways to construct the rate of depreciation. Most common is straight-line depreci-
 ation, where the asset is reduced with the same value each accounting period until it reaches its residual
 value (its scrap value).
-Since depreciation is an expense it will aﬀect the taxable income of the ﬁrm. This will aﬀect cash-ﬂows,
+Since depreciation is an expense it will affect the taxable income of the firm. This will affect cash-flows,
 even though the depreciation itself is non-cash expense.
-Supply Chain Design 169
 Basic Accounting Concepts
 • Dual Aspect Concept – assets always equal liabilities
 • Accounting Period Concept – Income Statement over a period of time
 • Conservatism Concept – choose recording method that results in the lowest asset or highest liability
-ﬁgures
+figures
 • Accrual Concept – record revenues when they are earned (e.g. when the product ships) and record
 expenses when they are incurred.
 • Cost Concept – record costs, not market value
 • Materiality Concept – disregard immaterial transactions
 • Realization Concept – recognize revenue when goods are delivered
-• Consistency Concept – use the same method for recording transactions associated with speciﬁc
+• Consistency Concept – use the same method for recording transactions associated with specific
 assets/events
 • Entity Concept – accounting for an entity, not individuals
 • Going Concern Concept – assume continuing operations
 • Matching Concept – match costs associated with revenue in same period
 • Money Measurement Concept – money is the common measure
 Accounting Choices
-The accountant does have choices how to report diﬀerent transactions; the same supply chain action can
-appear diﬀerent ways in ﬁnancial reports, and these can have diﬀerent impact on the ﬁnancial reports
+The accountant does have choices how to report different transactions; the same supply chain action can
+appear different ways in financial reports, and these can have different impact on the financial reports
 depending on how they are recorded. There are three sets of choices to be aware of:
 • Product costing. The accountant is free to determine how to allocate overhead and how to categorize
 expenses to create as an insightful result as possible.
 • Depreciation method. There are many ways to set the rate and period length for depreciation. For
 some types of assets, however, there are established accounting practices.
-• Asset or expense. It is not always clear whether a transaction should be classiﬁed as a capital
+• Asset or expense. It is not always clear whether a transaction should be classified as a capital
 investment or an expense. One example is a prototype. The account has leeway in deciding how to
 classify this.
 LIFO vs FIFO
-There are two very diﬀerent ways to estimate the value of goods in an inventory:
-• LIFO (last-in, ﬁrst-out) uses the most recent cost of inventory to assign to sales, which results in lower
-stated proﬁts (assuming material costs increase over time). As a result, the remaining inventory can be
+There are two very different ways to estimate the value of goods in an inventory:
+• LIFO (last-in, first-out) uses the most recent cost of inventory to assign to sales, which results in lower
+stated profits (assuming material costs increase over time). As a result, the remaining inventory can be
 undervalued.
-• FIFO (ﬁrst-in, ﬁrst-out) uses the oldest cost of inventory, which results in potentially higher proﬁts but
+• FIFO (first-in, first-out) uses the oldest cost of inventory, which results in potentially higher profits but
 near term tax obligations. As a result, the remaining inventory can be valued at current replacement
 cost.
-170 MITx MicroMasters Program in SCM Key Concepts
 3.6.4 Costing Systems
 Cost Accounting
-While cost accounting is a type of reporting, it has a diﬀerent purpose than the ﬁnancial reports. The
-purpose of cost accounting is purely internal to the ﬁrm – it is designed to measure costs to enable
-performance analysis, decision-making and internal reporting. So, while in ﬁnancial reporting, costs are
-classiﬁed based on type of transaction for external reporting; in cost accounting, costs are classiﬁed based
+While cost accounting is a type of reporting, it has a different purpose than the financial reports. The
+purpose of cost accounting is purely internal to the firm – it is designed to measure costs to enable
+performance analysis, decision-making and internal reporting. So, while in financial reporting, costs are
+classified based on type of transaction for external reporting; in cost accounting, costs are classified based
 on needs of management for internal use (decision-making support). This means that cost accounting
 does not have to follow generally accepted accounting practice.
 Overhead and Other Types of Costs
@@ -1625,16 +1530,16 @@ There are many types of costs to consider in the cost accounting process:
 – Ex. Cost for materials used to produce a product; more materials are needed to make more units
 of production
 – Ex. Semivariable: cost for salaried employees who get commission on sales
-• Direct costs: costs that can be attributed to the production of a speciﬁc product
+• Direct costs: costs that can be attributed to the production of a specific product
 – Ex. Cost for raw materials or labor hours to produce the product
-• Indirect costs (overhead): costs that cannot be attributed to the production of a speciﬁc product
+• Indirect costs (overhead): costs that cannot be attributed to the production of a specific product
 – Ex. Legal fees, SG&A, insurance
-Much of the challenge of the cost system is to ﬁnd a representative way to allocate the indirect costs
+Much of the challenge of the cost system is to find a representative way to allocate the indirect costs
 – the overhead costs . These costs include depreciation of assets, supervision, quality control, and many
 other costs. To properly understand the cost of producing certain products/services, the cost to serve
 certain customers, or the cost to rely on certain suppliers, managers need to allocate these overhead costs
 in a representative way. This is not easy, since there is often no direct relationship between the cost and
-the product. Diﬀerent cost systems apply diﬀerent logic for this allocation, as you will see below.
+the product. Different cost systems apply different logic for this allocation, as you will see below.
 Traditional Cost Systems
 The most common way to allocate costs is using a “traditional” cost system. With such a cost system,
 “standard costs” are calculated and used to allocate the overhead. The standard cost is the anticipated
@@ -1644,65 +1549,63 @@ throughput is 1,000, the standard rate to be applied is $100 per unit.
 While these systems often perform well in many instances, there are certain instances where they are
 problematic. This includes instances when depreciation and other overhead costs account for a larger
 share and in complex environments with many (customized) products and/or processes.
-Supply Chain Design 171
 Actual Cost Systems
 Actual cost systems try to use actual costs or quantities to provide a more accurate picture compared to
-standard traditional systems. There are diﬀerent variations:
+standard traditional systems. There are different variations:
 • Actual cost using actual quantities and standard prices
 • Actual cost using standard quantities and actual prices
 • Actual cost using actual quantities and actual prices
-It is however diﬃcult to use actual prices since this will not be available until after the period is over.
+It is however difficult to use actual prices since this will not be available until after the period is over.
 Activity-Based-Costing (ABC)
 An increasingly common way to handle the shortcoming of the other costing systems is to use an activity
-based costing approach. With this approach, relevant activities are deﬁned, and all overhead costs are
-related to these activities. Based on the nature of the activity, a cost driver is identiﬁed which is then
-used to calculate the overhead cost for diﬀerent objects (e.g. products, customer, suppliers). The general
+based costing approach. With this approach, relevant activities are defined, and all overhead costs are
+related to these activities. Based on the nature of the activity, a cost driver is identified which is then
+used to calculate the overhead cost for different objects (e.g. products, customer, suppliers). The general
 steps to follow when using ABC are the following:
 1. Identify all relevant (repetitive) activities (a formal approach would involve creating a pro-
 cess model). Note that a relevant activity is often of the form “verb+object”, e.g. “schedule
 production”.
 2. Identify the resources consumed in performing the activities. Based on interviews, reports, or
 other information, identify the relevant resources consumed in each of the relevant activities.
-3. Determine the costs of the activities. Based on the insights from step 2, ﬁnd the total cost for
+3. Determine the costs of the activities. Based on the insights from step 2, find the total cost for
 each relevant activity
 4. Determine cost-drivers of the activities. This is the “unit” that drives the cost of the activity:
 units produced, batches, orders, shipments, etc.
 5. Determine cost-driver rate for the activities. Based on the total cost of the relevant activity,
 use its total activity level to determine the rate for the cost-driver. For instance, if “number of
-orders” is the cost-driver, ﬁnd the total number of orders over the accounting period, this is
-the activity level. To ﬁnd the driver rate, divide total activity cost with the activity level.
+orders” is the cost-driver, find the total number of orders over the accounting period, this is
+the activity level. To find the driver rate, divide total activity cost with the activity level.
 6. Trace costs to (secondary) cost objects. Once you have all driver rates, use the information you
 have about each object to multiple that objects activity level with the driver-rate.
-Activity-Based Costing provides a diﬀerent and potentially more accurate cost for producing prod-
-ucts and providing services. ABC can be helpful for decision makers assessing the proﬁtability of various
+Activity-Based Costing provides a different and potentially more accurate cost for producing prod-
+ucts and providing services. ABC can be helpful for decision makers assessing the profitability of various
 products, services or segmentation of those by customer or geography.
 Working Capital
-The working capital is a basic measure of both a company’s eﬃciency and its short-term ﬁnancial health.
-It is deﬁned as:
+The working capital is a basic measure of both a company’s efficiency and its short-term financial health.
+It is defined as:
 Working capital = Current assets – Current liabilities
-Positive working capital enables the ﬁrm to continue its operations and to satisfy both maturing
+Positive working capital enables the firm to continue its operations and to satisfy both maturing
 short-term debt and upcoming operational expenses. Basically, they can pay their current bills when
 due. Negative working capital means that there are not enough current assets (cash, accounts receivable,
-172 MITx MicroMasters Program in SCM Key Concepts
 inventory) to satisfy their current liabilities (accounts payable, maturing short-term debt and upcoming
-operational expenses). This may be good, if the ﬁrm collects its bills before paying suppliers. But it may
-also be a bad thing: the company cannot convert assets into cash quick enough to pay oﬀ liabilities. A
-company can have assets and proﬁts but lack liquidity if assets can’t readily be converted to cash. Keep
-in mind that a ﬁrm can have a negative cash-to-cash cycle and positive working capital.
+operational expenses). This may be good, if the firm collects its bills before paying suppliers. But it may
+also be a bad thing: the company cannot convert assets into cash quick enough to pay off liabilities. A
+company can have assets and profits but lack liquidity if assets can’t readily be converted to cash. Keep
+in mind that a firm can have a negative cash-to-cash cycle and positive working capital.
 Sometimes working capital is analyzed through the “current ratio”. If this ratio is somewhere between
 1 and 2, it is considered a healthy company.
 Current ratio = Current assets/Current liabilities
 Another test is called the “acid test”. It looks only at the current assets that can be quickly converted
 to cash. If the acid test is less than the current ratio, the current assets are highly dependent on inventory.
 Acid test = (Cash + Accounts Receivables + Short term investments)/Current liabilities
-A third important measure is the working capital turnover. This describes how eﬀectively a company
+A third important measure is the working capital turnover. This describes how effectively a company
 is using its working capital to generate revenues. In general, a higher turnover is preferable.
 Working capital turnover = Sales/Working capital
 Cash-to-Cash Cycle (CCC)
 Also known as the Cash Conversion Cycle, the operating cycle or simply the cash cycle. This is a liquidity
 measure that can help a company plan its timing of working capital requirements. It measures the number
 of days that a company’s cash is tied up in the production and sales process of its operations, and the
-beneﬁt it gets from payment terms from its creditors. The shorter the cycle, the more liquid the company’s
+benefit it gets from payment terms from its creditors. The shorter the cycle, the more liquid the company’s
 working capital position.
 The measure consists of the following three parts:
 • Days of Inventory Outstanding (DIO) – this is the average inventory in the system, expressed in
@@ -1716,126 +1619,122 @@ DPO = (Average Accounts Payable/ Cost of Sales) x 365
 The Cash-to-cash Cycle, or the Cash Conversion Cycle, is then found as:
 CCC = DIO + DSO - DPO
 3.6.5 Supply Chain Cash Flows
-There are three ﬂows in the supply chain: the physical ﬂow (goods), the ﬁnancial ﬂows (money), and
-the information ﬂows (data). Since we may use contractors for many of our ﬁrm’s operations, physical
-ﬂows may not pass through our ﬁrm at all. Financial ﬂows, however, will. Consequently, the design of the
-ﬁnancial ﬂows in the supply chain will have an impact on the value we are creating and therefore how
+There are three flows in the supply chain: the physical flow (goods), the financial flows (money), and
+the information flows (data). Since we may use contractors for many of our firm’s operations, physical
+flows may not pass through our firm at all. Financial flows, however, will. Consequently, the design of the
+financial flows in the supply chain will have an impact on the value we are creating and therefore how
 valuable our supply chain designs are.
-Supply Chain Design 173
-Investments and future cash ﬂows
-The primary source for capital for a ﬁrm is from its stockholders, or equity investors. These investors
-purchase stock in the ﬁrm to provide the ﬁrm with capital. The ﬁrm may then contract out with debtors,
+Investments and future cash flows
+The primary source for capital for a firm is from its stockholders, or equity investors. These investors
+purchase stock in the firm to provide the firm with capital. The firm may then contract out with debtors,
 banks, or bond holders to raise additional capital that can be used for investments. There is a contractual
 agreement with these debtors. For instance, if you borrow money from a bank you will have a contract
 where you pay them back over a certain period of time.
-This is not the case with investors. For these, the ﬁrm hopes to make enough money to pay them
-back. How? By investing the capital in operational assets to generate future cash ﬂows. The goal is to
+This is not the case with investors. For these, the firm hopes to make enough money to pay them
+back. How? By investing the capital in operational assets to generate future cash flows. The goal is to
 manage the assets in the supply chain well enough so that revenues are greater than expenses.
-Investors compare a ﬁrm’s result with the other investment options they have to create a portfolio of
-options that will give them future returns. So investors’ investment in a ﬁrm is a part of their portfolio.
-Given the ﬁrm’s ability to provide returns, it will be more or less attractive to investors.
+Investors compare a firm’s result with the other investment options they have to create a portfolio of
+options that will give them future returns. So investors’ investment in a firm is a part of their portfolio.
+Given the firm’s ability to provide returns, it will be more or less attractive to investors.
 Investment evaluation
 Normally, those that have the money in an organization are also those that decides on which investments to
-make. Following general corporate ﬁnance guidelines, investments are evaluated according to the following
+make. Following general corporate finance guidelines, investments are evaluated according to the following
 steps:
-1. Estimate the relevant cash ﬂows – this includes also the cash outﬂow of making the investment
-2. Calculate a ﬁgure of merit for the investment – this is to come up with the “value” of the
+1. Estimate the relevant cash flows – this includes also the cash outflow of making the investment
+2. Calculate a figure of merit for the investment – this is to come up with the “value” of the
 investment
-3. Compare the ﬁgure of merit to an acceptance criterion
+3. Compare the figure of merit to an acceptance criterion
 Note that the same process may be used to evaluate projects.
 EBIT and EBITDA
-To separate diﬀerent types of operating income, we will use the following concepts:
-• EBIT – Earnings Before Interest and Taxes. These are the earnings, or the proﬁt before any ﬁnancial
+To separate different types of operating income, we will use the following concepts:
+• EBIT – Earnings Before Interest and Taxes. These are the earnings, or the profit before any financial
 aspects are added.
 • EBITDA – Earnings Before Interest, Taxes, Depreciation and Amortization. These are the earnings,
-or the proﬁt, before ﬁnancial aspects as well as depreciation and amortization. That is, it is the revenue
+or the profit, before financial aspects as well as depreciation and amortization. That is, it is the revenue
 minus COGS and SG&A.
-Projected cash ﬂows
-Cash coming in is considered positive cash ﬂow; cash going out is considered negative cash ﬂow. To han-
-dle the cash ﬂows in the evaluation models, they are aggregated in “bins” – normally each year is a bin.
-Common practice assumes cash ﬂows occur at the end of the projected period, or bin. The appropriate
+Projected cash flows
+Cash coming in is considered positive cash flow; cash going out is considered negative cash flow. To han-
+dle the cash flows in the evaluation models, they are aggregated in “bins” – normally each year is a bin.
+Common practice assumes cash flows occur at the end of the projected period, or bin. The appropriate
 time horizon to consider depends – the decision makers simply have to come to an agreement. However,
-one must also consider cash ﬂows at the end of the decision horizon – assets may be divested and, when
+one must also consider cash flows at the end of the decision horizon – assets may be divested and, when
 they are, incur a salvage value.
-174 MITx MicroMasters Program in SCM Key Concepts
-Inﬂation
-There are two diﬀerent ways to think about inﬂation when evaluating cash ﬂows:
-• Nominal cash ﬂow: incorporate inﬂation in price/cost. The inﬂation rates may diﬀer between diﬀerent
+Inflation
+There are two different ways to think about inflation when evaluating cash flows:
+• Nominal cash flow: incorporate inflation in price/cost. The inflation rates may differ between different
 components.
-• Real cash ﬂows: do not include inﬂation in price/cost.
-The choice between nominal or real cash ﬂows inﬂuences the discount rate used when calculating the
-ﬁgure of merit.
+• Real cash flows: do not include inflation in price/cost.
+The choice between nominal or real cash flows influences the discount rate used when calculating the
+figure of merit.
 Relevant Cash Flows
-We need to make sure that the cash ﬂows we are projecting are relevant to the particular investment or
-project we are evaluating. So how do we determine what is a relevant ﬂow?
-1. Cash ﬂow principle: only cash ﬂows where money moves are relevant. That is, a cash ﬂow
-either goes out of the ﬁrm or comes into the ﬁrm. For instance, depreciation is not a movement
-of money, so it is not a relevant cash ﬂow. However, depreciation also aﬀects taxes, which is a
-relevant cash ﬂow.
-2. With-without principle: only cash ﬂows that are diﬀerent with the investment compared
-to without the investment are relevant to the decision. Note that this is diﬀerent from “before
-and after”, since we are looking into the future at two diﬀerent worlds – we are only interested
-in the diﬀerence between those worlds. For instance, if revenues will not diﬀer between our
-alternatives, then they are not relevant cash ﬂows.
-Note that this also means that sunk costs are not relevant cash ﬂows. Opportunity cost of assets should,
-however, be included in the evaluation. It diﬀers between the alternatives and is thus a relevant cash ﬂow.
+We need to make sure that the cash flows we are projecting are relevant to the particular investment or
+project we are evaluating. So how do we determine what is a relevant flow?
+1. Cash flow principle: only cash flows where money moves are relevant. That is, a cash flow
+either goes out of the firm or comes into the firm. For instance, depreciation is not a movement
+of money, so it is not a relevant cash flow. However, depreciation also affects taxes, which is a
+relevant cash flow.
+2. With-without principle: only cash flows that are different with the investment compared
+to without the investment are relevant to the decision. Note that this is different from “before
+and after”, since we are looking into the future at two different worlds – we are only interested
+in the difference between those worlds. For instance, if revenues will not differ between our
+alternatives, then they are not relevant cash flows.
+Note that this also means that sunk costs are not relevant cash flows. Opportunity cost of assets should,
+however, be included in the evaluation. It differs between the alternatives and is thus a relevant cash flow.
 Free Cash Flows
-The free cash ﬂows (FCF) are the funds available to (the equity) investors after the ﬁrm invests capital
-and pays taxes. It provides a convenient way to calculate cash ﬂows to compare investments, by relying
-on posts in the ﬁnancial reports rather than separate line items. For free cash ﬂow calculations, we need
+The free cash flows (FCF) are the funds available to (the equity) investors after the firm invests capital
+and pays taxes. It provides a convenient way to calculate cash flows to compare investments, by relying
+on posts in the financial reports rather than separate line items. For free cash flow calculations, we need
 to consider revenues, COGS, operating expenses, and taxes as well as capital expenditures and working
 capital. Note that some of these are found in the income statement whereas others are found in the
-balance sheet. Starting with the income statement, relevant cash ﬂows include taxes.
-To make sure we capture the eﬀect of taxes, we make use of the Net Operating Proﬁt After Taxes
+balance sheet. Starting with the income statement, relevant cash flows include taxes.
+To make sure we capture the effect of taxes, we make use of the Net Operating Profit After Taxes
 (NOPAT).
 NOPAT t = (1− tax rate)×EBITt
-Using NOPAT, which takes depreciation into account, we can ﬁnd the relevant cash ﬂows of the
+Using NOPAT, which takes depreciation into account, we can find the relevant cash flows of the
 income statement by adding the depreciation (DA) “back again”. From the balance sheet, we get the
 capital expenditure and the change in net working capital requirement.
 Combing the data from the income statement and the balance sheet we get:
 FCFt =NOPAT t +DAt–CapExt–∆NetWorkingCapital t
 FCFt = (1− tax rate)×EBITt +DAt–CapExt–∆NetWorkingCapital t
-Supply Chain Design 175
 Working Capital Cash Flows
-The working capital cash ﬂow is the net change in working capital requirements from the previous period.
+The working capital cash flow is the net change in working capital requirements from the previous period.
 For instance, a decrease in working capital requirements means that more cash is freed up (note the minus
-sign in the FCF formula). Note that working capital cash ﬂows occur when the change takes place. For
-instance, a change in inventory level aﬀects working capital requirements when we next replenish stock.
+sign in the FCF formula). Note that working capital cash flows occur when the change takes place. For
+instance, a change in inventory level affects working capital requirements when we next replenish stock.
 3.6.6 Discounted Cash Flow Analysis
-We now focus on the two subsequent steps in investment evaluation: how to calculate a ﬁgure of merit
-based on the projected relevant cash ﬂows and compare this ﬁgure to an acceptance criterion. The basic
+We now focus on the two subsequent steps in investment evaluation: how to calculate a figure of merit
+based on the projected relevant cash flows and compare this figure to an acceptance criterion. The basic
 idea underlying these calculations is that today’s money is worth more than money in the future. To
-correct for this when we make investment decisions, we use a discount rate to ﬁnd today’s value of future
-cash ﬂows. Why is today’s cash more valuable than tomorrow’s? There are primarily three reasons:
+correct for this when we make investment decisions, we use a discount rate to find today’s value of future
+cash flows. Why is today’s cash more valuable than tomorrow’s? There are primarily three reasons:
 • Opportunity cost – not having the money now results in foregone investment returns
-• Inﬂation – this reduces purchasing power over time
+• Inflation – this reduces purchasing power over time
 • Risk/uncertainty – receipt of cash is not guaranteed over time
-Owing to this, we need to calculate the present value of future cash ﬂows when evaluating supply
+Owing to this, we need to calculate the present value of future cash flows when evaluating supply
 chain designs. As we saw in this lesson, there are several ways to do this. Common for all discounted cash
-ﬂow analysis, is that it quantiﬁes the value created by investments.
+flow analysis, is that it quantifies the value created by investments.
 Figure of Merit
-The ﬁgure of merit is a single number that estimates the economic value of an investment. This number
-can be compared with a criterion established by the ﬁrm. There is no universal criterion. There are also
-several diﬀerent ﬁgures of merit, which you will see more of below.
+The figure of merit is a single number that estimates the economic value of an investment. This number
+can be compared with a criterion established by the firm. There is no universal criterion. There are also
+several different figures of merit, which you will see more of below.
 Payback Period
-The payback period is the time until the cumulative cash ﬂow is equal to our initial investment. Using
-this ﬁgure of merit, the acceptance criterion is to invest if the payback period is shorter than the cut-oﬀ
-point. The ﬁrm decides the cut-oﬀ point.
+The payback period is the time until the cumulative cash flow is equal to our initial investment. Using
+this figure of merit, the acceptance criterion is to invest if the payback period is shorter than the cut-off
+point. The firm decides the cut-off point.
 This is a fairly simple measure, which is easy to communicate. The main drawback is that it does not
-consider the timing of cash ﬂows. For instance, cash up front is not valued diﬀerently than cash later.
-Neither does it consider cash ﬂows after the payback-period, even though these may be signiﬁcant.
+consider the timing of cash flows. For instance, cash up front is not valued differently than cash later.
+Neither does it consider cash flows after the payback-period, even though these may be significant.
 Return on Assets (ROA)
-The return on assets (ROA) is deﬁned by:
+The return on assets (ROA) is defined by:
 ROA = Net income/ Assets
-The acceptance criterion using this ﬁgure of merit is to make an investment if ROA is greater than
+The acceptance criterion using this figure of merit is to make an investment if ROA is greater than
 some target return. “Assets” are, for an investment, the total capital investment that will depreciate over
-time. This means that later incoming cash ﬂows are given a higher weight in the calculation, even though
-earlier cash ﬂows are generally more desirable.
-ROA is very much linked to the ﬁnancial statement. However, it is based on accounting calculations
-and not cash ﬂows. Also, just like the payback period, it does not consider the timing of cash ﬂows.
-176 MITx MicroMasters Program in SCM Key Concepts
+time. This means that later incoming cash flows are given a higher weight in the calculation, even though
+earlier cash flows are generally more desirable.
+ROA is very much linked to the financial statement. However, it is based on accounting calculations
+and not cash flows. Also, just like the payback period, it does not consider the timing of cash flows.
 Present Value
-The present value of a future cash ﬂows is given by:
+The present value of a future cash flows is given by:
 PV =FV/ (1 +r)n
 where PV is present value, FV is future value, r is the discount rate for the period, and n is the
 number of periods. Note that you must have the same time period for your rate and your number of
@@ -1844,18 +1743,18 @@ The discount rate is based on investors’ expected rate of return. This is some
 hurdle rate – it sets the hurdle by which we have to run our operations to exceed the expectations of our
 investors.
 Net Present Value
-The net present value (NPV) is the sum of all discounted cash ﬂows from all relevant future periods of
+The net present value (NPV) is the sum of all discounted cash flows from all relevant future periods of
 an investment:
 NPV =c0 +c1/(1 +r)1 +c2/(1 +r)2 +... +cT/(1 +r)T
-where ci represents the net cash ﬂow in period i. Note that we are not discounting the cash ﬂow of
+where ci represents the net cash flow in period i. Note that we are not discounting the cash flow of
 period 0 – this is the present value already.
 NPV is easily implemented in your spreadsheet software. If using the built-in function, keep in mind
-that period 1 is the ﬁrst period in the function, period 0 cash ﬂows need to be added separately.
-The net present value is a ﬁgure of merit that can be used to evaluate an investment on its own or
-compare diﬀerent investments with each other. The acceptance criterion for a single investment is that
+that period 1 is the first period in the function, period 0 cash flows need to be added separately.
+The net present value is a figure of merit that can be used to evaluate an investment on its own or
+compare different investments with each other. The acceptance criterion for a single investment is that
 the NPV is greater than zero.
 Internal Rate of Return
-While the NPV has a lot of nice properties for a ﬁgure of merit, it is dependent on picking the right
+While the NPV has a lot of nice properties for a figure of merit, it is dependent on picking the right
 discount rate. The internal rate of return (IRR) addresses this problem by, instead of considering the
 NPV given a certain discount rate, considers the discount rate at which the NPV=0. Consequently,
 management can compare the target return with the IRR. The criterion of acceptance is thus to invest
@@ -1865,18 +1764,17 @@ The IRR is found as the solution to:
 There is no closed form solution for this. There are however spreadsheet functions available to calculate
 this.
 Terminal Value
-We may want to consider how assets that last beyond our ﬁnancial projections should be handled. We
-have touched upon the salvage value before. There may be cash ﬂows to consider even if the investment
+We may want to consider how assets that last beyond our financial projections should be handled. We
+have touched upon the salvage value before. There may be cash flows to consider even if the investment
 is not salvaged – maintenance, certain inventory policies, etc. The terminal value handles all the cash
-ﬂows that are incurred after period T , which is the last period of our projections. After period T , cash
-ﬂows are assumed to be stable. There are normally two approaches:
-• Perpetuity: estimated value of stable cash ﬂows that continue indeﬁnitely
-• Annuity: estimated value of stable cash ﬂows for deﬁnite period beyond the unique projections
-Supply Chain Design 177
+flows that are incurred after period T , which is the last period of our projections. After period T , cash
+flows are assumed to be stable. There are normally two approaches:
+• Perpetuity: estimated value of stable cash flows that continue indefinitely
+• Annuity: estimated value of stable cash flows for definite period beyond the unique projections
 You can incorporate growth into the analysis as long as growth is stable.
 A perpetuity is geometric series that converges to:
 PV =C/r
-where C is the stable cash ﬂow per period. An annuity is the net present value of stable cash ﬂows over
+where C is the stable cash flow per period. An annuity is the net present value of stable cash flows over
 a given number of periods. The annuity is thus given by:
 PV =C/r–(C/r)(1/(1 +r)T ))
 Inventory Holding Cost
@@ -1897,48 +1795,47 @@ keep. This is an annual cost, and it consists of several components:
 – Damage
 – Insurance to prevent lost revenue
 Oftentimes, we refer to the last two categories as non-capital holding costs. But how is this incorpo-
-rated into discounted cash ﬂow analysis?
-Well, these cash ﬂows have to be evaluated like any other cash ﬂows:
-• Opportunity cost of capital is implicitly included in the discount rate, and is not a relevant cash ﬂow.
-• The non-capital costs (operating cost, lost revenue) are relevant, projected cash ﬂows.
+rated into discounted cash flow analysis?
+Well, these cash flows have to be evaluated like any other cash flows:
+• Opportunity cost of capital is implicitly included in the discount rate, and is not a relevant cash flow.
+• The non-capital costs (operating cost, lost revenue) are relevant, projected cash flows.
 Consequently, when you reduce inventory, you get the working capital cash once to reinvest and you
 avoid operating expenses and/or lost revenue over time.
-3.6.7 Deﬁning Supply Chain Finance
-Supply chain ﬁnance has been used as a broad term. It can describe how we look at the supply chain
-through a ﬁnancial lens. It helps us identiﬁes the ﬁnancial impact from supply chain transactions and
-how supply chain decisions impact ﬁnancial statements. But in recent years, the deﬁnition of supply chain
-ﬁnance has been formalized as a method to provide liquidity to buyers and sellers. This typically means
+3.6.7 Defining Supply Chain Finance
+Supply chain finance has been used as a broad term. It can describe how we look at the supply chain
+through a financial lens. It helps us identifies the financial impact from supply chain transactions and
+how supply chain decisions impact financial statements. But in recent years, the definition of supply chain
+finance has been formalized as a method to provide liquidity to buyers and sellers. This typically means
 payment terms of Net 30 or 2% 10, Net 30.
-The move to a focus on liquidity stems from the global ﬁnancial crisis of 2008, when the issue of
+The move to a focus on liquidity stems from the global financial crisis of 2008, when the issue of
 getting cash to fund business operations was exasperated. In general, buyers are increasingly looking for
-178 MITx MicroMasters Program in SCM Key Concepts
 ways to reduce their net operating working capital requirements – that is, the funds necessary to continue
 operation of the business. Many buyers try extend the payment cycle from 30 days anywhere to 150+
 days. Therefore, many suppliers have to wait a long time to get paid and need to cash to pay bills while
 waiting for the invoice payment.
-Supply Chain Finance (SCF) is the set of solutions that allow a company to ﬁnance its own working
+Supply Chain Finance (SCF) is the set of solutions that allow a company to finance its own working
 capital, leveraging its role within the supply chain and its relationships with other players in the chain.
-Supply Chain Finance has many variation among diﬀerent solutions and also has diﬀerent terminology
+Supply Chain Finance has many variation among different solutions and also has different terminology
 across users.
-SCF provides ﬁnancing
+SCF provides financing
 • “Financing is the act of providing funds for business activities, making purchases or investing.”
-• Third parties often involved: Banks, other ﬁnancial institutions.
+• Third parties often involved: Banks, other financial institutions.
 • Providing funding/capital often to consumers (e.g., for mortgages), and businesses (capital improve-
 ments).
-• Supply chains ‘ﬁnance’ or fund their payables (and sometimes inventory).
-There are two general options for ﬁnancing (debt and equity) when applying these options to Supply
-Chain Finance (SCF). Most are using debt – or loans – to provide liquidity – cash – to the ﬁrm. Some
+• Supply chains ‘finance’ or fund their payables (and sometimes inventory).
+There are two general options for financing (debt and equity) when applying these options to Supply
+Chain Finance (SCF). Most are using debt – or loans – to provide liquidity – cash – to the firm. Some
 entail selling the asset (e.g. a receivable from the buyer), usually at a deep discount. There are many
 variations, and each have advantages and disadvantages.
 Liquidity
 Liquidity is the degree to which an asset or security can be quickly bought or sold in the market without
-aﬀecting the asset’s price or the ability to quickly convert assets into cash at value. Liquidity allows the
+affecting the asset’s price or the ability to quickly convert assets into cash at value. Liquidity allows the
 business to operate, to pay bills, to buy materials, etc.
 Liquidity and the CCC
 Consider the Cash Conversion Cycle, CCC (also known as the cash-to-cash conversion cycle). There are
 three components in the CCC: the cycle time to pay suppliers, the cycle time to get paid by customers,
 and the cycle time to produce and sell a product (from order entry time to time of sale). To provide more
-liquidity the ﬁrm can: arrange for faster payments from customers; work to reduce the production and
+liquidity the firm can: arrange for faster payments from customers; work to reduce the production and
 sales cycle times, and/or slow down payments to suppliers.
 Cash Conversion Cycle Acronyms
 • DIO = Days of Inventory Outstanding (how long it takes to produce and sell)
@@ -1949,7 +1846,6 @@ Supply Chain Finance: How does it work?
 Case: Raw material purchase
 • Situation: Buyer agrees to pay seller in X days
 • Seller can wait X days for payment or consider other options to get cash sooner
-Supply Chain Design 179
 FIGURE 3.18: How does Supply Chain Finance work?
 Basic Factoring
 If the seller does not want to wait. One seller option is called factoring:
@@ -1959,19 +1855,18 @@ FIGURE 3.19: Basic factoring
 t=time, X=payment date, Y=amount
 Factoring with Recourse: The Factor can go back to seller to collect if the buyer fails to pay
 • If the Buyer fails to pay the Factor, then the Factor can collect from the seller.
-• The percentage oﬀ invoice will be lower because the seller still bears the risk if the customer does not
+• The percentage off invoice will be lower because the seller still bears the risk if the customer does not
 pay.
 Factoring without Recourse: The Factor has no option to go back to the seller to collect, can only collect
 from the buyer.
 • If the Buyer fails to pay the Factor, then the Factor is stuck.
 • No option to go back to the seller to collect.
-• The percentage oﬀ invoice will be higher because the Factor bears the risk if the customer does not pay.
-There are many options to ﬁnance receivables such as factoring. This is probably the most common
+• The percentage off invoice will be higher because the Factor bears the risk if the customer does not pay.
+There are many options to finance receivables such as factoring. This is probably the most common
 but can come at a high cost, percentage of the invoice. Other options vary based on factors including: loan
-or sale of the receivable, timing of the payments, which party bears the risk of repayment, use of diﬀerent
-types of collateral, who initiates the arrangement. Each option has diﬀerent impact on net operating
+or sale of the receivable, timing of the payments, which party bears the risk of repayment, use of different
+types of collateral, who initiates the arrangement. Each option has different impact on net operating
 working capital.
-180 MITx MicroMasters Program in SCM Key Concepts
 Options for Liquidity in the Supply Chain
 FIGURE 3.20: Options for liquidity in the Supply Chain
 Advanced Options
@@ -1980,7 +1875,6 @@ Utilize automated processes
 • Lower cost loan operations
 Solicit and use more detailed data about seller and buyer
 • More informed risk assessments
-Supply Chain Design 181
 • Can result in lower risk and therefore lower cost loans
 • Favorable rates for increased visibility and faster process due to automated info sharing, better risk
 assessment
@@ -1992,47 +1886,45 @@ Use operational measures to reduce the need for working capital:
 • Various forms of collaboration – vendor managed inventory (VMI), sales and operations planning
 (S&OP), collaborative planning, forecasting and replenishment (CPFR), continuous replenishment
 (CRP), etc. Each of may reduce the amount of inventory necessary to maintain service levels
-Beneﬁts of Supply Chain Finance
-There are many beneﬁts of supply chain ﬁnance. They include:
+Benefits of Supply Chain Finance
+There are many benefits of supply chain finance. They include:
 • Potential to reduce the Net Operating Working Capital Requirements (NOWC): lower for both seller
 and buyer via quicker cash to seller, lower inventories
 • Potential lower cost materials: via discounts; lower operating costs with use of technology for information
 • Potentially faster cycle times: via faster cash, faster operations; reducing CCC
-• Potentially more robust supply chain: via collaborative ﬁnancial connections and ensuring supplier
+• Potentially more robust supply chain: via collaborative financial connections and ensuring supplier
 health
-• Beneﬁts to third parties: More customers for loans, potentially lower risk
+• Benefits to third parties: More customers for loans, potentially lower risk
 3.6.8 Analyzing Financial Performance
-We might ask ourselves, who cares about a ﬁrm’s ﬁnancial performance? The obvious answer is investors,
-executives in the ﬁrm, and employees of the ﬁrm (if it aﬀects their bonus). Beyond who this matters to,
-many supply chain professionals ask further questions including: How do you analyze ﬁnancial perfor-
-mance? How do you measure it? How do ﬁnancial analysis and measurement approaches apply to supply
+We might ask ourselves, who cares about a firm’s financial performance? The obvious answer is investors,
+executives in the firm, and employees of the firm (if it affects their bonus). Beyond who this matters to,
+many supply chain professionals ask further questions including: How do you analyze financial perfor-
+mance? How do you measure it? How do financial analysis and measurement approaches apply to supply
 chain management? We will discuss these questions in the next section.
 The main goal of a CEO is to provide shareholder value. Drivers of shareholder value include: revenue
 growth, operating margin, and asset productivity. To monitor this, CEOs and other executives generally
 need a scorecard to assess these drivers.
-182 MITx MicroMasters Program in SCM Key Concepts
 FIGURE 3.21: High-level shareholder value map (Deloitte methods)
 Balanced Scorecard
-Ultimately, causal paths from all the measures on a Scorecard should be linked to ﬁnancial objectives.
-We have found that companies use three ﬁnancial themes to achieve their business strategies:
+Ultimately, causal paths from all the measures on a Scorecard should be linked to financial objectives.
+We have found that companies use three financial themes to achieve their business strategies:
 • Revenue Growth and Mix
 • Cost Reduction / Productivity Improvement
 • Asset Utilization / Investment Strategy
 FIGURE 3.22: The Balanced Scorecard strategy map
-Supply Chain Design 183
 Drivers of Shareholder Value
 The drivers of shareholder value are: Revenue Growth, Operating Margin and Asset Productivity (see
-ﬁgure 3.23).
+figure 3.23).
 FIGURE 3.23: Drivers of shareholder value
 Ratio Analysis
-Ratio Analysis is the mathematical comparison of a ﬁnancial statement accounts or categories. These
-relationships between the ﬁnancial statement accounts help investors, creditors, and internal company
+Ratio Analysis is the mathematical comparison of a financial statement accounts or categories. These
+relationships between the financial statement accounts help investors, creditors, and internal company
 management understand how well a business is performing and of areas needing improvement. See table
 3.5 for potential comparison areas on each statement or sheet.
 Income Statement Balance Sheet
 Sales Cash and Equivalents
 Cost of Goods Accounts Receivable
-Gross Proﬁt Inventories
+Gross Profit Inventories
 SG&A Expenses Total Current Assets
 Depreciation & Amortization Net Property/Plant/Equipment
 EBIT Total Long-Term Assets
@@ -2046,14 +1938,13 @@ Retained Earnings
 Total Stockholder’s Equity
 Total Liabilities & Equity
 TABLE 3.5: Potential comparison areas on each statement
-Overall measure of ﬁnancial performance
-Is there a single metric that can reﬂect the ﬁrm’s ﬁnancial performance for investors? Or executives?
+Overall measure of financial performance
+Is there a single metric that can reflect the firm’s financial performance for investors? Or executives?
 Return on Equity
 ROE =NetIncome/Equity
-184 MITx MicroMasters Program in SCM Key Concepts
 Return on Assets
 ROA =NetIncome/TotalAssets
-Speciﬁc measures of ﬁnancial performance
+Specific measures of financial performance
 Revenue growth
 Sales growth = (Salest/Salest−1)− 1
 Compound Annual Growth Rate (CAGR) = (Salest/Salest−n)1/n− 1
@@ -2069,7 +1960,7 @@ Asset productivity
 • Days of inventory outstanding = Average Inventory / (COGS/365)
 Ratio Analysis Advice
 There are not any “correct” values for ratios. Ratio values need to be understood in context such as:
-compare with industry averages, compare with speciﬁc competitors; and/or observe trends over time.
+compare with industry averages, compare with specific competitors; and/or observe trends over time.
 You will need to develop a framework of several ratios to monitor. In combination, these clues may tell
 an interesting story.
 DuPont Analysis
@@ -2080,35 +1971,34 @@ R =T×P
 Where:
 R = rate of return on capital invested
 T = rate of turnover of invested capital
-P = percentage of proﬁt on sales
+P = percentage of profit on sales
 In essence, it is a simple combination of two ratios:
 ROA = Net Margin× Asset Turnover
 Net Margin = Net Income/Sales
 Asset Turnover = Sales/Total Assets
-The formula commonly used today focuses on ROE for Dupont analysis incorporates ﬁnancial leverage:
+The formula commonly used today focuses on ROE for Dupont analysis incorporates financial leverage:
 ROE = Net Margin× Asset Turnover× Financial Leverage
 Net Margin = Net Income/Sales
 Asset Turnover = Sales/Total Assets
 Financial Leverage = Total Assets/Equity
-Supply Chain Design 185
 GMROI: Gross Margin Return on Investment
 GMROI has a narrower focus than DuPont and is useful in evaluating inventory decisions, and their
-impact on proﬁtability.
+impact on profitability.
 GMROI = Gross Margin× Inventory Turnover
-Gross Margin = Gross Proﬁt/Sales
+Gross Margin = Gross Profit/Sales
 Inventory Turnover = Sales/Inventory
 ROIC
-ROIC (Return on Invested Capital) is an overall measure of ﬁnancial performance. This includes returns
+ROIC (Return on Invested Capital) is an overall measure of financial performance. This includes returns
 on all capital for investors seeking a return, not only on equity. ROIC is a good measure for supply chain
-performance. It is not confounded by ﬁnancing strategies. It shows the fundamental earning power of the
-ﬁrm, i.e. created by operations.
+performance. It is not confounded by financing strategies. It shows the fundamental earning power of the
+firm, i.e. created by operations.
 ROA = Net Income / Total Assets
 ROE = Net Income / Equity
-Both measures can be distorted by ﬁnancial leverage, i.e. more debt.
+Both measures can be distorted by financial leverage, i.e. more debt.
 ROIC = NOPAT / Invested Capital
-Net Operating Proﬁt After Tax (NOPAT)
+Net Operating Profit After Tax (NOPAT)
 • NOPAT = EBIT (1 – Tax rate)
-• Earnings after tax as if it were all equity ﬁnanced (i.e., not considering interest expense or tax books)
+• Earnings after tax as if it were all equity financed (i.e., not considering interest expense or tax books)
 Invested Capital (IC)
 • IC = Interest-Bearing Debt + Equity
 • Sum of all sources of cash on which a return must be earned (i.e., not including accounts payable)
@@ -2116,34 +2006,33 @@ Invested Capital (IC)
 • Prefer the book value of Invested Capital (i.e. the value invested) rather than the market value
 RONA
 RONA (Return on Net Assets) is similar to ROIC and similar to ROCE (Return on Capital Employed).
-It is a return on assets that are expected to produce proﬁt.
+It is a return on assets that are expected to produce profit.
 RONA = NOPAT/ Net Assets
 Net Assets
 • NA = Fixed Assets + Non-cash Working Capital
 • NA = Total Assets – Current Liabilities – Cash
-186 MITx MicroMasters Program in SCM Key Concepts
 Learning Objectives
-• Understand the basics of ﬁnancial reporting and accounting
-• Understand the impact of depreciation on the ﬁnancial reports
+• Understand the basics of financial reporting and accounting
+• Understand the impact of depreciation on the financial reports
 • Introduce cost accounting/cost systems
-• Become familiar with the principles of the diﬀerent cost systems
+• Become familiar with the principles of the different cost systems
 • Learn how to perform simple activity based costing (ABC)
 • Become familiar with working capital requirements and the Cash Conversion Cycle
-• Understand relevant cash ﬂows and how to estimate them
-• Understand and learn how to ﬁnd free cash ﬂows from the ﬁnancial reports
-• Determine the free cash ﬂows over time for an investment/project
-• Understand the underlying reasons for discounted cash ﬂow (DCF) analysis
+• Understand relevant cash flows and how to estimate them
+• Understand and learn how to find free cash flows from the financial reports
+• Determine the free cash flows over time for an investment/project
+• Understand the underlying reasons for discounted cash flow (DCF) analysis
 • Review how to calculate the Net Present Value (NPV) and the Internal Rate of Return (IRR) of an
-investment, and how to use these ﬁgure of merits for evaluating investments
+investment, and how to use these figure of merits for evaluating investments
 • How to handle inventory reductions in DCF analysis
 • Understand change in payment terms to get cash to fund operations
-• Recognize supply chain ﬁnance deﬁnition and that it has variations
+• Recognize supply chain finance definition and that it has variations
 • Become familiar with the Cash Conversion Cycle
-• Review diﬀerent types of ﬁnance receivables
-• Recognize variations across factoring in ﬁnancing receivables
-• Understand diﬀerent options to ﬁnance supply chain
-• Introduction to eﬀective analysis to drivers of shareholder value
-• Recognize ﬁnancial metrics that can assess supply chain performance and guide strategy
+• Review different types of finance receivables
+• Recognize variations across factoring in financing receivables
+• Understand different options to finance supply chain
+• Introduction to effective analysis to drivers of shareholder value
+• Recognize financial metrics that can assess supply chain performance and guide strategy
 • Review which metrics are better at assessing total supply chain performance
 References
 • Hawkins, David, Corporate Financial Reporting and Analysis: Text and Cases 3rd ed., Irwin, 1986
@@ -2153,76 +2042,73 @@ see Chapter 1
 [this is a workbook that you should work through, it is not enough just to read it!]
 • Anthony, R.N. and Breitner, L.K. Core Concepts of Accounting. 10th ed. Prentice Hill, 2010, see pages
 1-43 [this book provides a summary of the Essentials book, but the reader should go through the
-Essentials book ﬁrst for complete coverage of the material]
+Essentials book first for complete coverage of the material]
 • Cost System Analysis, Harvard Business School Publishing, Product 9-195-181
 • Become familiar with working capital requirements and the Cash Conversion Cycle
 • Measure Costs Right, Make the Right Decisions, Harvard Business Review, Sept-Oct 1
-Supply Chain Design 187
 3.7 Organizational, Process, and Performance Metric Design
 3.7.1 Summary
 We also review three areas of “soft” design: organizations, processes, and metrics.
 Organizational design for supply chains has evolved as the profession has changed. Supply chain or-
-ganizations started as separate silo-ed functions or activities spread out across diﬀerent larger divisions,
-such as ﬁnance, manufacturing, and marketing. The areas started combining into materials management
-(covering the ﬂow of inbound materials) and physical distribution (covering the movement of ﬁnal prod-
+ganizations started as separate silo-ed functions or activities spread out across different larger divisions,
+such as finance, manufacturing, and marketing. The areas started combining into materials management
+(covering the flow of inbound materials) and physical distribution (covering the movement of final prod-
 ucts to customers). Logistics groups emerged later to bring these two functions together in order to work
-out trade-oﬀs between the sometimes conﬂicting goals of inbound and outbound management. Currently,
-there are various forms of organizations used across diﬀerent companies. The main perspectives diﬀer in
+out trade-offs between the sometimes conflicting goals of inbound and outbound management. Currently,
+there are various forms of organizations used across different companies. The main perspectives differ in
 terms of viewing supply chains or logistics as a set of functions, as a program, or within a matrix. The
-matrix form is most common in larger global ﬁrms. In these cases, logistics is a horizontal function that
+matrix form is most common in larger global firms. In these cases, logistics is a horizontal function that
 interacts directly with each vertical business unit providing shared services.
-The key trade-oﬀ involved with supply chain organizational design is whether to centralize or de-
-centralize diﬀerent activities. Centralization implies that all decisions are made at a headquarters while
+The key trade-off involved with supply chain organizational design is whether to centralize or de-
+centralize different activities. Centralization implies that all decisions are made at a headquarters while
 decentralization moves this to the regions or individual business units. Each has a role with the general
 rule of thumb shifting most procurement, long-range planning, and new product activities to central and
 keeping daily operations decentralized.
 Processes within supply chains are essentially transformations of inputs into outputs. Procurement
 transforms an order into product. Transportation converts material at a distribution center to product
 at the customer location. Each of these processes can be managed individually or looked at as within a
-greater system. The diﬀerent processes within the supply chain should be designed to complement each
+greater system. The different processes within the supply chain should be designed to complement each
 other.
 Metrics follow the process structure. All metrics can be boiled down to utilization, productivity,
-or eﬀectiveness metrics. Utilization measures inputs compared to some norm (capacity, standard, etc.).
-Productivity or eﬃciency compares inputs to outputs. Eﬀectiveness compares output to some norm value.
-The diﬀerent metrics can be evaluated for robustness, integration, usefulness, and validity. There is no
-single best metric, however, they will all have trade-oﬀs between these criteria. This is why systems of
+or effectiveness metrics. Utilization measures inputs compared to some norm (capacity, standard, etc.).
+Productivity or efficiency compares inputs to outputs. Effectiveness compares output to some norm value.
+The different metrics can be evaluated for robustness, integration, usefulness, and validity. There is no
+single best metric, however, they will all have trade-offs between these criteria. This is why systems of
 metrics should be used in a balanced scorecard framework.
 3.7.2 Key Concepts
 3.7.3 Supply Chain Organizational Design
 Centralization vs. Decentralization
 Organizational design centers on whether to centralize or decentralize an activity. Each has a place and
-there are basic trade-oﬀs involved.
+there are basic trade-offs involved.
 Centralized
 • Leverages economies of scale
 • Harmonizes policies and practices
 • Allows for optimal (global) solutions
 Decentralized
 • Allows decision making to be closer to customer
-• Allows decisions to reﬂect local cultures and customs
+• Allows decisions to reflect local cultures and customs
 • Allows for optimal solutions within a region
 • Allows business units to act autonomously
-188 MITx MicroMasters Program in SCM Key Concepts
 Supply Chain Processes
-Supply chain processes can be thought of transformations of one ﬂow unit to another.
+Supply chain processes can be thought of transformations of one flow unit to another.
 FIGURE 3.24: Supply chain processes
 3.7.4 Supply Chain Metric Design
 Performance Metrics
-Metrics can be divided into Utilization, Productivity, and Eﬀectiveness measures.
+Metrics can be divided into Utilization, Productivity, and Effectiveness measures.
 FIGURE 3.25: Performance dimensions
-Performance Metric Criteria and Trade-oﬀs
-Metrics can be evaluated according to several metrics – but they will always have trade-oﬀs.
+Performance Metric Criteria and Trade-offs
+Metrics can be evaluated according to several metrics – but they will always have trade-offs.
 • Robust: The metric is interpreted similarly by all users, is comparable across time, location and
 organizations, and is repeatable.
 • Valid:The metric accurately captures events and activities measured and controls for exogenous factors.
 • Integrative: The metric includes all relevant aspects of the process and promotes coordination across
 functions and divisions (and even enterprises).
-Supply Chain Design 189
 • Useful: The metric is readily understandable by decision makers and provides a guide to action.
-FIGURE 3.26: Performance criteria trade-oﬀs
+FIGURE 3.26: Performance criteria trade-offs
 Balanced Metrics
 Metric systems should be designed to balance across three key areas: Asset utilization (utilization metrics),
-Eﬃciency (productivity metrics), and Customer Response (eﬀectiveness metrics). Diﬀerent industries will
-emphasize diﬀerent aspects of process performance.
+Efficiency (productivity metrics), and Customer Response (effectiveness metrics). Different industries will
+emphasize different aspects of process performance.
 FIGURE 3.27: Balanced metric system
 Learning Objectives
 • Understand how supply chain organizations are typically and can be organized and why
@@ -2230,12 +2116,8 @@ Learning Objectives
 • Gain insights into supply chain processes
 • Able to develop and design performance metric systems for supply chains
 References
-• Caplice, C., & Sheﬃ, Y. (1994). A review and evaluation of logistics metrics. The International Journal
+• Caplice, C., & Sheffi, Y. (1994). A review and evaluation of logistics metrics. The International Journal
 of Logistics Management, 5(2), 11-28.
 3.8 Appendix A How To Debug Your Model - Flowchart
-190 MITx MicroMasters Program in SCM Key Concepts
 
-Supply Chain Design 191
-
-192 MITx MicroMasters Program in SCM Key Concepts
 FIGURE 3.28: How To Debug Your Model Flowchart

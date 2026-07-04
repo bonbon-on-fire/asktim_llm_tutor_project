@@ -8,8 +8,8 @@ the real figure instead of a secondhand prose description.
 
 Mirrors the small, dependency-free style of :mod:`utils.parsing`.
 
-Naming convention (strict): ``exercise_<NN>_<slug>.<ext>`` where ``<NN>`` is a
-two-digit exercise number and ``<ext>`` is one of ``png``, ``jpg``, ``jpeg``
+Naming convention (strict): ``exercise_<N>_<slug>.<ext>`` where ``<N>`` is a
+non-padded exercise number and ``<ext>`` is one of ``png``, ``jpg``, ``jpeg``
 (case-insensitive). Multiple figures per exercise are allowed and returned
 sorted by filename. A figure serves exactly one exercise.
 """
@@ -24,8 +24,8 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
 
-# exercise_<NN>_<slug>.<png|jpg|jpeg>, extension case-insensitive.
-_FIGURE_NAME_RE = re.compile(r"^exercise_(\d{2})_.+\.(png|jpe?g)$", re.IGNORECASE)
+# exercise_<N>_<slug>.<png|jpg|jpeg>, extension case-insensitive.
+_FIGURE_NAME_RE = re.compile(r"^exercise_(\d+)_.+\.(png|jpe?g)$", re.IGNORECASE)
 
 _MIME_BY_SUFFIX = {
     ".png": "image/png",
@@ -42,18 +42,19 @@ def discover_figures(
     """Return the figure files attached to a given course/exercise.
 
     Globs ``<curriculum_root>/<course>/figures/``, keeps only files matching
-    the strict ``exercise_<NN>_*.{png,jpg,jpeg}`` convention whose ``<NN>``
-    equals *exercise_number* (zero-padded to two digits), and returns them
-    sorted by filename. Returns an empty list when the folder or matches are
-    absent — figures are always optional and back-compatible.
+    the strict ``exercise_<N>_*.{png,jpg,jpeg}`` convention whose ``<N>``
+    equals *exercise_number* (normalized to its non-padded form), and returns
+    them sorted by filename. Returns an empty list when the folder or matches
+    are absent — figures are always optional and back-compatible.
     """
     root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
     figures_dir = root / course / "figures"
     if not figures_dir.is_dir():
         return []
 
+    # Normalize so "8", "08", and 8 all resolve to exercise_8_*.
     try:
-        target = f"{int(exercise_number):02d}"
+        target = str(int(exercise_number))
     except (TypeError, ValueError):
         target = str(exercise_number).strip()
 

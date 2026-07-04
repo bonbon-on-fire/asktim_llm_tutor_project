@@ -1,6 +1,6 @@
 """Canonical curriculum path resolution shared across runners and web apps.
 
-Exercise prompts live under ``curriculum/<course>/exercises/exercise_<NN>.txt``
+Exercise prompts live under ``curriculum/<course>/exercises/exercise_<N>.txt``
 (a subfolder, consistent with ``figures/`` and ``lectures/``). Previously they
 sat loose at the top of the course folder; this module is the single place that
 knows the layout, so the six call sites that used to duplicate
@@ -15,11 +15,17 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
 
-# exercise_<NN>.txt — exactly two digits.
-_EXERCISE_NAME_RE = re.compile(r"^exercise_(\d{2})\.txt$")
+# exercise_<N>.txt — one or more digits, not zero-padded (e.g. exercise_1, exercise_10).
+_EXERCISE_NAME_RE = re.compile(r"^exercise_(\d+)\.txt$")
 
-# practice_<NN>.txt — exactly two digits (parallel to exercises).
-_PRACTICE_NAME_RE = re.compile(r"^practice_(\d{2})\.txt$")
+# practice_<N>.txt — one or more digits (parallel to exercises).
+_PRACTICE_NAME_RE = re.compile(r"^practice_(\d+)\.txt$")
+
+
+def _norm_num(num: str) -> str:
+    """Normalize an item number to its non-padded form ('01' -> '1'); pass through non-numeric."""
+    s = str(num).strip()
+    return str(int(s)) if s.isdigit() else s
 
 
 def _root(curriculum_root: Path | str | None) -> Path:
@@ -46,8 +52,12 @@ def exercise_path(
     exercise_number: str,
     curriculum_root: Path | str | None = None,
 ) -> Path:
-    """Return the path to a course's exercise file (existence not guaranteed)."""
-    return exercises_dir(course, curriculum_root) / f"exercise_{exercise_number}.txt"
+    """Return the path to a course's exercise file (existence not guaranteed).
+
+    The number is normalized to its non-padded form, so callers may pass either
+    ``"1"`` or ``"01"`` and both resolve to ``exercise_1.txt``.
+    """
+    return exercises_dir(course, curriculum_root) / f"exercise_{_norm_num(exercise_number)}.txt"
 
 
 def exercise_exists(
@@ -76,8 +86,12 @@ def practice_path(
     practice_number: str,
     curriculum_root: Path | str | None = None,
 ) -> Path:
-    """Return the path to a course's practice-problem file (existence not guaranteed)."""
-    return practices_dir(course, curriculum_root) / f"practice_{practice_number}.txt"
+    """Return the path to a course's practice-problem file (existence not guaranteed).
+
+    The number is normalized to its non-padded form (``"07"`` and ``"7"`` both
+    resolve to ``practice_7.txt``).
+    """
+    return practices_dir(course, curriculum_root) / f"practice_{_norm_num(practice_number)}.txt"
 
 
 def practice_exists(
@@ -105,32 +119,32 @@ def discover_practice(
     course: str,
     curriculum_root: Path | str | None = None,
 ) -> list[str]:
-    """Return sorted zero-padded 2-digit practice-problem numbers for a course."""
+    """Return non-padded practice-problem numbers for a course, sorted numerically (e.g. ``['1', '2', '10']``)."""
     folder = practices_dir(course, curriculum_root)
     if not folder.is_dir():
         return []
-    nums: list[str] = []
+    nums: set[str] = set()
     for path in folder.glob("practice_*.txt"):
         m = _PRACTICE_NAME_RE.match(path.name)
         if m:
-            nums.append(m.group(1))
-    return sorted(nums)
+            nums.add(str(int(m.group(1))))
+    return sorted(nums, key=int)
 
 
 def discover_exercises(
     course: str,
     curriculum_root: Path | str | None = None,
 ) -> list[str]:
-    """Return sorted zero-padded 2-digit exercise numbers for a course (e.g. ``['01', '02']``)."""
+    """Return non-padded exercise numbers for a course, sorted numerically (e.g. ``['1', '2', '10']``)."""
     folder = exercises_dir(course, curriculum_root)
     if not folder.is_dir():
         return []
-    nums: list[str] = []
+    nums: set[str] = set()
     for path in folder.glob("exercise_*.txt"):
         m = _EXERCISE_NAME_RE.match(path.name)
         if m:
-            nums.append(m.group(1))
-    return sorted(nums)
+            nums.add(str(int(m.group(1))))
+    return sorted(nums, key=int)
 
 
 def list_courses(curriculum_root: Path | str | None = None) -> list[str]:

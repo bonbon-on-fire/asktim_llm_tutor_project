@@ -12,18 +12,18 @@ curriculum/
     syllabus.txt                     # optional — appended to assignment text in main_ui
     online_link.txt                  # optional — OCW course URL; source for RAG ingestion (Phase 11)
     exercises/                       # assignment prompts
-      exercise_01.txt
-      exercise_02.txt
+      exercise_1.txt
+      exercise_2.txt
       ...
     practices/                       # optional — ungraded practice problems (sandbox_ui)
-      practice_01.txt
-      practice_02.txt
+      practice_1.txt
+      practice_2.txt
       ...
     figures/
-      exercise_04_power_actors_map.png   # naming: exercise_<NN>_<slug>.png
+      exercise_4_power_actors_map.png    # naming: exercise_<N>_<slug>.png
       ...
     lectures/                        # optional — per-course lecture transcripts
-      lecture_01.txt                 # plain text; all included in tutor context
+      lecture_1_0_intro.txt          # plain text; all included in tutor context
       ...
 ```
 
@@ -32,9 +32,9 @@ curriculum/
 - `course_name.txt` holds the human-readable course title rendered in the `main_ui/` course banner (via `load_course_name()` in [main_ui/routes/_validation.py](../main_ui/routes/_validation.py)). If empty or absent, the banner renders blank.
 - `syllabus.txt` (optional) is appended to the assignment block in `main_ui/`'s context build (see [main_ui/services/tutor_bridge.py](../main_ui/services/tutor_bridge.py)).
 - `online_link.txt` (optional) holds the course's MIT OpenCourseWare URL — the canonical source link for **RAG ingestion** of fuller course materials. The [`rag/`](../rag/) pipeline reads it (`python -m rag.ingest --course <c> --source ocw`) to crawl the OCW site's HTML pages **and linked PDFs** (lecture notes, problem sets) into the per-course `rag_index/`. See **Phase 11** in the root [PLANNING.md](../PLANNING.md) and [`rag/README.md`](../rag/README.md).
-- `exercises/exercise_XX.txt` stores the assignment prompt for a specific exercise (zero-padded two-digit numbering). Path resolution for all readers (web apps + runners) is centralized in [`utils/curriculum.py`](../utils/curriculum.py).
-- `practices/practice_XX.txt` (optional) holds **ungraded practice problems** — a parallel content kind to exercises, selectable as a distinct "Practice problems" group in the `sandbox_ui/` Create-context wizard. Same zero-padded two-digit numbering; resolved via `practices_dir()` / `discover_practice()` in [`utils/curriculum.py`](../utils/curriculum.py).
-- `figures/` holds visual context that belongs to a specific exercise. Files must start with `exercise_<NN>_` so the framework (Phase 6 — see root [PLANNING.md](../PLANNING.md)) attaches the matching figures as multimodal input when the tutor/student/judge see that exercise — both in batch runs and in the live AskTIM/Sandbox chat (auto-attached per turn via `services/tutor_bridge.py`). Supported extensions: `.png`, `.jpg`, `.jpeg`. Loaded by [`utils/figures.py`](../utils/figures.py).
+- `exercises/exercise_X.txt` stores the assignment prompt for a specific exercise (non-padded numbering — `exercise_1.txt`, `exercise_10.txt`). Path resolution for all readers (web apps + runners) is centralized in [`utils/curriculum.py`](../utils/curriculum.py), which normalizes numbers and sorts them numerically. `01` and `1` both resolve to `exercise_1.txt`.
+- `practices/practice_X.txt` (optional) holds **ungraded practice problems** — a parallel content kind to exercises, selectable as a distinct "Practice problems" group in the `sandbox_ui/` Create-context wizard. Same non-padded numbering; resolved via `practices_dir()` / `discover_practice()` in [`utils/curriculum.py`](../utils/curriculum.py).
+- `figures/` holds visual context that belongs to a specific exercise. Files must start with `exercise_<N>_` so the framework (Phase 6 — see root [PLANNING.md](../PLANNING.md)) attaches the matching figures as multimodal input when the tutor/student/judge see that exercise — both in batch runs and in the live AskTIM/Sandbox chat (auto-attached per turn via `services/tutor_bridge.py`). Supported extensions: `.png`, `.jpg`, `.jpeg`. Loaded by [`utils/figures.py`](../utils/figures.py).
 - `lectures/` (optional) holds **per-course** lecture transcripts as plain `.txt` files. Every file in the folder is read (sorted by filename, labeled by stem) and folded into the tutor's context for **all** exercises in the course — mirroring how `syllabus.txt` is treated. Loaded by [`utils/lectures.py`](../utils/lectures.py); absent folder = no transcripts.
 
 ## Available courses
@@ -55,11 +55,11 @@ The four courses beyond Cities and Climate Change (Development Planning, Mathema
 1. Create a folder under `curriculum/` with the course name.
 2. Add `course.txt` with shared context, and `course_name.txt` with the display title for the banner.
 3. Optionally add `syllabus.txt` for course-level material that should accompany every exercise.
-4. Add an `exercises/` folder with one or more `exercise_XX.txt` files (zero-padded numbering).
-5. If an exercise references diagrams or maps, drop them in `figures/` with the `exercise_<NN>_<slug>.<ext>` naming convention.
+4. Add an `exercises/` folder with one or more `exercise_X.txt` files (non-padded numbering).
+5. If an exercise references diagrams or maps, drop them in `figures/` with the `exercise_<N>_<slug>.<ext>` naming convention.
 6. If the course has lecture transcripts, drop plain `.txt` files into `lectures/`; they are included in the tutor context for every exercise in the course.
 7. Optionally add `online_link.txt` with the course's MIT OpenCourseWare URL — the source link for RAG ingestion of fuller course materials (see Phase 11 in the root [PLANNING.md](../PLANNING.md)).
 
 ## Adding an exercise to an existing course
 
-Add a new `exercises/exercise_XX.txt` file in the course folder. If it has visuals, add matching `figures/exercise_<NN>_*.png` files.
+Add a new `exercises/exercise_X.txt` file in the course folder. If it has visuals, add matching `figures/exercise_<N>_*.png` files.

@@ -43,26 +43,28 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 # ---------------------------------------------------------------------------
 
 def test_discovers_real_curriculum_figure() -> None:
-    figs = discover_figures("cities_and_climate_change", "08")
+    figs = discover_figures("cities_and_climate_change", "8")
     names = figure_filenames(figs)
     _check(
-        "discovers exercise_08 spider diagram",
-        names == ["exercise_08_spider_diagram.png"],
+        "discovers exercise_8 spider diagram",
+        names == ["exercise_8_spider_diagram.png"],
         f"got {names}",
     )
 
-    figs04 = discover_figures("cities_and_climate_change", "04")
+    figs04 = discover_figures("cities_and_climate_change", "4")
     _check(
-        "discovers exercise_04 power/actors map",
-        figure_filenames(figs04) == ["exercise_04_power_actors_map.png"],
+        "discovers exercise_4 power/actors map",
+        figure_filenames(figs04) == ["exercise_4_power_actors_map.png"],
         f"got {figure_filenames(figs04)}",
     )
 
 
 def test_exercise_number_is_normalized() -> None:
-    # "8" (unpadded) and 8 (int-like) should both resolve to exercise_08.
+    # "8" (unpadded) and "08" (padded) should both resolve to exercise_8.
     by_unpadded = figure_filenames(discover_figures("cities_and_climate_change", "8"))
-    _check("unpadded '8' resolves to exercise_08", by_unpadded == ["exercise_08_spider_diagram.png"], f"got {by_unpadded}")
+    _check("unpadded '8' resolves to exercise_8", by_unpadded == ["exercise_8_spider_diagram.png"], f"got {by_unpadded}")
+    by_padded = figure_filenames(discover_figures("cities_and_climate_change", "08"))
+    _check("padded '08' also resolves to exercise_8", by_padded == ["exercise_8_spider_diagram.png"], f"got {by_padded}")
 
 
 def test_missing_exercise_and_course_return_empty() -> None:
@@ -75,24 +77,23 @@ def test_discovery_filters_and_isolates_by_exercise() -> None:
         root = Path(tmp)
         figdir = root / "demo" / "figures"
         figdir.mkdir(parents=True)
-        # Valid, two figures for exercise 01 (should sort alphabetically).
-        (figdir / "exercise_01_b_second.png").write_bytes(b"\x89PNG\r\n")
-        (figdir / "exercise_01_a_first.jpg").write_bytes(b"\xff\xd8\xff")
-        # Different exercise — must not bleed into 01.
-        (figdir / "exercise_02_other.jpeg").write_bytes(b"\xff\xd8\xff")
+        # Valid, two figures for exercise 1 (should sort alphabetically).
+        (figdir / "exercise_1_b_second.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "exercise_1_a_first.jpg").write_bytes(b"\xff\xd8\xff")
+        # Different exercise — must not bleed into 1.
+        (figdir / "exercise_2_other.jpeg").write_bytes(b"\xff\xd8\xff")
         # Non-matching names — must be ignored.
-        (figdir / "course_overview.png").write_bytes(b"x")
-        (figdir / "exercise_1_badnumber.png").write_bytes(b"x")
-        (figdir / "exercise_01_notes.pdf").write_bytes(b"x")
+        (figdir / "course_overview.png").write_bytes(b"x")   # no exercise_ prefix
+        (figdir / "exercise_1_notes.pdf").write_bytes(b"x")  # unsupported extension
 
-        names = figure_filenames(discover_figures("demo", "01", curriculum_root=root))
+        names = figure_filenames(discover_figures("demo", "1", curriculum_root=root))
         _check(
-            "filters extensions/names and sorts within exercise 01",
-            names == ["exercise_01_a_first.jpg", "exercise_01_b_second.png"],
+            "filters extensions/names and sorts within exercise 1",
+            names == ["exercise_1_a_first.jpg", "exercise_1_b_second.png"],
             f"got {names}",
         )
-        names2 = figure_filenames(discover_figures("demo", "02", curriculum_root=root))
-        _check("isolates exercise 02", names2 == ["exercise_02_other.jpeg"], f"got {names2}")
+        names2 = figure_filenames(discover_figures("demo", "2", curriculum_root=root))
+        _check("isolates exercise 2", names2 == ["exercise_2_other.jpeg"], f"got {names2}")
 
 
 # ---------------------------------------------------------------------------

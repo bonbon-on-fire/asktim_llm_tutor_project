@@ -47,9 +47,9 @@ def validate_course(course) -> dict | None:
 def validate_exercise(course, exercise) -> dict | None:
     if not exercise:
         return _err("exercise", exercise, "missing")
-    if not (isinstance(exercise, str) and len(exercise) == 2 and exercise.isdigit()):
+    if not (isinstance(exercise, str) and exercise.isdigit()):
         return _err(
-            "exercise", exercise, "must be a zero-padded 2-digit number (e.g. 04)"
+            "exercise", exercise, "must be a non-negative integer (e.g. 4)"
         )
     if not _exercise_exists(course, exercise):
         return _err(

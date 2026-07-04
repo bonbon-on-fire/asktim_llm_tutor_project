@@ -80,12 +80,12 @@ DEFAULT_PERSONAS = [
 ]
 # (kind, number) — 3 graded exercises + 3 practice problems.
 DEFAULT_PROBLEMS = [
-    ("exercise", "01"),
-    ("exercise", "02"),
-    ("exercise", "03"),
-    ("practice", "01"),
-    ("practice", "02"),
-    ("practice", "03"),
+    ("exercise", "1"),
+    ("exercise", "2"),
+    ("exercise", "3"),
+    ("practice", "1"),
+    ("practice", "2"),
+    ("practice", "3"),
 ]
 
 

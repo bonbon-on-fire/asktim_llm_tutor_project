@@ -34,16 +34,16 @@ def main() -> int:
         course = "tmp_course_practice"
         exdir = _CURRICULUM / course / "exercises"
         exdir.mkdir(parents=True, exist_ok=True)
-        (exdir / "exercise_01.txt").write_text("EXERCISE ONE BODY", encoding="utf-8")
+        (exdir / "exercise_1.txt").write_text("EXERCISE ONE BODY", encoding="utf-8")
         prdir = _CURRICULUM / course / "practices"
         prdir.mkdir(parents=True, exist_ok=True)
-        (prdir / "practice_01.txt").write_text("PRACTICE ONE BODY", encoding="utf-8")
+        (prdir / "practice_1.txt").write_text("PRACTICE ONE BODY", encoding="utf-8")
         try:
-            ex_text = build_assignment_text(course, "01", exercise_kind="exercise")
-            pr_text = build_assignment_text(course, "01", exercise_kind="practice")
+            ex_text = build_assignment_text(course, "1", exercise_kind="exercise")
+            pr_text = build_assignment_text(course, "1", exercise_kind="practice")
             _check("exercise kind resolves exercise file", "EXERCISE ONE BODY" in ex_text, ex_text)
             _check("practice kind resolves practice file", "PRACTICE ONE BODY" in pr_text, pr_text)
-            _check("default kind is exercise", "EXERCISE ONE BODY" in build_assignment_text(course, "01"))
+            _check("default kind is exercise", "EXERCISE ONE BODY" in build_assignment_text(course, "1"))
         finally:
             shutil.rmtree(_CURRICULUM / course, ignore_errors=True)
     print(f"\n{_PASSED} passed, {_FAILED} failed")

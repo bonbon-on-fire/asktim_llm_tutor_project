@@ -136,7 +136,7 @@ def _discover_courses() -> list[str]:
 
 
 def _discover_exercises(course: str) -> list[str]:
-    """Return zero-padded exercise numbers available for a course (e.g. ['01', '02'])."""
+    """Return exercise numbers available for a course, non-padded (e.g. ['1', '2'])."""
     return _discover_course_exercises(course)
 
 
@@ -520,7 +520,7 @@ Examples:
     parser.add_argument(
         "--exercise",
         nargs="+",
-        help="Exercise numbers (zero-padded, e.g., 01 02)",
+        help="Exercise numbers (non-padded, e.g., 1 2)",
     )
     parser.add_argument(
         "--turn-size",

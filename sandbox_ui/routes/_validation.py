@@ -52,9 +52,9 @@ def validate_course(course) -> dict | None:
 def validate_exercise(course, exercise) -> dict | None:
     if not exercise:
         return _err("exercise", exercise, "missing")
-    if not (isinstance(exercise, str) and len(exercise) == 2 and exercise.isdigit()):
+    if not (isinstance(exercise, str) and exercise.isdigit()):
         return _err(
-            "exercise", exercise, "must be a zero-padded 2-digit number (e.g. 04)"
+            "exercise", exercise, "must be a non-negative integer (e.g. 4)"
         )
     if not _exercise_exists(course, exercise):
         return _err(
@@ -66,9 +66,9 @@ def validate_exercise(course, exercise) -> dict | None:
 def validate_practice(course, practice) -> dict | None:
     if not practice:
         return _err("practice", practice, "missing")
-    if not (isinstance(practice, str) and len(practice) == 2 and practice.isdigit()):
+    if not (isinstance(practice, str) and practice.isdigit()):
         return _err(
-            "practice", practice, "must be a zero-padded 2-digit number (e.g. 04)"
+            "practice", practice, "must be a non-negative integer (e.g. 4)"
         )
     if not _practice_exists(course, practice):
         return _err(
@@ -148,14 +148,14 @@ def load_lectures_text(course) -> str:
 
 
 def list_exercises(course) -> list[str]:
-    """Sorted zero-padded 2-digit exercise numbers available for a course."""
+    """Non-padded exercise numbers available for a course, sorted numerically."""
     if not course:
         return []
     return _discover_exercises(course)
 
 
 def list_practice(course) -> list[str]:
-    """Sorted zero-padded 2-digit practice-problem numbers for a course."""
+    """Non-padded practice-problem numbers for a course, sorted numerically."""
     if not course:
         return []
     return _discover_practice(course)

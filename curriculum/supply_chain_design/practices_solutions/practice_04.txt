@@ -1,0 +1,70 @@
+TITLE: Week 4 Practice Problems — Answer Key & Explanations
+
+TUTOR-ONLY reference. Correct answers and official explanations for the ungraded
+Week 4 practice problems, scraped from MITx CTL.SC2x 2T2026 (via the course's
+"Show Answer" / problem_show data). Maps one-to-one to practices/practice_04.txt.
+Do NOT surface verbatim to students; use only as the tutor's correct-answer /
+explanation context.
+
+================================================================
+Practice Problem 1: AB Mower
+
+Part 1 — Correct answer: 6800
+Explanation: To find this we need to calculate the amount of inventory left at the end of each month. This is simply what is produced but not demanded in that month. So, first we need to find the total available capacity (column K). For the first month, this is given by G14+H23+I23+J23-G16, which is the starting inventory plus the production and backlogs in period 1, minus existing backlogs. Note that this means that for period 2, the total available capacity is given by C23+I24+J24+H24-H23.
+        Once we have the total available capacity, we can move on to determine how much was put in inventory each month. For Month 1, we then take the total available capacity (cell K23) minus the forecasted demand (cell M23). Repeat the calculation for the coming months. The model already has a sum-function below the plan that calculates the total amount.
+        Note that with the current production plan, there is much inventory build-up during the winter! This build-up plus overtime helps AB Mower meet the seasonal demand. However, they still plan to have some backlogs during the end of the summer.
+
+Part 2 — Correct answer: 3
+Explanation: Ok, there are a few steps we need to take here.
+      First, we need to make sure we keep track of how many employees we have in the workforce. In the first month, we have whatever was the starting workforce (cell G18) plus the number of hired (E23) minus the amount laid off (F23). For the next month, we use the starting workforce (D23) and add and subtract as before. This we do for all coming months.
+      Second, we need to calculate the maximum production and overtime given this workforce. Maximum production is found in column O. This is expressed in number of units. So for Month 1 we take the hours worked per employee each month (G12) and multiply by the size of the workforce (D23) and add the amount of overtime hours (G23). All of this is divided by the number of labor hours need to make one unit.
+      Lastly, we need to setup the solver and run the model. A screen shot is provided below.
+
+      We now run the model. We see that it is now optimal to hire 3 new workers to the workforce! The internal production follows a pattern similar to before, with slightly higher lows and lower highs. The number of overtime hours is however reduced from 18,000 to 13,200.
+
+Part 3 — Correct answer: 97
+Explanation: Remember from SC1x that the fill rate is the percent units ordered (demand) that are fulfilled in the period. In Month 8 we have a forecast for 3,300 ordered units. Out of these, 100 are planned to be backordered and fulfilled in the next period. So we have that 3,200/3,300=97%
+
+        We solve this by simply changing the backorder penalty (the cost of stockout) and then run the model again.
+
+Part 4 — Correct answer: No
+Explanation: Once again, there are a few steps we need to take to answer this.
+      First, we need to calculate the demand with the lower price. The elasticity tells us how much a change in price affects demand -- the change in demand is equal to the elasticity times the change in price. In this case, since price is reduced by 10%, demand increases by 4*10%=40%. This leads to a new forecasted demand of 4,340 for Month 9. In the spreadsheet, we want to include this in general form for all months. One way is to have column with all discounts, and let the price in column N be a function of this discount.
+      Next, we run the model again. This time we maximize profit! So first, calculate the profit by taking the revenues minus the costs in C2.
+      We see that this small change leads to a completely different optimal plan. This time we hire 14 workers and keep a much more even production throughout the year. Overtime is reduced substantially - it is now down to 8,320 hours. Instead we build inventory.
+      So - is this new plan, where we include the promotion, more profitable? No. It does lead to 40% more sales in Month 9, but this extra revenue is not enough to account for the extra costs. Note also that a large portion of the demand in Month 9 will be backordered for the next period - not a great situation when you run a promotion!
+
+================================================================
+Practice Problem 2: Dire Wolf Revisited
+
+Part 1 — Correct answer: 0 | 0 | 1200 | 3080 | 15470 | 3480
+Explanation: You should be able to get these answers by simply solving the solver. If you did not get these answers, you need to reload your spreadsheet - it is probably corrupted.
+
+Part 2 — Correct answer: Increase the allowable overtime hours from 10 to 20 hours per employee per month.; Keep the starting workforce at 24 people, but allow the model to hire up to 6 more people over the course of the year.
+Explanation: You need to run the model for each of these options and compare.  The base case (with given data) produces a total annual profit of 1,192,550 dollars.  First option will increase the profit to 1.204M - this makes sense since you were using overtime at the maximum currently. Second option is more expensive - you are adding a constraint! However, you can verify this by putting a very high penalty cost for stocking out - it leads to a solution with a profit of 1.140M - a decrease from the base.
+        Third option will increase profitability by hiring 6 more employees in month 9 for a total profit of 1.221M.
+        Fourth option will lead to a lower profit - 1.184M.  You could guess this - since it means the average hourly wage increases from 15 dollars per hour to 15.50.
+
+Part 3 — Correct answer: LOCKED
+
+Part 4 — Correct answer: The total units sold (as compared to Part 1) will increase; The profitability (as compared to Part 1) will decrease; The total revenue in dollars (as compared to Part 1) will increase
+Explanation: You need to run the model and compare to Part 1. Essentially, this is an example of running a promotion when the supply is already becoming tight. It does not appear to be a good idea in that it will put additional stress on the company's resources. It might, however lead to more marketshare going forward - but this is a strategic decision.
+
+Part 5 — Correct answer: 15350 | 0 | 0 | 1200 | 3080 | 14790 | 4160
+Explanation: To solve this you need to add a constraint that keeps the inventory on hand at or below 1000 units. $C$23:$C$34≤1000 works. This allows you to determine roughly how much you would be willing to spend to increase your capacity.
+
+================================================================
+Practice Problem 3: Araz Revisited
+
+Part 0 — Correct answer: 146100 | 1 | 4000
+Explanation: The optimization models (in Excel) are shared in links given under Video 1 of Lesson 2 and Recitation. Kindly refer and compare with your own model.
+
+Part 1 — Correct answer: 160100 | 1000 | 0
+Explanation: In the previously built model, only change the quantity demanded constraint values for APS and HOME to 2000 and 4000 respectively, and rerun the optimization.
+
+Part 2 — Correct answer: 159400 | 0 | 4000
+Explanation: In the previously built model for Part 1, only change the capacity constraint value for Intermediary Depot 2 to 10000, and rerun the optimization.
+
+Part 3 — Correct answer: 160275 | 2 | 0
+Explanation: In the previously built model for Part 2, only change the POD transportation costs values as per the ones mentioned in the question, and rerun the optimization.
+

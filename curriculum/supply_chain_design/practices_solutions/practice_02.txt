@@ -1,0 +1,201 @@
+TITLE: Week 2 Practice Problems — Answer Key & Explanations
+
+TUTOR-ONLY reference. Correct answers and official explanations for the ungraded
+Week 2 practice problems, scraped from MITx CTL.SC2x 2T2026 (via the course's
+"Show Answer" / problem_show data). Maps one-to-one to practices/practice_02.txt.
+Do NOT surface verbatim to students; use only as the tutor's correct-answer /
+explanation context.
+
+================================================================
+Practice Problem 1: Estimating Costs
+
+Part 1 — Correct answer: avg cost/widget per arc = 11, 16, 25
+Explanation: Average the transport price per widget for each arc. Use =SUMIF to
+sum widgets and costs per arc separately (e.g. SUMIF($B$2:$B$210,"Site 1",
+$C$2:$C$210) for widgets Site 1 -> DC), then divide total cost by total widgets.
+Repeat per arc.
+
+Part 2 — Correct answer: fixed cost ≈ 42 (42.44), variable cost ≈ 2 (1.98)
+Explanation: Run a one-variable linear regression (scatter-plot the data, fit a
+line, show the equation): y = 42.44 + 1.98*widgets. Intercept 42.44 = fixed cost;
+slope 1.98 = variable cost per widget.
+
+Part 3 — Correct answer: If the model ships < 5 widgets/period from plant 1 to the
+DC, it is underestimating total cost.
+Explanation: A scatter plot reveals a $45 minimum charge per shipment on the
+Site 1 -> DC arc (average price 11). Shipping < 5 units costs more than the $11
+average (3 widgets really cost $45, but the model assumes $33). So a solution
+shipping < 5 units from Site 1 underestimates total cost.
+
+================================================================
+Practice Problem 2: Papper
+
+Part 1 — Correct answer: CW 2
+Explanation: Build a MILP spreadsheet model (like NERD4) with Pmin=Pmax=1 (single
+CW). Minimum cost is at CW location 2; total cost $349,490.
+
+Part 2 — Correct answer: 3 (optimal number of CWs)
+Explanation: Being close to the regional warehouses favors more CWs — lower
+transport cost outweighs extra fixed cost. Optimal with 3 CWs = $490,882 (CW3
+handles almost as much as CW2). Relax the y-constraint to sum(y) <= Pmax=5 and add
+the LOS constraint as in the lesson.
+
+Part 3 — Correct answer: More production is allocated to Plant 1
+Explanation: Sensitivity analysis — if cost estimates are wrong, production
+allocation shifts. New total cost $437,073; optimal locations unchanged; it becomes
+optimal to produce 1380 units at Plant 1.
+
+================================================================
+Practice Problem 3: Colombian Premium Coffee
+
+Part 0 (setup check) — values: 610000, 3, 2, 263000  (ungraded model check)
+
+Part 1 — Correct answer: min cost 66478; 2 plants used
+Explanation: Transportation problem, 6 decision variables (2 plants x 3 DCs), 2
+capacity + 3 demand constraints. Optimal flows: Barranquilla(P1)->Medellin(DC2)
+263,000; Barranquilla(P1)->Cali(DC3) 167,000; Santander(P2)->Bogota(DC1) 345,000;
+Santander(P2)->Cali(DC3) 5,000. Both plants used.
+
+Part 2 — Correct answer: 68079
+Explanation: 12 decision variables (2 plants x 3 DCs x 2 products), 2 capacity + 6
+demand constraints. Capacity applies to any product unit, so supply constraints sum
+products at a plant. Handle product 2's different pallet size by halving its
+transport cost, keeping the rest of the formulation the same.
+
+Part 3 — Correct answer: 2103 (per-week cost difference)
+Explanation: Add two capacity constraints (limit Product 2 from Plant 1, and
+Product 1 from Plant 2). Optimal cost $70,182, so the difference vs Part 2 is
+$2103/week — the cost of the plant-specific capacity limits.
+
+Part 4 — Correct answer: Add four new constraints allowing outbound shipment of a
+product from a plant only if its production line is open; AND add four binary
+variables representing opening each of the two production lines at each plant.
+Explanation: Model-formulation multi-select (fixed-cost line-opening decisions).
+
+Part 5 — Correct answer: Santander (Plant 2) produces both products; Barranquilla
+(Plant 1) produces only product 1.
+Explanation: High fixed costs make Barranquilla dedicated (one product), while
+Santander produces both.
+
+Part 6 — Correct answer: 108520
+Explanation: Add four binary decision variables (produce-or-not each product at each
+plant) and four logical constraints binding each binary to that product's flow out
+of that plant. High fixed costs push toward dedicated plants; type-specific capacity
+constraints restrict which plants handle the extra volume. Optimal cost $108,520.
+
+================================================================
+Practice Problem 4: Harley Stevenson
+
+Part 1 — Correct answer: avg cost/bicycle = DC1: 20, DC2: 25, DC3: 20
+Explanation: Use =SUMIF to sum bicycles and costs per destination, then divide cost
+by bicycles. Exact integers (if you get e.g. 20.51, the method is wrong).
+
+Part 2 — Correct answer: -2180 (model cost minus true cost)
+Explanation: Insert the true flows into a network model and total the costs (do NOT
+optimize): model cost = $57,620, < 5% off the true cost — a good fit. Include all
+cost components so the total is $57,620.
+
+Part 3 — Correct answer: 465
+Explanation: Policy deviations cost < 1% more than following the policy (hence
+common). Compare against the right baseline — the model cost with current flows
+($57,620), not the true cost ($59,800). Keep conservation-of-flow constraints
+satisfied even without optimizing.
+
+Part 4 — Correct answer: 1 (DC per sales region)
+Explanation: Run the optimization with Pmin=Pmax=3. Optimal is one DC per sales
+region; total cost $57,155.
+
+Part 5 — Correct answer: 2 (DCs to open)
+Explanation: Part 4's optimum may ship nothing through DC2, so avoiding DC2's fixed
+cost is better. Set Pmin=1, Pmax=3. DC2 (unused) should not be paid for; total cost
+$55,455.
+
+================================================================
+Practice Problem 5: RCH Industries' Differentiation
+
+Part 1 — Correct answer: 1 (Factory 1 not used; expected field value 1)
+Explanation: Multi-commodity transshipment (5 supply, 2 transshipment, 5 demand
+nodes) — like the Week 1 model but with double the decision variables (two
+commodities); keep conservation of flow at the crossdocks. Objective = $23,630. In
+the optimum Factory 1 is unused, Factories 2/3/4 produce both items, Factory 5 is
+dedicated to Leisure.
+
+Part 2 — Correct answer: 2 or 3 factories fully dedicated
+Explanation: Free production allocation yields more specialization (the model picks
+the optimal product mix per factory). Multiple optima exist, but the optimum is NOT
+flexible production everywhere — 2-3 factories are fully dedicated. Change supply
+constraints to limit the sum of all units (both items) at a factory to its capacity.
+
+Part 3 — Correct answer: 700 (units of the forced minimum / cost impact)
+Explanation: Forcing flexibility raises the optimal cost to $24,930. Add expressions
+for units produced of each type at every factory, then constrain each to be > 10.
+
+================================================================
+Practice Problem 6: Time-Expanded Network
+
+Part 1 — Correct answer (inventory-holding cost components): Cost of capital;
+Inventory handling costs at the facility (direct labor and equipment); Insurance.
+Explanation: Transportation costs live in the c-matrix (not holding costs); facility
+overhead is excluded unless directly tied to inventory. Holding costs include
+insurance (with depreciation/obsolescence), direct labor and equipment for handling
+inventory, and cost of capital (often the largest component; revisited in Week 9).
+
+Part 2 — Correct answer: End-of-Tuesday inventory in the NY DC cannot exceed
+start-of-Tuesday inventory plus incoming minus outgoing shipments during Tuesday.
+Explanation: A conservation-of-flow constraint with a time dimension.
+
+Part 3 — Correct answer: At the start of the first day, each DC's inventory equals
+that DC's initial inventory.
+Explanation: An initial-condition constraint fixing beginning inventory in period 1
+to the given initial inventory.
+
+================================================================
+Practice Problem 7: Estimating Inventory
+
+Part 1 — Correct answer: alpha ≈ 9.4, beta ≈ 0.59 (0.587)
+Explanation: Fit a power-line to the scatter plot; the spreadsheet gives
+I = alpha * T^beta with alpha = 9.4, beta = 0.587 (generous tolerance — other
+fitting methods differ slightly). Value of inventory is a scalar multiplier that
+folds into alpha.
+
+Part 2 — Correct answer: single DC ≈ 3147; two DCs ≈ 4189
+Explanation: Plug and chug. I_single = 9.4*(20000)^0.587 = 3147. I_2DC =
+2*9.4*(10000)^0.587 = 4189 (count inventory in BOTH DCs — 2095 forgets the second).
+Slightly worse than the theoretical square-root relationship.
+
+================================================================
+Practice Problem 8: NERD Revisited
+
+Part 1 — Correct answer: ≈ 6835 ($/week inventory holding cost, 3 DCs)
+Explanation: Three DCs open (NA 500, SP 500, WO 1000 barrels). Estimate average
+inventory per DC and sum: I_NA = I_SP = 41*(500)^0.62 = 1932.60; I_WO =
+41*(1000)^0.62 = 2970.20. Total ≈ $6,835/week. (I = alpha*T^beta applies whether in
+units or cost.)
+
+Part 2 — Correct answer: ≈ 4565 ($/week, single DC)
+Explanation: No re-solve needed — one DC handles all 2000 barrels/week, so avg
+inventory = 41*(2000)^0.62 = 4564.81 ≈ $4,565 (safety + cycle stock). Inventory drops
+from 6835 (3 DCs) to 4565 (1 DC). The square-root rule would estimate 6835/sqrt(3)
+≈ 3946, so NERD runs ~15% above the theoretical estimate — estimate actual when you
+can.
+
+Part 3 — Correct answer: This solution is invalid and should not be considered; the
+network cannot actually meet the LOS requirement (Min % within 50 miles >= 99%).
+Explanation: Raising required LOS forces an impossible solve. The model over-serves
+Worcester (390/wk vs 190 demanded) and Nashua (190/wk vs 140 demanded) because demand
+constraints are ">= minimum"; over-serving is the only way to raise the % within 50
+miles. Switching to equality makes the model infeasible — an illustration of the
+model doing anything to meet constraints and minimize cost.
+
+Part 4 — Correct answer: Negotiate the courier's cost per barrel per mile to $0.50
+(from $0.55).
+Explanation: Increasing WO capacity does nothing (capacity isn't binding); increasing
+NA capacity saves only ~$18/wk; cutting Bellows Falls $2->$1.75 saves ~$125/wk;
+cutting Scranton $0.75->$0.50 saves ~$375/wk. But cutting courier outbound cost
+$0.55->$0.50 saves $3,300/wk. Outbound (local courier) is the largest cost bucket
+(cells B4:B8) — where to focus.
+
+Part 5 — Correct answer: ≈ 9660 (Boston DC fixed cost breakpoint, $/week)
+Explanation: The Boston DC enters the solution once its weekly fixed cost drops to
+about $9,660 (found by bisection from the original $11k). The model gives management
+a target cost for a move it wouldn't otherwise consider — humans make the final call.

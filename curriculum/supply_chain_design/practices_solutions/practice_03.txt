@@ -1,0 +1,162 @@
+TITLE: Week 3 Practice Problems — Answer Key & Explanations
+
+TUTOR-ONLY reference. Correct answers and official explanations for the ungraded
+Week 3 practice problems, scraped from MITx CTL.SC2x 2T2026 (via the course's
+"Show Answer" / problem_show data). Maps one-to-one to practices/practice_03.txt.
+Do NOT surface verbatim to students; use only as the tutor's correct-answer /
+explanation context.
+
+================================================================
+Practice Problem 1: MPS for Electronic Widgets
+
+Part 1 — Correct answer: 13480
+Explanation: With a fixed level strategy, the same amount is produced in every week. The amount to produce is found by deducting the initial inventory (300) from the total demand (1900) and divide by the number of weeks (10). This leads to a total weekly production of 160 widgets of type NOX12K678P.
+        Note that with this strategy inventory is slowly decreasing, and finally reaches zero at the end of week 10. Also note that we start looking at the problem in Period 1, so inventory holding in period 0 is irrelevant (it is unaffected by which production strategy we choose).
+        Clearly, with the information we have, there is no reason to suspect this is a particularly good strategy for an individual item. We could avoid much of the setup costs by allowing larger batches. It does however often make sense on an aggregate level, when considering ALL items in the plant - flexibility in total plant capacity is expensive and only makes sense for high valued or innovative items. In this question this is not our focus. Hence, let's look for a better strategy for this particular item!
+
+Part 2 — Correct answer: 10900
+Explanation: This is an improvement! We are now producing only what is needed in each week. Since there are a few units in stock at the beginning of week 1 (more than needed), we start producing in week 2 (80 units). We then produce every week, which means we are avoiding all holding costs in future weeks. The setup costs are, however, still high. It is easy to see that with such high setup costs compared to holding costs, a hybrid strategy can improve this further! So let's try that.
+
+Part 3 — Correct answer: 5510
+Explanation: Now we try to actually balance holding costs and setup costs to find a better solution. As you can see, we can reach a significant improvement in this way.
+        Since we have some initial inventory, there is no need to start production in period 1. Instead, we produce for the first time in period 2. Based on the SM algorithm, we produce three times - once in week 2 (630 units), once in week 6 (540 units) and once in week 9 (430 units). We have higher holding costs than before, but since we only have three production runs we only pay the setup cost three times, leading to a much lower total cost than with the previous strategies.
+
+Part 4 — Correct answer: 5430
+Explanation: Interesting! The optimal solution is to have three production runs: one in week 2, one in week 5, and one in week 8 for a total cost of $5,430. This is an improvement from the SM algorithm, and half the cost of the Chase-the-demand Strategy in Part 2!
+        To find out this, set up your spreadsheet just like Chris did in the lecture but with one small difference - the starting inventory in week 1 must be 300! Inserting everything else correctly yields the result.
+
+================================================================
+Practice Problem 2: Sodaco
+
+Part 1 — Correct answer: 13890
+Explanation: With this heuristic, we are just producing everything in the first week. The units that are not delivered in that week are put in stock. The upside of such a strategy is that we only incur setup costs once (1*$800). The downside is that the holding costs grow very large! We have the following holding costs
+        1. 2660
+        2. 2350
+        3. 2030
+        4. 1720
+        5. 1430
+        6. 1150
+        7. 870
+        8. 580
+        9. 300
+        10. 0
+        Total: 13,090
+
+Part 2 — Correct answer: 8000
+Explanation: We now produce every week. No holding costs are incurred, but we have one setup in every week, leading to a total cost of 10*800=8000
+
+Part 3 — Correct answer: 6967
+Explanation: Ok, so let's walk through this. If you do not know the EOQ-formula from before, this is a great opportunity to brush up. Look in the Key Concept document from SC1x or just google it.
+        The EOQ-formula helps you find the optimal order/production quantity given a fixed order/setup cost and a variable holding cost. Demand is always assumed to be deterministic. In this question, plugging in the value into the formula gives an optimal production quantity of 6,882. Note that the EOQ formula assumes the system in steady-state. We have a short horizon here, so we may produce more than necessary if we always produce this quantity. We use the last production run to handle this.
+        Using Q=6,882, we know that IF we produce in a given period, we produce 6,882 units (except for the last production run). So the quantity is fixed. The timing is, however, not fixed. The timing is determined by whether or not there is enough inventory left in the beginning of a week to satisfy the demand for that week. If there is not, we produce Q=6,882.
+        This leads to a solution where we produce in 5 runs. These runs are in weeks 1, 3, 5, 7, and 10. In the last run, we only produce 2,072 units.
+
+Part 4 — Correct answer: 6290
+Explanation: Ha - this works better! Why? Because demand is very volatile, and this heuristic allows us to better account for this by adjusting the production quantity. We now only produce in three runs: week 1, week 5 and week 9. In each of these runs, we produce just enough to cover demand until the next production run. Holding costs increase compared to FOQ, but we have two runs fewer, reducing total setup costs.
+
+Part 5 — Correct answer: 5490
+Explanation: We are still making improvements here! With this algorithm we may vary both production quantities and timing of production runs. So we would expect this to not do any worse than either of the previous two algorithms. In this case, it actually provides a significant improvement. We now have five runs: week 1, week 3, week 5, week 7, and week 9.
+        How to implement this in a spreadsheet? Well, the easiest way when the number of weeks are limited would be to just walk through the algorithm as done in the Quick Questions.
+        Period 1 Production:
+        Cover period 1: 800
+        Cover period 2: 555
+        Cover period 3: 583.33 (Stop with covering periods 1 and 2)
+        Period 3 Production:
+        Cover period 3: 800
+        Cover period 4: 555
+        Cover period 5: 563.33  (Stop with covering periods 3 and 4)
+        Period 5 Production:
+        Cover period 5: 800
+        Cover period 6: 540
+        Cover period 7: 546.67 (Stop with covering periods 5 and 6)
+        Period 7 Production:
+        Cover period 7: 800
+        Cover period 8: 545
+        Cover period 9: 550 (Stop with covering periods 7 and 8)
+        Period 9 Production:
+        Cover period 9: 800
+        Cover period 10: 550
+
+Part 6 — Correct answer: 5490
+Explanation: In this case, we see that the SM algorithm does provide the optimal solution! For a problem as small as this, there is really no reason not to search for the optimal solution. However, as the planning problems go bigger, fast heuristics are warranted. The optimal solution is to have five production runs.
+      If you used a spreadsheet model, the image below provides one possible way to set it up:
+
+================================================================
+Practice Problem 3: Custom Glass Inc.
+
+Part 1 — Correct answer: 300 | 280 | 200 | 190 | 160 | 210
+Explanation: Yes, this is the same as the demand to be delivered in each month! With a lot-for-lot heuristic, we produce one lot per month, equal to what has to be delivered in that month.
+
+Part 2 — Correct answer: 6000
+Explanation: With a holding cost of $2 per unit and month, and a setup cost of $1,000, we get that the total cost is
+        0*$2+6*$1000=$6,000
+
+Part 3 — Correct answer: 470 | 470 | 0 | 400 | 0 | 0
+Explanation: With this heuristic, the production quantity is found through the EOQ-formula using the average demand over the six months. While this provides an "optimal" production quantity, it is only based on the average, which means it may not always perform very well. Here, in order to avoid producing more than demanded, we produce less than the optimal quantity in the last batch: 1,340-470-470=400. Note the skewness here - while we do reduce the number of setups, we produce most of the units early which will lead to high holding costs! This is because of the "optimal" quantity. With production quantity 470, there will only be 170 units left in stock for February, so Mr. Humpty needs to produce again in February.
+
+Part 4 — Correct answer: 5540
+Explanation: This is a marginal improvement from the Lof-for-Lot heuristic. We have only three setups, but since most production is made in early periods, the holding costs are high.
+
+Part 5 — Correct answer: 580 | 0 | 390 | 0 | 370 | 0
+Explanation: Since t*=2 it is clear that there should only be production in January, March and May. So the timing is certain. The quantities to be produced in these periods are, however, not known before making some calculations. To find the quantities, simply add the demand for the coming months, according to below:
+      In January, we produce for January (300) and February (280) for a total of 580.
+      In March we produce for Mach (200) and April (190) for a total of 390.
+      In May we produce for May (160) and June (210) for a total of 370.
+
+Part 6 — Correct answer: 4360
+Explanation: This is a significant improvement! With this method we still have three setups. The large improvement compared to the FOQ heuristic is because this heuristic better adjusts to the very variable demand pattern.
+
+Part 7 — Correct answer: 580 | 0 | 550 | 0 | 0 | 210
+Explanation: We see one more version of a production schedule. The SM heuristic could have varying production quantities as well as varying times between batches.
+      We get the solution from the following calculations.
+      Period 1
+      cover 1:	1000
+      cover 1+2:	780
+      cover 1-3:	786.67	STOP
+      Period 3
+      cover 3:	1000
+      cover 3+4:	690
+      cover 3-5:	673.33
+      cover 3-6:	820			STOP
+      Period 6
+      cover 6:	1000
+
+Part 8 — Correct answer: 4580
+Explanation: Appareantly, in this instance, the SM algorithm does not lead to an improvement compared to the POQ! It does, however, lead to a lower cost than the FOQ heuristic.
+
+Part 9 — Correct answer: 580 | 0 | 390 | 0 | 370 | 0
+Explanation: As seen by the optimization, most of the heuristics we have tried did not lead to the optimal solution (however, the POQ did!). Clearly, the optimal solution is to avoid the fairly expensive holding costs by having more runs, spaced out over the six months.
+        You find the solution spreadsheet here (Excel) or here (LibreOffice).
+
+Part 10 — Correct answer: 4360
+Explanation: The optimal cost is - as you would expect - at least as low as the lowest cost from our heuristics. With such a small problem, finding the optimal solution is rather straight-forward and would be your best bet in this situation.
+
+================================================================
+Practice Problem 4: ATP
+
+Part 1 — Correct answer: 2350 | 1900 | 1550
+Explanation: These are the quantities that we have in stock after the production run is over, which have not already been promised to other clients. We consider each run independently, so the amount available to promise is given by the production quantity minus the committed orders to deliver before the next. For the first period, we also have some inventory that can be promised, so we add this.
+
+Part 2 — Correct answer: 2350 | 4250 | 5800
+Explanation: We now let inventory from one run carry over to the next run, meaning that any inventory from the first run not sold before the second run can still be sold after the second run. This means that more inventory is available to promise for the different weeks.
+
+Part 3 — Correct answer: The manufacturer should accept the first two orders independently of whether of not inventory is carried over between periods.; The manufacturer cannot accept both Order 3 and Order 4 unless inventory is carried over between periods.; The manufacturer should accept all orders if inventory is carried over between periods.
+Explanation: If we plug in the numbers we see that the ATP changes. Depending on whether or not inventory is carried over between periods, we get different results.
+      If inventory is NOT carried over between periods, we see that ATP during the second run becomes negative, so we cannot accept all orders. Actually, we can accept the first two orders - this does not impact the planning of the second run. We cannot, however, accept both Order 3 and Order 4.
+      If inventory is carried over between periods, ATP is positive everywhere. This means we can accept all orders.
+
+Part 4 — Correct answer: 24400
+Explanation: We see that for each item we need 2 Part 1, which each consists of 2 subpart 1b. So the answer is 6100*2*2=24,400
+
+================================================================
+Practice Problem 5: DRP at Pixels
+
+Part 1 — Correct answer: Week 10; Week 5; Week 9; Week 4; Week 3; Week 7
+Explanation: You need to compute the gross requirements (period usage + safety stock), initial inventory (final inventory of previous week), net requirements (max(Gross requirements-initial inventory,0)) in order to determine the planned order receipts for each week.
+
+Part 2 — Correct answer: Week 10; Week 5; Week 9; Week 3; Week 7
+Explanation: You need to compute the gross requirements (period usage + safety stock), initial inventory (final inventory of previous week), net requirements (max(Gross requirements-initial inventory,0)) in order to determine the planned order receipts for each week.
+
+Part 3 — Correct answer: Week 3; Week 8; Week 7; Week 2
+Explanation: You need to compute the gross requirements (period usage + safety stock), initial inventory (final inventory of previous week), net requirements (max(Gross requirements-initial inventory,0)) in order to determine the planned order releases for each week.
+

@@ -1,0 +1,162 @@
+TITLE: Week 1 Practice Problems — Answer Key & Explanations
+
+TUTOR-ONLY reference. Correct answers and official explanations for the ungraded
+Week 1 practice problems, scraped from MITx CTL.SC2x 2T2026 (via the course's
+"Show Answer" / problem_show data). Maps one-to-one to practices/practice_01.txt.
+Do NOT surface verbatim to students; use only as the tutor's correct-answer /
+explanation context.
+
+================================================================
+Practice Problem 1: Network Model Basics
+
+Part 1 — Correct answer: x_1A
+Explanation: The index tells you which two nodes the arc connects. In this course
+we consider only unidirectional arcs, so the index also gives the direction of
+flow. If the index is "1B" the flow goes from plant 1 to distribution center B.
+(Arc from P1 to CA is therefore x_1A.)
+
+Part 2 — Correct answer: For all nodes i, the sum of all outgoing flows from node
+i must be less than or equal to the supply capacity of node i.
+Explanation: Read the constraint sum_j x_ij <= S_i, for all i in S from the back.
+"for all i in S" means it applies to every node i in the set S of Supply nodes
+(the three plants in Part 1's figure). The x_ij are flows from node i to node j,
+measured in units moved. Summing over j (the receiving nodes: DCs and customer
+regions) counts all units transported out of node i. So for every supply node,
+the sum of all outgoing flows must be <= the available supply S_i at that node.
+
+================================================================
+Practice Problem 2: SteelCo
+
+Part 1 — Correct answer: 100000  (total pounds shipped from Allentown DC)
+Explanation: A transportation problem with two supply nodes and four demand nodes;
+supply nodes have capacity constraints, demand nodes have demand constraints.
+Use the transportation costs as the objective-function coefficients on the
+decision variables, build the model in a spreadsheet, and use the Simplex solver
+to find the cost-minimizing allocation. Summing all shipments out of Allentown
+gives 100,000 (its full capacity).
+
+Part 2 — Correct answer: 4569920  (minimum total cost)
+Explanation: Same transportation model as Part 1; the minimum cost is the value
+of the objective-function cell in the optimal (Simplex) solution.
+
+Part 3 — Correct answer: Toledo, OH  (the DC with additional available capacity)
+Explanation: Looking at the LHS vs RHS of the capacity constraints, only
+Allentown's LHS equals its RHS — Allentown's capacity is fully utilized (a
+binding / active constraint). Toledo's is not, so Toledo has spare capacity.
+
+================================================================
+Practice Problem 3: Ralph Calvin Hilfiger (RCH) Industries
+
+Part 1 — Correct answer: 380  (totes shipped through crossdock XD2 per week)
+Explanation: A transshipment problem with five supply nodes, two transshipment
+nodes, and five demand nodes. Build a spreadsheet model with supply and demand
+constraints as in a transportation problem, plus a flow-balance constraint at the
+transshipment (crossdock) nodes: incoming flow minus outgoing flow = 0. Ensure
+the objective function includes all decision variables. The optimum ships 380
+totes/week through crossdock XD2.
+
+Part 2 — Correct answer: DC 4; DC 5
+Explanation: In the optimal solution, DCs 1–3 are supported by the existing
+crossdock XD1, while DCs 4 and 5 are supported by the new crossdock XD2 (200 and
+180 totes respectively).
+
+Part 3 — Correct answer: 30220  (minimum cost, $)
+Explanation: The minimum cost is the final value of the target/objective cell.
+
+Part 4 — Correct answer: All of the above
+Explanation: None of the listed changes affects the optimal solution:
+(1) a 400-tote weekly cap per crossdock — the current flow is <= 380 anyway;
+(2) closing Factory 5 — it is unused in the optimum;
+(3) reducing Factory 1's capacity to 190 — it only supplies 190 in the optimum.
+
+================================================================
+Practice Problem 4: SandyCo — Multiple Optima
+
+Part 1 — Correct answer: 69200  (minimum weekly cost with the suggested flows)
+Explanation: The suggested flows give the same $69,200 cost — this problem has
+"multiple optima" (more than one set of decisions achieving the lowest cost).
+Common in small problems, rarer as complexity grows. The lesson's solution is one
+optimum (what most Excel solvers return); another solver may return a different
+optimal solution, since the algorithm only targets lowest cost, not a specific
+set of decisions.
+
+Part 2 — Correct answer: 100  (tons Plant 2 -> DC B)
+Explanation: With the new costs it is cheaper to deliver via DC A. Plant 1 supplies
+DC A at lowest cost and maxes its capacity; Plant 2 delivers the remaining demand
+(100 tons) via DC B. (Re-solving gives total cost $68,325.)
+
+Part 3 — Correct answer: 72  (tons DC A -> Region 3)
+Explanation: Counterintuitively, even with higher demand, less is shipped DC A ->
+Region 3. Plant 1's capacity is maxed, so the entire demand increase is handled by
+Plant 2; the Region 3 increase is met via the more expensive DC B route
+(205+145 vs 180+165), and the Region 1 increase is handled by Plant 1 via DC A
+(supplying Region 1 via DC B is too expensive).
+
+Part 4 — Correct answer: 25  (tons Plant 2 -> Region 1 directly)
+Explanation: With the on-site machine, all of Region 1's demand is fulfilled by
+Plant 2 directly at lower cost than via the DCs (275 vs 190+175=365). Plant 2
+ships 25 directly to Region 1; Regions 2 and 3 are supplied via the DCs. Add the
+direct-transport link as an 11th decision variable in the supply/demand
+constraints. Optimal cost = $66,300.
+
+Part 5 — Correct answer: 95  (tons Plant 1 should produce)
+Explanation: Add a total-capacity constraint on DC B (sum its incoming flow;
+conservation of flow keeps incoming = outgoing). This forces shipments toward
+DC A. Since Plant 1 can supply DC A far more cheaply than Plant 2, more production
+shifts back to Plant 1. Neither plant runs at full capacity.
+
+================================================================
+Practice Problem 5: Food Delivery Startup
+
+Part 1 — Correct answer: 36  (weighted X-coordinate)
+Explanation: Weighted average of the nodes' x-coordinates, weighted by each node's
+share of total weight:
+x = (250/500)*20 + (150/500)*20 + (100/500)*100 = 36.
+
+Part 2 — Correct answer: 57  (weighted Y-coordinate)
+Explanation: Same logic for y:
+y = (250/500)*30 + (150/500)*40 + (100/500)*150 = 57.
+
+Part 3 — Correct answer: 45.27  (avg weighted distance, center-of-gravity)
+Explanation: The center-of-gravity method uses the weighted coordinates from
+Parts 1–2 as the business location. Sum the weighted distances from that location
+to the three nodes and divide by the total weight.
+
+Part 4 — Correct answer: 31.84  (avg weighted distance, Weber)
+Explanation: Smaller than the center-of-gravity result because the Weber method
+explicitly minimizes distance. Set up a small optimization with the business x/y
+as decision variables and total weighted distance as the objective; use the
+non-linear GRG solver with upper bounds (e.g. 150). Optimal coordinates (20,30),
+total weighted distance 15,922; divide by total weight for the average (31.84).
+
+================================================================
+Practice Problem 6: Temporary Networks
+
+Part 1 — Correct answer: DC 5
+Explanation: A facility-location problem: flows from a DC (supply) to shelters
+(demand). Model it like the NERD model in a spreadsheet. "Transport work" (tonkm)
+= distance x units, so distance acts as a variable transport cost per unit; use
+the outbound distances as the outbound costs. This is a one-stage model — inbound
+(military-controlled) costs are ignored. Include the linking constraints. To force
+a single DC, constrain the sum of the binary y-variables to <= 1 (Pmin=Pmax=1).
+Optimal single DC is DC 5. (Objective 580,910 = 480,910 kit-distance + 100,000
+fixed cost.)
+
+Part 2 — Correct answer: 4  (optimal number of DCs)
+Explanation: With expensive outbound transport ($2/kit-mile), the model opens more
+DCs to cut outbound cost (assuming network-management costs are in the fixed cost).
+Set outbound cost = $2 x distance in the objective and relax the DC-count
+constraint (sum of y <= Pmax=5). Optimum is 4 DCs; total cost $713,420.
+
+Part 3 — Correct answer: 2  (optimal number of DCs when fixed cost = $300k)
+Explanation: Just change the fixed cost in the model. The optimum is sensitive to
+it — a higher fixed cost relative to transport cost yields fewer DCs. Optimum is
+2 DCs; total cost $1,165,660.
+
+Part 4 — Correct answer: It is optimal to open DC 2 and DC 5
+Explanation: Adding the "at least 60% of demand within 2 miles" service constraint
+changes the optimal locations (higher cost $1,259,780, better service). Build a
+matrix flagging arcs under 2 miles; require sumproduct(that matrix, decision
+variables)/demand >= 60%. This yields DC 2 and DC 5. Note: you must make the
+demand constraints binding (equality in solver), otherwise the model over-ships
+kits (e.g. to shelter 6) and the service constraint isn't truly satisfied.

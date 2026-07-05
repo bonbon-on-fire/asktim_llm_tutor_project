@@ -145,22 +145,6 @@ def _parse_persona_name(persona_name: str) -> str:
     return parse_persona_type(persona_name)
 
 
-def _load_course_context(course: str) -> str:
-    """Read course context: course.txt + syllabus.txt (if present)."""
-    course_dir = _CURRICULUM_DIR / course
-    parts: list[str] = []
-    course_path = course_dir / "course.txt"
-    if course_path.exists():
-        parts.append(course_path.read_text(encoding="utf-8").strip())
-    syllabus_path = course_dir / "syllabus.txt"
-    if syllabus_path.exists():
-        parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
-    lectures = load_lecture_transcripts(course)
-    if lectures:
-        parts.append("Lecture transcripts:\n" + lectures)
-    return "\n\n".join(parts)
-
-
 def _build_assignment_text(course: str, exercise_number: str, turn_size: int) -> str:
     """Build the full assignment string: course context + syllabus (optional) + exercise text + run config."""
     course_dir = _CURRICULUM_DIR / course
@@ -344,15 +328,30 @@ def _run_conversation(
 
 def _save_raw_transcript(
     config: RunConfig,
-    context_text: str,
-    assignment_text: str,
     exchanges: list[dict[str, object]],
     output_suffix: str = "raw",
     figure_names: list[str] | None = None,
 ) -> tuple[str, Path]:
-    """Serialize and save a raw transcript JSON; returns (transcript_name, output_path)."""
+    """Serialize and save a raw transcript JSON; returns (transcript_name, output_path).
+
+    The stored ``context``/``exercise`` are kept lean for the judge (which grades
+    tutor behavior per the rubric): context = course.txt, exercise = the problem
+    prompt. The full course material the tutor saw is reconstructable from the
+    course folder — no need to inline the lecture corpus into every transcript.
+    """
     output_dir = _TRANSCRIPTS_DIR / config.persona_type / f"{config.persona_type}_{output_suffix}"
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    course_path = _CURRICULUM_DIR / config.course / "course.txt"
+    context_text = (
+        course_path.read_text(encoding="utf-8").strip() if course_path.exists() else ""
+    )
+    exercise_text = (
+        "Exercise:\n"
+        + exercise_path(config.course, config.exercise_number).read_text(encoding="utf-8").strip()
+        + "\n\nRun configuration:\n- Planned conversation length: "
+        + f"{config.turn_size} student+tutor exchanges."
+    )
 
     # Protect transcript numbering + write as one critical section to avoid
     # duplicate filenames when raw generation runs in parallel.
@@ -373,7 +372,7 @@ def _save_raw_transcript(
             "figures": figure_names or [],
             "turn_size": config.turn_size,
             "context": context_text,
-            "exercise": assignment_text,
+            "exercise": exercise_text,
             "turns": len(exchanges),
             "exchanges": exchanges,
         }
@@ -617,7 +616,6 @@ def _run_bundle(bundle_config: BundleConfig, yes: bool = False) -> int:
                 config.exercise_number,
                 config.turn_size,
             )
-            context_text = _load_course_context(config.course)
             figures = discover_figures(config.course, config.exercise_number)
             try:
                 exchanges = _run_conversation(config, assignment_text, figures)
@@ -630,8 +628,6 @@ def _run_bundle(bundle_config: BundleConfig, yes: bool = False) -> int:
                 }
             _, transcript_path = _save_raw_transcript(
                 config,
-                context_text,
-                assignment_text,
                 exchanges,
                 output_suffix=bundle_config.output_suffix,
                 figure_names=figure_filenames(figures),

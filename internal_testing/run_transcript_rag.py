@@ -62,7 +62,6 @@ from utils.curriculum import (  # noqa: E402
     read_solution,
 )
 from utils.figures import discover_figures, figure_filenames  # noqa: E402
-from utils.lectures import load_lecture_transcripts  # noqa: E402
 from utils.pricing import model_from_message, priced, usage_from_message  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -124,32 +123,6 @@ def _problem_text(course: str, kind: str, number: str) -> str:
 
 def _problem_label(kind: str) -> str:
     return "Practice problem" if kind == "practice" else "Exercise"
-
-
-def _course_and_syllabus(course: str) -> list[str]:
-    parts: list[str] = []
-    course_dir = _CURRICULUM_DIR / course
-    course_path = course_dir / "course.txt"
-    if course_path.exists():
-        parts.append("Course context:\n" + course_path.read_text(encoding="utf-8").strip())
-    syllabus_path = course_dir / "syllabus.txt"
-    if syllabus_path.exists():
-        parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
-    return parts
-
-
-def _full_assignment_text(course: str, kind: str, number: str, turn_size: int) -> str:
-    """Full context (course + syllabus + lectures + problem) — used for the
-    saved transcript's ``exercise`` field so the judge sees the complete problem."""
-    parts = _course_and_syllabus(course)
-    lectures = load_lecture_transcripts(course)
-    if lectures:
-        parts.append("Lecture transcripts:\n" + lectures)
-    parts.append(f"{_problem_label(kind)}:\n" + _problem_text(course, kind, number))
-    parts.append(
-        f"Run configuration:\n- Planned conversation length: {turn_size} student+tutor exchanges."
-    )
-    return "\n\n".join(parts)
 
 
 def _tutor_rag_assignment(course: str, kind: str, number: str, turn_size: int) -> str:
@@ -352,16 +325,20 @@ def _save_transcript(
     output_dir = _TRANSCRIPTS_DIR / config.persona_type / f"{config.persona_type}_{output_suffix}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    full_assignment = _full_assignment_text(
-        config.course, config.kind, config.number, config.turn_size
+    # Judge inputs (see the rubric): the judge grades tutor *behavior*, so it needs
+    # only the conversation + the problem prompt + a short course description — never
+    # the full lecture corpus (which the RAG tutor never saw anyway; what it actually
+    # retrieved per turn is in each exchange's ``retrieved`` field). Keep the
+    # transcript lean: context = course.txt, exercise = the problem prompt.
+    course_path = _CURRICULUM_DIR / config.course / "course.txt"
+    context_text = (
+        course_path.read_text(encoding="utf-8").strip() if course_path.is_file() else ""
     )
-    context_text = "\n\n".join(
-        _course_and_syllabus(config.course)
-        + (
-            ["Lecture transcripts:\n" + load_lecture_transcripts(config.course)]
-            if load_lecture_transcripts(config.course)
-            else []
-        )
+    exercise_text = (
+        f"{_problem_label(config.kind)}:\n"
+        + _problem_text(config.course, config.kind, config.number)
+        + "\n\nRun configuration:\n- Planned conversation length: "
+        + f"{config.turn_size} student+tutor exchanges."
     )
     figure_names = (
         figure_filenames(discover_figures(config.course, config.number))
@@ -384,7 +361,7 @@ def _save_transcript(
             "figures": figure_names,
             "turn_size": config.turn_size,
             "context": context_text,
-            "exercise": full_assignment,
+            "exercise": exercise_text,
             "turns": len(exchanges),
             "cost_estimate": _aggregate_cost(exchanges),
             "exchanges": exchanges,

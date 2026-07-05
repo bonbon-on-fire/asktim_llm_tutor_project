@@ -77,6 +77,7 @@ class TutorBridge:
     """
 
     def __init__(self) -> None:
+        """Initialize the per-instance graph and streaming caches."""
         self._graph_cache: dict = {}
         # Parallel cache for the streaming path. The non-streaming path drives
         # a compiled LangGraph; the streaming path drives the raw model with
@@ -144,6 +145,7 @@ class TutorBridge:
         return "\n\n".join(parts)
 
     def build_system_prompt(self, tutor: str, assignment_text: str, **ctx) -> str:
+        """Wrap *assignment_text* into the full system prompt for *tutor*."""
         return load_system_prompt(tutor, assignment_override=assignment_text)
 
     def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
@@ -205,6 +207,10 @@ class TutorBridge:
         return HumanMessage(content=build_multimodal_content(text, images))
 
     def _get_or_build_graph(self, tutor: str, course: str, exercise: str, **ctx):
+        """Return the cached compiled tutor graph for this call, building it on a miss.
+
+        Skips the cache entirely when :meth:`cache_key` returns ``None``.
+        """
         key = self.cache_key(tutor, course, exercise, **ctx)
         if key is not None:
             cached = self._graph_cache.get(key)

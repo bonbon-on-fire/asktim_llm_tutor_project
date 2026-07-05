@@ -54,6 +54,7 @@ def _course_prefix(url: str) -> str:
 
 
 def _extract_text(html: str) -> str:
+    """Extract readable body text from an HTML page, stripping chrome and blank runs."""
     from bs4 import BeautifulSoup  # lazy
 
     soup = BeautifulSoup(html, "html.parser")

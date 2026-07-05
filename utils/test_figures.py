@@ -29,6 +29,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a pass/fail result for the named assertion."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -43,6 +44,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 # ---------------------------------------------------------------------------
 
 def test_discovers_real_curriculum_figure() -> None:
+    """Assert discover_figures finds the checked-in exercise_8 and exercise_4 figures."""
     figs = discover_figures("cities_and_climate_change", "8")
     names = figure_filenames(figs)
     _check(
@@ -60,6 +62,7 @@ def test_discovers_real_curriculum_figure() -> None:
 
 
 def test_exercise_number_is_normalized() -> None:
+    """Assert padded and unpadded exercise numbers both resolve to exercise_8."""
     # "8" (unpadded) and "08" (padded) should both resolve to exercise_8.
     by_unpadded = figure_filenames(discover_figures("cities_and_climate_change", "8"))
     _check("unpadded '8' resolves to exercise_8", by_unpadded == ["exercise_8_spider_diagram.png"], f"got {by_unpadded}")
@@ -68,11 +71,13 @@ def test_exercise_number_is_normalized() -> None:
 
 
 def test_missing_exercise_and_course_return_empty() -> None:
+    """Assert a missing exercise or course yields an empty figure list."""
     _check("missing exercise -> []", discover_figures("cities_and_climate_change", "99") == [])
     _check("missing course -> []", discover_figures("no_such_course", "01") == [])
 
 
 def test_discovery_filters_and_isolates_by_exercise() -> None:
+    """Assert discovery filters by extension/name, sorts, and isolates by exercise number."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         figdir = root / "demo" / "figures"
@@ -101,6 +106,7 @@ def test_discovery_filters_and_isolates_by_exercise() -> None:
 # ---------------------------------------------------------------------------
 
 def test_data_url_round_trip_from_path() -> None:
+    """Assert a PNG path encodes to a data URL that decodes back to the file bytes."""
     fig = discover_figures("cities_and_climate_change", "08")[0]
     url = image_to_data_url(fig)
     _check("png path -> data url prefix", url.startswith("data:image/png;base64,"))
@@ -110,6 +116,7 @@ def test_data_url_round_trip_from_path() -> None:
 
 
 def test_data_url_from_bytes_requires_mime() -> None:
+    """Assert encoding raw bytes needs an explicit MIME and raises ValueError without one."""
     url = image_to_data_url(b"\xff\xd8\xff", mime_type="image/jpeg")
     _check("bytes + mime -> data url", url.startswith("data:image/jpeg;base64,"))
     raised = False
@@ -121,6 +128,7 @@ def test_data_url_from_bytes_requires_mime() -> None:
 
 
 def test_unsupported_extension_raises() -> None:
+    """Assert encoding a file with an unsupported extension raises ValueError."""
     with tempfile.TemporaryDirectory() as tmp:
         bad = Path(tmp) / "diagram.gif"
         bad.write_bytes(b"GIF89a")
@@ -137,6 +145,7 @@ def test_unsupported_extension_raises() -> None:
 # ---------------------------------------------------------------------------
 
 def test_no_figures_returns_plain_string() -> None:
+    """Assert building content with no figures returns the plain text string."""
     out = build_multimodal_content("hello", None)
     _check("no figures -> plain str", out == "hello", f"got {out!r}")
     out2 = build_multimodal_content("hello", [])
@@ -144,6 +153,7 @@ def test_no_figures_returns_plain_string() -> None:
 
 
 def test_with_figures_returns_blocks() -> None:
+    """Assert figures produce [text, image_url] content blocks with a data URL."""
     figs = discover_figures("cities_and_climate_change", "08")
     out = build_multimodal_content("describe this", figs)
     ok_shape = (
@@ -156,6 +166,7 @@ def test_with_figures_returns_blocks() -> None:
 
 
 def test_build_content_accepts_bytes_tuples_and_data_urls() -> None:
+    """Assert build_multimodal_content accepts paths, (bytes, mime) tuples, and data URLs."""
     # (bytes, mime) tuple — in-memory upload path.
     out = build_multimodal_content("hi", [(b"\xff\xd8\xff", "image/jpeg")])
     ok_tuple = (
@@ -186,6 +197,7 @@ def test_build_content_accepts_bytes_tuples_and_data_urls() -> None:
 # ---------------------------------------------------------------------------
 
 def test_resolve_filenames_round_trips_discovery() -> None:
+    """Assert resolve_figure_filenames round-trips discovery and skips missing files."""
     figs = discover_figures("cities_and_climate_change", "08")
     names = figure_filenames(figs)
     resolved = resolve_figure_filenames("cities_and_climate_change", names)
@@ -198,6 +210,7 @@ def test_resolve_filenames_round_trips_discovery() -> None:
 
 
 def main() -> int:
+    """Run all tests and return 1 if any failed, else 0."""
     tests = [
         test_discovers_real_curriculum_figure,
         test_exercise_number_is_normalized,

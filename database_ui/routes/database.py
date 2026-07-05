@@ -42,6 +42,7 @@ _MAX_PAGE = 200
 
 @database_bp.get("/")
 def index():
+    """Render the review shell (sidebar plus transcript view)."""
     return render_template(
         "index.html",
         title=current_app.config["DATABASE_UI_TITLE"],
@@ -51,6 +52,7 @@ def index():
 
 @database_bp.get("/login")
 def login():
+    """Render the shared-password login form."""
     return render_template(
         "login.html",
         title=current_app.config["DATABASE_UI_TITLE"],
@@ -61,6 +63,7 @@ def login():
 
 @database_bp.post("/login")
 def login_submit():
+    """Verify the submitted password and start a session, or re-render with an error."""
     candidate = request.form.get("password", "")
     if check_password(candidate):
         mark_authed()
@@ -78,12 +81,14 @@ def login_submit():
 
 @database_bp.get("/logout")
 def logout():
+    """Clear the session and redirect to the login page."""
     clear_auth()
     return redirect(url_for("database.login"))
 
 
 @database_bp.get("/api/conversations")
 def api_conversations():
+    """List all conversations as JSON, sorted by ``date`` or ``student`` with paging."""
     sort = request.args.get("sort", "date")
     if sort not in _VALID_SORTS:
         sort = "date"
@@ -97,6 +102,10 @@ def api_conversations():
 
 @database_bp.get("/api/conversation/<conversation_id>")
 def api_conversation(conversation_id: str):
+    """Return one conversation's metadata and full transcript as JSON.
+
+    Responds 400 for a malformed id and 404 when no such conversation exists.
+    """
     try:
         convo_id = UUID(conversation_id)
     except (ValueError, TypeError):
@@ -123,6 +132,7 @@ def api_conversation(conversation_id: str):
 
 @database_bp.get("/api/image/<int:image_id>")
 def api_image(image_id: int):
+    """Serve an uploaded image's bytes, or 404 if the image is not found."""
     img = svc.get_image(g.db, image_id)
     if img is None:
         return jsonify({"error": "not_found"}), 404

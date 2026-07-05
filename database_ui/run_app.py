@@ -20,6 +20,7 @@ from ui_core.web.static_blueprint import static_bp
 
 
 def create_app() -> Flask:
+    """Build and configure the read-only Flask app (config, DB session, routes)."""
     config = load_config()
     app = Flask(__name__)
     app.config["SECRET_KEY"] = config.secret_key
@@ -36,10 +37,12 @@ def create_app() -> Flask:
 
     @app.before_request
     def _open_db_session() -> None:
+        """Open a fresh DB session on ``g.db`` for the current request."""
         g.db = SessionLocal()
 
     @app.teardown_request
     def _close_db_session(exception: BaseException | None = None) -> None:
+        """Roll back (this app never writes) and close the request's DB session."""
         db = g.pop("db", None)
         if db is None:
             return
@@ -49,6 +52,7 @@ def create_app() -> Flask:
 
     @app.get("/health")
     def health():
+        """Return a simple JSON health-check payload."""
         return jsonify({"status": "ok", "service": "database_ui"})
 
     init_auth(app)

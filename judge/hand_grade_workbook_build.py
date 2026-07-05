@@ -94,6 +94,12 @@ def format_transcript_cell(data: dict) -> str:
 
 
 def main() -> int:
+    """Build the sample-20 hand-grading workbook and fill in Claude's rows.
+
+    Loads the 20 sampled raw transcripts, lays out the per-grader and compiled
+    grading sheets, saves the workbook (falling back to an alternate name if the
+    target is locked), then invokes the Claude-fill pass. Returns 0 on success.
+    """
     rows: list[tuple[str, str, str]] = []
     for persona_type, tnum in SAMPLE_20:
         tpath = TRANSCRIPTS / persona_type / f"{persona_type}_raw" / f"transcript_{tnum}.json"
@@ -119,6 +125,7 @@ def main() -> int:
     body_align = Alignment(wrap_text=True, vertical="top")
 
     def setup_headers(ws, headers: list[str], helper_col_letter: str) -> None:
+        """Write and style the header row, add a hidden ``_key`` helper column, and freeze it."""
         for c, h in enumerate(headers, start=1):
             cell = ws.cell(row=1, column=c, value=h)
             cell.fill = header_fill

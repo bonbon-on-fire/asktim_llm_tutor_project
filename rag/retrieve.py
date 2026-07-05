@@ -16,6 +16,7 @@ _STORE_CACHE: dict[str, NumpyVectorStore | None] = {}
 
 
 def _get_store(course: str) -> NumpyVectorStore | None:
+    """Return the cached vector store for *course*, loading it from disk once."""
     if course not in _STORE_CACHE:
         _STORE_CACHE[course] = NumpyVectorStore.load(course)
     return _STORE_CACHE[course]

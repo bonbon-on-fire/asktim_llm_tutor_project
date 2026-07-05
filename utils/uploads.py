@@ -40,6 +40,7 @@ class ValidatedImage:
 
     @property
     def size_bytes(self) -> int:
+        """Return the size of the raw upload data in bytes."""
         return len(self.data)
 
 

@@ -85,10 +85,12 @@ class MessageMixin:
 
     @declared_attr
     def conversation(cls) -> Mapped["Conversation"]:  # noqa: F821 - resolved per app
+        """Relationship to the owning ``Conversation`` (back-populates ``messages``)."""
         return relationship(back_populates="messages")
 
     @declared_attr
     def uploaded_images(cls) -> Mapped[list["UploadedImage"]]:  # noqa: F821
+        """Relationship to this message's ``UploadedImage`` rows (delete-orphan cascade)."""
         return relationship(
             back_populates="message",
             cascade="all, delete-orphan",
@@ -97,6 +99,7 @@ class MessageMixin:
 
     @declared_attr.directive
     def __table_args__(cls):
+        """Table-level constraints: a role check and an index on ``conversation_id``."""
         return (
             CheckConstraint("role IN ('student', 'tutor')", name="ck_messages_role"),
             Index("idx_messages_conversation", "conversation_id"),
@@ -127,8 +130,10 @@ class UploadedImageMixin:
 
     @declared_attr
     def message(cls) -> Mapped["Message"]:  # noqa: F821 - resolved per app
+        """Relationship to the owning ``Message`` (back-populates ``uploaded_images``)."""
         return relationship(back_populates="uploaded_images")
 
     @declared_attr.directive
     def __table_args__(cls):
+        """Table-level args: an index on ``message_id``."""
         return (Index("idx_uploaded_images_message", "message_id"),)

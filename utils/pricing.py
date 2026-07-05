@@ -59,6 +59,7 @@ def _resolve_model(model: str) -> str:
 
 
 def _env_key(model: str, key: str) -> str:
+    """Return the ``PRICE_<MODEL>_<KEY>`` env var name for a model/rate-key pair."""
     return "PRICE_" + model.upper().replace("-", "_").replace(".", "_") + "_" + key.upper()
 
 

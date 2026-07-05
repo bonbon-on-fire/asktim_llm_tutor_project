@@ -27,6 +27,7 @@ class Config:
 
 
 def load_config() -> Config:
+    """Build the :class:`Config` from environment variables, applying defaults."""
     # Resolution order: DATABASE_UI_DATABASE_URL (explicit, wins) -> DATABASE_URL
     # (shared name; on Railway each service resolves it to its own referenced DB)
     # -> local SQLite for offline dev. For local runs against a Railway DB, point

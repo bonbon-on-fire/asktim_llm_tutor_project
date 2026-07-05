@@ -31,6 +31,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a PASS/FAIL for *name* based on *condition*."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -72,12 +73,14 @@ class UploadedImage(UploadedImageMixin, _Base):
 
 
 def test_tablenames() -> None:
+    """Verify each mixin-derived model maps to its expected table name."""
     _check("message tablename", Message.__tablename__ == "messages")
     _check("student tablename", Student.__tablename__ == "students")
     _check("uploaded_image tablename", UploadedImage.__tablename__ == "uploaded_images")
 
 
 def test_mixins_map_and_roundtrip() -> None:
+    """Create the tables on SQLite and round-trip rows to check columns and relationships."""
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         eng = build_engine(f"sqlite:///{Path(tmp) / 'm.db'}", sqlite_fk=True)
         _Base.metadata.create_all(eng)
@@ -107,6 +110,7 @@ def test_mixins_map_and_roundtrip() -> None:
 
 
 def main() -> int:
+    """Run all tests in this module and return an exit code (1 if any failed)."""
     for t in (test_tablenames, test_mixins_map_and_roundtrip):
         print(t.__name__)
         t()

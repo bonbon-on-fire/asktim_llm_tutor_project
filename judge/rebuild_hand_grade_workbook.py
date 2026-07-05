@@ -69,6 +69,7 @@ def format_transcript_cell(data: dict) -> str:
 
 
 def load_by_persona() -> dict[str, list[str]]:
+    """Group raw transcript stems by their student persona across the three families."""
     by_persona: dict[str, list[str]] = defaultdict(list)
     for family in ("chaotic", "cooperative", "clueless"):
         raw_dir = TRANSCRIPTS / family / f"{family}_raw"
@@ -88,6 +89,11 @@ def load_by_persona() -> dict[str, list[str]]:
 
 
 def sample_family(by_persona: dict[str, list[str]], family: str, n_target: int) -> list[str]:
+    """Round-robin sample up to ``n_target`` transcript stems across a family's personas.
+
+    Draws one random unseen stem per persona per pass to spread the sample evenly,
+    falling back to deterministic fill if randomized passes run short.
+    """
     keys = sorted(k for k in by_persona if k == family or k.startswith(family + "_"))
     selected: list[str] = []
     seen: set[str] = set()
@@ -114,6 +120,7 @@ def sample_family(by_persona: dict[str, list[str]], family: str, n_target: int) 
 
 
 def stem_to_meta(stem: str) -> tuple[str, str, Path]:
+    """Split a transcript stem into its (persona_type, number, absolute path)."""
     parts = stem.split("/")
     persona_type = parts[0]
     fname = parts[-1]
@@ -124,6 +131,12 @@ def stem_to_meta(stem: str) -> tuple[str, str, Path]:
 
 
 def main() -> int:
+    """Rebuild the 30-transcript hand-grade workbook (10 per family) from raw transcripts.
+
+    Samples the transcripts, lays out the per-grader and compiled grading sheets, and
+    writes the output workbook. Returns 0 on success, 1 if the sample count is wrong or
+    a transcript cannot be read.
+    """
     by_persona = load_by_persona()
     selected = (
         sample_family(by_persona, "chaotic", 10)
@@ -159,6 +172,7 @@ def main() -> int:
     body_align = Alignment(wrap_text=True, vertical="top")
 
     def setup_headers(ws, headers: list[str], helper_col_letter: str) -> None:
+        """Write and style the header row, add a hidden ``_key`` helper column, and freeze it."""
         for c, h in enumerate(headers, start=1):
             cell = ws.cell(row=1, column=c, value=h)
             cell.fill = header_fill

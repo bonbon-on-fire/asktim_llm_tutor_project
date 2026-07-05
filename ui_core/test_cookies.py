@@ -20,6 +20,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a PASS/FAIL for *name* based on *condition*."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -30,6 +31,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def test_constants_and_session_id() -> None:
+    """Check the cookie-name constants and that ``new_session_id`` returns a uuid4 string."""
     _check("session cookie name", SESSION_COOKIE_NAME == "tutor_session_id")
     _check("username cookie name", USERNAME_COOKIE_NAME == "tutor_username")
     sid = new_session_id()
@@ -37,6 +39,7 @@ def test_constants_and_session_id() -> None:
 
 
 def test_default_cookie_kwargs() -> None:
+    """Check ``default_cookie_kwargs`` returns the exact cookie policy and passes ``secure`` through."""
     got = default_cookie_kwargs(secure=True, max_age=100)
     _check(
         "policy dict is exact",
@@ -47,6 +50,7 @@ def test_default_cookie_kwargs() -> None:
 
 
 def main() -> int:
+    """Run all tests in this module and return an exit code (1 if any failed)."""
     for t in (test_constants_and_session_id, test_default_cookie_kwargs):
         print(t.__name__)
         t()

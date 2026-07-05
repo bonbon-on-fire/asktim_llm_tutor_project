@@ -37,6 +37,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a PASS/FAIL for *name* based on *condition*."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -47,6 +48,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def _utcnow() -> datetime:
+    """Return the current tz-aware UTC datetime (column default for the test model)."""
     return datetime.now(timezone.utc)
 
 
@@ -97,6 +99,7 @@ _MODELS = Models(Conversation=Conversation, Message=Message, UploadedImage=Uploa
 
 
 def _new_session():
+    """Create a fresh SQLite-backed schema; return ``(tempdir, engine)`` for the caller to clean up."""
     tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
     eng = build_engine(f"sqlite:///{Path(tmp.name) / 'c.db'}", sqlite_fk=True)
     _Base.metadata.create_all(eng)
@@ -104,6 +107,7 @@ def _new_session():
 
 
 def test_find_or_create_conversation() -> None:
+    """Cover create, resolve-by-session, resolve-by-username, and the WrongSessionError paths."""
     tmp, eng = _new_session()
     try:
         with Session(eng) as s:
@@ -183,6 +187,7 @@ def test_find_or_create_conversation() -> None:
 
 
 def test_find_or_create_with_extra_fields() -> None:
+    """Check ``extra_fields`` is written to the sandbox-style extra column on create."""
     tmp, eng = _new_session()
     try:
         with Session(eng) as s:
@@ -204,6 +209,7 @@ def test_find_or_create_with_extra_fields() -> None:
 
 
 def test_turn_numbering_and_history() -> None:
+    """Check turn numbers increment across exchanges and history/count reflect them."""
     tmp, eng = _new_session()
     try:
         with Session(eng) as s:
@@ -265,6 +271,7 @@ def test_turn_numbering_and_history() -> None:
 
 
 def test_get_messages_for_conversation_reasoning_toggle() -> None:
+    """Check ``include_reasoning`` gates the pedagogical-reasoning field and images key is always present."""
     tmp, eng = _new_session()
     try:
         with Session(eng) as s:
@@ -313,6 +320,7 @@ def test_get_messages_for_conversation_reasoning_toggle() -> None:
 
 
 def test_summarize_and_list_conversations() -> None:
+    """Check conversation summaries (snippet truncation, ``summarize_extra``) and username listing."""
     tmp, eng = _new_session()
     try:
         with Session(eng) as s:
@@ -380,6 +388,7 @@ def test_summarize_and_list_conversations() -> None:
 
 
 def test_get_conversation_for_viewer_ownership() -> None:
+    """Check viewer access is granted by session_id or username and denied to strangers / unknown ids."""
     tmp, eng = _new_session()
     try:
         with Session(eng) as s:
@@ -429,6 +438,7 @@ def test_get_conversation_for_viewer_ownership() -> None:
 
 
 def test_backfill_username_for_session() -> None:
+    """Check backfilling a username only touches rows with no username already set."""
     tmp, eng = _new_session()
     try:
         with Session(eng) as s:
@@ -482,6 +492,7 @@ def test_backfill_username_for_session() -> None:
 
 
 def main() -> int:
+    """Run all tests in this module and return an exit code (1 if any failed)."""
     tests = (
         test_find_or_create_conversation,
         test_find_or_create_with_extra_fields,

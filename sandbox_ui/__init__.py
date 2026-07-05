@@ -13,6 +13,7 @@ from pathlib import Path
 
 
 def _load_dotenv_quietly() -> None:
+    """Load the repo-root .env if python-dotenv and the file are both present; no-op otherwise."""
     try:
         from dotenv import load_dotenv
     except ImportError:

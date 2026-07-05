@@ -23,6 +23,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a pass/fail result for the named assertion."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -33,6 +34,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def _raises(fn) -> bool:
+    """Return True if calling *fn* raises UploadValidationError, else False."""
     try:
         fn()
         return False
@@ -41,6 +43,7 @@ def _raises(fn) -> bool:
 
 
 def test_accepts_png_and_jpeg_by_magic_bytes() -> None:
+    """Assert PNG/JPEG are accepted by magic bytes regardless of the declared MIME."""
     png = validate_image("a.png", "image/png", _PNG)
     _check("png sniffed to image/png", png.mime_type == "image/png")
     # Declared MIME is ignored; magic bytes win.
@@ -50,6 +53,7 @@ def test_accepts_png_and_jpeg_by_magic_bytes() -> None:
 
 
 def test_rejects_empty_oversized_and_non_image() -> None:
+    """Assert empty, oversized, and non-image uploads are rejected."""
     _check("empty rejected", _raises(lambda: validate_image("e.png", "image/png", b"")))
     big = _PNG + b"\x00" * (MAX_IMAGE_BYTES + 1)
     _check("oversized rejected", _raises(lambda: validate_image("big.png", "image/png", big)))
@@ -58,6 +62,7 @@ def test_rejects_empty_oversized_and_non_image() -> None:
 
 
 def test_count_cap() -> None:
+    """Assert the per-message image count cap is enforced and an empty list is allowed."""
     ok = validate_images([("a.png", "image/png", _PNG)] * MAX_IMAGES_PER_MESSAGE)
     _check("exactly max allowed", len(ok) == MAX_IMAGES_PER_MESSAGE)
     too_many = [("a.png", "image/png", _PNG)] * (MAX_IMAGES_PER_MESSAGE + 1)
@@ -66,6 +71,7 @@ def test_count_cap() -> None:
 
 
 def test_images_to_tuples() -> None:
+    """Assert images_to_tuples returns (bytes, mime) pairs in order."""
     imgs = validate_images([("a.png", "image/png", _PNG), ("b.jpg", "image/jpeg", _JPEG)])
     tuples = images_to_tuples(imgs)
     _check(
@@ -76,6 +82,7 @@ def test_images_to_tuples() -> None:
 
 
 def main() -> int:
+    """Run all tests and return 1 if any failed, else 0."""
     for t in (
         test_accepts_png_and_jpeg_by_magic_bytes,
         test_rejects_empty_oversized_and_non_image,

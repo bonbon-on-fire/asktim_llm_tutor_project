@@ -143,6 +143,7 @@ def _summarize(
     counts: dict[UUID, int],
     snippets: dict[UUID, str],
 ) -> dict:
+    """Build the list-view summary dict for one conversation from prefetched maps."""
     return {
         "id": str(c.id),
         "email": c.username,

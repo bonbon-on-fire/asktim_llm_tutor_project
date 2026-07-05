@@ -19,6 +19,7 @@ _client: OpenAI | None = None
 
 
 def _get_client() -> OpenAI:
+    """Return the process-wide OpenAI client, creating it lazily on first use."""
     global _client
     if _client is None:
         _client = OpenAI()  # reads OPENAI_API_KEY from the environment

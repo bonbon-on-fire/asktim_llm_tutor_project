@@ -392,6 +392,7 @@ def backfill_username_for_session(
 
 
 def _next_turn_number(db: Session, conversation: Any, *, models: Models) -> int:
+    """Return the next 1-based turn number for *conversation* (max existing turn + 1)."""
     stmt = select(func.max(models.Message.turn)).where(
         models.Message.conversation_id == conversation.id
     )

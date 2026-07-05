@@ -28,20 +28,24 @@ DEFAULT_EXERCISE = "01"
 
 
 def _list_courses() -> set[str]:
+    """Slugs of all built-in courses (subdirectories of curriculum/)."""
     if not _CURRICULUM_DIR.is_dir():
         return set()
     return {p.name for p in _CURRICULUM_DIR.iterdir() if p.is_dir()}
 
 
 def _tutor_prompt_exists(tutor: str) -> bool:
+    """True if tutor/prompts/<tutor>.txt exists."""
     return (_TUTOR_PROMPTS_DIR / f"{tutor}.txt").is_file()
 
 
 def _err(param: str, value, reason: str) -> dict:
+    """Build a validation-failure dict of the form {param, value, reason}."""
     return {"param": param, "value": value, "reason": reason}
 
 
 def validate_course(course) -> dict | None:
+    """Return a failure dict if course is missing or unknown, else None."""
     if not course:
         return _err("course", course, "missing")
     if course not in _list_courses():
@@ -50,6 +54,7 @@ def validate_course(course) -> dict | None:
 
 
 def validate_exercise(course, exercise) -> dict | None:
+    """Return a failure dict if exercise is missing, non-numeric, or absent for the course, else None."""
     if not exercise:
         return _err("exercise", exercise, "missing")
     if not (isinstance(exercise, str) and exercise.isdigit()):
@@ -64,6 +69,7 @@ def validate_exercise(course, exercise) -> dict | None:
 
 
 def validate_practice(course, practice) -> dict | None:
+    """Return a failure dict if practice is missing, non-numeric, or absent for the course, else None."""
     if not practice:
         return _err("practice", practice, "missing")
     if not (isinstance(practice, str) and practice.isdigit()):
@@ -79,6 +85,7 @@ def validate_practice(course, practice) -> dict | None:
 
 
 def validate_tutor(tutor) -> dict | None:
+    """Return a failure dict if tutor is missing or has no prompt file, else None."""
     if not tutor:
         return _err("tutor", tutor, "missing")
     if not _tutor_prompt_exists(tutor):

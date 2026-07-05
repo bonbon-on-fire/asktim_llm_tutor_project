@@ -21,6 +21,7 @@ _bridge = TutorBridge()
 
 
 def build_assignment_text(course: str, exercise: str) -> str:
+    """Return the assignment text for a course/exercise via the shared bridge."""
     return _bridge.build_assignment_text(course, exercise)
 
 

@@ -15,6 +15,7 @@ _FAILED = 0
 
 
 def _check(name, cond, detail=""):
+    """Record a pass/fail for a named assertion and print the result."""
     global _PASSED, _FAILED
     if cond:
         _PASSED += 1
@@ -25,6 +26,7 @@ def _check(name, cond, detail=""):
 
 
 def main() -> int:
+    """Assert practice listing, validation, and context options work for a temp course; return exit code."""
     course = "tmp_course_validate_practice"
     prdir = V._CURRICULUM_DIR / course / "practices"
     prdir.mkdir(parents=True, exist_ok=True)

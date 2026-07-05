@@ -47,11 +47,13 @@ def check_password(candidate: str) -> bool:
 
 
 def mark_authed() -> None:
+    """Mark the current session as authenticated and make the cookie permanent."""
     session[_SESSION_KEY] = True
     session.permanent = True
 
 
 def clear_auth() -> None:
+    """Clear the authenticated flag from the current session (log out)."""
     session.pop(_SESSION_KEY, None)
 
 
@@ -60,6 +62,7 @@ def init_auth(app: Flask) -> None:
 
     @app.before_request
     def _require_auth():
+        """Redirect to the login page unless the endpoint is public or authed."""
         if request.endpoint in _PUBLIC_ENDPOINTS:
             return None
         if is_authed():

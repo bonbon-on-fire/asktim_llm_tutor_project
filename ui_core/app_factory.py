@@ -31,6 +31,15 @@ def create_app(
     blueprints: Sequence[Blueprint],
     on_startup: Callable[[], None] | None = None,
 ) -> Flask:
+    """Assemble and return a configured Flask app for a chat UI.
+
+    Wires up the ``ui_core`` template loader, registers the static blueprint
+    plus the caller's ``blueprints``, installs the session-id / db-session
+    request hooks and the session-cookie ``after_request``, and adds
+    ``/health``. ``session_local`` is the per-app DB session factory,
+    ``service_name`` is echoed by ``/health``, and ``on_startup`` (if given)
+    runs once after wiring.
+    """
     app = Flask(import_name)
     app.config["SECRET_KEY"] = config.secret_key
 
@@ -45,6 +54,7 @@ def create_app(
 
     @app.before_request
     def _ensure_session_id() -> None:
+        """Populate ``g.session_id`` from the request cookie, minting a new one if absent."""
         existing = request.cookies.get(SESSION_COOKIE_NAME)
         if existing:
             g.session_id = existing
@@ -55,10 +65,12 @@ def create_app(
 
     @app.before_request
     def _open_db_session() -> None:
+        """Open a per-request DB session on ``g.db``."""
         g.db = session_local()
 
     @app.teardown_request
     def _close_db_session(exception: BaseException | None = None) -> None:
+        """Commit (or roll back on *exception*) and close the request's ``g.db`` session."""
         # Routes that take over their own session lifecycle (the streaming
         # /api/chat endpoint) pop g.db themselves before returning; this
         # teardown then finds nothing to clean up and exits silently.
@@ -75,6 +87,7 @@ def create_app(
 
     @app.after_request
     def _set_session_cookie(response: Response) -> Response:
+        """Attach the session cookie to *response* when the session id was newly minted."""
         if getattr(g, "session_id_is_new", False):
             response.set_cookie(
                 SESSION_COOKIE_NAME,
@@ -88,6 +101,7 @@ def create_app(
 
     @app.get("/health")
     def health():
+        """Return a JSON liveness payload identifying this service."""
         return jsonify({"status": "ok", "service": service_name})
 
     if on_startup is not None:

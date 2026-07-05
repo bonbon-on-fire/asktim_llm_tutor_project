@@ -18,6 +18,7 @@ _FAILED = 0
 
 
 def _check(name, cond, detail=""):
+    """Record a pass/fail for a named assertion and print the result."""
     global _PASSED, _FAILED
     if cond:
         _PASSED += 1
@@ -28,6 +29,7 @@ def _check(name, cond, detail=""):
 
 
 def main() -> int:
+    """Assert build_assignment_text resolves exercise vs practice files by kind; return exit code."""
     # Use a temp practice file in a real-shaped course dir.
     import tempfile, shutil
     with tempfile.TemporaryDirectory():

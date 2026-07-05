@@ -10,6 +10,7 @@ _DEFAULT_COOKIE_MAX_AGE_SECONDS = 180 * 24 * 3600  # 180 days
 
 
 def _parse_bool(raw: str, default: bool) -> bool:
+    """Parse an env-var string to a bool, returning default when raw is None."""
     if raw is None:
         return default
     return raw.strip().lower() not in {"0", "false", "no", "off", ""}
@@ -25,6 +26,7 @@ class Config:
 
 
 def load_config() -> Config:
+    """Build a Config from environment variables, applying local-dev defaults."""
     secret_key = os.environ.get("SANDBOX_UI_SECRET_KEY", "dev-insecure-key")
     # Resolution order: SANDBOX_UI_DATABASE_URL (explicit, wins) -> DATABASE_URL
     # (shared name; on Railway each service's env resolves it to its own DB) ->

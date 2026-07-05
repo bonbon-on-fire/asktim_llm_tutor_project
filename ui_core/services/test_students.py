@@ -24,6 +24,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a PASS/FAIL for *name* based on *condition*."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -42,6 +43,7 @@ class Student(StudentMixin, _Base):
 
 
 def test_create_get_verify() -> None:
+    """Check creating a student hashes the password and lookup/verify round-trip correctly."""
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         eng = build_engine(f"sqlite:///{Path(tmp) / 's.db'}", sqlite_fk=True)
         _Base.metadata.create_all(eng)
@@ -76,6 +78,7 @@ def test_create_get_verify() -> None:
 
 
 def test_weak_password_rejected() -> None:
+    """Check a too-short password raises ``WeakPasswordError`` and inserts no row."""
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         eng = build_engine(f"sqlite:///{Path(tmp) / 's2.db'}", sqlite_fk=True)
         _Base.metadata.create_all(eng)
@@ -96,6 +99,7 @@ def test_weak_password_rejected() -> None:
 
 
 def test_verify_password_handles_bad_hash() -> None:
+    """Check ``verify_password`` returns False (not raises) when the stored hash is malformed."""
     student = Student(username="carol", password_hash="not-a-real-bcrypt-hash")
     _check(
         "verify_password returns False on malformed hash",
@@ -104,6 +108,7 @@ def test_verify_password_handles_bad_hash() -> None:
 
 
 def main() -> int:
+    """Run all tests in this module and return an exit code (1 if any failed)."""
     for t in (
         test_create_get_verify,
         test_weak_password_rejected,

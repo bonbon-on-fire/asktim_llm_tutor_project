@@ -16,6 +16,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a pass/fail result for the named assertion."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -26,12 +27,14 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def test_missing_folder_returns_empty() -> None:
+    """Assert a missing lectures/ folder yields an empty string."""
     with tempfile.TemporaryDirectory() as tmp:
         out = load_lecture_transcripts("demo", curriculum_root=Path(tmp))
         _check("missing lectures/ -> ''", out == "", f"got {out!r}")
 
 
 def test_reads_and_orders_transcripts() -> None:
+    """Assert transcripts are read in name order, labeled, and non-txt/empty files skipped."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         lect = root / "demo" / "lectures"
@@ -50,6 +53,7 @@ def test_reads_and_orders_transcripts() -> None:
 
 
 def main() -> int:
+    """Run all tests and return 1 if any failed, else 0."""
     for t in (test_missing_folder_returns_empty, test_reads_and_orders_transcripts):
         print(t.__name__)
         t()

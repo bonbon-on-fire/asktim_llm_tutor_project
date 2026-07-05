@@ -25,6 +25,7 @@ MAX_USERNAME_LENGTH = 100
 
 
 def _validate_username(value) -> str | None:
+    """Return a rejection reason for *value* as a username, or ``None`` if valid."""
     if not isinstance(value, str):
         return "must be a string"
     cleaned = value.strip()
@@ -36,6 +37,7 @@ def _validate_username(value) -> str | None:
 
 
 def _validate_password(value, *, students: ModuleType) -> str | None:
+    """Return a rejection reason for *value* as a password, or ``None`` if valid."""
     if not isinstance(value, str):
         return "must be a string"
     if len(value) < students.MIN_PASSWORD_LENGTH:
@@ -60,6 +62,7 @@ def make_identity_bp(
 
     @identity_bp.get("/api/whoami")
     def whoami():
+        """Return the current session id and linked username as JSON."""
         return jsonify(
             {
                 "session_id": getattr(g, "session_id", None),

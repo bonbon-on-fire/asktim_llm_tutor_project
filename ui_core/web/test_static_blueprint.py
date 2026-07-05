@@ -17,6 +17,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a PASS/FAIL for *name* based on *condition*."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -27,6 +28,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def test_serves_chat_css() -> None:
+    """Check the blueprint serves ``chat.css`` with status 200 and the on-disk bytes."""
     app = Flask(__name__)
     app.register_blueprint(static_bp)
     client = app.test_client()
@@ -41,6 +43,7 @@ def test_serves_chat_css() -> None:
 
 
 def test_endpoint_name() -> None:
+    """Check the blueprint registers under the ``ui_core`` name / ``ui_core.static`` endpoint."""
     _check(
         "blueprint endpoint is ui_core.static",
         static_bp.name == "ui_core",
@@ -54,6 +57,7 @@ def test_endpoint_name() -> None:
 
 
 def main() -> int:
+    """Run all tests in this module and return an exit code (1 if any failed)."""
     for t in (test_serves_chat_css, test_endpoint_name):
         print(t.__name__)
         t()

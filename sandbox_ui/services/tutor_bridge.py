@@ -220,6 +220,7 @@ def _has_custom(
     custom_tutor_prompt: str | None,
     lectures_text: str | None = None,
 ) -> bool:
+    """True if any custom-context override text is provided (non-None)."""
     return any(
         v is not None
         for v in (course_text, exercise_text, syllabus_text, custom_tutor_prompt, lectures_text)
@@ -249,6 +250,7 @@ class SandboxTutorBridge(TutorBridge):
     """Adds sandbox_ui's RAG / custom-context / include-toggle behavior."""
 
     def prepare_ctx(self, course: str, **ctx) -> dict:
+        """Annotate ctx with has_custom and the resolved context_mode before the turn is built."""
         course_text = ctx.get("course_text")
         exercise_text = ctx.get("exercise_text")
         syllabus_text = ctx.get("syllabus_text")
@@ -264,6 +266,7 @@ class SandboxTutorBridge(TutorBridge):
         return ctx
 
     def cache_key(self, tutor: str, course: str, exercise: str, **ctx):
+        """Cache key for the built context, or None when custom context makes it uncacheable."""
         # Custom context is one-off — never cache it (mirrors the original
         # `if not custom: ...` gating around cache reads/writes).
         if ctx.get("has_custom"):
@@ -280,6 +283,7 @@ class SandboxTutorBridge(TutorBridge):
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
+        """Build the assignment text block, honoring include toggles, custom overrides, and context mode."""
         return build_assignment_text(
             course,
             exercise,
@@ -295,12 +299,14 @@ class SandboxTutorBridge(TutorBridge):
         )
 
     def build_system_prompt(self, tutor: str, assignment_text: str, **ctx) -> str:
+        """Build the system prompt, using a custom tutor prompt if given, else the built-in tutor stem."""
         custom_tutor_prompt = ctx.get("custom_tutor_prompt")
         if custom_tutor_prompt is not None:
             return _render_custom_tutor_prompt(custom_tutor_prompt, assignment_text)
         return load_system_prompt(tutor, assignment_override=assignment_text)
 
     def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
+        """Retrieve RAG context for the query when context_mode is "rag", else return empty context."""
         return _retrieved_context(course, ctx.get("context_mode", "full_context"), query)
 
     def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):

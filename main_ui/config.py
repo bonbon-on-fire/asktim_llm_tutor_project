@@ -10,6 +10,7 @@ _DEFAULT_COOKIE_MAX_AGE_SECONDS = 180 * 24 * 3600  # 180 days
 
 
 def _parse_bool(raw: str, default: bool) -> bool:
+    """Parse an env-string as a boolean; *default* when unset, else falsy words are False."""
     if raw is None:
         return default
     return raw.strip().lower() not in {"0", "false", "no", "off", ""}
@@ -25,6 +26,7 @@ class Config:
 
 
 def load_config() -> Config:
+    """Build the :class:`Config` from environment variables, applying defaults."""
     secret_key = os.environ.get("MAIN_UI_SECRET_KEY", "dev-insecure-key")
     database_url = os.environ.get("DATABASE_URL", "sqlite:///./main_ui.db")
     port = int(os.environ.get("PORT", "5000"))

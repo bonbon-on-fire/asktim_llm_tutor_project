@@ -22,6 +22,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a pass/fail result for the named assertion."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -32,6 +33,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def test_discover_practice_filters_and_sorts() -> None:
+    """Assert discover_practice numeric-sorts and reads only the practices/ folder."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         # Practice problems live in their own practices/ folder.
@@ -56,6 +58,7 @@ def test_discover_practice_filters_and_sorts() -> None:
 
 
 def test_practice_path_exists_and_read() -> None:
+    """Assert practice_path/practice_exists/read_practice work and normalize padded input."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         prdir = root / "demo" / "practices"
@@ -77,6 +80,7 @@ def test_practice_path_exists_and_read() -> None:
 
 
 def main() -> int:
+    """Run all tests and return 1 if any failed, else 0."""
     tests = [
         test_discover_practice_filters_and_sorts,
         test_practice_path_exists_and_read,

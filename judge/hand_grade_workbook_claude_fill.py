@@ -62,6 +62,7 @@ SUB_PREFIX = re.compile(r"^(\d+\.\d+\.[A-Z])")
 
 
 def _coerce_points(raw: object) -> int:
+    """Coerce an arbitrary points value to a non-negative int (0 if unparseable)."""
     if isinstance(raw, bool):
         return int(raw)
     if isinstance(raw, int):
@@ -80,6 +81,7 @@ def _coerce_points(raw: object) -> int:
 
 
 def _iter_criteria(grade: dict) -> list[dict]:
+    """Flatten a grade's nested sections into a list of criterion dicts."""
     out: list[dict] = []
     sections = grade.get("sections")
     if not isinstance(sections, dict):
@@ -134,11 +136,19 @@ def subsection_deductions_from_grade(grade: dict) -> dict[str, int]:
 
 
 def claude_transcript_path(persona: str, transcript_num: str) -> Path:
+    """Path to a persona's Claude-graded transcript for the zero-padded number."""
     num = str(transcript_num).strip().zfill(4)
     return REPO / "transcripts" / persona / f"{persona}_claude" / f"transcript_{num}.json"
 
 
 def fill_workbook(path: Path = HAND_XLSX) -> int:
+    """Fill the compiled sheet's Claude rows with per-subsection deductions.
+
+    For each ``claude`` row, loads the matching Claude transcript's grade, writes the
+    subsection deduction columns and total-score formula, and normalizes the total
+    formulas across grader sheets. Records mismatch warnings where column deductions
+    disagree with the grade's implied total. Returns 0 on success, 1 on any error.
+    """
     if not path.is_file():
         print(f"Missing {path}", file=sys.stderr)
         return 1
@@ -240,6 +250,7 @@ def fill_workbook(path: Path = HAND_XLSX) -> int:
 
 
 def main() -> int:
+    """CLI entry point: fill the default hand-grade workbook in place."""
     return fill_workbook()
 
 

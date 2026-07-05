@@ -57,14 +57,17 @@ chat_bp = Blueprint("chat", __name__)
 
 
 def _bad_param(err: dict):
+    """Build a 404 JSON response for a validation-failure dict."""
     return jsonify({"error": "invalid_param", **err}), 404
 
 
 def _bad_request(reason: str, error_code: str = "bad_request"):
+    """Build a 400 JSON response with the given error code and reason."""
     return jsonify({"error": error_code, "reason": reason}), 400
 
 
 def _wrong_session():
+    """Build a 403 JSON response for a conversation not owned by this session."""
     return (
         jsonify(
             {
@@ -84,6 +87,13 @@ def _sse_event(name: str, payload: dict) -> str:
 
 @chat_bp.post("/api/chat")
 def chat():
+    """Validate a chat turn, persist the student message, and stream the tutor reply as SSE.
+
+    Handles multipart (text plus images) or JSON (text only) requests. Returns a
+    JSON error before streaming on bad input, unknown course/exercise/tutor, a
+    conversation not owned by this session, or a persistence failure; otherwise
+    returns a ``text/event-stream`` response.
+    """
     # Accept multipart/form-data (text + image files) or legacy JSON (text only).
     is_multipart = (request.content_type or "").startswith("multipart/form-data")
     if is_multipart:
@@ -139,6 +149,7 @@ def chat():
     username = request.cookies.get(USERNAME_COOKIE_NAME)
 
     def _abort_with(json_response):
+        """Roll back and close the manually-owned DB session, then return *json_response*."""
         # Helper for the validation-failure path: roll back any pending
         # writes and close the session before returning the JSON error.
         try:
@@ -220,6 +231,7 @@ def chat():
     )
 
     def event_stream():
+        """Generate SSE frames: stream tutor deltas, persist the reply, emit done/error."""
         full_reply = ""
         reasoning = None
         try:

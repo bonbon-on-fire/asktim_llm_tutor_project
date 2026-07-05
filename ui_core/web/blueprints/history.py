@@ -39,6 +39,7 @@ def make_history_bp(
 
     @history_bp.get("/api/history")
     def history():
+        """List past conversations linked to the current ``username`` cookie (empty if none)."""
         username = request.cookies.get(cookies.USERNAME_COOKIE_NAME)
         conversations = (
             conversation.list_conversations_for_username(g.db, username)
@@ -49,6 +50,11 @@ def make_history_bp(
 
     @history_bp.get("/api/conversation/<conversation_id>")
     def conversation_detail(conversation_id: str):
+        """Return the read-only message log for one owned conversation.
+
+        Responds 400 for a malformed UUID and 404 when the conversation is
+        unknown or not owned by the current session_id / username.
+        """
         try:
             convo_id = UUID(conversation_id)
         except (ValueError, TypeError):

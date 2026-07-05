@@ -31,6 +31,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a pass/fail result for one named assertion."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -41,6 +42,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def _make_client():
+    """Build a test client for the app with the auth gate forced active."""
     app = create_app()
     # Make the gate active regardless of the environment the test runs in.
     app.config["DATABASE_UI_PASSWORD"] = "test-password"
@@ -48,6 +50,7 @@ def _make_client():
 
 
 def test_shared_chat_css_is_public() -> None:
+    """Assert the shared ui_core chat.css is served (200) without auth."""
     client = _make_client()
     resp = client.get("/ui-core/css/chat.css")
     _check(
@@ -58,6 +61,7 @@ def test_shared_chat_css_is_public() -> None:
 
 
 def test_own_database_css_is_public() -> None:
+    """Assert the app's own database.css is served (200) without auth."""
     client = _make_client()
     resp = client.get("/static/css/database.css")
     _check(
@@ -68,6 +72,7 @@ def test_own_database_css_is_public() -> None:
 
 
 def test_protected_route_redirects_to_login() -> None:
+    """Assert a protected route redirects (302) to the login page when unauthed."""
     client = _make_client()
     resp = client.get("/", follow_redirects=False)
     _check(
@@ -84,6 +89,7 @@ def test_protected_route_redirects_to_login() -> None:
 
 
 def main() -> int:
+    """Run all checks, print a summary, and return a shell exit code."""
     for t in (
         test_shared_chat_css_is_public,
         test_own_database_css_is_public,

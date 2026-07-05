@@ -29,11 +29,13 @@ INDEX_DIRNAME = "rag_index"
 
 
 def index_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the RAG index folder path (``curriculum/<course>/rag_index/``)."""
     root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
     return root / course / INDEX_DIRNAME
 
 
 def _normalize(matrix: np.ndarray) -> np.ndarray:
+    """Return *matrix* with each row L2-normalized (zero rows left unchanged) as float32."""
     norms = np.linalg.norm(matrix, axis=1, keepdims=True)
     norms[norms == 0] = 1.0
     return (matrix / norms).astype("float32")
@@ -43,11 +45,13 @@ class NumpyVectorStore:
     """In-memory cosine store backed by on-disk numpy + jsonl artifacts."""
 
     def __init__(self, chunks: list[Chunk], vectors: np.ndarray):
+        """Store *chunks* alongside their row-aligned, already-L2-normalized *vectors*."""
         self.chunks = chunks
         self.vectors = vectors  # assumed L2-normalized
 
     @classmethod
     def build(cls, chunks: list[Chunk], vectors: np.ndarray) -> "NumpyVectorStore":
+        """Build a store from *chunks* and raw *vectors*, L2-normalizing the vectors."""
         return cls(chunks, _normalize(np.asarray(vectors, dtype="float32")))
 
     def search(self, query_vec: np.ndarray, k: int) -> list[tuple[Chunk, float]]:
@@ -63,6 +67,7 @@ class NumpyVectorStore:
         return [(self.chunks[i], float(sims[i])) for i in top]
 
     def save(self, course: str, manifest: dict, curriculum_root: Path | str | None = None) -> Path:
+        """Write vectors, chunks, and *manifest* to the course index dir, returning it."""
         out = index_dir(course, curriculum_root)
         out.mkdir(parents=True, exist_ok=True)
         np.save(out / "vectors.npy", self.vectors)
@@ -77,6 +82,7 @@ class NumpyVectorStore:
     def load(
         cls, course: str, curriculum_root: Path | str | None = None
     ) -> "NumpyVectorStore | None":
+        """Load the store for *course* from disk, or return None if no index exists."""
         directory = index_dir(course, curriculum_root)
         vectors_path = directory / "vectors.npy"
         chunks_path = directory / "chunks.jsonl"

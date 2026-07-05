@@ -27,10 +27,12 @@ embed_bp = Blueprint("embed", __name__)
 
 
 def _bad_param(err: dict):
+    """Build a 404 JSON response for a validation-failure dict."""
     return jsonify({"error": "invalid_param", **err}), 404
 
 
 def _render_embed(*, course: str, exercise: str, tutor: str):
+    """Render ``embed.html`` for the given course/exercise/tutor context."""
     tutor_config = {"course": course, "exercise": exercise, "tutor": tutor}
     has_email = bool(request.cookies.get(USERNAME_COOKIE_NAME))
     return render_template(
@@ -56,6 +58,11 @@ def index():
 
 @embed_bp.get("/embed")
 def embed():
+    """Resolve course/exercise/tutor from query params (with defaults), validate, and render.
+
+    Any absent param falls back to the module default so partial URLs still
+    load; an explicitly invalid value 404s.
+    """
     # Missing params fall back to defaults so partial URLs (e.g. ?exercise=02)
     # still load instead of 404ing. An *explicitly* invalid value is still
     # rejected below, since validation runs on the resolved value either way.

@@ -50,6 +50,7 @@ def _discover_persona_groups() -> list[str]:
 
 
 def _provider_label(provider: str) -> str:
+    """Human-readable display label for a provider slug (e.g. "gpt" -> "GPT")."""
     labels = {
         "gpt": "GPT",
         "claude": "CLAUDE",

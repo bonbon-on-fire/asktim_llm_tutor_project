@@ -21,6 +21,7 @@ from sandbox_ui.db.session import engine
 
 
 def main() -> None:
+    """Drop and recreate the uploaded_images table against the app's DB."""
     print(f"Target DB: {engine.url}")
     UploadedImage.__table__.drop(engine, checkfirst=True)
     UploadedImage.__table__.create(engine)

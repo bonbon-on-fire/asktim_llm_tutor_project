@@ -489,6 +489,7 @@ class StudentAnswerExtractor:
     }
 
     def __init__(self) -> None:
+        """Initialize an empty buffer and start the parser in the ``find_field`` phase."""
         self._buffer = ""
         self._pos = 0
         self._phase = "find_field"

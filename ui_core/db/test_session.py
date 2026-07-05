@@ -24,6 +24,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a PASS/FAIL for *name* based on *condition*."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -34,6 +35,7 @@ def _check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def test_normalize_pg_url() -> None:
+    """Check ``normalize_pg_url`` rewrites Postgres URLs to the psycopg driver and leaves others alone."""
     _check("postgres:// -> psycopg", normalize_pg_url("postgres://u@h/db") == "postgresql+psycopg://u@h/db")
     _check("postgresql:// -> psycopg", normalize_pg_url("postgresql://u@h/db") == "postgresql+psycopg://u@h/db")
     _check("already explicit unchanged", normalize_pg_url("postgresql+psycopg://u@h/db") == "postgresql+psycopg://u@h/db")
@@ -41,6 +43,7 @@ def test_normalize_pg_url() -> None:
 
 
 def test_build_engine_sqlite_fk_enforced() -> None:
+    """Check ``build_engine``'s ``sqlite_fk`` flag toggles the SQLite ``foreign_keys`` PRAGMA."""
     Base = declarative_base()
 
     class Parent(Base):
@@ -65,6 +68,7 @@ def test_build_engine_sqlite_fk_enforced() -> None:
 
 
 def test_session_scope_commit_vs_readonly() -> None:
+    """Check ``session_scope`` commits by default and rolls back when ``read_only=True``."""
     Base = declarative_base()
 
     class Row(Base):
@@ -92,6 +96,7 @@ def test_session_scope_commit_vs_readonly() -> None:
 
 
 def main() -> int:
+    """Run all tests in this module and return an exit code (1 if any failed)."""
     for t in (test_normalize_pg_url, test_build_engine_sqlite_fk_enforced, test_session_scope_commit_vs_readonly):
         print(t.__name__)
         t()

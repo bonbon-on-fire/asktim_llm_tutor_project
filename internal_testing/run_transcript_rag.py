@@ -108,6 +108,7 @@ class RunConfig:
 
     @property
     def persona_type(self) -> str:
+        """Family prefix of the persona (text before the first underscore)."""
         return self.persona.split("_", 1)[0]
 
 
@@ -116,11 +117,13 @@ class RunConfig:
 # --------------------------------------------------------------------------- #
 
 def _problem_text(course: str, kind: str, number: str) -> str:
+    """Read the exercise or practice problem prompt text for the given course."""
     path = practice_path(course, number) if kind == "practice" else exercise_path(course, number)
     return path.read_text(encoding="utf-8").strip()
 
 
 def _problem_label(kind: str) -> str:
+    """Human-readable label for a problem kind ("Practice problem" or "Exercise")."""
     return "Practice problem" if kind == "practice" else "Exercise"
 
 
@@ -185,6 +188,13 @@ def _tutor_reply_with_retry(tutor_messages: list, tutor_graph, rebuild):
 
 
 def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
+    """Simulate one full student/tutor conversation with per-turn RAG retrieval.
+
+    Drives ``turn_size`` exchanges: for each turn the student model speaks, relevant
+    course chunks are retrieved and prepended to the tutor input, and the tutor
+    replies. Returns the list of exchange records (student/tutor text, pedagogical
+    reasoning, retrieved chunks, and per-turn cost estimate).
+    """
     tutor_assignment = _tutor_rag_assignment(
         config.course, config.kind, config.number, config.turn_size
     )
@@ -194,6 +204,7 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
     figures = discover_figures(config.course, config.number) if config.kind == "exercise" else []
 
     def _build_graph():
+        """Construct a fresh tutor graph for this config's provider and figures."""
         return create_tutor_graph(system_prompt, provider=config.provider, figures=figures)
 
     tutor_graph = _build_graph()
@@ -318,6 +329,12 @@ def _aggregate_cost(exchanges: list[dict[str, object]]) -> dict:
 def _save_transcript(
     config: RunConfig, exchanges: list[dict[str, object]], output_suffix: str
 ) -> Path:
+    """Write the conversation and its metadata to a numbered transcript JSON file.
+
+    Assembles the judge-facing payload (lean course context, problem prompt, figures,
+    aggregated cost) plus the exchanges, allocates the next transcript number under a
+    lock, and returns the written path.
+    """
     output_dir = _TRANSCRIPTS_DIR / config.persona_type / f"{config.persona_type}_{output_suffix}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -372,6 +389,10 @@ def _save_transcript(
 # --------------------------------------------------------------------------- #
 
 def _iter_configs(args) -> list[RunConfig]:
+    """Expand the parsed args into one RunConfig per persona x problem x trial.
+
+    Applies ``--limit`` (if set) to cap the returned configs for smoke tests.
+    """
     configs: list[RunConfig] = []
     for persona in args.personas:
         for kind, number in args.problems:
@@ -394,6 +415,11 @@ def _iter_configs(args) -> list[RunConfig]:
 
 
 def _parse_problems(raw: list[str] | None) -> list[tuple[str, str]]:
+    """Parse ``exercise:NN``/``practice:NN`` tokens into (kind, number) pairs.
+
+    Returns DEFAULT_PROBLEMS when no tokens are given; raises ValueError on a
+    malformed token.
+    """
     if not raw:
         return DEFAULT_PROBLEMS
     out: list[tuple[str, str]] = []
@@ -406,6 +432,7 @@ def _parse_problems(raw: list[str] | None) -> list[tuple[str, str]]:
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for the RAG batch runner, resolving --problems."""
     p = argparse.ArgumentParser(description="RAG-context tutor/student batch simulations")
     p.add_argument("--course", default=DEFAULT_COURSE)
     p.add_argument("--tutor", default=DEFAULT_TUTOR)
@@ -429,6 +456,10 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """CLI entry point: validate personas/index, then run the batch in a thread pool.
+
+    Returns 0 if every conversation succeeded, 1 otherwise (or on failed validation).
+    """
     args = _parse_args()
 
     unknown = set(args.personas) - set(list_personas())
@@ -458,6 +489,7 @@ def main() -> int:
     start = time.monotonic()
 
     def _run_one(config: RunConfig) -> dict:
+        """Run and save one conversation, returning an ok/config/path or failure dict."""
         try:
             exchanges = _run_conversation(config)
             path = _save_transcript(config, exchanges, args.output_suffix)

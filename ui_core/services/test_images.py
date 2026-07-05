@@ -35,6 +35,7 @@ _FAILED = 0
 
 
 def _check(name: str, condition: bool, detail: str = "") -> None:
+    """Record and print a PASS/FAIL for *name* based on *condition*."""
     global _PASSED, _FAILED
     if condition:
         _PASSED += 1
@@ -76,10 +77,12 @@ class UploadedImage(UploadedImageMixin, _Base):
 
 
 def _img(name: str, data: bytes = b"abc") -> ValidatedImage:
+    """Build a ``ValidatedImage`` PNG test fixture with the given name and bytes."""
     return ValidatedImage(filename=name, mime_type="image/png", data=data)
 
 
 def test_read_and_validate_skips_empty() -> None:
+    """Check ``read_and_validate`` returns ``[]`` for empty input and skips filename-less uploads."""
     _check("empty list -> []", svc.read_and_validate([]) == [])
     # a FileStorage with no filename is skipped before validation
     fs = FileStorage(stream=io.BytesIO(b""), filename="")
@@ -87,6 +90,7 @@ def test_read_and_validate_skips_empty() -> None:
 
 
 def test_persist_and_ownership() -> None:
+    """Check ``persist_images`` writes rows and ``get_image_for_viewer`` enforces ownership."""
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         eng = build_engine(f"sqlite:///{Path(tmp) / 'img.db'}", sqlite_fk=True)
         _Base.metadata.create_all(eng)
@@ -139,6 +143,7 @@ def test_persist_and_ownership() -> None:
 
 
 def main() -> int:
+    """Run all tests in this module and return an exit code (1 if any failed)."""
     for t in (test_read_and_validate_skips_empty, test_persist_and_ownership):
         print(t.__name__)
         t()

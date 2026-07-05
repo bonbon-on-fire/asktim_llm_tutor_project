@@ -22,6 +22,7 @@ _FAILED = 0
 
 
 def _check(name, cond, detail=""):
+    """Record and print a PASS/FAIL for *name* based on *cond*."""
     global _PASSED, _FAILED
     if cond:
         _PASSED += 1
@@ -51,6 +52,7 @@ class _Recorder:
     """Captures the `messages` list passed to each stubbed upstream call."""
 
     def __init__(self):
+        """Initialize empty capture lists for the get and stream upstream calls."""
         self.get_calls: list[list] = []
         self.stream_calls: list[list] = []
 
@@ -69,21 +71,26 @@ def _install_stubs(module, recorder: _Recorder, canned_raw: str) -> dict:
     }
 
     def fake_create_tutor_graph(system_prompt):
+        """Return a sentinel graph tuple instead of compiling a real LangGraph."""
         return ("FAKE_GRAPH", system_prompt)
 
     def fake_build_tutor_model(provider="gpt"):
+        """Return a sentinel model string instead of building a real chat model."""
         return "FAKE_MODEL"
 
     def fake_load_system_prompt(tutor, assignment_override=None):
+        """Return a synthetic system prompt echoing *tutor* and *assignment_override*."""
         return f"SYSTEM[{tutor}]::{assignment_override}"
 
     def fake_upstream_get_tutor_reply(messages, graph=None):
+        """Record *messages* and return the canned AIMessage plus its parsed answer."""
         recorder.get_calls.append(list(messages))
         out = [AIMessage(content=canned_raw)]
         _, answer = tb.parse_tutor_response(canned_raw)
         return out, (answer or "")
 
     def fake_upstream_stream_tutor_reply(messages, model=None, system_prompt=None):
+        """Record *messages* and yield two text deltas then the canned ``__done__`` tuple."""
         recorder.stream_calls.append(list(messages))
         yield "Hello "
         yield "world"
@@ -98,11 +105,13 @@ def _install_stubs(module, recorder: _Recorder, canned_raw: str) -> dict:
 
 
 def _restore_stubs(module, originals: dict) -> None:
+    """Restore each monkeypatched attribute on *module* from *originals*."""
     for name, value in originals.items():
         setattr(module, name, value)
 
 
 def main() -> int:
+    """Run the offline bridge control-flow checks and return an exit code (1 if any failed)."""
     canned_raw = json.dumps(
         {
             "pedagogical-reasoning": "because X",

@@ -611,6 +611,8 @@ def _run_bundle(bundle_config: BundleConfig, yes: bool = False) -> int:
         print(f"[Raw Bundle] Running in parallel with {PARALLEL_WORKERS} workers. Tutor provider: {bundle_config.provider.upper()}")
 
         def _run_one(config: RunConfig, trial: int) -> dict[str, object]:
+            """Run one config/trial end to end (assignment, conversation, save) and
+            return a result dict with ok/trial/config plus path or failure reason."""
             assignment_text = _build_assignment_text(
                 config.course,
                 config.exercise_number,

@@ -24,6 +24,11 @@ from rag.store import NumpyVectorStore
 
 
 def _gather(course: str, source: str) -> list[tuple[str, str]]:
+    """Collect ``(label, text)`` docs for *course* from the selected source(s).
+
+    *source* is one of ``"local"``, ``"ocw"``, or ``"both"``; the OCW loader is
+    imported lazily since it needs requests + beautifulsoup4.
+    """
     docs: list[tuple[str, str]] = []
     if source in ("local", "both"):
         docs += load_local_docs(course)
@@ -35,6 +40,12 @@ def _gather(course: str, source: str) -> list[tuple[str, str]]:
 
 
 def ingest(course: str, source: str, *, target_chars: int, overlap_chars: int) -> int:
+    """Build and persist the RAG index for *course*, returning the chunk count.
+
+    Gathers docs from *source*, chunks them to roughly *target_chars* with
+    *overlap_chars* overlap, embeds the chunks, and writes vectors, chunks, and a
+    manifest to ``curriculum/<course>/rag_index/``. Returns 0 if no docs are found.
+    """
     docs = _gather(course, source)
     if not docs:
         print(f"No source docs found for course={course!r} source={source!r}.")
@@ -71,6 +82,7 @@ def ingest(course: str, source: str, *, target_chars: int, overlap_chars: int) -
 
 
 def main() -> None:
+    """Parse CLI arguments, load the environment, and run :func:`ingest`."""
     parser = argparse.ArgumentParser(description="Build a per-course RAG index.")
     parser.add_argument("--course", required=True, help="curriculum/<course> folder name")
     parser.add_argument(

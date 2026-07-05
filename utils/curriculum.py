@@ -29,6 +29,7 @@ def _norm_num(num: str) -> str:
 
 
 def _root(curriculum_root: Path | str | None) -> Path:
+    """Return the curriculum root as a Path, falling back to the default when None."""
     return Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
 
 

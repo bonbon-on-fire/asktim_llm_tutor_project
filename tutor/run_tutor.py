@@ -189,6 +189,7 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt", figures: li
                 return {"messages": [_build_invalid_input_reply()]}
         if figures:
             _attach_figures_to_last_human(messages, figures)
+        _cache_last_message(messages, model)
         response = model.invoke(messages)
         response = _normalize_tutor_ai_message(response)
         return {"messages": [response]}
@@ -388,6 +389,32 @@ def _build_system_message(system_prompt: str, model) -> SystemMessage:
             content=[{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
         )
     return SystemMessage(content=text)
+
+
+def _cache_last_message(messages: list, model) -> None:
+    """Mark the final message with an ephemeral cache breakpoint (Anthropic only).
+
+    Prompt caching is a prefix match: marking the newest turn writes the whole
+    conversation-so-far to cache, so the *next* turn re-reads that prefix at ~0.1x
+    input cost instead of re-billing the growing history at full price. Pairs with
+    the cached system prefix (2 breakpoints, under Anthropic's limit of 4). OpenAI
+    auto-caches long prefixes, so this is a no-op there. Billing/latency only — it
+    never changes the model's output, and Anthropic ignores the marker below its
+    minimum cacheable length, so it is always safe.
+    """
+    if not isinstance(model, ChatAnthropic) or not messages:
+        return
+    content = messages[-1].content
+    if isinstance(content, str):
+        if not content.strip():
+            return
+        blocks: list = [{"type": "text", "text": content}]
+    elif isinstance(content, list) and content:
+        blocks = [b if isinstance(b, dict) else {"type": "text", "text": str(b)} for b in content]
+    else:
+        return
+    blocks[-1] = {**blocks[-1], "cache_control": {"type": "ephemeral"}}
+    messages[-1] = messages[-1].model_copy(update={"content": blocks})
 
 
 # ---------------------------------------------------------------------------
@@ -606,6 +633,7 @@ def stream_tutor_reply(
             yield ("__done__", canned_json)
             return
 
+    _cache_last_message(safe_messages, model)
     extractor = StudentAnswerExtractor()
     try:
         for chunk in model.stream(safe_messages):

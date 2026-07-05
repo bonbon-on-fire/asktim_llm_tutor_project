@@ -74,6 +74,7 @@ flowchart TD
         EX["exercise_NN.txt"]
         CRS["course.txt"]
         SYL["syllabus.txt"]
+        KC["key_concepts.txt"]
         LEC["lectures/*.txt"]
         FIG["figures/* (diagrams)"]
         OCW["OCW pages + linked PDFs"]
@@ -87,6 +88,7 @@ flowchart TD
     end
     CRS --> CHUNK
     SYL --> CHUNK
+    KC --> CHUNK
     LEC --> CHUNK
     OCW --> CHUNK
 
@@ -112,20 +114,21 @@ flowchart TD
 ```
 
 - **Always:** the about-AskTIM block + the exercise text (verbatim) + conversation history.
+- **Current problem's solution (tutor-only):** when the course ships a reference solution for the active exercise/practice (`exercises_solutions/` / `practices_solutions/`), it is paired **directly** into the tutor's context as a correct-answer input — separate from RAG, and deliberately never retrievable by similarity.
 - **`full_context`:** `course.txt` and `syllabus.txt` are folded into the prompt.
-- **`rag`:** course/syllabus/lectures/OCW are chunked + embedded offline (`rag.ingest`), and only the chunks most relevant to the student's message are retrieved and injected — far cheaper than dumping every transcript. See [`rag/README.md`](rag/README.md).
+- **`rag`:** course/syllabus/`key_concepts`/lectures/OCW **plus the exercise & practice prompts** are chunked + embedded offline (`rag.ingest`), and only the chunks most relevant to the student's message are retrieved and injected — far cheaper than dumping every transcript. Solutions are excluded from the index (they're paired directly, above); figures/metadata are excluded too. See [`rag/README.md`](rag/README.md).
 - **`exercise_only`:** just the about-block + exercise (no course/syllabus/retrieval).
 - **Multimodal:** built-in curriculum figures and student-uploaded PNG/JPEGs attach to the turn as image content.
 
 ### Key Components
 
-**Tutor Agent (`tutor/run_tutor.py`):** A LangGraph graph with a single node that calls GPT and returns a two-field JSON response — internal pedagogical reasoning (hidden from students) and a student-facing answer. The system prompt is loaded from a versioned `.txt` file and can be overridden with an assignment block at runtime.
+**Tutor Agent (`tutor/run_tutor.py`):** A LangGraph graph with a single node that calls GPT and returns a two-field JSON response — internal pedagogical reasoning (hidden from students) and a student-facing answer. The system prompt is loaded from a versioned `.txt` file and can be overridden with an assignment block at runtime. On Anthropic, the full conversation prefix is prompt-cached (the system prompt plus the running conversation are marked with `cache_control` breakpoints), so each subsequent turn re-reads that prefix at ~0.1x input cost — roughly 60% cheaper per conversation; OpenAI auto-caches long prefixes, so no marking is needed there.
 
 **Student Bot (`students/run_student.py`):** Shares the same LangGraph infrastructure as the tutor, but uses a persona prompt from `students/personas/` to simulate a specific type of student. Includes a heuristic guard and automatic retry if the bot starts sounding like a tutor.
 
 **Judge (`judge/run_judge.py`):** Reads a transcript, constructs a grading prompt by injecting the rubric and output schema, and calls the selected provider (`gpt` or `claude`). Validates the JSON response against the rubric spec, auto-repairs on failure up to 3 attempts, and writes the grade back into the transcript file. The latest rubric (`rubric_08`, 40 pts) scores three sections: Pedagogy (20 pts — Socratic method/no direct work, scaffolding, meta-learning), Dialogue Quality (12 pts — redundancy, assignment anchoring), and Communication Quality (8 pts — bite-sized responses, tone). (The earlier `rubric_05` was 46 pts and remains the in-code default.)
 
-**UI Runners (`internal_testing/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_transcript.py`), transcript judging (`run_transcript_judge.py`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
+**UI Runners (`internal_testing/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_transcript.py`), RAG-context transcript generation (`run_transcript_rag.py`, which retrieves the relevant chunks per student turn and records both what RAG retrieved and per-turn / per-transcript cost estimates via `utils/pricing.py`), and transcript judging (`run_transcript_judge.py`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
 
 **Shared web layer (`ui_core/`):** Common infrastructure factored out of `main_ui` and `sandbox_ui` (and partly reused by `database_ui`) so it isn't duplicated three times — DB engine/session helpers (`db/session.py`), shared `Message`/`Student`/`UploadedImage` model mixins (`db/models_common.py`), app-agnostic conversation/image/student services parameterized by each app's own models (`services/`), a `TutorBridge` base class exposing hooks like `prepare_ctx`, `cache_key`, `build_assignment_text`, and `retrieved_context` for subclasses to override (`tutor_bridge.py`), an identity/history blueprint factory pair (`web/blueprints/identity.py`, `web/blueprints/history.py`), a static blueprint serving the shared `chat.css` at `/ui-core` (`web/static_blueprint.py`), a shared page shell (`templates/base_chat.html`), and the `create_app` Flask-assembly factory (`app_factory.py`) that both chat apps build on.
 
@@ -355,9 +358,10 @@ asktim_llm_tutor_project_2026/
 │
 └── utils/
     ├── parsing.py           # Shared JSON extraction helper
-    ├── curriculum.py        # Canonical exercise/course path resolution (exercises/ layout)
+    ├── curriculum.py        # Canonical exercise/course/solution path resolution (exercises/ layout)
     ├── figures.py           # Figure discovery + multimodal content blocks (GPT/Claude)
-    └── lectures.py          # Per-course lecture-transcript loader
+    ├── lectures.py          # Per-course lecture-transcript loader
+    └── pricing.py           # Token-cost estimation from usage metadata (per-turn/-transcript $)
 ```
 
 ## Current Status

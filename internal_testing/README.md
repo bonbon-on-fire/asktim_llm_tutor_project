@@ -139,8 +139,8 @@ All transcript flows include run metadata and exchanges:
   "exercise_number": "01",
   "figures": ["exercise_08_spider_diagram.png"],
   "turn_size": 10,
-  "context": "Course-level context loaded from curriculum/<course>/course.txt (+ syllabus + lecture transcripts when present)",
-  "exercise": "Combined assignment text (course context + syllabus + lecture transcripts + exercise + run configuration)...",
+  "context": "Lean course description loaded from curriculum/<course>/course.txt (kept small for the judge; syllabus/lectures are not inlined)",
+  "exercise": "The exercise/problem prompt + run configuration (lean judge input; no course context, syllabus, or lecture transcripts)...",
   "turns": 10,
   "exchanges": [
     {

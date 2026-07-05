@@ -10,13 +10,17 @@ handful of chunks relevant to the current student turn.
 ## What is and isn't ingested
 
 - **Ingested (retrievable):** course description (`course.txt`), syllabus
-  (`syllabus.txt`), lectures (`lectures/*.txt`), and OCW content — both HTML
-  pages **and linked PDFs** (lecture notes, problem sets, where OCW keeps the
-  substantive material) — pulled from the local files, the course's OCW site
-  (`online_link.txt`), or both.
-- **Never ingested:** the **exercise** (`exercises/exercise_XX.txt`, kept local
-  and always in context verbatim) and **figures** (handled by the multimodal
-  pipeline).
+  (`syllabus.txt`), key concepts (`key_concepts.txt`), lectures
+  (`lectures/*.txt`), exercise prompts (`exercises/*.txt`), practice-problem
+  prompts (`practices/*.txt`), and OCW content — both HTML pages **and linked
+  PDFs** (lecture notes, problem sets, where OCW keeps the substantive material)
+  — pulled from the local files, the course's OCW site (`online_link.txt`), or
+  both.
+- **Never ingested:** the **`*_solutions/` folders** (the current problem's
+  solution is paired directly into tutor context — see
+  `utils.curriculum.read_solution` — never surfaced by similarity), **figures**
+  (`figures/`, handled by the multimodal pipeline), and metadata files
+  (`course_name.txt`, `online_link.txt`).
 
 ## Build an index
 
@@ -57,10 +61,10 @@ if has_index(course):
 | `chunking.py` | sentence-aware splitter → `Chunk(text, source, course, index)` |
 | `embeddings.py` | OpenAI `text-embedding-3-small` batch embedder |
 | `store.py` | numpy cosine store (`vectors.npy` + `chunks.jsonl` + `manifest.json`) |
-| `sources.py` | local reader: `course.txt` / `syllabus.txt` / `lectures/*.txt` |
+| `sources.py` | local reader: `course.txt` / `syllabus.txt` / `key_concepts.txt` / `lectures/*.txt` / `exercises/*.txt` / `practices/*.txt` (excludes `*_solutions/`) |
 | `ocw.py` | OCW crawler (reads `online_link.txt`; HTML via `beautifulsoup4`, linked PDFs via `pypdf`) |
 | `ingest.py` | CLI: gather → chunk → embed → save |
-| `retrieve.py` | query-time `retrieve()` + `format_context()` |
+| `retrieve.py` | query-time `retrieve()` / `retrieve_scored()` / `to_records()` + `format_context()` |
 
 ## Config (env)
 

@@ -147,21 +147,28 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   one-off custom context)
 - `build_assignment_text(course, exercise, **ctx)` — concatenates
   `about_asktim.txt` + `course.txt` + optional `syllabus.txt` + optional
-  lecture transcripts + `exercise_<NN>.txt`
+  lecture transcripts + `exercise_<NN>.txt`, then, when a matching solution file
+  exists, the current problem's paired **correct answer & worked solution** as a
+  tutor-only reference block (via `utils.curriculum.read_solution`, keyed by
+  problem number — deterministic, never retrieved, never shown to the student)
 - `build_system_prompt(tutor, assignment_text, **ctx)` — wraps the assignment
   text into a full system prompt via `tutor.run_tutor.load_system_prompt`
-- `retrieved_context(course, query, **ctx)` — per-turn RAG context prepended to
-  the student message; empty string by default (sandbox's RAG mode fills it in)
+- `retrieved_context(course, query, **ctx)` — per-turn RAG retrieval, returned as
+  a `RetrievedContext(text, records)` dataclass: `.text` is the formatted block
+  prepended to the student message, `.records` is `[{source, score, chars, text}]`
+  (what RAG pulled, for persistence/inspection). Empty by default (sandbox's RAG
+  mode fills it in)
 - `turn_attachments(course, exercise, images, **ctx)` — curriculum figures (via
   `utils.figures.discover_figures`) + uploaded images to attach to the latest
   student turn; `None` when there's nothing to attach
 
 Public API:
 - `get_tutor_reply(*, course, exercise, tutor, history, new_student_message, images=None, **ctx)`
-  → `{"reply": str, "reasoning": str | None}`
+  → `{"reply": str, "reasoning": str | None, "retrieved": list}` (`retrieved` is
+  the `RetrievedContext.records` for the turn — `[]` outside RAG mode)
 - `stream_tutor_reply(...)` (same signature) — generator yielding
   `{"type": "delta", "text": ...}` events, then one terminal
-  `{"type": "done", "reply": ..., "reasoning": ...}`
+  `{"type": "done", "reply": ..., "reasoning": ..., "retrieved": ...}`
 
 `main_ui` uses `TutorBridge` directly; `sandbox_ui` subclasses it.
 

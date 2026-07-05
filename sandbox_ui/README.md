@@ -20,6 +20,7 @@ Branding is deliberately distinct from production: the accent is teal-blue
 - Sanitized-markdown rendering of tutor replies (tables/lists/bold) — `marked` → `DOMPurify`, same `setMessageContent()` path as `main_ui`
 - Conversation / Message / Student tables; username + password identity (bcrypt), cross-browser history sidebar
 - The same tutor pipeline via `tutor.run_tutor` (through `services/tutor_bridge.py`)
+- **Paired solution as tutor-only reference** — when the current problem has a matching solution file, `build_assignment_text` injects it (via [`utils.curriculum.read_solution`](../utils/curriculum.py)) right after the exercise as a "correct answer & worked solution" block. It's deterministic (keyed by problem number), given to the tutor but **never** the student, and never retrieved via RAG. Skipped for custom exercise text and problems with no solution file yet
 - **Curriculum figures** auto-attached to the tutor — figures matching the exercise (`curriculum/<course>/figures/exercise_<NN>_*`) are sent as multimodal input on every turn via [`utils.figures.discover_figures`](../utils/figures.py). Skipped when the tester typed a one-off custom course/exercise in the Create-context wizard (no figures folder on disk)
 - **Per-course lecture transcripts** — a course's `lectures/*.txt` fold into the tutor context via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py). In the Sandbox this is a dedicated **Lectures** wizard step, toggleable per conversation (and skipped in RAG mode, where lecture material is retrieved instead)
 - **Student image uploads** — PNG/JPEG attachments (paperclip, drag-and-drop, or clipboard paste, up to 5 × 10 MB) sent to the tutor as multimodal input, stored in `uploaded_images.data` (BYTEA) and re-served via `GET /api/image/<id>`. Same shared validation ([`utils/uploads.py`](../utils/uploads.py)) and frontend as `main_ui`, including the click-to-enlarge image lightbox (staged or sent; backdrop / × / Esc to close)
@@ -154,7 +155,9 @@ already-existing tables. By default that's its **own Postgres database**
 production data (falls back to a local SQLite file if the var is unset). The
 schema matches `main_ui` plus the sandbox-only `conversations` columns —
 `course_enabled`, `syllabus_enabled`, `lectures_enabled`, `exercise_kind`,
-`context_mode`, and the `custom_*` columns that store one-off custom contexts.
+`context_mode`, and the `custom_*` columns that store one-off custom contexts,
+plus the sandbox-only `messages.retrieved_context` column (a JSON string of the
+RAG chunks retrieved for a tutor turn, `NULL` for non-RAG turns and legacy rows).
 
 The database must already exist (`CREATE DATABASE asktim_test;`); `create_all`
 then builds the tables. To reset the sandbox data, drop and recreate that
@@ -165,8 +168,8 @@ database.
 > across model changes, `_reconcile_columns()` runs right after `create_all` on
 > boot and `ALTER TABLE ... ADD COLUMN`s any model column the existing table
 > lacks (nullable, idempotent, race-safe across gunicorn workers) — so a
-> new column like `uploaded_images.data` (BYTEA) or `lectures_enabled` is picked
-> up automatically without a manual reset. For the specific case of the
+> new column like `uploaded_images.data` (BYTEA), `lectures_enabled`, or
+> `messages.retrieved_context` is picked up automatically without a manual reset. For the specific case of the
 > `uploaded_images.data` column on a very old DB, `python -m
 > sandbox_ui.db.reset_uploaded_images` also rebuilds just that table.
 
@@ -219,7 +222,10 @@ optional fields for a new conversation:
 
 Since the Sandbox is a dev/TA tool, the terminal `done` SSE event also carries
 the tutor's otherwise-hidden `pedagogical_reasoning` so it can be inspected per
-message.
+message, plus `retrieved` — the RAG chunks pulled for that turn
+(`[{source, score, chars, text}]`, or `null` outside RAG mode). The same
+`retrieved` records are persisted on the tutor message row (see
+[Database](#database)).
 
 ## Deployment
 
@@ -244,7 +250,7 @@ sandbox_ui/
   run_app.py              # ui_core.app_factory.create_app(...) wiring; create_all + _reconcile_columns on boot; blueprints
   cookies.py              # session/username cookie names + kwargs (thin wrapper over ui_core.cookies)
   db/
-    models.py             # sandbox-only Conversation (course/syllabus/lectures flags, custom_*, context_mode) + shared Message/Student/UploadedImage from ui_core.db.models_common
+    models.py             # sandbox-only Conversation (course/syllabus/lectures flags, custom_*, context_mode) + Message (+ sandbox-only retrieved_context col) / Student / UploadedImage from ui_core.db.models_common
     session.py            # engine + SessionLocal
     reset_uploaded_images.py # one-off: rebuild uploaded_images table (python -m sandbox_ui.db.reset_uploaded_images)
   routes/

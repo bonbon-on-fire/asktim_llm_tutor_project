@@ -110,6 +110,53 @@ Graded transcripts additionally contain a top-level `grade` object:
 }
 ```
 
+### RAG-context transcripts
+
+Transcripts produced by the RAG-context pipeline
+(`internal_testing.run_transcript_rag`, the `_raw_rag/`/`_claude_rag/` folders)
+carry a few extra fields and a leaner judge payload:
+
+- **`tutor_provider`**, **`exercise_kind`** (`"exercise"` | `"practice"`), and
+  **`context_mode`** (`"rag"`) top-level markers identify the run.
+- **`context`** is just the short course description (`course.txt`), and
+  **`exercise`** is just the problem prompt plus the run configuration. The full
+  course + syllabus + lecture dump is **no longer written** into the transcript
+  (the RAG tutor never saw it; what it actually retrieved per turn lives in each
+  exchange's `retrieved` field) — this keeps the judge's input lean.
+- Each `exchanges[i]` additionally has **`retrieved`** — the chunks RAG pulled
+  that turn, `[{source, score, chars, text}]` — and **`cost`**, a per-turn cost
+  estimate `{usd, calls: {student, tutor, embedding}}`.
+- A top-level **`cost_estimate`** aggregates the per-turn costs:
+  `{total_usd, by_component_usd, by_model, rates_note}`.
+
+```json
+{
+  "tutor_provider": "claude",
+  "exercise_kind": "exercise",
+  "context_mode": "rag",
+  "context": "Short course description (course.txt)...",
+  "exercise": "Problem prompt + run configuration...",
+  "cost_estimate": {
+    "total_usd": 0.2113,
+    "by_component_usd": { "student": 0.0266, "tutor": 0.1847, "embedding": 0.000008 },
+    "by_model": { "claude-sonnet-4-6": { "input_tokens": 204659, "output_tokens": 1679, "usd": 0.1847 } },
+    "rates_note": "rates from utils.pricing"
+  },
+  "exchanges": [
+    {
+      "turn": 1,
+      "student": "Student message...",
+      "tutor": "Tutor response...",
+      "pedagogical_reasoning": "Internal tutor reasoning...",
+      "retrieved": [
+        { "source": "local:lecture_1_1_the_transportation_problem", "score": 0.45, "chars": 1005, "text": "..." }
+      ],
+      "cost": { "usd": 0.0167, "calls": { "student": { "...": "..." }, "tutor": { "...": "..." }, "embedding": { "...": "..." } } }
+    }
+  ]
+}
+```
+
 ### Key Fields
 
 | Field | Description |

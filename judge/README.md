@@ -149,7 +149,7 @@ Maximum total score: **40** (`rubric_08`). The earlier `rubric_05` was **46** (P
 - Deductions are ordered as `evidence_turns`, `sub_criterion_id`, `reason`, then `points` (`evidence_turns` optional).
 - For `rubric_04`/`rubric_05`/`rubric_06`, each deduction must include an exact rubric sub-sub ID in `sub_criterion_id` (for example `1.1.A.a`, `2.2.D.a`, `3.2.C.b`).
 - For `rubric_05`: No malus deductions. `total_score` equals `total_base_score`.
-- Judge input supports both transcript `context` and `exercise`.
+- Judge input is lean: the judge reads only the transcript's `context` (a short course description from `course.txt`), `exercise` (the problem prompt), and each turn's `student`/`tutor` text. Retrieved RAG chunks, per-turn/`cost_estimate`, `pedagogical_reasoning`, and full lecture transcripts are present in the transcript but are not sent to the judge.
 
 ## Environment variables
 

@@ -80,7 +80,8 @@ underscore) but documented here for maintainers.
 - **`create_tutor_graph(system_prompt, *, provider="gpt", figures=None)`** — build
   and compile the single-node graph. Its `tutor_node` sanitizes messages, runs the
   non-student-like guard, optionally attaches `figures` to the latest student turn,
-  invokes the model, and normalizes the reply. `figures` is bound at build time
+  caches the conversation prefix (Anthropic only), invokes the model, and
+  normalizes the reply. `figures` is bound at build time
   (constant per conversation), so each turn re-sends exactly one copy.
 - **`get_tutor_reply(messages, assignment_override=None, *, graph=None, prompt_name="tutor_01", figures=None)`**
   — main non-streaming entry point. Builds its own graph when none is passed;
@@ -101,6 +102,9 @@ underscore) but documented here for maintainers.
 - **`_normalize_tutor_ai_message(msg)`** — force any model output into the strict
   two-field JSON shape, filling fallback text when a field is missing, so
   downstream consumers always see `pedagogical-reasoning` + `Student-facing-answer`.
+  Preserves the raw response's `usage_metadata` / `response_metadata` on the
+  rebuilt `AIMessage` so cost accounting can still read token usage off the final
+  message.
 - **`_fenced_json(text)`** — pull JSON out of the first ` ```json … ``` ` fence.
 
 ### Message sanitizing & multimodal content
@@ -115,6 +119,25 @@ underscore) but documented here for maintainers.
   preserving its type (`Human`/`AI`/`System`).
 - **`_attach_figures_to_last_human(messages, figures)`** — rewrite the last
   `HumanMessage` in place to carry `figures` as multimodal content; no-op if none.
+
+### Prompt caching
+
+Anthropic only — OpenAI auto-caches long prefixes, so both helpers are no-ops
+there (and for any other provider). Caching is billing/latency-only and never
+changes the model's output; Anthropic silently ignores a marker below its
+minimum cacheable length, so both are always safe.
+
+- **`_build_system_message(system_prompt, model)`** — build the tutor
+  `SystemMessage`. On `ChatAnthropic` the prompt is wrapped in a text block marked
+  `cache_control: {"type": "ephemeral"}` so the large, constant assignment-context
+  prefix is served from cache on later turns; otherwise it stays a plain string.
+- **`_cache_last_message(messages, model)`** — mark the newest turn's last content
+  block with an ephemeral cache breakpoint. Prompt caching is a prefix match, so
+  caching the latest turn writes the whole conversation-so-far to cache and the
+  *next* turn re-reads that prefix at ~0.1x input cost instead of full price.
+  Applied in both the graph path (`tutor_node`) and the streaming path
+  (`stream_tutor_reply`); pairs with the cached system prefix (2 breakpoints, under
+  Anthropic's limit of 4). Measured ~60% per-conversation tutor cost reduction.
 
 ### Streaming
 

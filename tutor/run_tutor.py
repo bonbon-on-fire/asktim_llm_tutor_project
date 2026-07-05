@@ -263,7 +263,14 @@ def _normalize_tutor_ai_message(msg: BaseMessage) -> AIMessage:
             "message in one or two sentences so I can help."
         )
     normalized = json.dumps(payload, ensure_ascii=False)
-    return AIMessage(content=normalized)
+    # Preserve token-usage and provider metadata from the raw model response — the
+    # normalized message replaces it in the graph output, and cost accounting reads
+    # usage_metadata / response_metadata off the final message.
+    return AIMessage(
+        content=normalized,
+        usage_metadata=getattr(msg, "usage_metadata", None),
+        response_metadata=getattr(msg, "response_metadata", None) or {},
+    )
 
 
 def _fenced_json(text: str) -> str | None:

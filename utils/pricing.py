@@ -21,6 +21,7 @@ is absent the input rate is used.
 from __future__ import annotations
 
 import os
+import re
 
 # $ / 1,000,000 tokens. Verified 2026-07 against published pricing:
 #   claude-sonnet-4-6 — Anthropic ($3 in / $15 out; cache read 0.1x, write 1.25x)
@@ -41,13 +42,32 @@ _DEFAULT_RATES: dict[str, dict[str, float]] = {
 # Empty now that all three models' rates are verified against published pricing.
 PLACEHOLDER_MODELS: set[str] = set()
 
+# Providers report date-stamped ids (``gpt-5.4-2026-03-05``, ``claude-...-20251114``);
+# strip a trailing ``-YYYY-MM-DD`` or ``-YYYYMMDD`` to reach the base rate key.
+_DATE_SUFFIX = re.compile(r"-(?:\d{4}-\d{2}-\d{2}|\d{8})$")
+
+
+def _resolve_model(model: str) -> str:
+    """Map a possibly date-stamped model id to a known rate-table key."""
+    if model in _DEFAULT_RATES:
+        return model
+    base = _DATE_SUFFIX.sub("", model)
+    if base in _DEFAULT_RATES:
+        return base
+    matches = [k for k in _DEFAULT_RATES if base.startswith(k)]
+    return max(matches, key=len) if matches else model
+
 
 def _env_key(model: str, key: str) -> str:
     return "PRICE_" + model.upper().replace("-", "_").replace(".", "_") + "_" + key.upper()
 
 
 def rate(model: str, key: str, default: float = 0.0) -> float:
-    """Return the $/1M rate for *model*/*key*, honoring a ``PRICE_*`` env override."""
+    """Return the $/1M rate for *model*/*key*, honoring a ``PRICE_*`` env override.
+
+    Date-stamped model ids are normalized to their base rate key first.
+    """
+    model = _resolve_model(model)
     env = os.environ.get(_env_key(model, key))
     if env:
         try:
@@ -94,11 +114,19 @@ def usage_from_message(msg) -> dict:
     """
     um = getattr(msg, "usage_metadata", None) or {}
     itd = um.get("input_token_details") or {}
+    # langchain-anthropic reports "cache_creation" as 0 and breaks cache writes out
+    # by TTL (ephemeral_5m / ephemeral_1h); sum those when cache_creation is unset.
+    # ``input_tokens`` already includes cache read + write, so the cost formula
+    # subtracts them to recover the full-price remainder.
+    cache_write = int(itd.get("cache_creation", 0) or 0) or (
+        int(itd.get("ephemeral_5m_input_tokens", 0) or 0)
+        + int(itd.get("ephemeral_1h_input_tokens", 0) or 0)
+    )
     return {
         "input_tokens": int(um.get("input_tokens", 0) or 0),
         "output_tokens": int(um.get("output_tokens", 0) or 0),
         "cache_read": int(itd.get("cache_read", 0) or 0),
-        "cache_write": int(itd.get("cache_creation", 0) or 0),
+        "cache_write": cache_write,
     }
 
 
@@ -115,5 +143,5 @@ def priced(model: str, usage: dict) -> dict:
         "model": model,
         **usage,
         "usd": round(usd, 6),
-        "rate_is_placeholder": model in PLACEHOLDER_MODELS,
+        "rate_is_placeholder": _resolve_model(model) in PLACEHOLDER_MODELS,
     }

@@ -22,7 +22,7 @@ Smoke-test a single conversation first:
     python -m internal_testing.run_transcript_rag --limit 1 --yes
 
 Output: ``transcripts/<type>/<type>_raw_rag/transcript_NN.json`` (judge-compatible
-schema, plus ``context_mode``/``exercise_kind``/``student_context`` metadata).
+schema, plus ``context_mode``/``exercise_kind`` metadata).
 """
 
 from __future__ import annotations
@@ -105,7 +105,6 @@ class RunConfig:
     number: str
     turn_size: int
     trial: int
-    student_context: str  # "full" | "no_lectures"
 
     @property
     def persona_type(self) -> str:
@@ -144,9 +143,6 @@ def _student_assignment_text(config: RunConfig) -> str:
     """What the student model sees: the problem prompt only (no course / syllabus /
     lectures) plus the run configuration. The simulated student behaves like a
     learner who has just the assignment in front of them.
-
-    NOTE: ``config.student_context`` no longer changes the student's course
-    material — it's retained only as a transcript tag.
     """
     parts = [
         f"{_problem_label(config.kind)}:\n"
@@ -357,7 +353,6 @@ def _save_transcript(
             "exercise_number": config.number,
             "exercise_kind": config.kind,
             "context_mode": "rag",
-            "student_context": config.student_context,
             "figures": figure_names,
             "turn_size": config.turn_size,
             "context": context_text,
@@ -391,7 +386,6 @@ def _iter_configs(args) -> list[RunConfig]:
                         number=number,
                         turn_size=args.turn_size,
                         trial=trial,
-                        student_context=args.student_context,
                     )
                 )
     if args.limit is not None:
@@ -427,13 +421,6 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     p.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
     p.add_argument("--output-suffix", default=DEFAULT_OUTPUT_SUFFIX)
-    p.add_argument(
-        "--student-context",
-        choices=["full", "no_lectures"],
-        default="no_lectures",
-        help="What the student model sees (default: no_lectures — faster/cheaper; "
-        "full also folds lectures in to match the prior full-context round).",
-    )
     p.add_argument("--limit", type=int, default=None, help="Only run the first N configs (smoke test).")
     p.add_argument("--yes", "-y", action="store_true")
     args = p.parse_args()
@@ -458,7 +445,7 @@ def main() -> int:
         f"RAG batch: {total} conversation(s) | course={args.course} tutor={args.tutor} "
         f"provider={args.provider} | {len(args.personas)} personas x {len(args.problems)} problems "
         f"x {args.trials} trials | turns={args.turn_size} workers={args.workers} "
-        f"student_context={args.student_context} -> *_{args.output_suffix}/"
+        f"-> *_{args.output_suffix}/"
     )
     if not args.yes:
         resp = input("Proceed? [y/N] ").strip().lower()

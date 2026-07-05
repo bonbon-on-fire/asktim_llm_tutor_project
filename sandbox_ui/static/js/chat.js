@@ -925,9 +925,10 @@
     async function syncTextarea() {
       const val = sel.value;
       const token = ++syncToken;
-      if (stepKey === "course" && val !== CUSTOM) {
-        // No course preview — RAG retrieves the course material; only the
-        // custom-course editor needs the textarea.
+      if ((stepKey === "course" || stepKey === "tutor") && val !== CUSTOM) {
+        // No preview for the course or the (locked) tutor prompt — RAG retrieves
+        // course material and the tutor prompt is fixed. Only a custom entry
+        // needs the textarea.
         ta.readOnly = true;
         ta.hidden = true;
         ta.value = "";

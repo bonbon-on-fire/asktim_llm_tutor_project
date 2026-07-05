@@ -327,6 +327,7 @@ def chat():
     def event_stream():
         full_reply = ""
         reasoning = None
+        retrieved = None  # per-turn RAG records: [{source, score, chars, text}]
         try:
             try:
                 for ev in tutor_bridge.stream_tutor_reply(**stream_kwargs):
@@ -343,6 +344,7 @@ def chat():
                         if ev.get("reply"):
                             full_reply = ev["reply"]
                         reasoning = ev.get("reasoning")
+                        retrieved = ev.get("retrieved") or None
                         break
             except Exception as exc:
                 yield _sse_event(
@@ -364,6 +366,9 @@ def chat():
                     turn=student_turn,
                     tutor_text=full_reply,
                     pedagogical_reasoning=reasoning,
+                    retrieved_context=(
+                        json.dumps(retrieved, ensure_ascii=False) if retrieved else None
+                    ),
                 )
                 student_count = count_student_messages(db, convo_obj)
                 db.commit()
@@ -384,6 +389,8 @@ def chat():
                     # Sandbox is a dev/TA tool — surface the tutor's hidden
                     # reasoning so it can be inspected per message as we chat.
                     "pedagogical_reasoning": reasoning,
+                    # Also surface what RAG retrieved this turn (may be None).
+                    "retrieved": retrieved,
                 },
             )
         finally:

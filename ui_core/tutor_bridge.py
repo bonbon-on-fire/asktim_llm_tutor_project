@@ -27,6 +27,7 @@ exercise, tutor, history, new_student_message)`` to a tutor reply.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -39,13 +40,32 @@ from tutor.run_tutor import (
 )
 from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
-from utils.curriculum import exercise_path, load_about_asktim
+from utils.curriculum import (
+    SOLUTION_CONTEXT_LABEL,
+    exercise_path,
+    load_about_asktim,
+    read_solution,
+)
 from utils.figures import build_multimodal_content, discover_figures
 from utils.lectures import load_lecture_transcripts
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
+
+
+@dataclass
+class RetrievedContext:
+    """Result of one turn's RAG retrieval.
+
+    ``text`` is the formatted block prepended to the student message; ``records``
+    is the JSON-friendly ``[{source, score, chars, text}]`` list persisted into
+    transcripts and the DB so callers can see what RAG pulled. Retrieval runs
+    once and populates both, so nothing is embedded twice.
+    """
+
+    text: str = ""
+    records: list[dict] = field(default_factory=list)
 
 
 class TutorBridge:
@@ -114,14 +134,21 @@ class TutorBridge:
             parts.append("Lecture transcripts:\n" + lectures)
 
         parts.append("Exercise:\n" + exercise_text)
+
+        # Tutor-only correct-answer reference, paired directly to this exercise
+        # (never retrieved, never shown to the student). Absent for problems whose
+        # solution file doesn't exist yet.
+        solution = read_solution(course, exercise, kind="exercise")
+        if solution.strip():
+            parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
         return "\n\n".join(parts)
 
     def build_system_prompt(self, tutor: str, assignment_text: str, **ctx) -> str:
         return load_system_prompt(tutor, assignment_override=assignment_text)
 
-    def retrieved_context(self, course: str, query: str, **ctx) -> str:
-        """Per-turn RAG context to prepend to the student message. Empty by default."""
-        return ""
+    def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
+        """Per-turn RAG retrieval (prompt text + records). Empty by default."""
+        return RetrievedContext()
 
     def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):
         """Attachments for the latest student turn: curriculum figures + uploads.
@@ -240,10 +267,10 @@ class TutorBridge:
         ctx = self.prepare_ctx(course, **ctx)
         graph = self._get_or_build_graph(tutor, course, exercise, **ctx)
         messages = self._history_to_langchain(history)
-        retrieved_context = self.retrieved_context(course, new_student_message, **ctx)
+        rc = self.retrieved_context(course, new_student_message, **ctx)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
         messages.append(
-            self._new_student_message(new_student_message, attachments, retrieved_context)
+            self._new_student_message(new_student_message, attachments, rc.text)
         )
 
         out_messages, reply_text = _upstream_get_tutor_reply(messages, graph=graph)
@@ -255,7 +282,7 @@ class TutorBridge:
                 raw = last.content if isinstance(last.content, str) else str(last.content)
                 reasoning, _ = parse_tutor_response(raw)
 
-        return {"reply": reply_text, "reasoning": reasoning}
+        return {"reply": reply_text, "reasoning": reasoning, "retrieved": rc.records}
 
     def stream_tutor_reply(
         self,
@@ -284,10 +311,10 @@ class TutorBridge:
             tutor, course, exercise, **ctx
         )
         messages = self._history_to_langchain(history)
-        retrieved_context = self.retrieved_context(course, new_student_message, **ctx)
+        rc = self.retrieved_context(course, new_student_message, **ctx)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
         messages.append(
-            self._new_student_message(new_student_message, attachments, retrieved_context)
+            self._new_student_message(new_student_message, attachments, rc.text)
         )
 
         full_raw: str | None = None
@@ -305,4 +332,4 @@ class TutorBridge:
         if full_raw:
             reasoning, answer = parse_tutor_response(full_raw)
             reply_text = answer or ""
-        yield {"type": "done", "reply": reply_text, "reasoning": reasoning}
+        yield {"type": "done", "reply": reply_text, "reasoning": reasoning, "retrieved": rc.records}

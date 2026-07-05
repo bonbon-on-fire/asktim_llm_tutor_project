@@ -110,11 +110,15 @@ def complete_exchange_tutor(
     turn: int,
     tutor_text: str,
     pedagogical_reasoning: str | None,
+    retrieved_context: str | None = None,
 ) -> Message:
     """Insert the tutor reply for a turn previously opened by
     :func:`start_exchange_student_only`.
+
+    ``retrieved_context`` is a JSON string of the RAG chunks retrieved for this
+    turn (``[{source, score, chars, text}]``), or ``None`` for non-RAG turns.
     """
-    return _shared.complete_exchange_tutor(
+    msg = _shared.complete_exchange_tutor(
         db,
         models=_MODELS,
         conversation=conversation,
@@ -122,6 +126,9 @@ def complete_exchange_tutor(
         tutor_text=tutor_text,
         pedagogical_reasoning=pedagogical_reasoning,
     )
+    if retrieved_context is not None:
+        msg.retrieved_context = retrieved_context
+    return msg
 
 
 def get_history_for_tutor(db: Session, conversation: Conversation) -> list[dict]:

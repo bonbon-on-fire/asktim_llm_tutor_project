@@ -97,7 +97,11 @@ class Conversation(Base):
 
 
 class Message(MessageMixin, Base):
-    pass
+    # sandbox_ui-only: JSON string of the RAG chunks retrieved for this (tutor)
+    # turn — a list of ``{source, score, chars, text}``. NULL for non-RAG turns
+    # and legacy rows. create_all can't add this to a pre-existing table, but
+    # _reconcile_columns() in run_app backfills it on boot.
+    retrieved_context: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class Student(StudentMixin, Base):

@@ -26,8 +26,10 @@ def has_index(course: str) -> bool:
     return _get_store(course) is not None
 
 
-def retrieve(course: str, query: str, *, k: int = 6, max_chars: int = 12000) -> list[Chunk]:
-    """Return up to *k* relevant chunks for *query*, capped at *max_chars* total.
+def retrieve_scored(
+    course: str, query: str, *, k: int = 6, max_chars: int = 12000
+) -> list[tuple[Chunk, float]]:
+    """Return up to *k* ``(chunk, cosine_score)`` pairs for *query*, capped at *max_chars*.
 
     Returns ``[]`` when there's no index or the query is empty — callers fall
     back to their non-RAG context path.
@@ -36,14 +38,37 @@ def retrieve(course: str, query: str, *, k: int = 6, max_chars: int = 12000) -> 
     if store is None or not query.strip():
         return []
     hits = store.search(embed_query(query), k)
-    out: list[Chunk] = []
+    out: list[tuple[Chunk, float]] = []
     total = 0
-    for chunk, _score in hits:
+    for chunk, score in hits:
         if out and total + len(chunk.text) > max_chars:
             break
-        out.append(chunk)
+        out.append((chunk, score))
         total += len(chunk.text)
     return out
+
+
+def retrieve(course: str, query: str, *, k: int = 6, max_chars: int = 12000) -> list[Chunk]:
+    """Return up to *k* relevant chunks for *query*, capped at *max_chars* total."""
+    return [c for c, _ in retrieve_scored(course, query, k=k, max_chars=max_chars)]
+
+
+def to_records(scored: list[tuple[Chunk, float]]) -> list[dict]:
+    """Serialize scored chunks into JSON-friendly retrieval records.
+
+    One dict per retrieved chunk: its source label, cosine score, char length,
+    and full text — the shape persisted into transcripts and the sandbox DB so
+    you can see exactly what RAG pulled for each turn.
+    """
+    return [
+        {
+            "source": chunk.source,
+            "score": round(float(score), 4),
+            "chars": len(chunk.text),
+            "text": chunk.text,
+        }
+        for chunk, score in scored
+    ]
 
 
 def format_context(chunks: list[Chunk]) -> str:

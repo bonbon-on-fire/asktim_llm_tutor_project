@@ -25,10 +25,16 @@ from pathlib import Path
 
 from rag.retrieve import format_context
 from rag.retrieve import has_index as rag_has_index
-from rag.retrieve import retrieve as rag_retrieve
+from rag.retrieve import retrieve_scored, to_records
 from tutor.run_tutor import load_system_prompt
-from ui_core.tutor_bridge import TutorBridge
-from utils.curriculum import exercise_path, load_about_asktim, practice_path
+from ui_core.tutor_bridge import RetrievedContext, TutorBridge
+from utils.curriculum import (
+    SOLUTION_CONTEXT_LABEL,
+    exercise_path,
+    load_about_asktim,
+    practice_path,
+    read_solution,
+)
 from utils.figures import discover_figures
 from utils.lectures import load_lecture_transcripts
 
@@ -169,6 +175,14 @@ def build_assignment_text(
         resolved_exercise = _path.read_text(encoding="utf-8").strip()
     parts.append("Exercise:\n" + resolved_exercise)
 
+    # Tutor-only correct-answer reference, paired directly to the current problem
+    # (never retrieved via RAG, never shown to the student). Skipped for custom
+    # exercise text (no matching file) and problems with no solution file yet.
+    if exercise_text is None:
+        solution = read_solution(course, exercise, kind=exercise_kind)
+        if solution.strip():
+            parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
+
     return "\n\n".join(parts)
 
 
@@ -212,16 +226,23 @@ def _has_custom(
     )
 
 
-def _retrieved_context(course: str, mode: str, query: str) -> str:
-    """Retrieve and format course-material chunks for this turn (RAG mode only)."""
+def _retrieved_context(course: str, mode: str, query: str) -> RetrievedContext:
+    """Retrieve course-material chunks for this turn (RAG mode only).
+
+    Returns the formatted prompt block *and* the per-chunk records
+    (``{source, score, chars, text}``) so the caller can both prepend the block
+    and persist what was retrieved. Retrieval runs once (one embedding + search).
+    """
     if mode != "rag":
-        return ""
+        return RetrievedContext()
     try:
-        return format_context(rag_retrieve(course, query))
+        scored = retrieve_scored(course, query)
+        chunks = [c for c, _ in scored]
+        return RetrievedContext(text=format_context(chunks), records=to_records(scored))
     except Exception:
         # Retrieval failing (e.g. embedding API hiccup) must not break the chat;
         # degrade to no retrieved context for this turn.
-        return ""
+        return RetrievedContext()
 
 
 class SandboxTutorBridge(TutorBridge):
@@ -279,7 +300,7 @@ class SandboxTutorBridge(TutorBridge):
             return _render_custom_tutor_prompt(custom_tutor_prompt, assignment_text)
         return load_system_prompt(tutor, assignment_override=assignment_text)
 
-    def retrieved_context(self, course: str, query: str, **ctx) -> str:
+    def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
         return _retrieved_context(course, ctx.get("context_mode", "full_context"), query)
 
     def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):

@@ -1,9 +1,16 @@
 """Local-file source reader for RAG ingestion.
 
-Returns the course-level material that should be *retrievable* — ``course.txt``,
-``syllabus.txt``, and every ``lectures/*.txt`` — as labeled ``(source, text)``
-documents. The exercise prompt and figures are intentionally excluded: they stay
-local and always-in-context, never in the RAG index (see PLANNING Phase 11).
+Returns the course-level text that should be *retrievable*, as labeled
+``(source, text)`` documents:
+
+- top-level ``course.txt``, ``syllabus.txt``, ``key_concepts.txt``
+- every ``lectures/*.txt`` (transcripts)
+- every ``exercises/*.txt`` and ``practices/*.txt`` (problem prompts)
+
+Deliberately excluded: the ``*_solutions/`` folders (the current problem's
+solution is paired into context directly — see ``utils.curriculum.read_solution``
+— never surfaced by similarity), ``figures/`` (images, not text), the numpy
+``rag_index/``, and metadata files (``course_name.txt``, ``online_link.txt``).
 """
 
 from __future__ import annotations
@@ -22,18 +29,22 @@ def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> l
     course_dir = root / course
     docs: list[Doc] = []
 
-    for name in ("course.txt", "syllabus.txt"):
+    for name in ("course.txt", "syllabus.txt", "key_concepts.txt"):
         path = course_dir / name
         if path.is_file():
             text = path.read_text(encoding="utf-8").strip()
             if text:
                 docs.append((f"local:{path.stem}", text))
 
-    lectures_dir = course_dir / "lectures"
-    if lectures_dir.is_dir():
-        for path in sorted(lectures_dir.glob("*.txt")):
-            text = path.read_text(encoding="utf-8").strip()
-            if text:
-                docs.append((f"local:{path.stem}", text))
+    # Retrievable per-item folders: lecture transcripts + exercise & practice
+    # prompts. Solutions live in *_solutions/ and are paired directly (not here);
+    # figures/ are images; rag_index/ is the built index.
+    for subdir in ("lectures", "exercises", "practices"):
+        folder = course_dir / subdir
+        if folder.is_dir():
+            for path in sorted(folder.glob("*.txt")):
+                text = path.read_text(encoding="utf-8").strip()
+                if text:
+                    docs.append((f"local:{path.stem}", text))
 
     return docs

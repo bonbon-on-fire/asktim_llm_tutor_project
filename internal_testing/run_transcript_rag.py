@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -44,8 +45,8 @@ load_dotenv(find_dotenv(usecwd=True))
 from langchain_core.messages import AIMessage, HumanMessage  # noqa: E402
 
 from internal_testing.run_transcript import _next_transcript_number  # noqa: E402
-from rag.retrieve import format_context, has_index  # noqa: E402
-from rag.retrieve import retrieve as rag_retrieve  # noqa: E402
+from rag.retrieve import format_context, has_index, retrieve_scored, to_records  # noqa: E402
+from ui_core.tutor_bridge import RetrievedContext  # noqa: E402
 from students.run_student import build_graph as build_student_graph  # noqa: E402
 from students.run_student import get_next_student_message, list_personas  # noqa: E402
 from tutor.run_tutor import (  # noqa: E402
@@ -54,9 +55,15 @@ from tutor.run_tutor import (  # noqa: E402
     parse_tutor_response,
 )
 from tutor.run_tutor import get_tutor_reply as upstream_get_tutor_reply  # noqa: E402
-from utils.curriculum import exercise_path, practice_path  # noqa: E402
+from utils.curriculum import (  # noqa: E402
+    SOLUTION_CONTEXT_LABEL,
+    exercise_path,
+    practice_path,
+    read_solution,
+)
 from utils.figures import discover_figures, figure_filenames  # noqa: E402
 from utils.lectures import load_lecture_transcripts  # noqa: E402
+from utils.pricing import model_from_message, priced, usage_from_message  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
@@ -146,12 +153,17 @@ def _full_assignment_text(course: str, kind: str, number: str, turn_size: int) -
 
 
 def _tutor_rag_assignment(course: str, kind: str, number: str, turn_size: int) -> str:
-    """Tutor's RAG base prompt: the problem only. Course/syllabus/lectures are
-    reached via per-turn retrieval, not baked in."""
-    parts = [
-        f"{_problem_label(kind)}:\n" + _problem_text(course, kind, number),
-        f"Run configuration:\n- Planned conversation length: {turn_size} student+tutor exchanges.",
-    ]
+    """Tutor's RAG base prompt: the problem (+ its paired solution, tutor-only).
+    Course/syllabus/lectures are reached via per-turn retrieval, not baked in."""
+    parts = [f"{_problem_label(kind)}:\n" + _problem_text(course, kind, number)]
+    # Tutor-only correct-answer reference, paired to the current problem (mirrors
+    # the live bridges). Never given to the student model (_student_assignment_text).
+    solution = read_solution(course, number, kind=kind)
+    if solution.strip():
+        parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
+    parts.append(
+        f"Run configuration:\n- Planned conversation length: {turn_size} student+tutor exchanges."
+    )
     return "\n\n".join(parts)
 
 
@@ -177,12 +189,15 @@ def _student_assignment_text(config: RunConfig) -> str:
 # Conversation loop
 # --------------------------------------------------------------------------- #
 
-def _retrieved_context(course: str, query: str) -> str:
-    """Relevant lecture chunks for this turn; degrade to empty on any failure."""
+def _retrieved_context(course: str, query: str) -> RetrievedContext:
+    """Relevant chunks for this turn (prompt text + records); empty on any failure."""
     try:
-        return format_context(rag_retrieve(course, query))
+        scored = retrieve_scored(course, query)
+        return RetrievedContext(
+            text=format_context([c for c, _ in scored]), records=to_records(scored)
+        )
     except Exception:
-        return ""
+        return RetrievedContext()
 
 
 def _tutor_reply_with_retry(tutor_messages: list, tutor_graph, rebuild):
@@ -236,12 +251,13 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
             else str(student_message.content)
         )
 
-        # RAG: retrieve relevant lecture chunks for this student turn and prepend
-        # them as a reference block ahead of the student's actual message.
-        retrieved = _retrieved_context(config.course, student_text)
+        # RAG: retrieve relevant chunks for this student turn and prepend them as
+        # a reference block ahead of the student's actual message. ``rc.records``
+        # captures what was retrieved (source/score/text) for the transcript.
+        rc = _retrieved_context(config.course, student_text)
         tutor_input = (
-            f"{retrieved}\n\n---\n\nStudent message:\n{student_text}"
-            if retrieved
+            f"{rc.text}\n\n---\n\nStudent message:\n{student_text}"
+            if rc.text
             else student_text
         )
         tutor_messages.append(HumanMessage(content=tutor_input))
@@ -259,16 +275,77 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
 
         student_messages.append(student_message)
         student_messages.append(HumanMessage(content=tutor_text))
+
+        # Per-turn cost estimate: student (gpt) + tutor (provider) LLM calls, with
+        # exact token counts from usage_metadata, plus the RAG query embedding
+        # (tokens estimated from query length). $ conversion uses utils.pricing.
+        student_model = model_from_message(
+            student_message, os.environ.get("OPENAI_MODEL", "gpt-5.4")
+        )
+        tutor_fallback = (
+            os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+            if config.provider == "claude"
+            else os.environ.get("OPENAI_MODEL", "gpt-5.4")
+        )
+        tutor_model = model_from_message(last_msg, tutor_fallback)
+        embed_model = os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small")
+        emb_tokens = max(1, round(len(student_text) / 4))  # query-embedding estimate
+        turn_calls = {
+            "student": priced(student_model, usage_from_message(student_message)),
+            "tutor": priced(tutor_model, usage_from_message(last_msg)),
+            "embedding": {
+                **priced(embed_model, {"input_tokens": emb_tokens}),
+                "tokens_estimated": True,
+            },
+        }
+        turn_usd = round(sum(c["usd"] for c in turn_calls.values()), 6)
+
         exchanges.append(
             {
                 "turn": turn_index + 1,
                 "student": student_text,
                 "tutor": tutor_text,
                 "pedagogical_reasoning": tutor_reasoning,
+                # What RAG pulled for this turn: [{source, score, chars, text}].
+                "retrieved": rc.records,
+                # Estimated cost of producing this turn (see cost_estimate below).
+                "cost": {"usd": turn_usd, "calls": turn_calls},
             }
         )
 
     return exchanges
+
+
+def _aggregate_cost(exchanges: list[dict[str, object]]) -> dict:
+    """Sum per-turn costs into a transcript-level estimate (total / component / model)."""
+    total = 0.0
+    by_component: dict[str, float] = {"student": 0.0, "tutor": 0.0, "embedding": 0.0}
+    by_model: dict[str, dict] = {}
+    placeholder = False
+    for e in exchanges:
+        cost = e.get("cost") or {}
+        total += cost.get("usd", 0.0)
+        for comp, call in (cost.get("calls") or {}).items():
+            by_component[comp] = by_component.get(comp, 0.0) + call.get("usd", 0.0)
+            m = call.get("model", "?")
+            bm = by_model.setdefault(
+                m,
+                {"input_tokens": 0, "output_tokens": 0, "cache_read": 0, "cache_write": 0, "usd": 0.0},
+            )
+            for k in ("input_tokens", "output_tokens", "cache_read", "cache_write"):
+                bm[k] += int(call.get(k, 0) or 0)
+            bm["usd"] += call.get("usd", 0.0)
+            placeholder = placeholder or call.get("rate_is_placeholder", False)
+    return {
+        "total_usd": round(total, 6),
+        "by_component_usd": {k: round(v, 6) for k, v in by_component.items()},
+        "by_model": {m: {**v, "usd": round(v["usd"], 6)} for m, v in by_model.items()},
+        "rates_note": (
+            "LLM rates are PLACEHOLDERS — verify and override via PRICE_* env vars"
+            if placeholder
+            else "rates from utils.pricing"
+        ),
+    }
 
 
 def _save_transcript(
@@ -311,6 +388,7 @@ def _save_transcript(
             "context": context_text,
             "exercise": full_assignment,
             "turns": len(exchanges),
+            "cost_estimate": _aggregate_cost(exchanges),
             "exchanges": exchanges,
         }
         transcript_path.write_text(

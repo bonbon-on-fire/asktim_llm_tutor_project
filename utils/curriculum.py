@@ -115,6 +115,55 @@ def read_practice(
     return path.read_text(encoding="utf-8") if path.is_file() else ""
 
 
+# Label for the tutor-only correct-answer block that is paired directly with the
+# current problem (never retrieved via RAG, never shown to the student).
+SOLUTION_CONTEXT_LABEL = (
+    "Correct answer & worked solution (FOR YOUR REFERENCE ONLY — use it to guide the "
+    "student and check their work; never reveal it, or any part of it, directly):\n"
+)
+
+
+def exercises_solutions_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the exercise-solutions folder (``curriculum/<course>/exercises_solutions/``)."""
+    return course_dir(course, curriculum_root) / "exercises_solutions"
+
+
+def practices_solutions_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the practice-solutions folder (``curriculum/<course>/practices_solutions/``)."""
+    return course_dir(course, curriculum_root) / "practices_solutions"
+
+
+def solution_path(
+    course: str,
+    number: str,
+    kind: str = "exercise",
+    curriculum_root: Path | str | None = None,
+) -> Path:
+    """Return the path to a problem's solution file (existence not guaranteed).
+
+    ``kind`` is ``"exercise"`` (``exercises_solutions/exercise_<N>.txt``) or
+    ``"practice"`` (``practices_solutions/practice_<N>.txt``); the number is
+    normalized to its non-padded form.
+    """
+    n = _norm_num(number)
+    if kind == "practice":
+        return practices_solutions_dir(course, curriculum_root) / f"practice_{n}.txt"
+    return exercises_solutions_dir(course, curriculum_root) / f"exercise_{n}.txt"
+
+
+def read_solution(
+    course: str,
+    number: str,
+    kind: str = "exercise",
+    curriculum_root: Path | str | None = None,
+) -> str:
+    """Read a problem's solution file text, or ``""`` when absent (many have none yet)."""
+    if not course or not number:
+        return ""
+    path = solution_path(course, number, kind, curriculum_root)
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+
 def discover_practice(
     course: str,
     curriculum_root: Path | str | None = None,

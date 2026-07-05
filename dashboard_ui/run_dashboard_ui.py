@@ -327,5 +327,5 @@ def transcript_page(group: str, version: str):
 
 
 if __name__ == "__main__":
-    # Port 5001 is reserved for main_ui; default the dashboard to 5002 (PORT overrides).
-    app.run(debug=True, port=int(os.environ.get("PORT", "5002")))
+    # Ports: main_ui=5000, sandbox_ui=5001, database_ui=5002; dashboard defaults to 5003 (PORT overrides).
+    app.run(debug=True, port=int(os.environ.get("PORT", "5003")))

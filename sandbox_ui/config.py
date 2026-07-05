@@ -39,7 +39,7 @@ def load_config() -> Config:
         or os.environ.get("DATABASE_URL")
         or "sqlite:///./sandbox_ui.db"
     )
-    port = int(os.environ.get("PORT", "5000"))
+    port = int(os.environ.get("PORT", "5001"))
     # This is a local developer/TA tool, usually served over plain http on
     # localhost, so cookies must not require Secure by default or identity +
     # history wouldn't stick. Override with SANDBOX_UI_COOKIE_SECURE=true behind HTTPS.

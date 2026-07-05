@@ -45,7 +45,7 @@ def load_config() -> Config:
     # this since the tool exposes every student's conversations and images.
     password = os.environ.get("DATABASE_UI_PASSWORD") or None
     secret_key = os.environ.get("DATABASE_UI_SECRET_KEY", "dev-insecure-review-key")
-    port = int(os.environ.get("PORT", "5003"))
+    port = int(os.environ.get("PORT", "5002"))
     cookie_max_age_seconds = int(
         os.environ.get("DATABASE_UI_COOKIE_MAX_AGE", str(_DEFAULT_COOKIE_MAX_AGE_SECONDS))
     )

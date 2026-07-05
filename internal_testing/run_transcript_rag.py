@@ -168,20 +168,18 @@ def _tutor_rag_assignment(course: str, kind: str, number: str, turn_size: int) -
 
 
 def _student_assignment_text(config: RunConfig) -> str:
-    """What the student model sees. ``no_lectures`` (default) keeps the student
-    fast/cheap (course + syllabus + problem); ``full`` also folds in lectures to
-    match the prior full-context round exactly."""
-    parts = _course_and_syllabus(config.course)
-    if config.student_context == "full":
-        lectures = load_lecture_transcripts(config.course)
-        if lectures:
-            parts.append("Lecture transcripts:\n" + lectures)
-    parts.append(
-        f"{_problem_label(config.kind)}:\n" + _problem_text(config.course, config.kind, config.number)
-    )
-    parts.append(
-        f"Run configuration:\n- Planned conversation length: {config.turn_size} student+tutor exchanges."
-    )
+    """What the student model sees: the problem prompt only (no course / syllabus /
+    lectures) plus the run configuration. The simulated student behaves like a
+    learner who has just the assignment in front of them.
+
+    NOTE: ``config.student_context`` no longer changes the student's course
+    material — it's retained only as a transcript tag.
+    """
+    parts = [
+        f"{_problem_label(config.kind)}:\n"
+        + _problem_text(config.course, config.kind, config.number),
+        f"Run configuration:\n- Planned conversation length: {config.turn_size} student+tutor exchanges.",
+    ]
     return "\n\n".join(parts)
 
 

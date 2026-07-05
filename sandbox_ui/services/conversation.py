@@ -184,7 +184,7 @@ def get_messages_for_conversation(
     database_ui review dashboard, unlike the student-facing main_ui.
     """
     return _shared.get_messages_for_conversation(
-        db, conversation, models=_MODELS, include_reasoning=True
+        db, conversation, models=_MODELS, include_reasoning=True, include_retrieved=True
     )
 
 

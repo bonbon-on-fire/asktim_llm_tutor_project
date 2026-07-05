@@ -261,6 +261,7 @@ def get_messages_for_conversation(
     *,
     models: Models,
     include_reasoning: bool = False,
+    include_retrieved: bool = False,
 ) -> list[dict]:
     """Return chronologically ordered messages as JSON-friendly dicts.
 
@@ -289,6 +290,15 @@ def get_messages_for_conversation(
         }
         if include_reasoning:
             entry["pedagogical_reasoning"] = m.pedagogical_reasoning
+        if include_retrieved:
+            raw = getattr(m, "retrieved_context", None)
+            if raw:
+                import json as _json
+
+                try:
+                    entry["retrieved"] = _json.loads(raw)
+                except (ValueError, TypeError):
+                    pass
         entry["images"] = images_by_message.get(m.id, [])
         result.append(entry)
     return result

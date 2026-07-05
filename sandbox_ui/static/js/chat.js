@@ -262,7 +262,41 @@
     li.appendChild(details);
   }
 
-  function renderMessage(role, content, imageSrcs, reasoning) {
+  // Collapsible "RAG retrieval" disclosure under a tutor message — expands to the
+  // list of chunks RAG pulled that turn, and each chunk further expands to its
+  // full text. Sandbox is a dev/TA tool, so surfacing retrieval is intentional.
+  function appendRetrieved(li, retrieved) {
+    if (!retrieved || !retrieved.length) return;
+    const details = document.createElement("details");
+    details.className = "review-reasoning review-retrieved";
+    const summary = document.createElement("summary");
+    summary.textContent =
+      "RAG retrieval (" +
+      retrieved.length +
+      (retrieved.length === 1 ? " chunk)" : " chunks)");
+    details.appendChild(summary);
+    const body = document.createElement("div");
+    body.className = "review-reasoning-body";
+    retrieved.forEach((r) => {
+      const chunk = document.createElement("details");
+      chunk.className = "review-retrieved-chunk";
+      const cs = document.createElement("summary");
+      const score = typeof r.score === "number" ? r.score.toFixed(3) : r.score;
+      const src = String(r.source || "").replace(/^local:/, "");
+      const chars = r.chars != null ? r.chars : (r.text || "").length;
+      cs.textContent = score + "  " + src + "  (" + chars + " chars)";
+      chunk.appendChild(cs);
+      const ct = document.createElement("div");
+      ct.className = "review-retrieved-text";
+      ct.textContent = r.text || "";
+      chunk.appendChild(ct);
+      body.appendChild(chunk);
+    });
+    details.appendChild(body);
+    li.appendChild(details);
+  }
+
+  function renderMessage(role, content, imageSrcs, reasoning, retrieved) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
     if (imageSrcs && imageSrcs.length) {
@@ -279,7 +313,10 @@
     } else {
       setMessageContent(li, role, content);
     }
-    if (role === "tutor") appendReasoning(li, reasoning);
+    if (role === "tutor") {
+      appendReasoning(li, reasoning);
+      appendRetrieved(li, retrieved);
+    }
     messageList.appendChild(li);
     // Always auto-scroll to bottom. Known papercut: fights user scrolling.
     messageList.scrollTop = messageList.scrollHeight;
@@ -561,7 +598,7 @@
       ).length;
       for (const m of data.messages || []) {
         const srcs = (m.images || []).map((img) => `/api/image/${img.id}`);
-        renderMessage(m.role, m.content, srcs, m.pedagogical_reasoning);
+        renderMessage(m.role, m.content, srcs, m.pedagogical_reasoning, m.retrieved);
       }
       highlightActiveEntry();
     } catch (err) {
@@ -827,11 +864,10 @@
     // RAG toggle — course step only, and only for courses with a built index.
     // When on, course/syllabus/lectures are retrieved and the syllabus step is
     // skipped.
-    let ragToggleRow = null;
     let courseDescRow = null;
     if (step === "course") {
       // "Include course description" toggle — gates the built-in course.txt.
-      // Mirrors the RAG toggle; hidden for a custom course or when RAG is on.
+      // Hidden when RAG is on (RAG retrieves the course material instead).
       courseDescRow = document.createElement("label");
       courseDescRow.className = "rag-toggle";
       const dcb = document.createElement("input");
@@ -845,43 +881,23 @@
       dcb.addEventListener("change", () => {
         createDraft.course.enabled = dcb.checked;
       });
-
-      ragToggleRow = document.createElement("label");
-      ragToggleRow.className = "rag-toggle";
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.id = "create-rag-toggle";
-      cb.checked = !!createDraft.useRag;
-      const span = document.createElement("span");
-      span.textContent = "Use RAG for course context";
-      ragToggleRow.appendChild(cb);
-      ragToggleRow.appendChild(span);
-      createStepBody.appendChild(ragToggleRow);
       createStepBody.appendChild(courseDescRow);
-      cb.addEventListener("change", () => {
-        createDraft.useRag = cb.checked;
-        updateCourseDescVisibility();
+    }
+
+    // RAG is always used for a course that has a built index (no user-facing
+    // toggle); it falls back to full context only when the course has no index.
+    function updateRagToggleVisibility() {
+      if (step !== "course") return;
+      const v = sel.value;
+      const courseObj = v && v !== CUSTOM ? courseBySlug(v) : null;
+      const hasRag = !!(courseObj && courseObj.has_rag);
+      if (createDraft.useRag !== hasRag) {
+        createDraft.useRag = hasRag;
         const s = activeSteps();
         createStepLabel.textContent =
           `Step ${createStep + 1} of ${s.length}: ${STEP_LABELS[step]}`;
         createNext.textContent =
           createStep === s.length - 1 ? "Create & start chat" : "Continue";
-      });
-    }
-
-    function updateRagToggleVisibility() {
-      if (!ragToggleRow) return;
-      const v = sel.value;
-      const courseObj = v && v !== CUSTOM ? courseBySlug(v) : null;
-      const hasRag = !!(courseObj && courseObj.has_rag);
-      ragToggleRow.hidden = !hasRag;
-      if (!hasRag && createDraft.useRag) {
-        // A custom or un-indexed course can't use RAG — force it off.
-        createDraft.useRag = false;
-        const cb = document.getElementById("create-rag-toggle");
-        if (cb) cb.checked = false;
-        createStepLabel.textContent =
-          `Step ${createStep + 1} of ${activeSteps().length}: ${STEP_LABELS[step]}`;
       }
     }
 
@@ -909,6 +925,17 @@
     async function syncTextarea() {
       const val = sel.value;
       const token = ++syncToken;
+      if (stepKey === "course" && val !== CUSTOM) {
+        // No course preview — RAG retrieves the course material; only the
+        // custom-course editor needs the textarea.
+        ta.readOnly = true;
+        ta.hidden = true;
+        ta.value = "";
+        updateRagToggleVisibility();
+        updateCourseDescVisibility();
+        updateCreateNextEnabled();
+        return;
+      }
       if (val === CUSTOM) {
         // "Create …" — editable, restore the draft's typed text.
         ta.readOnly = false;
@@ -1037,12 +1064,14 @@
     // first and "Create custom …" is last, so leaving existing/value empty means
     // no explicit match and the <select> falls back to its first <option>.
     createDraft = {
-      course: { mode: "existing", existing: "", custom: "", enabled: true },
+      course: { mode: "existing", existing: "supply_chain_design", custom: "", enabled: true },
       exercise: { mode: "existing", existing: "", custom: "", kind: "exercise" },
       tutor: { mode: "existing", existing: "", custom: "" },
       syllabus: { mode: "builtin", value: "", custom: "" },
       lectures: { mode: "builtin", value: "", custom: "" },
-      useRag: false,
+      // Always use RAG for course context (no user-facing toggle); auto-disabled
+      // per-course when the selected course has no built index.
+      useRag: true,
     };
     createStep = 0;
     renderCreateStep();
@@ -1430,6 +1459,7 @@
                 tutorBubble,
                 parsed.data && parsed.data.pedagogical_reasoning,
               );
+              appendRetrieved(tutorBubble, parsed.data && parsed.data.retrieved);
               messageList.scrollTop = messageList.scrollHeight;
             }
             if (parsed.data && parsed.data.conversation_id) {

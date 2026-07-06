@@ -1,0 +1,873 @@
+{
+  "tutor_provider": "claude",
+  "tutor_prompt": "tutor_05",
+  "student_persona": "clueless",
+  "course": "supply_chain_design",
+  "exercise_number": "1",
+  "exercise_kind": "exercise",
+  "context_mode": "rag",
+  "figures": [],
+  "turn_size": 10,
+  "context": "This course explores how to design and manage the physical, information, and financial flows that connect organizations across the supply chain. Using analytical frameworks, mathematical models, and real-world applications, you will learn to make strategic decisions related to supply chain network design, supply chain finance, supplier management and procurement, production and material requirements planning, distribution, Sales & Operations Planning (S&OP), and process and organizational design. By the end of the course you will be equipped to optimize supply chain networks, apply financial analysis to supply chain decisions, and lead cross-functional initiatives that balance operational excellence with strategic business objectives. This course is part of the MITx MicroMasters® Program in Supply Chain Management.",
+  "exercise": "Exercise:\nTITLE: Week 1 Graded Assignment — Basic Supply Chain Network Design\n\nThis assignment covers network flow and facility location models. Build spreadsheet (or Python) optimization models to answer each part.\n\nGraded Assignment 1: Locky Locke Inc.\n\nYou have finally been promoted to Senior Manager for the nuts and bolts category at Locky Locke Inc., a manufacturer with a large demand for bolts at its three (3) factories. You have surveyed the market and found four (4) suppliers for a certain steady selling SKU, ZA27R46. Your factories' weekly demand for bolts are:\n\n- Factory 1: 9,500 cases/week\n- Factory 2: 6,500 cases/week\n- Factory 3: 17,000 cases/week\n\nEach of the four suppliers can provide the ZA27R46, but they differ in unit price, weekly capacity, and distance to Locky Locke Inc.'s three factories. The unit prices and the weekly capacity for each of the four suppliers are:\n\n- Supplier 1: U.S. Ainbolt — Unit cost: 2.50 $/case — Capacity 9,500 cases/week\n- Supplier 2: Der Bolt, Thun — Unit cost: 3.20 $/case — Capacity 10,000 cases/week\n- Supplier 3: Li Tningbolt — Unit cost: 1.90 $/case — Capacity 7,000 cases/week\n- Supplier 4: M. Bolton — Unit cost: 2.80 $/case — Capacity 9,000 cases/week\n\nYou are trying to plan the weekly flow of bolts from these suppliers to your factories. Based on the current contract with your transportation carrier, the unit transportation cost for a case of bolts is $0.05 per mile from any of the suppliers to any of the factories. The distances between the four suppliers and the three factories are given in the table below.\n\nTransport Distance (miles):\n                  Factory 1   Factory 2   Factory 3\nU.S. Ainbolt         120         380         806\nDer Bolt, Thun       465         717         853\nLi Tningbolt         553         572         830\nM. Bolton            915         406         564\n\nPart 0 (ungraded): Build the spreadsheet model to solve the problem, and plug in a \"1\" for each decision variable. There should be 12 decision variables.\n- What is your total weekly cost? (Round to the nearest integer. Answer without the dollar symbol.)\n- What is the left hand side of the supply constraint for Supplier 1?\n- What is the left hand side of the demand constraint for Factory 1?\n\nPart 1: Currently, the factories operate independently. Disregarding any of the other factories, which supplier should Factory 2 select in order to have the lowest total (purchase and transport) cost for them?\n(Supplier 1: U.S. Ainbolt / Supplier 2: Der Bolt, Thun / Supplier 3: Li Tningbolt / Supplier 4: M. Bolton)\n\nPart 2: You want to take a holistic view of bolt sourcing instead of having each factory select its supplier on its own. Create a model to select the optimal sourcing assignment for all of the factories for the ZA27R46 bolts. Based on this optimization model, what is the total weekly cost for supplying bolts for Locky Locke Inc.? Be sure to include the purchase price as well as the transportation costs. (Round to the nearest integer.)\n\nPart 3: Based on your optimization model, which supplier should Factory 2 select in order to have the lowest total (purchase and transport) cost for Locky Locke Inc.?\n(Supplier 1: U.S. Ainbolt / Supplier 2: Der Bolt, Thun / Supplier 3: Li Tningbolt / Supplier 4: M. Bolton)\n\nGraded Assignment 2: GoClean&Co\n\nGoClean&Co (GCC) hired you as its Logistics Manager in charge of transshipments. GoClean&Co is a joint public-private energy company dedicated to generating clean and safe nuclear energy. GCC uses a new technology based on radioactive pellets. These pellets can generate electricity for years in GCC's nuclear plants. Once the radioactive pellets are depleted, they are removed from active use and collected at the plants for removal at the end of the month. Once a month, the depleted pellets are removed from the plants, transported to an inspection site for examination, and then moved again to a dedicated storage site for safekeeping.\n\nTwo of GCC's nuclear plants, Plant One and Plant Two, need to move out depleted pellets:\n- Plant One wants to ship out up to 280 pellets per month\n- Plant Two wants to ship out up to 360 pellets per month\n\nThe exact number of pellets actually moved out of each plant depends on the space available at the storage sites that would ultimately receive them. GCC is mandated by law to move as many pellets out of the plants as the storage sites are able to receive. Two storage sites are ready to receive pellets:\n- Storage X is ready to receive a total of 305 pellets per month\n- Storage Y is ready to receive a total of 325 pellets per month\n\nSince the two plants want to ship out more pellets per month than the two storage sites can receive, some pellets will have to stay in their plant of origin until a later time. Every plant has capacity to temporarily store whatever pellets are not shipped out, and the law allows this.\n\nAt this time, only one inspection site is available, Inspection Site A: pellets come in, are inspected, and continue their trip to the storage sites (inspection sites have no storage capacity). Transportation costs (dollars per pellet moved):\n- Plant One to Inspection Site A: 13.58\n- Plant Two to Inspection Site A: 16.54\n- Inspection Site A to Storage X: 7.57\n- Inspection Site A to Storage Y: 16.46\n\nOptimize the transshipment of depleted pellets from the plants to the storage sites (stopping at Inspection Site A) to minimize overall monthly transportation cost.\nPart 0 (ungraded): In this optimized solution, how many pellets will Plant Two ship out to Inspection Site A every month?\nPart 1: In this optimized solution, how much is the overall monthly transportation cost for GCC? (Give your answer in dollars up to 2 decimal places, without dollar sign or comma. Hint: more than 15000 but less than 20000.)\n\nNew Inspection Site (ungraded): A second inspection site, Inspection Site B, becomes available. Without knowing its transportation costs, what can we know about the overall transportation cost GCC will pay?\n(The cost can remain the same or become higher, but it will not be lower. / The cost can remain the same or become lower, but it will not be higher. / It is impossible to know which of the two statements above will be the case.)\n\nPart 2: GCC's transportation costs for Inspection Site B (dollars per pellet):\n- Plant One to Inspection Site B: 12.6\n- Plant Two to Inspection Site B: 16.2\n- Inspection Site B to Storage X: 9.45\n- Inspection Site B to Storage Y: 15.64\nOptimize the transshipment again. How much will this cost GCC every month? (Hint: In this optimal solution, Plant Two ships a total of 45 pellets per month to Inspection Site B.)\n\nNew Plant and Storage Site: A third plant (Plant Three, up to 340 pellets/month) and a third storage site (Storage Z, up to 320 pellets/month) become available. New transportation costs (dollars per pellet):\n- Plant Three to Inspection Site A: 16.37\n- Plant Three to Inspection Site B: 10.81\n- Inspection Site A to Storage Z: 15.69\n- Inspection Site B to Storage Z: 15.41\n(ungraded) In this optimal solution, how many pellets is Plant One sending to Inspection Site B?\nPart 3: In this optimized solution, how much is the overall monthly transportation cost for GCC? (Hint: more than 21000 but less than 26000.)\n\nPart 4: A new regulation will require that no depleted pellets be stored at the plants past the monthly removal date. Storage sites increase the totals they will receive each month:\n- Storage X: 315 pellets per month\n- Storage Y: 335 pellets per month\n- Storage Z: 330 pellets per month\nThe new regulations also reduce all transportation costs in the network by 0.94 percent (multiply all previous transportation costs by 0.9906). Optimize the transshipment once more. In this optimized solution, how much is the overall monthly transportation cost for GCC?\n\nGraded Assignment 3: Notebooks for the world\n\nSince you are attending the SC2x course, your best friend Sarah asks you to calculate the coordinates for a distribution center that would minimize its distance to ten cities in Mexico. Using an improvised grid (origin at the top-left corner of the map), you assign horizontal and vertical coordinates to the ten major cities (treated as relative coordinates on an arbitrary Euclidean grid):\n\nCity              Horizontal   Vertical\nChihuahua            110          120\nCiudad Victoria      159          80\nDurango              120          81\nMexico City          160          42\nMonterrey            148          92\nMorelia              145          42\nOaxaca               179          26\nPuebla               170          40\nSan Luis Potosi      153          61\nVillahermosa         203          35\n\nInitially, assume all cities have equal weight (a weight of 1).\n\nPart 0 (ungraded): Giving each city equal weight, calculate the location for the distribution center that would minimize the distance to the ten cities. Solve this as a continuous, distance-minimizing location (Weber) problem with equal weights. Which of the following coordinates is nearest to the location found?\n(H:110 V:40 / H:130 V:50 / H:150 V:60 / H:170 V:70)\n\nPart 1: For the location you calculated above, what is the exact horizontal coordinate? What is the exact vertical coordinate?\n\nPart 2: Some cities have more schoolchildren than others. Using the population-based weights below, solve as a continuous, demand-weighted distance-minimizing location (Weber) problem. What are the horizontal and vertical coordinates?\n\nCity              Weight\nChihuahua          923222\nCiudad Victoria    321034\nDurango            517443\nMexico City        20357743\nMonterrey          4506440\nMorelia            782645\nOaxaca             648050\nPuebla             2920213\nSan Luis Potosi    1037877\nVillahermosa       638080\n\nPart 3: Estimate the distance of distributing notebooks from a DC in one city to the school children in another. Assume Euclidean space and a circuity factor of 1.25, giving the distances below (cities identified by first three letters). For distances inside each city, assume 5 distance units, except Mexico City (10 units). Candidate DC cities: Chihuahua, Mexico City, Monterrey, Puebla, San Luis Potosi.\n\n        Chi   Ciu   Dur   Mex   Mon   Mor   Oax   Pue   San   Vil\nChi      5    719   503   1158  590   1069  1458  1250  913   1575\nMex     1158  475   698    10   643   188   310   127   253   545\nMon     590   203   376   643    5    626   911   706   393   990\nPue     1250  519   808   127   706   313   208    5    338   417\nSan     913   249   482   253   393   258   545   338    5    704\n\nYour friend may want to open exactly two DCs, located in two different candidate cities. All goods are distributed to these two DCs by truck. Assume opening/operating cost is about the same in each city, and outbound per-unit per-mile transportation cost is about the same. In which two cities would you recommend opening the two DCs to minimize outbound transportation costs? (Use the same demand weights as in Part 2.)\n\nPart 4: After market research, you estimate an average transportation cost of $1 per distance unit per 997 notebooks (e.g., $100 to move 997 notebooks 100 distance units), and a fixed cost of $464,000 per year to operate each DC. Yearly demands are approximated by the weights used previously.\n- How many distribution centers would you recommend opening? (integer)\n- Where would you recommend opening these DCs to minimize total cost (fixed + transportation)? (Chihuahua / Mexico City / Monterrey / Puebla / San Luis Potosi)\n\nRun configuration:\n- Planned conversation length: 10 student+tutor exchanges.",
+  "turns": 10,
+  "cost_estimate": {
+    "total_usd": 0.229002,
+    "by_component_usd": {
+      "student": 0.036893,
+      "tutor": 0.192099,
+      "embedding": 1e-05
+    },
+    "by_model": {
+      "gpt-5.4-2026-03-05": {
+        "input_tokens": 39259,
+        "output_tokens": 486,
+        "cache_read": 30464,
+        "cache_write": 0,
+        "usd": 0.036893
+      },
+      "claude-sonnet-4-6": {
+        "input_tokens": 215706,
+        "output_tokens": 1595,
+        "cache_read": 185710,
+        "cache_write": 29966,
+        "usd": 0.192099
+      },
+      "text-embedding-3-small": {
+        "input_tokens": 444,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "usd": 1e-05
+      }
+    },
+    "rates_note": "rates from utils.pricing"
+  },
+  "exchanges": [
+    {
+      "turn": 1,
+      "student": "uh i'm really lost on the first supply chain one. i thought the 12 decision variables are just 0/1 choices for whether each supplier is used for each factory, not actual shipment amounts, so then i'm not sure how the supply and demand constraints even work.",
+      "tutor": "Good question to raise early — it's an important distinction! Think about what the problem is actually asking you to plan: it's not just *whether* a supplier ships to a factory, but *how much*. Given that, what do you think each decision variable should actually represent?",
+      "pedagogical_reasoning": "The student has a common misconception about the nature of decision variables in this transportation problem — thinking they are binary (0/1) yes/no choices rather than continuous flow amounts. I should use a Socratic question to guide them to reconsider what the decision variables actually represent, without giving the answer. I'll point them toward the structure of the problem (suppliers shipping cases to factories) to help them self-correct.",
+      "retrieved": [
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.5868,
+          "chars": 2284,
+          "text": "And right beneath that is the individual cost. And so the xij's and the cij's-- ijk's are there. And cell B4 is just the sum product of my decision variables and their respective costs. Same thing as it's been for every model we've done. Then I'm going to have a series of constraints. And every one of the constraints is the left-hand side. And each of these left-hand sides is just, again, a sumproduct of the decision variables that are in row nine multiplied by each respective row. In this case, in cell AM13, it's going to be the decision variables multiplied by whatever is in this row, row 13, which is just what's coming out of Chicago. And you see it's capturing the supply constraints from Chicago. So this is identical to what we've done a half a dozen times so far. And you have the right-hand side. This is the input data that you have. So the constraints-- I've got my capacity constraints at each plant. I've got my demand constraints at each customer region. And I've got my DC capacity. And then I've got my conservation of flow at each DC. Boom. We know how to solve this. So it looks complicated. It looks big. It is big. It gets big as soon as I introduce commodities, multiple commodities. But it's the same model as the transshipment model. It just has a couple little tweaks. But I still have essentially two formulas, a sumproduct up here for the objective function, and sumproducts here. That's it. It's so easy. OK. So what's the solution? We know how to do this. I have my objective function. I put in my changing variables, or my decision variables. I've entered in my constraints. I make sure it's simplex. Make sure their unconstrained variables are non-negative. And then I solve it. And you should get a solution of $6,525. And I've got my decision down here, or the solution down here. And so it's saying I'm going to ship product one, manufactured in Chicago, and ship 125 units to Boston. Then I'm going to make 100 units of product one in Dallas and ship it to Atlanta, and so forth. You have all the different numbers. Now, it's very complicated. And so what we're going to do next in the next segment is analyze these results, because we want to look at it a little more in depth than just what's showing up in the individual decision variables."
+        },
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.5727,
+          "chars": 2376,
+          "text": "They have different capacity levels and different costs. The costs for transportation differ by lane, as well as by product. And the demand differs. So what I have here in the top left chart is for each of the products-- product one, product two, product three-- the cost of transportation. So for example, if I manufacture in Chicago and ship through Atlanta and then go on to Pennsylvania, the cost of each unit will be 6 plus 6, $12 per unit. If I manufacture in Chicago and go through the Boston distribution for product one and then on to Pennsylvania, then the cost would be 5 plus 6, or $11 per unit. So you can see how I set this up. It's just giving all the different costs. And they can be different by commodity, by lane. So you can make it anything you want. Then I've got capacity at each of the distribution centers. Atlanta's 200. Boston's 500. I've got capacity at the plant. And you can see it. It's by product, except for Dallas. Dallas has individual plant product capacities for each of the different products. But then it has an overall plant. So while I can do up to 125 units of product one, up to 200 units of product two, and up to 150 units of product three, combined, they can only be 250. Now, if this capacity for Dallas as a whole was greater than the sum of the individual capacities, then it doesn't matter. It's useless. Why have it there? It's not binding. But if it's less than the sum of the individual ones, then it could have an effect. And finally, I've got regional demands for each of the regions, each of the products. And you can see they vary. In Virginia, they like product one. New York favors product two. And Pennsylvania favors product three. Realistic that different regions will have different preferences and appetites for different products. So how do I solve it? Well, I do the same formulation. This is in a spreadsheet. This is in Excel. And this should look very similar to the transshipment problem, just bigger. And so let's go through this. I've got my objective function up here in cell B4. And then I've got all my decision variables, that I keep in yellow, there in row nine. And right beneath that is the individual cost. And so the xij's and the cij's-- ijk's are there. And cell B4 is just the sum product of my decision variables and their respective costs. Same thing as it's been for every model we've done."
+        },
+        {
+          "source": "local:lecture_1_1_the_transportation_problem",
+          "score": 0.5666,
+          "chars": 2281,
+          "text": "Now, here on the constraints for my supply constraints, for each of my left-hand sides, I've got this left-hand side, which is just the sum product of, again, the decision variables that are in row 5, C5 to H5, multiplied by what I've got in my row right here. So this is going to be equal to what I'm flowing in x11 times this variable 1 plus this times this plus this times this. So essentially, this is saying that everything coming out of Plant 1 can't exceed 100. That's my right-hand side, and you have the same thing for Plant 2. For the demand constraints, you have the exact same thing. That's the beauty here. This whole problem is being solved with two sum products, one here and then one in each of these left-hand sides of the constraints. And so here, I'm saying that for this model in row 15, cell I, this is equal to the sum product of what I have in my constraints, which is a 1 in E15 and a 1 in H15, times what I have in my decision variables. So it's going to add in what I'm shipping 1 to 3, and what I'm shipping from 2 to 3-- in other words, anything going into Region 3-- and that has to exceed 80. So this is one formulation. This is kind of an expanse of formulation. There's other ways you could do this to represent it that would both be correct. So here's an alternative model and spreadsheet, and you see I still have my objective function in cell C2 this time, and it's just the sum product of C5 to E6, which is just this. I always make my decision variables and those things yellow. You can do your own nomenclature, but it just makes it easier for me to see, and I'm going to multiply that by the costs. So this is a little more compact, and then I have all my other constraints are down here. Supply constraints, these are just sums for each of the supplies. So this one is summing across, this one is something across here, and then my constraints down here for demand, I'm summing simply the columns. And so for Region 1, I'm summing these. For Region 2, I'm summing these. Region 3, I'm summing these. So you see it's a very compact form. So if I have a really large problem, you might want to see it this way. I personally always prefer the larger, more spread out one because you see the matrices, and we'll talk more about this as we go on."
+        },
+        {
+          "source": "local:lecture_1_1_the_transportation_problem",
+          "score": 0.565,
+          "chars": 2331,
+          "text": "And all this is saying that each one of them has to be greater than or equal to zero. Now, you might say, well, why are you making this so wide? Why are you filling up all this space? Well, I want to demonstrate something to you. You see how this variable x11, it's in the objective function and it's also in the constraints? You need to make sure that they link up because the objective function is subject to meeting all these constraints. So the beautiful thing about math programming is once you set up these equations, we can figure out how to solve it and it'll make those trade-offs for you. And so it'll find the best solution, the min cost solution, subject to meeting the supply constraints, the demand constraints, and the non-negativity constraints. So what does this look like in a spreadsheet, because that's how we're going to solve them, remember? OK, here is that exact same formulation in the spreadsheet. I'm going to go back. Here's all the models, so let me just clean this up a little bit. Get rid of my x1 there. You see I have two supply constraints, I have three demand constraints, and I've got one, two, three, four, five, six non-negativity constraints, and I've got my objective function in the spreadsheet. I've got my objective function up here in cell B3, and then I've got my two supply constraints and I've got my three demand constraints. I'll explain the non-negativities in a second. So let's talk through what I got here. This is my objective function. It's a sum product. You should know this function. It's C5, which all of my decision variables are in the row from C5 to H5, times everything that's in C6 to H6, which are just the c_i,j's. So this are the x_i,j's, and this row are the c_i,j's. So some product-- it's just multiplying. Now I've said this isn't the solution. I'm saying what is the cost if I put a 1 in each of the decision variables? So what I'm doing here, I'm forcing the solution. I'm saying, what would the cost be if I ship everything from everywhere? So that's what's showing in this spreadsheet right now. Now, here on the constraints for my supply constraints, for each of my left-hand sides, I've got this left-hand side, which is just the sum product of, again, the decision variables that are in row 5, C5 to H5, multiplied by what I've got in my row right here."
+        },
+        {
+          "source": "local:lecture_1_3_transhipment_problem",
+          "score": 0.5555,
+          "chars": 2347,
+          "text": "The second term is this. So if they're equal to each other, if I subtract one from the other, I should get 0. So my constraint is simply saying the sum of the input minus the sum of the output has to equal 0 for all nodes that are not in demand nodes and that are not supply nodes. In other words, only those intermediate nodes have to have conservation of flow. What goes in needs to go out. Very straightforward. And it's a nice easy, elegant way to enforce that. So we'll enforce this for any node that is a transshipment point, a cross dock, a mixing center. Hubs sometimes are called this. So the idea is I've got three types of nodes now-- source nodes where stuff comes from, demand nodes where stuff goes to, and transshipment nodes where stuff goes in and out and doesn't accumulate. So how do I formulate this? Should look very similar. I've got my objective function up here in cell B3. And it's simply the sum product of my decision variables times my cost on each arc, because that's the only cost I have so far. You see I broke the arcs up between the ones in columns C through F are the plants to the centers. And then from G to L, there are the flows from the center to the regions. Pretty straightforward. And then I have the same supply constraints in rows nine and 10. The same demand constraints in rows 13 through 15. And then my conservation of flow. So let's look at row 18 and see what it's doing. This is going for center A. So I'm saying, OK, because this is just the sum product here in cell M18, sum product of this row, this array, times my decision variables up here in row five. It's going to be this variable in cell C5 times 1 plus what's in x in cell E5 times 1 minus what's in x A1 which is in cell G5 five minus what's in cell H5 minus what's in cell I5. So it's what's the inbound is in columns C through F minus the outbound, which is columns G through L. And again, the reason why I love this formulation, you see the whole matrix. So you can get a sense of what this is saying. These are all the inbounds to A. And here's all the outbounds to A. Here are all the outbounds from B. And here are all the inbounds to B. The logic just hits you right in the face. The other beautiful thing, the equations that you use to solve this are really straightforward. All the constraints here are really the same thing."
+        }
+      ],
+      "cost": {
+        "usd": 0.018195,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3400,
+            "output_tokens": 57,
+            "cache_read": 2816,
+            "cache_write": 0,
+            "usd": 0.003019,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 7907,
+            "output_tokens": 163,
+            "cache_read": 4904,
+            "cache_write": 3000,
+            "usd": 0.015175,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 64,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "student": "wait idk, i still thought each route is either on or off once, like supplier 1 to factory 2 would just be 1 if they use it. what does “how much” mean here if each factory is just picking a supplier?",
+      "tutor": "Look at the numbers: Factory 3 needs 17,000 cases/week. What's the largest any single supplier can provide? What does that tell you about whether a factory can always just \"pick one\" supplier?",
+      "pedagogical_reasoning": "The student is still anchored to the binary thinking. I should gently challenge their assumption that each factory picks exactly one supplier, by pointing them back to the problem data — specifically the capacity and demand numbers. The key insight is that a single supplier may not have enough capacity to serve a factory's full demand, so multiple suppliers might be needed. A pointed question about the numbers will help them discover this.",
+      "retrieved": [
+        {
+          "source": "local:lecture_0_2_selecting_the_right_design",
+          "score": 0.505,
+          "chars": 657,
+          "text": "And then usually have something in the middle-- the Goldilocks option just in the middle. And so for each of these-- manufacturing, the way you ship, final assembly, order fulfillment, and inventory stocking-- you can see that there's different options. And depending on your situation, what they talk about in the paper is how they decided to select which option which made sense for that product at that time. And so you can use this as a template. And this is an example for what they did at HP. But it shows the concept that you need to constantly be trading off cost versus service and always looking for innovation in how you design your supply chain."
+        },
+        {
+          "source": "local:lecture_7_13_but_what_about_service",
+          "score": 0.4997,
+          "chars": 2381,
+          "text": "And let's say the 97% is what we care about in this particular example. There's also another supply who is submitting a lower bid for $475, but he's only 94% on time. The question is, do we choose the high service, high cost supplier? Or the low service, low cost supplier? In order to determine, we have to determine how much level of service is worth. Let's assume that level of service is worth $10 per each 1% of service. Somehow we got into this determination, we found out. We'll talk in a minute how to do it. But we decided that each percent of level of service is worth $10. What we do now, we decide on some baseline. And let's standardize on 94%, even though we can standardize on any other baseline. So let's bring everything to 94%, assuming that each 1% of service is worth $10. So the 94% supplier is already had $475. We don't have to move it. But the 97% supplier bid is modified. We take $30 off because his service is 30% better than the standard service. So we look at this supplier as if his cost is $470. Now we conduct the optimization between the two. And we compare $470 to $475. And of course, the 97% supplier will be chosen. At the end, of course, we don't pay $470. We pay $500. We pay the bid that this supplier gave us. But since we decided that each 1% level of service was worth $10, we should be happy with this choice. Of course, the challenge here is to estimate the value of the level of service. And there is no easy way to do it. Usually, it's done by-- I could call it-- argument. You can call it discussion between sales people, marketing people, operating people, plant people. They all come together. And through this discussion, they have to decide on the value of level of service. So it's something that comes from the outside in the optimization. But once this level is decided, we can conduct optimization. And I'll show you in a minute how. So now we have the following. We have the original bids here, the original table here with the initial values. And here we have this table is the level of service of each carrier on each lane. And this is an auxiliary table that we are creating for the purposes of this optimization. So what do we do here? First of all, we define level of service, so each supply and each item in percent per lane. This is what was done right here. Now we define what a percentage level of service is worth."
+        },
+        {
+          "source": "local:lecture_4_12_omni_channel_network_design",
+          "score": 0.4995,
+          "chars": 2383,
+          "text": "So it's that click and collect that I talked about. So that's one option. Another option is they can get it delivered to the store, but perhaps Zara delivers with a large truck to a ID or an intermediate depot. And then they do local vans for delivery out to each retail store. So it doesn't change for the consumer. But the way it flows for Araz is different. They could also use one of the depots to deliver to a convenience store. And this is where you'd have one of those attended pickup points. It could be a 7-Eleven or a gas station. This is very common in Europe. Less common in the United States, although it's starting to catch on. So you have a delivery and they are local to you. And they will just keep the things behind the counter where they might have a way of securing it for you. So I could supply that through the depot or I could go directly from the CDC itself. And then once it's there, My consumer will walk to it or drive to it and they'll pick it up directly. It's not on the shelf, it's sitting behind the counter or in some back room. I could also have an APS. Remember, that's that automated package system. That that's the unattended one where it's a locker. I might deliver straight from the CDC or it might go through another depot in a large conveyance in order to lower the cost of the line haul to a depot, and then a small van to that APS. To pick it up the consumer would walk or drive to it and would just pick it up. The other options I have is delivering straight to the home from the CDC. Or maybe going through that depot and going to the home. So very simple example but look at all the different ways products can flow. It can flow 1, 2, 3, 4, 5, 6, 7, 8, 9,10 different ways. That's amazing. So how would you determine which flow to use, which depots to open because you might have different potential IDs or intermediate depots to open? Which ones make sense? So here's the simple formulation. And this should look very familiar to you by now. It's a mixed integer linear program and it's a network design. It's the same stuff we've been talking about for the last several weeks. So look at the objective function. My first term is all about the fixed costs. And these are of the intermediate depots are open or not. That's one of my decisions. Do I open an ID, an intermediate depot or not? And there's a fixed cost associated with that."
+        },
+        {
+          "source": "local:lecture_7_25_video_4_solving_part_4",
+          "score": 0.4995,
+          "chars": 2372,
+          "text": "I invite you to analyze what happened. Going back to the beginning of this part of the recitation, we talked about the fact that having a different adjusted cost doesn't mean that we're paying less for a product. As you can see here, the procurement cost is still higher than in the past. So if you go and check back with part three or before, you will see that our procurement cost is actually higher and this means that in the trade off between the level of service and the cost that extra level of service represents. We're actually deciding to pay more. Is this always the case?Well, it really happens a lot. I've seen this happening several times in the industry and this is because a lower service level sometimes represent hidden costs. Think of the fabric not arriving on time. This definitely affect the manufacturing processes. You may have machinery set up cost. You may have fixed costs for your raw material or inventory warehouse that is now probably half full because you couldn't proceed with the expected manufacturing processes. It also means that you couldn't serve your demand on time or probably that you didn't have that safety stock you expected to have to serve the demand if some disruption happened. So a lower service level could represent huge costs for a company if things don't go as you expect. If we go back to part three, you can still see that we're using layer one and four just like in the previous part of this problem. However, we are now sourcing more units of Fabric 3 from supplier 1. Compared to the past and supply of four, you can see here 161 versus 245 on Fabric 3 for example. And this is highly likely because the service level here in Supplier e has a 99% one is much higher than in Supplier 4. So let's go down and see Fabric 3, Supplier on service level . So this is not only fulfilling the expectations, but even higher in 4%, almost perfect. At the same time, you can see supplier for is not even fulfilling the expectation of 95%. So being the cheapest option in the past, this is actually not the best option to go with and that's why supplier one has now. Received a higher number of units on Fabric 3. Of course, there are a lot of other limitations considering capacity and setup costs and all other elements here in our model. So that's why supplier one is not sourcing all possible Fabric 3 units that we demand."
+        },
+        {
+          "source": "local:lecture_7_24_video_3_solving_part_3",
+          "score": 0.4948,
+          "chars": 805,
+          "text": "But you can see now that also supplier two is not receiving any purchase order, which is new to this problem. As you may notice, supplier two has a higher setup cost than others. So probably the higher setup cost was not compensated with a lower price on one of the fabric types. And that's easily seen in the model, as you can see, that in the past, supplier two would be sourcing fabric five, which has now gone to supplier four. So this new information about a setup cost for placing an order did have an impact in our model and actually changed the way we are sourcing our products. And now, our procurement cost went up. I invite you to enter this answer in question two and go ahead with solving question three as you already know how to work through it. See you in the last part of this recitation."
+        },
+        {
+          "source": "local:lecture_10_12_supply_chain_processes",
+          "score": 0.4887,
+          "chars": 2383,
+          "text": "And then, I have the return cycle, as well. So it's also a process view. We also saw a process view of supply chains as it goes from the customer all the way back to the initial supplier. We showed this view as well. And we dived just a little deeper into it to give you some flavor. So each one of these cycles, how the customer orders from the retailer, that's really a consumer. How the retailer orders from its distributor. How the distributor orders from the manufacturer. The manufacturer orders from its supplier. And this cycle can go on and on and on. Now, what happens in each one of these cycles is up here, let's say, the supplier in that cycle-- in this case, it's the retailer-- has to market the product it has available. If this is a coffee shop, it has the coffee urns out there. If it's a bookstore, it has the books out there. If it's an online, an e-commerce, retailer, then it has things out on its website. So somehow, you're marketing your product. Same thing down here for your supplier. You're marketing your product for the manufacturer, whether it's in a catalog, website, however. Then, in the process, the buyer will place an order. Again, if it's a retailer on an e-commerce site, then I go and I click on the web site. I might go and place it actually physically if I'm at a physical bookstore. For down here, I might trigger an order through my production planning. So I place an order somehow. The supplier receives that order. It might be immediate. It might be longer-term. They fill the order somehow. Sometimes, if it's a bookstore, a physical book store, I'll give you that book right away. If it's online, then I set that up to be fulfilled and sent to you later. The buyer eventually receives that order. And then, we hope they pay for it. So each of these cycles consists of separate little processes. And they all have the same format, but they differ a little bit in the details. And they differ not just as I go in the different order cycles with customer replenishment, manufacturing, or procurement, but it also differs by industry, by company, by their strategy. And so all that I wanted to get across in this very quick discussion is to view supply chains as an input-output process. And it changes. The inputs and the outputs depend on where I am in my supply chain, the type of industry I am in, and my strategy of my company itself."
+        }
+      ],
+      "cost": {
+        "usd": 0.024952,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3519,
+            "output_tokens": 54,
+            "cache_read": 0,
+            "cache_write": 0,
+            "usd": 0.009607,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 10772,
+            "output_tokens": 148,
+            "cache_read": 7904,
+            "cache_write": 2865,
+            "usd": 0.015344,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 50,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 3,
+      "student": "oh, max is 10,000 i think? so i guess factory 3 can't get all 17,000 from one place. but i'm still stuck bc i thought if a route is used then that 1 kind of means it's active and the spreadsheet multiplies by demand or something.",
+      "tutor": "Good catch on the capacity! Now, the decision variable doesn't need a separate demand multiplier — it *is* the shipment amount. So for the route from Supplier 1 to Factory 2, what would a decision variable of, say, 3,000 mean?",
+      "pedagogical_reasoning": "The student is making progress — they correctly identified that no single supplier can cover Factory 3's demand. Now they have a lingering misconception that the decision variable is still binary but somehow gets scaled by demand elsewhere. I should directly address this with a simple, pointed question that leads them to realize the decision variable itself IS the quantity shipped, not a binary switch.",
+      "retrieved": [
+        {
+          "source": "local:lecture_2_4_advanced_scenarios",
+          "score": 0.5138,
+          "chars": 2353,
+          "text": "So now let's try and run some more advanced scenarios. And so we talked about these, and we did the first four to reducing the number of distribution centers, and we saw that we hit some infeasibilities. And now we're going to run scenarios 5 through 10. And these are just testing different things, different designs. So the first one-- what happens if I open the Bellow Falls plant? Remember, that's up here in Vermont. It's a little north. If you look, it's a little closer to all the distribution centers. Unfortunately, it's a little more expensive-- $2 per barrel to handle, and they have limited capacity that they can provide us. Now, they might be able to negotiate for more capacity, but this is the initial offer that we have. So the question is, it worth it? Let's see how we would estimate that or try to figure that out. So I would set the capacity, which is in cell G4, to 250, and then I loosen up those constraints for P_MIN and P_MAX max. That's cell C 33 and D 33. Set it to 1 and 5. So I'm going to let the model decide how many distributions to open as well as allow it to look into the capacity out of the new plant. So here's that new capacity. You see I added it to 250 right there. So it allows me to go up to that. So this is the solution. I run the same model. Everything else works. What do I end up with? Well, I end up using all 250 units. How much has it saved me? Well, remember, I should compare this to scenario 2, which had the 3 DC optimal, which was around $68,700. So I really only saved about $250 a week. That's not that great. That's a little bit, but it's really not that much money. But because I'm using all of it, maybe I want to do something different. Maybe I want to buy some more capacity, because maybe it's worth doing more, and I'm going to save even more money. So let's see. Let's call this scenario 6. And now I want to see, should I use an extra capacity, and how much would it be worth for me? So all I'm going to do is set the capacity in cell G4. I'm going to set that equal to 2,000 right here. Why 2,000? Because I know my demand will never exceed that. So I'm trying to see if I allow the model to consider using more than 250, would it? And in fact, it does. It uses another 250 units. It looks like it uses enough to be able to deliver-- if you look at this-- everything that Nashua needs."
+        },
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.5048,
+          "chars": 2376,
+          "text": "They have different capacity levels and different costs. The costs for transportation differ by lane, as well as by product. And the demand differs. So what I have here in the top left chart is for each of the products-- product one, product two, product three-- the cost of transportation. So for example, if I manufacture in Chicago and ship through Atlanta and then go on to Pennsylvania, the cost of each unit will be 6 plus 6, $12 per unit. If I manufacture in Chicago and go through the Boston distribution for product one and then on to Pennsylvania, then the cost would be 5 plus 6, or $11 per unit. So you can see how I set this up. It's just giving all the different costs. And they can be different by commodity, by lane. So you can make it anything you want. Then I've got capacity at each of the distribution centers. Atlanta's 200. Boston's 500. I've got capacity at the plant. And you can see it. It's by product, except for Dallas. Dallas has individual plant product capacities for each of the different products. But then it has an overall plant. So while I can do up to 125 units of product one, up to 200 units of product two, and up to 150 units of product three, combined, they can only be 250. Now, if this capacity for Dallas as a whole was greater than the sum of the individual capacities, then it doesn't matter. It's useless. Why have it there? It's not binding. But if it's less than the sum of the individual ones, then it could have an effect. And finally, I've got regional demands for each of the regions, each of the products. And you can see they vary. In Virginia, they like product one. New York favors product two. And Pennsylvania favors product three. Realistic that different regions will have different preferences and appetites for different products. So how do I solve it? Well, I do the same formulation. This is in a spreadsheet. This is in Excel. And this should look very similar to the transshipment problem, just bigger. And so let's go through this. I've got my objective function up here in cell B4. And then I've got all my decision variables, that I keep in yellow, there in row nine. And right beneath that is the individual cost. And so the xij's and the cij's-- ijk's are there. And cell B4 is just the sum product of my decision variables and their respective costs. Same thing as it's been for every model we've done."
+        },
+        {
+          "source": "local:lecture_1_8_solving_the_network_facility_problem",
+          "score": 0.5029,
+          "chars": 2375,
+          "text": "This could be labor. This could be rental. Whatever. The fixed cost is for that facility and it's independent of how much root beer I push through it. It's a fixed cost. It has nothing to do with the amount of product that I push through. My cost for going from i to j is simply going to be $1 a mile times the distance. I'm just keep it really simple here. So we assume every mile cost $1. Then my total supply is simply just that sum of the demands that are coming out and go into d_j. That's a total supply going through. And I'm going to set-- because I only want one location. My P_min is equal to my P_max. Remember, P_min is the minimum number of DCs that I can open. And P_max is the maximum number. If they're the same, then I'm forcing the solution. So I'm forcing the model to say, find the single location that maximizes or minimizes my total cost. And my cost is both my flows, my transportation cost, and my fixed cost for the facilities. All right. So let me show you what the spreadsheet looks like. And just calm down. It looks complicated because it's big. And this is that extended formulation that I like. And I'll explain why in a second. But let's talk through it. So let me talk you off the ledge because it hasn't changed that much. In cell B3 up here, I've got my objective function. And that's my z. Hasn't changed. In these cells, I've got my binary variables, my y_i's, and their fixed cost, the f_i's. And then all across here I've got my xijs. That's the flow decision variables and the cost for flowing on each of those. And you can see up here in cell B3, it's just the same sum product that I've had before, the decision variables multiplied by their costs. OK. Then I've got a bunch of constraints. In the first set are the exact same ones as the transportation, its maximum supply at each DC. Then I've got a bunch of demand constraints. And again, these are exactly the same. Now I've had to add these ones for minimum maximum number of DCs. And you can see that all I'm doing is summing up the yijs and making sure that they are less than my P_min or greater than my P_min and less than my P_max. And then all these big ones down here, these the linking constraints. And so all it's saying is that the xijs, if there's any flow, then you've got to turn your yi on. You've got to turn your DC on if you're going to flow anything out of it."
+        },
+        {
+          "source": "local:lecture_2_4_advanced_scenarios",
+          "score": 0.502,
+          "chars": 2373,
+          "text": "But how do I enforce it to only open those three? There's two ways you can do it. What I did in this model, I set their fixed cost to a ridiculously high number-- $9,999.99 So I made it really high so I know the model will never pick them. Another way to do it would be to set their capacities to 0. Either way would work, and you'd get the exact same answer. Try it. See what happens for you. But the end result here-- by keeping those open, I'm increasing my outbound cost. Which makes sense, because yes, it's fewer DC's, but they're not close to the customer. They're not the ones that I would pick to get closer to the customer. Remember, Wooster was never selected when given it's free. It's a little further out. So now we can go back and say if we want to keep these open, let's make sure we understand what the costs are. And maybe there are other reasons that we don't know about to keep them open. But now we know what it's costing us to keep them open. One last scenario. Because all we've been talking about is cost so far, but what about service? So what I want to do here is I want to make sure the max average distance is less than 25 miles. I want to make sure customers are close to the DC's. That's a good proxy for having high customer service. I want to make sure that 80% of the demand is within 50 miles. And I'm going to allow the new plant to be open. You see all these different combinations that you can test. So what am I going to do? I'm going to make sure the demand is set originally. I'm going to set the capacity back here to 250. I'm going to set the P_MIN and P_MAX max equals to 1 and 5 respectively, so I can let the model select. And then I'm going to set these parameters in cells D 34 and C 35. Check in your spreadsheet to make sure that my max average distance is 25 and 0.8 is the minimum percent. So if I solve that, this is my solution. And we see that what happens when I require a higher level of service, all five DC's open. And so it looks like the BF plant, the new one, only delivers to Nashua. Nashua is taking care of most of the northern, because that helps me get closer to those customers. Without Nashua, you're going to have a big jump in customer service, because it's better located to those northern cities. But then you see that they're all fully used. And look at Springfield. Springfield is really tapped out."
+        },
+        {
+          "source": "local:lecture_7_11_optimization_based_procurement",
+          "score": 0.4998,
+          "chars": 2331,
+          "text": "So what we have here, inside these cells, are eight values which are simply the number of loads that carrier will carry on each lane. So we start with 10, just a starting value. It doesn't matter what we start with. This is the number of loads per week, let's assume, that each carrier will get. But we'll have later on a requirement that the sum of every row would be only 10. We don't have more than 10 loads on each lane. So the optimization will have to allocate the number of loads between the carriers, so that on each lane we'll have only 10 loads. This is done with a spreadsheet. And this is the spreadsheet. And what we have here are the decision variables, and the-- excuse me-- the prices, and the decision variable. This 40 is simply the sum of all the cost. So it's 500 times 10. 500 times 10. 500 times this 10. 475 times this 10. It's basically the multiplication of all these eight by the corresponding decision variables. So as I mentioned before, this is the sum of each row. So this is c11 to d11, c11 plus d11, basically. This is the sum of all the columns. So this is, then, total number of loads that carrier two is getting, in this case, is the sum along the column. And this is so-called the sum product, is the c3 to d6, which is these eight values times these eight values. And what we do here, we use the solver, the spreadsheet solver, in order to optimize here. And if we get to the solver, we use the data entry at the spreadsheet. And we get to the solver. And this is what the optimization looks at. And this is the solver screen. What we have here is the following. We optimize c19, which is the total cost. We're trying to minimize the total cost. So this is the first one. c19 is the objective, and we try to minimize the total cost, subject to certain constraint. So these are the decision variables. So we try to change these decision variables so that the total cost will be minimized and all these constraints will be met. So the total cost has to be-- this is the total cost has to be minimized by changing these variables and dealing with all of these constraints. And these constraints are-- the first one-- that each one of these entries, each one of these decision variables, is greater than zero, and has to be integer. We don't want to have 1.7 trucks. And the sum of every row is 10."
+        }
+      ],
+      "cost": {
+        "usd": 0.021303,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3623,
+            "output_tokens": 62,
+            "cache_read": 2816,
+            "cache_write": 0,
+            "usd": 0.003651,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 14003,
+            "output_tokens": 153,
+            "cache_read": 10769,
+            "cache_write": 3231,
+            "usd": 0.017651,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 57,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 4,
+      "student": "i'm confused, 3000 would mean they turned on that route 3000 times? or is it 3000 cases? i don't really get why a variable can be that instead of just yes/no.",
+      "tutor": "Think of it this way: if you're ordering pizza for a party, do you just decide 'yes pizza' or do you decide *how many* pizzas to order? In this problem, the decision for each route is: how many cases flow on it? So yes — 3,000 cases shipped from Supplier 1 to Factory 2. Does that help clarify what the 12 decision variables represent?",
+      "pedagogical_reasoning": "The student is genuinely confused about the nature of continuous vs. binary decision variables. This is a conceptual gap worth addressing clearly but Socratically. I'll use a simple analogy to nudge them toward understanding that a decision variable can represent a quantity, not just a switch, and then connect it back to the problem.",
+      "retrieved": [
+        {
+          "source": "local:lecture_2_12_inventory_considerations",
+          "score": 0.4641,
+          "chars": 2295,
+          "text": "So for the case A, I can see that the inventory-- I can either use the equation or use the chart-- would be about 3,500 cases in average inventory per week, month, whatever my time unit is here. Case B, I'll be down here at 40,000, and it comes out to be about, what? At 2,250, something like that. But there'd be two of those DC's to handle that 80,000-unit throughput. So I double it, and it comes out to 4,551 cases, the average inventory. So what have we done? We've shown that if I go from one facility to two facilities, the inventory doesn't double. It actually increases close to square root of 2. This should sound very familiar. The square root of 2 policies that we have, where if I go from one facility to two, that the inventory theoretically will increase by square root of 2, not by 2? So it's the same thing here. That's why the parameters for that beta go from 0.5 to 0.8. Now, why don't I just use the square root of 2? Well, because in actual practice, you probably won't achieve that. You might have a little more inventory. And so this tempers that theoretical relationship with actual behavior, which is really nice. So you're capturing what you actually do for inventory, and applying it to your network design-- similar to how we looked at the pilot cases and you do the baseline case when we were doing initial scenario network designs. So in that case, you wanted to compare what you actually did to what you actually might do, not to a theoretical number. So let me clean this up a little bit, and we can think about how I include this in my model, because I could do it after the fact. But another thing I could do, if desired, I can turn this non-linear curve, which is hard to include in a mixed-integer linear program, into piecewise linear segments. So I can say that if the facility is less than 40,000 units handled, then I turn on a binary variable. And during that time frame, it adds the variable amount of cost for the average inventory. If I fall up here, in this period, then I add a new fixed cost, and then I add a different-- it's a slightly less additional marginal cost for inventory. So we can include this. This would greatly increase the number of variables we have. Think of these, every facility has multiple binary variables. But you can do it."
+        },
+        {
+          "source": "local:lecture_2_12_inventory_considerations",
+          "score": 0.4278,
+          "chars": 2395,
+          "text": "And so I want to include pipeline cost. And it's very easy to do. You can just add it in to the unit transportation costs. Now, where it gets tricky is with cycle and safety stock. But as luck would have it, as you observe this in practice, you see that it tends to follow a non-linear function with respect to the throughput at that facility. So you can think of it following this type of relationship, where the inventory, the average inventory at facility I, which is I_i. is equal to some parameter alpha, which is estimated, times the throughput of that facility, say, over the course of a year, raised to the power of beta. And beta is another estimate that ranged from 0.5 to 0.8. Now, this is a non-linear relationship. So it's saying as throughput increases-- so it goes from 1, to 2, to 3, to 4, inventory doesn't increase 1, to 2, to 3, to 4. It doesn't increase linear-- It's less than linear, so it tapers off. And that's because the beta is less than 1. If this beta was 2, it would say that inventory increases exponentially as throughput increases. But it's less than 1, so it tapers off. So what would I do with this? Well, here's an example. This chart shows each dot is a facility in a network. And what I've done is I've mapped each one in terms of what its annual throughput is and the average inventory at that location. Now, in this example, I used cases, because that's the common unit that's used in this model. I could do dollars. I could do pallets. I could do tons, barrels, whatever. And so I come up with this relationship. So every facility's on here, and then I do a regression line. And this regression line is of the same non-linear relationship. And in this case, I end up with a function there where alpha is 2.5, and the beta's 0.643. So what do I do with this? Well, now, I can determine whatever the throughput is that I can determine what the composite cycle and safety stock would be. So how would I use this? Well, let's do a case. So with case A, I have one DC that needs to put through 80,000 cases per year. And then the other option I have is two DC's, each that can handle 40,000. So for the case A, I can see that the inventory-- I can either use the equation or use the chart-- would be about 3,500 cases in average inventory per week, month, whatever my time unit is here. Case B, I'll be down here at 40,000, and it comes out to be about, what?"
+        },
+        {
+          "source": "local:lecture_7_15_system_attributes_constraints_part_ii",
+          "score": 0.4112,
+          "chars": 877,
+          "text": "Is it 25 or 20 or 15? This happens a lot. When this is used in reality, companies are running successive optimization. People introduce all kinds of constraints, because you can now introduce a combination of this. What happens if we do 25 carriers, but we give it 30% business to minority carriers. Then we want 50% to be incumbent carriers. Oh, this doesn't look too good. Let's do-- Let's try something else. So you try many, many things. The big plus of using these is that, instead of what we call, discussions over beer, everybody take an opinion. Now it's good to have 30%. It's good to have 40%. It's good to have so many carriers. It's good to have that many carriers to get this kind of business. You can do it mathematically. And this is the big benefit of using this approach. So let's stop here, and go do some problems. And I'll see you again in the next segment."
+        },
+        {
+          "source": "local:lecture_2_4_advanced_scenarios",
+          "score": 0.4106,
+          "chars": 2352,
+          "text": "Why 2,000? Because I know my demand will never exceed that. So I'm trying to see if I allow the model to consider using more than 250, would it? And in fact, it does. It uses another 250 units. It looks like it uses enough to be able to deliver-- if you look at this-- everything that Nashua needs. And so what we've essentially done, Scranton is serving the southern market-- SP, which is Springfield and Wooster, and so it's going straight there. And the new plant is serving Nashua. If I look at the cities that Nashua is serving, they're all in the north-- Brattleboro, Concord, Manchester, Nashua, Portsmouth. They're all the same. And then the southern are being serviced by Scranton. It makes sense. Now, I don't know how much Bellow Falls would charge me for additional amount for this capacity, but I can figure out how much more I'd be willing to pay. So this is a nice thing that this model does-- it shows that I save $300 a week roughly. So now I know what my limit is. I don't want to go and pay more than that. I probably don't even want to pay up to that. But it gives you a sense of how valuable additional capacity is to you and how much you'd think you might need. So that's a pretty nice thing. It's a nice outcome that the tool can provide. So let's keep going. Let's run some other scenarios. Scenario 7, I want to look and say, OK, what happens if demand goes up? So all that I did here is I went to these gray cells that are in row 26, and I increased the demand. I increased them by 50% over what we had before, and I just resolved the model. What happens? Well, I'm allowing Bellow Falls to be in there, so I've got the two plants. And you can see what kind of happens. We have a division. The southern gets a service by Scranton. The northern DC's get serviced by Bellow Falls. Makes sense. Now we can compare, how much do I save from that? How do I compare that? Should I compare that to the baselines? No, because the demands have changed. This is moving 3,000 units through, not 2,000 anymore, because I assume demand went up. I also made the assumption it went up uniformly. You can play with this in many different scenarios. You could test and say, what if the Boston market explodes? What if Nashua explodes? What if some other city goes down? So you have all these different options you can do to test the robustness."
+        },
+        {
+          "source": "local:lecture_4_12_omni_channel_network_design",
+          "score": 0.4025,
+          "chars": 2383,
+          "text": "So it's that click and collect that I talked about. So that's one option. Another option is they can get it delivered to the store, but perhaps Zara delivers with a large truck to a ID or an intermediate depot. And then they do local vans for delivery out to each retail store. So it doesn't change for the consumer. But the way it flows for Araz is different. They could also use one of the depots to deliver to a convenience store. And this is where you'd have one of those attended pickup points. It could be a 7-Eleven or a gas station. This is very common in Europe. Less common in the United States, although it's starting to catch on. So you have a delivery and they are local to you. And they will just keep the things behind the counter where they might have a way of securing it for you. So I could supply that through the depot or I could go directly from the CDC itself. And then once it's there, My consumer will walk to it or drive to it and they'll pick it up directly. It's not on the shelf, it's sitting behind the counter or in some back room. I could also have an APS. Remember, that's that automated package system. That that's the unattended one where it's a locker. I might deliver straight from the CDC or it might go through another depot in a large conveyance in order to lower the cost of the line haul to a depot, and then a small van to that APS. To pick it up the consumer would walk or drive to it and would just pick it up. The other options I have is delivering straight to the home from the CDC. Or maybe going through that depot and going to the home. So very simple example but look at all the different ways products can flow. It can flow 1, 2, 3, 4, 5, 6, 7, 8, 9,10 different ways. That's amazing. So how would you determine which flow to use, which depots to open because you might have different potential IDs or intermediate depots to open? Which ones make sense? So here's the simple formulation. And this should look very familiar to you by now. It's a mixed integer linear program and it's a network design. It's the same stuff we've been talking about for the last several weeks. So look at the objective function. My first term is all about the fixed costs. And these are of the intermediate depots are open or not. That's one of my decisions. Do I open an ID, an intermediate depot or not? And there's a fixed cost associated with that."
+        },
+        {
+          "source": "local:lecture_1_2_solving_the_transportation_problem",
+          "score": 0.3986,
+          "chars": 1101,
+          "text": "So I'm running about 80% capacity there. So if I look at this, I can also look at demand, make sure I'm meeting all my demand, and I am. And so you can look at this, and you can start saying, well, you know what, OK, this my optimal solution. But what if R1 starts asking for more? If they have any more need for demand, what am I going to have to do? Well, I'm going to be shifting things away. So you start looking at the solution and start understanding and interpreting what it means, because a lot of what this means here is I say, you know what, this solution, it might be lowest cost, but boy, I'm operating Plant 1 really tightly. Maybe I want to shift some things away from that. And it looks like R1 is only supported by Plant 1. Maybe I want to force some redundancy. So this is the first inkling of what a math program can do for you. It isn't just there to give you one answer and then you walk away. It helps you make a decision. It's a decision support tool. But let's keep going. And so I want to continue on this by making a slightly more complex problem with a transshipment problem."
+        }
+      ],
+      "cost": {
+        "usd": 0.021169,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3746,
+            "output_tokens": 46,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.002567,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 17133,
+            "output_tokens": 177,
+            "cache_read": 14000,
+            "cache_write": 3130,
+            "usd": 0.018601,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 40,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 5,
+      "student": "kinda, but then part 0 says plug in a 1 for each decision variable, and that's why i thought they were binary. if they're shipment amounts, why would putting 1 in all of them make sense?",
+      "tutor": "Sharp observation! Look at what Part 0 is actually asking you to check — it asks for the total cost and the LHS of the constraints when all variables equal 1. What do you think the purpose of that exercise is, before you even run the optimizer?",
+      "pedagogical_reasoning": "The student is making a sharp and reasonable observation — why would you put '1' in a continuous variable? This is actually a great teachable moment. Part 0 is just a model-checking exercise to verify the spreadsheet formulas are set up correctly, not to find a meaningful solution. I should help them see that '1' is just a test value to check the math, not a meaningful shipment quantity. I can do this Socratically by asking what the purpose of Part 0 seems to be.",
+      "retrieved": [
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.545,
+          "chars": 2376,
+          "text": "They have different capacity levels and different costs. The costs for transportation differ by lane, as well as by product. And the demand differs. So what I have here in the top left chart is for each of the products-- product one, product two, product three-- the cost of transportation. So for example, if I manufacture in Chicago and ship through Atlanta and then go on to Pennsylvania, the cost of each unit will be 6 plus 6, $12 per unit. If I manufacture in Chicago and go through the Boston distribution for product one and then on to Pennsylvania, then the cost would be 5 plus 6, or $11 per unit. So you can see how I set this up. It's just giving all the different costs. And they can be different by commodity, by lane. So you can make it anything you want. Then I've got capacity at each of the distribution centers. Atlanta's 200. Boston's 500. I've got capacity at the plant. And you can see it. It's by product, except for Dallas. Dallas has individual plant product capacities for each of the different products. But then it has an overall plant. So while I can do up to 125 units of product one, up to 200 units of product two, and up to 150 units of product three, combined, they can only be 250. Now, if this capacity for Dallas as a whole was greater than the sum of the individual capacities, then it doesn't matter. It's useless. Why have it there? It's not binding. But if it's less than the sum of the individual ones, then it could have an effect. And finally, I've got regional demands for each of the regions, each of the products. And you can see they vary. In Virginia, they like product one. New York favors product two. And Pennsylvania favors product three. Realistic that different regions will have different preferences and appetites for different products. So how do I solve it? Well, I do the same formulation. This is in a spreadsheet. This is in Excel. And this should look very similar to the transshipment problem, just bigger. And so let's go through this. I've got my objective function up here in cell B4. And then I've got all my decision variables, that I keep in yellow, there in row nine. And right beneath that is the individual cost. And so the xij's and the cij's-- ijk's are there. And cell B4 is just the sum product of my decision variables and their respective costs. Same thing as it's been for every model we've done."
+        },
+        {
+          "source": "local:lecture_2_12_inventory_considerations",
+          "score": 0.5419,
+          "chars": 582,
+          "text": "So we can include this. This would greatly increase the number of variables we have. Think of these, every facility has multiple binary variables. But you can do it. The other way to do it is after the fact, see what you think the new safety stock and cycle stocks would be. So inventory is not explicitly considered in strategic network designs that use mixed-integer linear programs, but you can estimate them and include them after the fact-- or, if you want to, you can try to model them within the model. It just gets to be a very large model, and it gets somewhat complicated."
+        },
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.5415,
+          "chars": 2284,
+          "text": "And right beneath that is the individual cost. And so the xij's and the cij's-- ijk's are there. And cell B4 is just the sum product of my decision variables and their respective costs. Same thing as it's been for every model we've done. Then I'm going to have a series of constraints. And every one of the constraints is the left-hand side. And each of these left-hand sides is just, again, a sumproduct of the decision variables that are in row nine multiplied by each respective row. In this case, in cell AM13, it's going to be the decision variables multiplied by whatever is in this row, row 13, which is just what's coming out of Chicago. And you see it's capturing the supply constraints from Chicago. So this is identical to what we've done a half a dozen times so far. And you have the right-hand side. This is the input data that you have. So the constraints-- I've got my capacity constraints at each plant. I've got my demand constraints at each customer region. And I've got my DC capacity. And then I've got my conservation of flow at each DC. Boom. We know how to solve this. So it looks complicated. It looks big. It is big. It gets big as soon as I introduce commodities, multiple commodities. But it's the same model as the transshipment model. It just has a couple little tweaks. But I still have essentially two formulas, a sumproduct up here for the objective function, and sumproducts here. That's it. It's so easy. OK. So what's the solution? We know how to do this. I have my objective function. I put in my changing variables, or my decision variables. I've entered in my constraints. I make sure it's simplex. Make sure their unconstrained variables are non-negative. And then I solve it. And you should get a solution of $6,525. And I've got my decision down here, or the solution down here. And so it's saying I'm going to ship product one, manufactured in Chicago, and ship 125 units to Boston. Then I'm going to make 100 units of product one in Dallas and ship it to Atlanta, and so forth. You have all the different numbers. Now, it's very complicated. And so what we're going to do next in the next segment is analyze these results, because we want to look at it a little more in depth than just what's showing up in the individual decision variables."
+        },
+        {
+          "source": "local:lecture_3_6_optimal_methods_milp",
+          "score": 0.5386,
+          "chars": 1228,
+          "text": "I want to make sure my inventory doesn't go below 0, and I want to make sure that my linking constraints are valid. Now, this one with binary variables, I just named the array in this case. You could just call it that row, and they would be fine. But I'm just setting those as binary variables. Now, if you hit Options here-- and we're solving it as a simplex linear program-- I want to point something out. You want to make sure for solving with integer constraints that you do not check this box. This causes a lot of problems. Ignore Integer Constraints. Make sure that's not checked. If you run something and you get the binary variables are coming out as not binary. Check this first. So it's a little bit of troubleshooting. But at the end of the day, you run this, you solve, it and you'll get the solution. Produce 550 in period 1, 450 in period 6, 450 in period 9, and 550 in period 11. This is the same solution as the Wagner Whitin. Is that a coincidence? No. They're optimal solutions. So they better be the same. So by using one optimal method or another, they should give you the same answer. If they don't, then one of them is not optimal. What we'll do next is compare all the different approaches to each other."
+        },
+        {
+          "source": "local:lecture_2_12_inventory_considerations",
+          "score": 0.5381,
+          "chars": 2295,
+          "text": "So for the case A, I can see that the inventory-- I can either use the equation or use the chart-- would be about 3,500 cases in average inventory per week, month, whatever my time unit is here. Case B, I'll be down here at 40,000, and it comes out to be about, what? At 2,250, something like that. But there'd be two of those DC's to handle that 80,000-unit throughput. So I double it, and it comes out to 4,551 cases, the average inventory. So what have we done? We've shown that if I go from one facility to two facilities, the inventory doesn't double. It actually increases close to square root of 2. This should sound very familiar. The square root of 2 policies that we have, where if I go from one facility to two, that the inventory theoretically will increase by square root of 2, not by 2? So it's the same thing here. That's why the parameters for that beta go from 0.5 to 0.8. Now, why don't I just use the square root of 2? Well, because in actual practice, you probably won't achieve that. You might have a little more inventory. And so this tempers that theoretical relationship with actual behavior, which is really nice. So you're capturing what you actually do for inventory, and applying it to your network design-- similar to how we looked at the pilot cases and you do the baseline case when we were doing initial scenario network designs. So in that case, you wanted to compare what you actually did to what you actually might do, not to a theoretical number. So let me clean this up a little bit, and we can think about how I include this in my model, because I could do it after the fact. But another thing I could do, if desired, I can turn this non-linear curve, which is hard to include in a mixed-integer linear program, into piecewise linear segments. So I can say that if the facility is less than 40,000 units handled, then I turn on a binary variable. And during that time frame, it adds the variable amount of cost for the average inventory. If I fall up here, in this period, then I add a new fixed cost, and then I add a different-- it's a slightly less additional marginal cost for inventory. So we can include this. This would greatly increase the number of variables we have. Think of these, every facility has multiple binary variables. But you can do it."
+        },
+        {
+          "source": "local:lecture_7_24_video_3_solving_part_3",
+          "score": 0.5362,
+          "chars": 2302,
+          "text": "So that's also part of the formatting you use and the structures you like to use. Doing this again, flow minus binary variable times M, and we're almost all set. There is a huge recommendation for you anytime you're working with any models that have multiple variables or multiple calculated fields. If you want to know if your model is actually working as you expect, just adjust the variables by hand and see what's the impact in your objective function and in every calculated fields. If something is not responding as it should, then that's probably because it means that you're not including a certain number or a certain calculation in your model properly. So let's give it a try. Let's have a case in which there's no units flowing here. And we start from scratch. We have our objective function up there. So what should be happening? Let's add a random number here, right? Let's do 100. Based on the problem statement, if I'm procuring any units from a supplier, I need to pay the setup cost because I'm placing an order. And that's my cost driver for this problem. So there are two things that should happen in our model once that's all set. The solver is going to turn this into one if we use our linking constraint, right? And when is our model actually going to turn that binary variable into one? Well, remember that we usually do linking constraint has to be lower or equal to 0. If we keep this as a 0, then you can see that linking constraint has a positive value. This means that it's working properly. This means that it's going to force the model to make it one if there's any unit flowing from that supplier. Does that make sense to you? If not, please pause this video, go back a little bit, give it a try yourself, and return to us in a few minutes, once again, because it's very important that you understand what your model is doing for you and the solver, OK? So units flowing, binary variable activated with a proper linking constraint working, which is great. What else should happen if that's the case? Well, the cost should be considered in both, right? The fabric cost, which is $1 per meter based on the supplier submitted proposal, which would be this number of units times 167, if you see your table, plus the setup cost. Let's scroll up and see if we have that number."
+        }
+      ],
+      "cost": {
+        "usd": 0.021805,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3881,
+            "output_tokens": 48,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.002935,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 20060,
+            "output_tokens": 183,
+            "cache_read": 17130,
+            "cache_write": 2927,
+            "usd": 0.018869,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 46,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "student": "maybe it's just testing if the formulas are set up? like if every route ships 1 case then the lhs for supplier 1 would be... 1? or maybe 3? i'm not sure what “lhs” is here.",
+      "tutor": "Good instinct on Part 0's purpose! Now, think about what the supply constraint for Supplier 1 says in plain English: it limits how much Supplier 1 ships in total. If every decision variable equals 1, how many factories is Supplier 1 shipping to, and how much is going to each?",
+      "pedagogical_reasoning": "The student is making good progress on understanding Part 0 but is unsure what LHS means in the context of the supply constraint. I should ask them to think about what the supply constraint for Supplier 1 says in words, which will lead them to figure out the LHS themselves.",
+      "retrieved": [
+        {
+          "source": "local:lecture_7_15_system_attributes_constraints_part_ii",
+          "score": 0.4967,
+          "chars": 2350,
+          "text": "And this applies only to carrier 1 in this example. So the break is this number. In this case, the expensive flow, the number, it's the number of loads done under the expensive flows here. And the chief flow is the number of loads done on the chief flow. Let's see what does it mean. We introduce it into the optimization. We call it, cap. That the break is the break or capacity. This is the capacity times the flow under the expensive price, times the flow under the cheap price. This is what comes into here. So this is minus 50, because it's 5 minus 10 times 10. So 5 minus 10 times 10 is minus 50. And it's the same for each one of them. And what we want to introduce is we don't want to look at this as a constraint. We want to make sure that this will be equal 0 for each one of the rules. Why do we want each one to keep 0? Because in this case, either this or this has to be 0, which means that we cannot use S1 also. We can not use the cheap [INAUDIBLE] price until S1 is equal to the cap, until as one equals 5. If S1 is less than 5, this must be 0 in order for the product to be 0. So this kind of forces the optimization to first use the high price and then the low price. So this is just what we talked about before, 5 times 10 times 10 is minus 50. And each one of those has to be equal to 0. So I also can be positive only if I equal to the capacity, which is 5 in this case. So we now look at the particular example. And here is the spreadsheet. And you see each cell, in this case j4, which is here, minus c12. This is capacity minus S1, times d12, which is here. This is S1 also, has to be 0. And this is true for each one of the rows. So here, we introduce this condition. This is the condition. j12 to j15 equals 0. So what does it look like? This is this particular condition simply says that these are capacities. So any number here has to be smaller than the corresponding number here. And this is the condition of the rows, that we have to have 10 loads at least 10 loads. And this is, as I mentioned before, the conditions of you have to give at least 5 to carrier 1 on the high price before you get the low price. So if we run this optimization, we get first of all the condition is met. So these are all 0s, which means you see here that we want to use, for example, carrier 1, what we want to use the low price on a to b."
+        },
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.4934,
+          "chars": 2376,
+          "text": "They have different capacity levels and different costs. The costs for transportation differ by lane, as well as by product. And the demand differs. So what I have here in the top left chart is for each of the products-- product one, product two, product three-- the cost of transportation. So for example, if I manufacture in Chicago and ship through Atlanta and then go on to Pennsylvania, the cost of each unit will be 6 plus 6, $12 per unit. If I manufacture in Chicago and go through the Boston distribution for product one and then on to Pennsylvania, then the cost would be 5 plus 6, or $11 per unit. So you can see how I set this up. It's just giving all the different costs. And they can be different by commodity, by lane. So you can make it anything you want. Then I've got capacity at each of the distribution centers. Atlanta's 200. Boston's 500. I've got capacity at the plant. And you can see it. It's by product, except for Dallas. Dallas has individual plant product capacities for each of the different products. But then it has an overall plant. So while I can do up to 125 units of product one, up to 200 units of product two, and up to 150 units of product three, combined, they can only be 250. Now, if this capacity for Dallas as a whole was greater than the sum of the individual capacities, then it doesn't matter. It's useless. Why have it there? It's not binding. But if it's less than the sum of the individual ones, then it could have an effect. And finally, I've got regional demands for each of the regions, each of the products. And you can see they vary. In Virginia, they like product one. New York favors product two. And Pennsylvania favors product three. Realistic that different regions will have different preferences and appetites for different products. So how do I solve it? Well, I do the same formulation. This is in a spreadsheet. This is in Excel. And this should look very similar to the transshipment problem, just bigger. And so let's go through this. I've got my objective function up here in cell B4. And then I've got all my decision variables, that I keep in yellow, there in row nine. And right beneath that is the individual cost. And so the xij's and the cij's-- ijk's are there. And cell B4 is just the sum product of my decision variables and their respective costs. Same thing as it's been for every model we've done."
+        },
+        {
+          "source": "local:lecture_7_15_system_attributes_constraints_part_ii",
+          "score": 0.4917,
+          "chars": 2385,
+          "text": "Let's now talk about the different type of constraint. And this is volume discount. We now have carrier 1. Carrier 2, in this case, does not give volume discount. Only carrier 1 gives volume discounts. And the way carrier 1 gives volume discount is, in fact, explained here and here. In each case, carrier 1 says, the first five loads are going to be more expensive than the rest. So you have to give me. I'll give you two prices. Let's look at [INAUDIBLE] A to B. I'll give you five 20 and 500. But you have to give me at least five loads of the 520 in order to enjoy the 500 price. Or here, you have to, on c to a you have to give me at least five loads at 500 in order to enjoy the and 480 price. So we introduce here a whole set of row And a whole set of new variables. We just change carrier 1. And we call it 1 and 1, also. 1 is the number of laws that carrier 1 is getting under the expensive price. And I also, here is the number of loads that carrier one gets under the lower price. This price. The problem with this, if we just go to the optimisation is-- the optimization is done. Find the best solution, which will be assign everything to the lowest cost. Everything that assigned to carrier 1 will be assigned to this cost here, to the low cost. Somehow we have to force the optimization to say, you cannot use the low cost until you pay the higher price for at least five loads. In order to do it, this is just repeating what I said is the cost for five loads. This is the cost for greater than 5 loads. This is the minimum at the high rate for the carrier. There's no capacity basically on the low rate. And we just introduced carrier 2 has certain capacity. So now let's see what we do. And by the way, this is the sum product. The sum product is for everything. So it's multiplied all these three columns by these three columns. The sum, of course, will still need to be 10. So let's see how we deal with it. We basically introduce a constraint. Call it the break for-- the constraint is for each lane. So for each lane, the break times the expensive flow, times the inexpensive flow. And this applies only to carrier 1 in this example. So the break is this number. In this case, the expensive flow, the number, it's the number of loads done under the expensive flows here. And the chief flow is the number of loads done on the chief flow. Let's see what does it mean."
+        },
+        {
+          "source": "local:lecture_7_14_system_attributes_constraints_part_i",
+          "score": 0.4904,
+          "chars": 2388,
+          "text": "But you see that the location of loads to carrier is different. That's OK. You can have different solution as long as the constraints are met and the total cost is the same. This happens, by and large, because of quirks by the optimization. We're not going to get into it. Let's now talk about other example of preferred supplier or condition that we may put in. For example, a condition that's very common in the United States is that minority carriers or women-owned businesses should get at least x percent of the business. This is part of the social mission of corporation, try to encourage diversity. A company may say, I want to make sure that incumbent suppliers, those that I dealt with last year, will get at least 50% of the business. This is a very common system constraint because companies don't want to change everything. It is too complex to introduce everybody into their system. So they want to have some carriers that know the system before. Where they are being used, it's not clear, let the optimization determinate it. How many of them are being used? If it's 50% or 60%, I want this at least 50% to be the old carriers that I know. Another constraint can be, my brother-in-law is running a trucking company, should get at least a million dollars out of this auction. OK, I don't know where my brother-in-law will get the million dollars. And I want to make sure that in total I can minimize the cost, subject to the fact that my brother-in-law will get at least a million dollars. So let's now talk about a different type of constraint. We are now trying to put a minimum volume constraint, similar to the brother-in-law constraint. And want to make sure that carrier two gets at least $13,000. In order to introduce this constraint, we have to add the construct here. We have to add this particular row to the spreadsheet. This row is the total dollars that each carrier get. And it's simply a multiplication of this times this, the cost times the number of loads on each lane. So this gets with this cost. And this gets me this cost. Here we are. This is the optimization. This is the minimum dollar volume for carrier two. And this is the sum product of this times this. And here's the sum product of this times this. And we now go to the optimization. And we introduce the condition that the first condition is that the, here, this is greater or equal than this."
+        },
+        {
+          "source": "local:lecture_7_17_economies_of_scope_and_combinatorial_auctions_part_ii",
+          "score": 0.4892,
+          "chars": 2371,
+          "text": "We can have conditions on the combinatorial bid. For example, we want to use minimum two carriers and each carrier should get at least 10. We don't know where, but must get at least 10 throughout the system. What we add here is this variable here. This is the sum. 90 is the sum of all. This is the sum of the loads that carrier one is getting. This 90 is the sum of the loads that carrier two is getting. So this is the sum of C11 to K11. You see C11 is here, to K11, which is here. And this is the sum of L11 to T11 from here to here. So each one of them is the sum of all the loads that the carrier is getting. And we can put it to any number, want to have some minimum number, so whatever. In this case I think we put it to 10. So we make sure that each of the sum is greater than or equal to 10. So this is simply an additional constraint. You see that K12, which is this, and T12, which is this here, are greater then 10. All the other conditions are the same. So this is what we just said. So we go ahead and optimizing it, and we get a different solution in this case. You see that still carrier one is getting its package that it wants, but carrier two is also getting some reasonably good packaging. For example, it gets B to C and C to B, what's called a continuous move. And the assignment is different. You see here, by the way, that the solution here is higher. We had 18,000 before. It's 18,125 because we just impose the constraint that each carrier has to get at least 10. And you see how the numbers here are distributed across the various packages. So the solution looks now something like this. Carrier one gets five on C to B and gets its package. Carrier two gets C to A and A to B, which is a continuous move, and also one of the good packages. So with this, let's explain the process. This is a more complex process than just regular auction or regular procurement. So you'll need to explain to the supplier. In many cases, companies that we dealt with are having a supplier conference, more than one sometimes, and explaining how the process works. And especially for small suppliers, you need to help them. In fact you may want to even identify the packages in their request for bids that you are submitting because large carriers will have operation research analysts who can find out through the data what are good bids and what good packages."
+        }
+      ],
+      "cost": {
+        "usd": 0.023664,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3990,
+            "output_tokens": 50,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.003237,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 23300,
+            "output_tokens": 150,
+            "cache_read": 20057,
+            "cache_write": 3240,
+            "usd": 0.020426,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 43,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 7,
+      "student": "i think 3 factories, 1 each, so lhs is 3? but i still don't totally get why that's not just “used 3 times” instead of 3 cases.",
+      "tutor": "Exactly right — the LHS is 3! And since each decision variable represents cases shipped, the LHS means 3 cases total flowing out of Supplier 1. When the optimizer runs, those variables will take on real quantities instead of 1s. You've got the conceptual foundation — try building the spreadsheet now and see if you can verify all three Part 0 answers.",
+      "pedagogical_reasoning": "The student correctly landed on 3 for the LHS of the supply constraint. Their lingering confusion ('3 cases vs used 3 times') is actually not a critical conceptual block for building the model — with all variables set to 1, both interpretations give 3, and in the actual optimization the variables will take on meaningful case quantities. I should affirm their answer, briefly clarify the unit, and encourage them to move forward to actually building the model.",
+      "retrieved": [
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.472,
+          "chars": 2254,
+          "text": "So let's say I have two commodities. And each one, I can produce 100 units of each. But my total system, or capacity at that facility, is only 150. So while I could produce 100 of one, if I do that, then I can only produce 50 of two. Or if I produce 100 of two, I can only produce 50 of product one. So you can have different hierarchy or layers of capacity, which is very realistic. So it helps me with the allocation of different products that I will produce. Let me just clean this up a little bit. All right. So this is the formulation. So the question is, how do we solve it? What is this going to look like? So let's do an example. And this is the Worldwide Universal Widgets Unlimited, or WUWU problem. As we all know, WUWU is a global manufacturer of widgets. They have three plants in Chicago, Dallas, and Miami. And they send product through two distribution centers. One in Atlanta, and one in Boston. And then they send them onto three different state regions for demand-- New York, Pennsylvania, and Virginia. And so the product always flows from plant to distribution center and distribution center to region. There's no bypassing in this model. So this looks very normal. This is a straight transshipment problem. You can do this in your sleep. Right? But what makes it complicated is this. Each of the plants manufactures three different versions of the widgets that we call versions one, two, and three. And each of the regions in the demand, they will demand different quantities of each of these. So you can see that this makes it a little more complicated, thus multi-commodity flow. OK. The question that we want to answer here is, where and in what quantity should WUWU manufacture each product and distribute it to meet the demand in each of the regions at the lowest cost? So it's the same objective function really as we had for the transshipment model. We need a lot more data. So each plant is capable of manufacturing all the products. They have different capacity levels and different costs. The costs for transportation differ by lane, as well as by product. And the demand differs. So what I have here in the top left chart is for each of the products-- product one, product two, product three-- the cost of transportation."
+        },
+        {
+          "source": "local:lecture_2_9_multi_commodity_analysis",
+          "score": 0.4581,
+          "chars": 2289,
+          "text": "And I get $10.33 per unit. So again, that wasn't too hard. We just had to take an average because we knew how much was coming in for each path. The paths were separate. Let's look at widget three now. And so for widget three, looking at Pennsylvania, how do I get product? Well, it could be manufactured in Chicago. shipped to Boston, and then on to Pennsylvania. It could be manufactured in Dallas, shipped to Boston, and then on to Pennsylvania. Or it could be made from Miami to Atlanta and in. Now the question here, I need to know how much of each type. And the challenge is some of it goes through Boston, and so I don't know how to allocate the cost for the inbound to the outbound that's going to Pennsylvania. So let's look a little closer. So here's the same situation, and what I want to figure out is how much goes in this path that I called x, how much is going in this path y, and how much is going in this path z because I know the cost of each of the individual pads. I just have to figure out the x, y, and z. And I know that some of them is 150 because that's what I demand for product three in Pennsylvania. So let me clean this up. So I know I need 150 units of widget three, and I know from the model, it tells me how much comes from each of the distribution centers into Pennsylvania- from Boston, 100, from Atlanta, 50. OK, so this helps me a little bit. So now I can backwards calculate, since, for Atlanta, they only get product three from Miami, I know that z, the amount that's going this path is going to be 50. So 50 of the units cost $8 per unit. So the challenge now is figuring out the ones that come through Boston. So how do I allocate this because it looks like 50 and 75, 125 come in, and 25 of it, 25, goes to New York. So we don't use all of it. So the question is how much of Chicago's is going to New York? How much is going to me in Pennsylvania? Same thing with Dallas. So let's give three examples that I could do, three possible cases. The first, I say 50-50. 50 units come from Chicago, 50 from Dallas, so that would give me a blended cost for these 100 units of $10 per unit. Now, I could also say, just on of the other extreme, I only take 25 from Chicago, and I take 75 coming from Dallas. Therefore, my blended average would give me $10.50."
+        },
+        {
+          "source": "local:lecture_2_12_inventory_considerations",
+          "score": 0.4545,
+          "chars": 2295,
+          "text": "So for the case A, I can see that the inventory-- I can either use the equation or use the chart-- would be about 3,500 cases in average inventory per week, month, whatever my time unit is here. Case B, I'll be down here at 40,000, and it comes out to be about, what? At 2,250, something like that. But there'd be two of those DC's to handle that 80,000-unit throughput. So I double it, and it comes out to 4,551 cases, the average inventory. So what have we done? We've shown that if I go from one facility to two facilities, the inventory doesn't double. It actually increases close to square root of 2. This should sound very familiar. The square root of 2 policies that we have, where if I go from one facility to two, that the inventory theoretically will increase by square root of 2, not by 2? So it's the same thing here. That's why the parameters for that beta go from 0.5 to 0.8. Now, why don't I just use the square root of 2? Well, because in actual practice, you probably won't achieve that. You might have a little more inventory. And so this tempers that theoretical relationship with actual behavior, which is really nice. So you're capturing what you actually do for inventory, and applying it to your network design-- similar to how we looked at the pilot cases and you do the baseline case when we were doing initial scenario network designs. So in that case, you wanted to compare what you actually did to what you actually might do, not to a theoretical number. So let me clean this up a little bit, and we can think about how I include this in my model, because I could do it after the fact. But another thing I could do, if desired, I can turn this non-linear curve, which is hard to include in a mixed-integer linear program, into piecewise linear segments. So I can say that if the facility is less than 40,000 units handled, then I turn on a binary variable. And during that time frame, it adds the variable amount of cost for the average inventory. If I fall up here, in this period, then I add a new fixed cost, and then I add a different-- it's a slightly less additional marginal cost for inventory. So we can include this. This would greatly increase the number of variables we have. Think of these, every facility has multiple binary variables. But you can do it."
+        },
+        {
+          "source": "local:lecture_2_9_multi_commodity_analysis",
+          "score": 0.4527,
+          "chars": 2381,
+          "text": "50 units come from Chicago, 50 from Dallas, so that would give me a blended cost for these 100 units of $10 per unit. Now, I could also say, just on of the other extreme, I only take 25 from Chicago, and I take 75 coming from Dallas. Therefore, my blended average would give me $10.50. But we could also make the argument for any numbers in between, for example, I could say, well, if 125 units come out of Boston, and I use 100 of them, that's 80%, 100 over 125. So therefore, shouldn't I use 80% of the Chicago product and 80% of the Dallas product? And if I do that, then I come out with something in the middle $10.20 per unit. So which do I pick? This is where it gets into interesting accounting techniques because what we're doing is we're really trying to allocate which flows get accumulated and aggregate which product. And we'll talk about this in detail in a future lesson. But what I wanted to point out here is that it is somewhat arbitrary. Because when products come in, we don't know that every one of the Chicago ones goes to Pennsylvania. When they get to Boston, they're all now the same. They're all fungible within product three. So they come here, and then we've got to determine which ones to use. And it's really an accounting issue. So once I picked one of these, then I will find the total landed cost doing 50 of them at eight, and say, if I went with this allocation, I'd have 100 at $10. And then I could find easily what the total landed cost would be for widget three. But the key point I want to bring out here is that it's a little more complicated, especially when you have these bundling constraints, or these blended, or these interactions. All right, let's sum up multicommodity flow problems because this is what you really see in practice. So the formulation is very similar to single flow models. It's a transshipment model. It's not that more complicated in theory, in pieces. However, it gets much more complicated when you have bundling constraints, when the different commodities interact, when there are fixed costs, and capacity restrictions because then the volume of one commodity will influence what the other commodity can do. So there will be trade offs between commodities. There will be multiple flow paths, which makes the costing much more complicated. And of course, the size of the problem gets huge. So it really blows up."
+        },
+        {
+          "source": "local:lecture_3_4_specialized_heuristics_for_fph",
+          "score": 0.4455,
+          "chars": 2398,
+          "text": "I divide that by 2, and I get $325. Now I go to step six. Is the total relevant cost per unit time in period two greater than that in period one? No, so I go to step seven, which says, go to step four, which means I increment: n is now equal to 2. So now I want to see, should I include period one, two, and three in what I've produced in time period one? Should I produce enough for those three periods? If I did that, what would my total relevant cost per unit time be? Well, I've got my $500 setup cost. And I have to keep 150 units for one month for period two. And I have to keep 100 units two months to take care of period three. Sum that up, divide by 3, I get $283. Now I'm at step six. And I look, is the total relevant cost in time period three greater than that in time period two? No. I go to step seven, which then takes me to step four. I increment n to n plus 1. So now I'm trying to determine, should I produce enough for time period four as well? What's the total relevant cost? $500 for the setup cost for time period one plus my inventory holding cost-- 150 units for one month for time period two plus 100 units for two months for time period three, 50 units three months for time period four. Sum that up, divide by 4, you get $250. I'm at step six now. Is $250 greater than $283? No. I go to step seven, go to step four. See how this works? It gets pretty repetitive. This is why we have computers do this, and we don't do this by hand too often. Now I'm trying to determine, do I want to produce enough for periods one through five from period one's production run? What's the cost? $500 for that one-time setup plus the inventory holding cost for periods two, three, four, and five. And you see, for example, for the 50 units demanded in period five, I'm holding them for four months. So I'm getting charged for each one of those months. What's my total relevant cost per unit time? $240. I'm at step six. Is $240 greater than $250? No. So I go to step seven, it takes me to step four. Now I'm trying to see, should I produce enough for month six as well? And you look at the total relevant cost-- again, one time setup plus inventory holding cost for periods two, three, four, five, and six. Sum that up, divide by 6-- because I'm covering six periods. I get $283. Now, is $283 greater than $240? Yes. So what does this mean? That means I want to produce enough up to here."
+        }
+      ],
+      "cost": {
+        "usd": 0.023968,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4110,
+            "output_tokens": 41,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.00225,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 26421,
+            "output_tokens": 201,
+            "cache_read": 23297,
+            "cache_write": 3121,
+            "usd": 0.021717,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 32,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 8,
+      "student": "ok i can try, but i'm still mixed up on factory 1's demand lhs — is that also 3 because it gets 1 case from each of the 3 suppliers? or 4? i'm lost again.",
+      "tutor": "Think about it from Factory 1's perspective: how many suppliers are there, and if every decision variable equals 1, how many of those suppliers are shipping to Factory 1?",
+      "pedagogical_reasoning": "The student is asking about the LHS of the demand constraint for Factory 1. This is the last Part 0 concept they need to understand before building the model. I should ask a pointed question to help them figure it out themselves — how many suppliers are there, and if each ships 1 case to Factory 1, what's the total flowing in?",
+      "retrieved": [
+        {
+          "source": "local:lecture_3_15_distribution_requirements_planning_drp",
+          "score": 0.515,
+          "chars": 2310,
+          "text": "They have a demand of 10, safety stock of 10. So therefore, they need 20 units here. Demand increases in period five. So you're increasing 20 plus the safety stock of 10 for 30. And everything carries out similarly. You can see the ordering pattern gets very lumpy. It's based on when you need those units. So because I have to order in quantities of 30, this is very similar to the fixed order quantity that we did when we were looking at the fixed planning horizon problems. So let's go to the third warehouse. Again, slightly different. We have more spotty demand, five units, 15 units, 10 units. I have an order quantity that was determined somehow, some safety stock, and some lead time. Those are inputs to me. And out of that I can determine my gross requirements. And again, it all ripples down to when I'm going to have my planned order releases, or when I'm going to place my orders. So you can see that the demand at the period usage translates into very lumpy orders for all three of these warehouses. So what I want to do now is I'm going to roll that up from period one where the planned order release was 50, 30 for region two, 20 for region three. That turns into an order of 100 units to the central DC. And you can see that follows out across as I go across all the periods. And so while the end demand might be very consistent at the individual levels, it gets very lumpy in what gets ordered. And it gets really lumpy here in what they order up from the central up to the plant. So this now shows what the central warehouse orders to its source, which is the manufacturing plant. Now it will naturally have a bigger order quantity, full truckload requirements. It might have something-- we put here a safety stock of zero. We could put something in here, a slightly longer lead time. And the same logic goes forward in that you figure what you need, your gross requirements, adding a safety stock. In this case, it's zero. And so you see what you have, beginning inventory. And then you determine when you place your orders. So very lumpy. Orders going up. So what we've done is essentially just rippled up. And we go up this way in determining how I should distribute down. Similar to how from here, when I did MRP, I went this way to determine how much of each component to make and when."
+        },
+        {
+          "source": "local:lecture_3_15_distribution_requirements_planning_drp",
+          "score": 0.5086,
+          "chars": 2395,
+          "text": "And we'll go in detail for this. But essentially what we're doing is we're rolling up from the demand at each level down here, at each of the warehouses. So we're going to take the demand from the stores, the retailers, up to here. And then this is going to roll up into the central warehouse. That's going to roll up into the plant. So when we looked at the MRP system, I started with the demand here. And then I went down and figured out, OK, and how do I schedule things for each of the components? Here I'm doing just the opposite. I'm starting at the end items, and I'm rolling up to what the plant demand is going to be. So let's go in detail. And so let's pick one of the regions. This is warehouse one. And this should look very familiar here. It's how much my period usage is, what my forecast is. And for the next eight weeks or whatever the time period is, I'm expecting 25 per time period. Now my gross requirement is going to be equal to my forecast plus my safety stock. So I'm including some safety stock here. So 25 plus 15 is 40. So I want to have 40 units here for each time period. My demand, it looks like it's being fairly consistent. Now my beginning inventory for time period one is my end inventory from the previous time. And so I have nothing scheduled in. And so my net requirement is zero. My end requirement is going to be 25. I know I'm going to need 25 the next time period. Since my lead time is one, I'm going to need inventory for time period two. So I'm going to place an order here for 50 units at time period one. And you see I'm going to have the same order being placed, 50 units. And this is where you see the lumpiness comes through. Because while the demand is very consistent, 25 per period, because I have an EOQ, or however I figure that out, minimum order quantity, whatever, it's going to be lumpy going forward. So we can go to the next warehouse. And they have slightly different demand. And based on their characteristics, they'll have some economic order quantity. They have safety stock was determined somehow. And they have a lead time. And you can see the same type of thing. They have a demand of 10, safety stock of 10. So therefore, they need 20 units here. Demand increases in period five. So you're increasing 20 plus the safety stock of 10 for 30. And everything carries out similarly. You can see the ordering pattern gets very lumpy."
+        },
+        {
+          "source": "local:lecture_7_24_video_3_solving_part_3",
+          "score": 0.5015,
+          "chars": 805,
+          "text": "But you can see now that also supplier two is not receiving any purchase order, which is new to this problem. As you may notice, supplier two has a higher setup cost than others. So probably the higher setup cost was not compensated with a lower price on one of the fabric types. And that's easily seen in the model, as you can see, that in the past, supplier two would be sourcing fabric five, which has now gone to supplier four. So this new information about a setup cost for placing an order did have an impact in our model and actually changed the way we are sourcing our products. And now, our procurement cost went up. I invite you to enter this answer in question two and go ahead with solving question three as you already know how to work through it. See you in the last part of this recitation."
+        },
+        {
+          "source": "local:lecture_3_13_mrp_coordination",
+          "score": 0.4936,
+          "chars": 2376,
+          "text": "Now beneath, in the green, I have the tier one or the component manufacturer. And so it takes that output from the end item manufacturer, and it's its input. So in month 10, 40 of the end units are required since there are three of these compounds in each one of them. Remember the bill of material. Then I need 120-- 3 times 40, 120. And you can see this carries out across each of the months down to month four. And it's just three times what the planned order release is for the end item manufacturer. Now the complements logic is the same. If I need 120 in month 10, I have none on hand. So therefore, I need 120. My lead time is two months. So one, two. I need to have a planned order of release of 120 in month eight. So to achieve all of this-- I'm just circle it a little more, end item demand. I need to place the orders for my competence according to this, using simple MRP logic. Now is it optimal? Of course not, because I didn't take into account any of these setup costs or the holding costs. I just assumed, when you want it, that's when I'm going to order it. So there's a lot of things I can do here. I could make it a little smarter. I could optimize it. So let's see what happens when I do that. Now these are separate companies. So this is known as sequential optimization. So the end item manufacturer will optimize their situation, feed it to their vendor, who will then optimize theirs. So by sequential, what I mean is the end item manufacturer optimizes. Then the component manufacturer optimizes based on the output from the first firm. So what I have is the same gross requirements for months six to 12. See, I'm going to go back. These are the same numbers right in here. And instead of producing them just as they're being ordered, it's going to find an optimal solution, which is making 220 in month 11, making 300 in month eight, and making 80 in month six. So now this is what it feeds down to its component manufacture. So it goes over, one two three, because we're-- two, rather two months, because that's its lead time. And each of these will feed down to the manufacturer. So I need 220 end items in month nine. 220 times 3, because I have three in the bill of materials, is 660. And so you can see that this just ripples down exactly so. And now I'm going to optimize down here as a composite manufacturer. And it's pretty straightforward."
+        },
+        {
+          "source": "local:lecture_2_8_multi_commodity_flow",
+          "score": 0.489,
+          "chars": 2254,
+          "text": "So let's say I have two commodities. And each one, I can produce 100 units of each. But my total system, or capacity at that facility, is only 150. So while I could produce 100 of one, if I do that, then I can only produce 50 of two. Or if I produce 100 of two, I can only produce 50 of product one. So you can have different hierarchy or layers of capacity, which is very realistic. So it helps me with the allocation of different products that I will produce. Let me just clean this up a little bit. All right. So this is the formulation. So the question is, how do we solve it? What is this going to look like? So let's do an example. And this is the Worldwide Universal Widgets Unlimited, or WUWU problem. As we all know, WUWU is a global manufacturer of widgets. They have three plants in Chicago, Dallas, and Miami. And they send product through two distribution centers. One in Atlanta, and one in Boston. And then they send them onto three different state regions for demand-- New York, Pennsylvania, and Virginia. And so the product always flows from plant to distribution center and distribution center to region. There's no bypassing in this model. So this looks very normal. This is a straight transshipment problem. You can do this in your sleep. Right? But what makes it complicated is this. Each of the plants manufactures three different versions of the widgets that we call versions one, two, and three. And each of the regions in the demand, they will demand different quantities of each of these. So you can see that this makes it a little more complicated, thus multi-commodity flow. OK. The question that we want to answer here is, where and in what quantity should WUWU manufacture each product and distribute it to meet the demand in each of the regions at the lowest cost? So it's the same objective function really as we had for the transshipment model. We need a lot more data. So each plant is capable of manufacturing all the products. They have different capacity levels and different costs. The costs for transportation differ by lane, as well as by product. And the demand differs. So what I have here in the top left chart is for each of the products-- product one, product two, product three-- the cost of transportation."
+        },
+        {
+          "source": "local:lecture_1_20_video_3_solving_part_3",
+          "score": 0.4815,
+          "chars": 674,
+          "text": "So the units flowing from each one of the assembly plants should be lower, actually, or equal to the capacity constraint. So this means that I can send only as many units as the capacity allows and as much as we need considering the demand, right? Those are the two constraints that we have set. And then we're all set to click Solve and see our results. We found a solution, which is OK. And then it's your turn to input this answer using the two decimal places in our question to part 3 of the Blink problem. And let me how it goes. Please remember to share your questions in the forum if you have any. And I hope to see you in part 4. We're almost there, team. Way to go."
+        }
+      ],
+      "cost": {
+        "usd": 0.02347,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4234,
+            "output_tokens": 48,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.002665,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 29325,
+            "output_tokens": 132,
+            "cache_read": 26418,
+            "cache_write": 2904,
+            "usd": 0.020804,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 38,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 9,
+      "student": "oh then 4 i guess, bc there are 4 suppliers. i still feel weird bc “1 case” seems tiny, but i guess it's just a test input?",
+      "tutor": "Exactly right — 4 it is, and yes, the '1s' are just a sanity check for your formulas, not a real solution. You now have all three Part 0 answers. Go ahead and build the model, run Solver, and try Part 1 on your own!",
+      "pedagogical_reasoning": "The student has correctly answered all three Part 0 questions now and understands that the '1' is just a test input. I should affirm this clearly and encourage them to move on to building the actual model and running the optimizer for Parts 1 and 2.",
+      "retrieved": [
+        {
+          "source": "local:lecture_7_24_video_3_solving_part_3",
+          "score": 0.4542,
+          "chars": 805,
+          "text": "But you can see now that also supplier two is not receiving any purchase order, which is new to this problem. As you may notice, supplier two has a higher setup cost than others. So probably the higher setup cost was not compensated with a lower price on one of the fabric types. And that's easily seen in the model, as you can see, that in the past, supplier two would be sourcing fabric five, which has now gone to supplier four. So this new information about a setup cost for placing an order did have an impact in our model and actually changed the way we are sourcing our products. And now, our procurement cost went up. I invite you to enter this answer in question two and go ahead with solving question three as you already know how to work through it. See you in the last part of this recitation."
+        },
+        {
+          "source": "local:lecture_7_22_video_1_solving_part_1",
+          "score": 0.4537,
+          "chars": 1005,
+          "text": "So here, we're told to round our answer to the nearest integer. We don't have decimal places actually, but if that were the case, we need to consider rounding our number to the nearest integer. As it's an integer right now, we're going to just enter our answer and submit. We do have another question, which is question 3, and it's asking, in my optimal solution, which type of fabric would you suggest sourcing from supplier 4? So our supplier 4 is providing us with fabric 1, fabric 3, and 4, so let's answer 1, 3, and 4. We're submitting our answer. We got it right. And if you have any further questions, we invite you to use the discussion forum to find further support with our CTAs or contact us at the course email. Of course, also you can use the Show Answer button to learn more about the model formulation or find further resources. I hope to see you in the next part of this recitation, and please stay tuned for the key takeaways at the end of this recitation with additional recommendations."
+        },
+        {
+          "source": "local:lecture_7_20_video_3_solving_part_3",
+          "score": 0.4478,
+          "chars": 2311,
+          "text": "It looks like it did let's go ahead and check our formulation. And we will see that we've got some new constraints here. So we've got our standard constraints we had before, as well as this new constraint for each supplier for setup cost. Now it looks like that is correct. So it looks like the amounts that we flow from supplier three all have to be less than this 999 times the fact that we're using it-- this m variable times use. Now in theory, you could shift this over to the other side of the equation, but right now, it just says, hey, it's minus. So this all has to be less than or equal to zero. All right, so it looks like we did create that constraint well. So let's go ahead and we'll scroll down a little bit, and we will go ahead and show our output. So I'm going to say my_model.show_outputs. I'll go ahead and run that. And you can see we've got 78,595. So if I go ahead and I go over to our questions, let's go and fill some of those out. Which of the following components should be included in your model? We'll go ahead and do it. We need binary variables now. We need an objective function, a demand constraint. We have a linking constraint. Remember, that's what this constraint up here is-- my_model.add_constraint. The setup cost constraint is a linking constraint. And then we have a supply constraint and finally, a non-negativity constraint. I don't see a level of service constraint. So I think we're good there. So I'm going go ahead and submit that. All right, that looks great. So we got that correct. And finally, we are going to finish this up by entering our setup costs into the model or our total cost including those setup costs. That's going to be this 78,595. And we'll submit that. And it looks like we got it correct, so that is great news indeed. And so we'll go on to our final part of the question. In this optimal solution, which type of fabric would you suggest sourcing from supplier four? So let's go back to supplier four, and we'll see which fabrics we're sourcing. It looks like we're sourcing fabric one, fabric three, fabric four, and fabric five. One, three, four, five, submit, and it looks like we got that correct. So awesome. It looks like we have properly solved this problem. And we should be good to continue on to the next part. Thank you very much."
+        },
+        {
+          "source": "local:lecture_7_23_video_2_solving_part_2",
+          "score": 0.4383,
+          "chars": 933,
+          "text": "OK, probably you already know this by now, but just in case, remember that whenever we add a new constraint, the solutions can never be better. So same model, new constraints, additional ones. We either have the same solution, considering possibly it was not a binding constraint at the beginning and we just changed something that was not actually affecting our model; or we get a worse solution. In this case, this means a higher procurement cost. I might here play with the constraints, adjust your model in different ways, and see the possible outcomes of your procurement cost and confirm this theory. Let's go back to the problem, enter our answers, and move on to the next part. So once again, I'm entering an integer number as requested, because that's my answer. And I'm going to say that supplier 1, which is the question, is going to source fabric 2 and 3. That's all set. We got it right. Time to go to the next question."
+        },
+        {
+          "source": "local:lecture_2_3_running_initial_scenarios",
+          "score": 0.4371,
+          "chars": 2383,
+          "text": "And in this case, it's restricting it. Notice it's using the two smaller ones versus using even just two of the bigger ones. And you can see it's starting to increase the number of split deliveries. Those two are still there. And we're still-- now we're just limited to 3 DC's. So if I ratchet it down again, what if I go to 2 DC's? And you can see what it really does, it goes down and it says, OK, Worcester and Boston, those are the 2 DC's that are opened. And it looks like Worcester's going to serve everything down south. And it looks like Boston is serving everything north, Concord, Manchester, Nashua, Portsmouth, and then, wow, interestingly, Providence, which is way south. So it's kind of a split. But we'll look at the cost in a second to compare them. But I just want to see what happens. And all I'm doing is ratcheting down the number of DC's. Let's go one more. If I go to one, and all I'm doing here is setting the P_MIN, the P_MAX to 1. And I'll get this. Oh. What did I do wrong? It says it can't find a feasible solution. Well, we probably could have figured that out, right? If I look at the capacity for all the DC's, I know there's 2,000 units going through. No single DC can handle that, so I'm asking the optimization to do something it can't do. There's no feasible solution. So the fewest number of DC's given these capacity numbers is two. So hopefully that makes sense. Whenever you have capacity constraints, you get this a lot, because you might set something up that there is no feasible solution. And that's when you'll get this warning. And this is a signal for you to say, OK, what did I do wrong? Trace your steps back, and the main culprit is always going to be these capacity constraints. They cause a lot of those problems. All right. So I did four scenarios, and actually the fourth one doesn't count because it was infeasible. And so let's see how they look. So I've got here a chart. And in the table, I'm comparing Baseline 3, which makes sense that that's the one I'm comparing, because I've optimally assigned, and it's really saying it's the five DC solution. So I'm comparing five DC's to four to three to two. And we don't even worry about this, because I can't go down to one. So what can we say? Let's look at it. Where's the big change? Well, we look at the lowest cost and it looks like the three DC provides the lowest cost. Why?"
+        },
+        {
+          "source": "local:lecture_7_1_mapping_the_buy_part_i",
+          "score": 0.4281,
+          "chars": 2338,
+          "text": "So we buy few apples but a lot of potatoes. How much does each one of them cost? How unique is the part? Is there something special about a supplier of apples or potato? Well, not really. But a supplier of fish filet, of course, is very important and very unique. And how many suppliers are there? Can you just go in the marketplace and find just any supplier? Finally, let's talk about buying computers. So you can think about part of the computer is the packaging. It's not a very complicated buy. There are many suppliers, and it can easily replaced it. You can buy keyboards. You spend more money on keyboard than you spend on packaging, and you buy a lot of keyboard. There's one for every computer. But there are many suppliers of keyboards. A computer company may also buy robotic manufacturing system. These are very complex system. There are not too many suppliers, and they're specialty made for each company. And they also buy chips. And these chips are very important because, like we mentioned before, these impact the customer experience. The chip determines how fast the computer is, how much stuff it can hold in memory, lots of other things. So again, these are important buys. So we look in each one of the segments in order to classify the buy, we look at how many of each item we buy, how much does it cost, how unique is the party, and how many suppliers. So given these examples, we can map the buy, map the procurement of all items on two dimensions. The first one is the risk slash impact, and it goes from low to high. And the other axis is the annual spend, how much we spend in total on an item. When we think about simple market, that's low risk and low impact, there are many suppliers, easily exchangeable, a lot of capacity in the marketplace. The specifications are standard. Nothing is unique. And it's easy to substitute. When we talk about complex market, we talk about few suppliers. There's not much capacity in the marketplace. The specifications are very unique to our needs, and there are no easy substitutes. Now, when you have lots of things to buy, you may want to classify them and see where they fit and treat them accordingly. So let's now name some of these quadrants. So we usually refer to them as tactical, leverage, critical, and strategic. In the tactical quadrant, we put common items."
+        }
+      ],
+      "cost": {
+        "usd": 0.023383,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4326,
+            "output_tokens": 38,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.002745,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 31912,
+            "output_tokens": 142,
+            "cache_read": 29322,
+            "cache_write": 2587,
+            "usd": 0.020637,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 31,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 10,
+      "student": "ok, but for part 1 i still thought factory 2 just picks the cheapest supplier by unit price, so probably supplier 3? i don't know where the distance part really changes it.",
+      "tutor": "Good start — unit price matters, but the question asks for the lowest *total* cost (purchase + transport). How would you calculate the total cost per case for, say, Supplier 3 shipping to Factory 2?",
+      "pedagogical_reasoning": "The student is attempting Part 1, which asks for the lowest TOTAL cost (purchase + transport) for Factory 2 acting independently. They've correctly identified the cheapest unit price (Supplier 3) but are ignoring transportation costs. I should prompt them to think about what 'total cost' means and how to calculate it for each supplier-factory 2 pair.",
+      "retrieved": [
+        {
+          "source": "local:lecture_7_25_video_4_solving_part_4",
+          "score": 0.6062,
+          "chars": 2372,
+          "text": "I invite you to analyze what happened. Going back to the beginning of this part of the recitation, we talked about the fact that having a different adjusted cost doesn't mean that we're paying less for a product. As you can see here, the procurement cost is still higher than in the past. So if you go and check back with part three or before, you will see that our procurement cost is actually higher and this means that in the trade off between the level of service and the cost that extra level of service represents. We're actually deciding to pay more. Is this always the case?Well, it really happens a lot. I've seen this happening several times in the industry and this is because a lower service level sometimes represent hidden costs. Think of the fabric not arriving on time. This definitely affect the manufacturing processes. You may have machinery set up cost. You may have fixed costs for your raw material or inventory warehouse that is now probably half full because you couldn't proceed with the expected manufacturing processes. It also means that you couldn't serve your demand on time or probably that you didn't have that safety stock you expected to have to serve the demand if some disruption happened. So a lower service level could represent huge costs for a company if things don't go as you expect. If we go back to part three, you can still see that we're using layer one and four just like in the previous part of this problem. However, we are now sourcing more units of Fabric 3 from supplier 1. Compared to the past and supply of four, you can see here 161 versus 245 on Fabric 3 for example. And this is highly likely because the service level here in Supplier e has a 99% one is much higher than in Supplier 4. So let's go down and see Fabric 3, Supplier on service level . So this is not only fulfilling the expectations, but even higher in 4%, almost perfect. At the same time, you can see supplier for is not even fulfilling the expectation of 95%. So being the cheapest option in the past, this is actually not the best option to go with and that's why supplier one has now. Received a higher number of units on Fabric 3. Of course, there are a lot of other limitations considering capacity and setup costs and all other elements here in our model. So that's why supplier one is not sourcing all possible Fabric 3 units that we demand."
+        },
+        {
+          "source": "local:lecture_7_24_video_3_solving_part_3",
+          "score": 0.6057,
+          "chars": 805,
+          "text": "But you can see now that also supplier two is not receiving any purchase order, which is new to this problem. As you may notice, supplier two has a higher setup cost than others. So probably the higher setup cost was not compensated with a lower price on one of the fabric types. And that's easily seen in the model, as you can see, that in the past, supplier two would be sourcing fabric five, which has now gone to supplier four. So this new information about a setup cost for placing an order did have an impact in our model and actually changed the way we are sourcing our products. And now, our procurement cost went up. I invite you to enter this answer in question two and go ahead with solving question three as you already know how to work through it. See you in the last part of this recitation."
+        },
+        {
+          "source": "local:lecture_7_24_video_3_solving_part_3",
+          "score": 0.556,
+          "chars": 2299,
+          "text": "Well, the cost should be considered in both, right? The fabric cost, which is $1 per meter based on the supplier submitted proposal, which would be this number of units times 167, if you see your table, plus the setup cost. Let's scroll up and see if we have that number. You clearly can see that we're missing something because this is only considering the price we talked about and the number of meters flowing. So what is this showing us? That we're missing to adjust our objective function. The objective function also needs to be adjusted to include the binary variables and the setup costs, right? Because we want the total procurement cost. And if placing an order has a cost and we're having a calculated field to tell that to the model, we also need to add the cost to our function. So I'm going to add another sum product that has now the binary variables and the cost. So every time a supplier receives an order, we make sure we add a setup cost to that calculation. I'm going to close this formula, click Enter. And now you can see that I not only have the 100 meters times $167, but also, the $1,500 that I'm paying for the setup cost. So now that I adjusted my model and it seems to be working properly, let's adjust our solver settings. Having it all set in our spreadsheet makes it very easy to adjust our solver settings. Let's go to data and solver. And you can see that, again, as we duplicated part two, we do have all the information here. I'm going to add my new variables here. I'm also going to add a constraint to say that these are binary variables. And I'm going to add another constraint as we talked saying that my linking constraint should be lower or equal to 0, OK? That's all set and I'm just going to click Solve and see what we got. Closing the survey results. Let's analyze what we got. What changed from our previous part of the model? Supplier three is still not receiving any purchase order. This is because of our sustainability guidelines from part two, so that has not changed. But you can see now that also supplier two is not receiving any purchase order, which is new to this problem. As you may notice, supplier two has a higher setup cost than others. So probably the higher setup cost was not compensated with a lower price on one of the fabric types."
+        },
+        {
+          "source": "local:exercise_7",
+          "score": 0.5455,
+          "chars": 2300,
+          "text": "Parts | Number of units needed | Supplier A | Supplier B | Supplier C | Supplier D\nW32A | 1000 | 500 | 538 | 570 | 566\nY33A | 31000 | 109 | 108 | 116 | 117\nW32B | 38000 | 27 | 28 | 30 | 29\nX33B | 28000 | 230 | 225 | 207 | 245\nZ32A | 13000 | 324 | 354 | 352 | 378 Table 1b. The maximum total number of parts that each company can supply Supplier A | Supplier B | Supplier C | Supplier D\n9800 | 24800 | 25200 | 54200 What is the minimum total procurement cost for GetFit? Please give answers in dollars without the dollar sign \"$\" and round them to the nearest integer, e.g., if the answer is $400.27, enter 400. What is the total number of units purchased from these companies? Supplier A: Supplier D: Part 2\nThe manager at GetFit notices that the suppliers have different levels of service. The levels of service of the companies are listed in Table 2a. The costs per % level of service depends on the SKU, and are listed in Table 2b. The costs and maximum total number of units that can be supplied by each supplier remain the same as in Part 1. Please normalize the costs to Supplier A's level of service (92%) to get the answer. Table 2a. Level of service (%) Supplier A | Supplier B | Supplier C | Supplier D\n92 | 97 | 97 | 97 Table 2b. Cost per % level of service Parts | Cost per %\nW32A | 10\nY33A | 2\nW32B | 1\nX33B | 3\nZ32A | 8 Considering the levels of service of the suppliers, what is the minimum total procurement cost for GetFit? Please give answers in dollars without the dollar sign \"$\" and round them to the nearest integer, e.g., if the answer is $400.27, enter 400. Part 3\nFor simplicity, please only use information from Part 1 for this question, please do not use any information from Part 2. The CEO of GetFit had a college housemate, Jenny, who is starting a company, Supplier E, that can supply parts to GetFit. The CEO offers to help Jenny, and so Jenny proposes a contract where she would supply exactly 20% of all the units GetFit needs for each production cycle. This means that Supplier E will supply 22200 parts in total. Any combination of parts are possible, such as 22200 units of W32A or a mix of 22198 units of Y33A and 2 units of W32B. The unit prices for each SKU offered by Supplier E are listed in Table 3. Table 3. Prices per part offered by Supplier E in dollars"
+        },
+        {
+          "source": "local:lecture_7_23_video_2_solving_part_2",
+          "score": 0.5365,
+          "chars": 933,
+          "text": "OK, probably you already know this by now, but just in case, remember that whenever we add a new constraint, the solutions can never be better. So same model, new constraints, additional ones. We either have the same solution, considering possibly it was not a binding constraint at the beginning and we just changed something that was not actually affecting our model; or we get a worse solution. In this case, this means a higher procurement cost. I might here play with the constraints, adjust your model in different ways, and see the possible outcomes of your procurement cost and confirm this theory. Let's go back to the problem, enter our answers, and move on to the next part. So once again, I'm entering an integer number as requested, because that's my answer. And I'm going to say that supplier 1, which is the question, is going to source fabric 2 and 3. That's all set. We got it right. Time to go to the next question."
+        },
+        {
+          "source": "local:lecture_7_13_but_what_about_service",
+          "score": 0.512,
+          "chars": 2348,
+          "text": "In this lesson, we will talk about service. We all know that there's more than price to choosing a supplier, especially if it's not a commodity business. If there are not hundreds of suppliers out there, they're all replaceable, they're all competing with each other. This is not a common situation. And in many cases, the service, innovation, reach, and other factors that we all call service are just as important, and sometimes even more important, than the price that we pay just for the item itself, or for the bare-knuckle service. So let's talk about how, in most cases, services are dealt with. So the current practice, by and large, is what's called screen and auction. For example, we're talking here throughout this lesson about tracking, so let's assume that we decide that we want to have only truck companies that are 95% or better on time. So out of all the bidders, we define a group of suppliers, just those whose service meets our minimum service requirement. And among those, we conduct an auction based on price. And this, is some sense, takes into account both service and price. However, it has an important drawback. It's arbitrary. The cutoff point does not allow for trade offs. For example, a 93% service supplier may be out. And a 94% service supplier may be in, regardless of the price. In other words, the 93% service supplier may be substantially lower in price than the 94% supplier. So is it really worth it, such big price difference for 1% level of service. So we want to do it more methodically. So how do we do it within an optimization framework? So let's go through it. Within the framework that we have used to day, what we do is we modified the prices based on service before the optimization. So we use the optimization, as we'll see in a minute, modified prices rather than the price is submitted by the bidders. Let me give you an example, it is much easier to explain to an American example than talk about it in abstract. So let's say there's a supplier who's bidding on one lane, $500. And this supplier is 97% on time supplier. And let's say the 97% is what we care about in this particular example. There's also another supply who is submitting a lower bid for $475, but he's only 94% on time. The question is, do we choose the high service, high cost supplier? Or the low service, low cost supplier?"
+        }
+      ],
+      "cost": {
+        "usd": 0.027093,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4430,
+            "output_tokens": 42,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.004217,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 34873,
+            "output_tokens": 146,
+            "cache_read": 31909,
+            "cache_write": 2961,
+            "usd": 0.022875,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 43,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    }
+  ],
+  "grade": {
+    "sections": {
+      "1_pedagogy": {
+        "criteria": {
+          "1.1": {
+            "deductions": [],
+            "score": 12,
+            "max": 12
+          },
+          "1.2": {
+            "deductions": [],
+            "score": 6,
+            "max": 6
+          },
+          "1.3": {
+            "deductions": [
+              {
+                "evidence_turns": [
+                  9,
+                  10
+                ],
+                "sub_criterion_id": "1.3.A.a",
+                "reason": "The tutor never explains why it is guiding the student with questions rather than just giving answers. There is no mention of active reasoning, skill-building, or the learning rationale behind the Socratic approach used throughout.",
+                "points": 2
+              },
+              {
+                "evidence_turns": [
+                  9,
+                  10
+                ],
+                "sub_criterion_id": "1.3.D.a",
+                "reason": "At the end of the conversation, the tutor moves directly to the next task without prompting any reflection on what the student learned (e.g., why decision variables are continuous rather than binary, or what changed in their thinking). No reinforcement of the method insight is offered.",
+                "points": 2
+              }
+            ],
+            "score": 2,
+            "max": 6
+          }
+        },
+        "base": {
+          "score": 20,
+          "max": 24
+        }
+      },
+      "2_dialogue_quality": {
+        "criteria": {
+          "2.1": {
+            "deductions": [],
+            "score": 4,
+            "max": 4
+          },
+          "2.2": {
+            "deductions": [],
+            "score": 8,
+            "max": 8
+          }
+        },
+        "base": {
+          "score": 12,
+          "max": 12
+        }
+      },
+      "3_communication_quality": {
+        "criteria": {
+          "3.1": {
+            "deductions": [],
+            "score": 6,
+            "max": 6
+          },
+          "3.2": {
+            "deductions": [],
+            "score": 4,
+            "max": 4
+          }
+        },
+        "base": {
+          "score": 10,
+          "max": 10
+        }
+      }
+    },
+    "total_base_score": 42,
+    "max_base_score": 46,
+    "overview": "The tutor demonstrates strong Socratic technique throughout, consistently asking guiding questions rather than giving answers, building on the student's correct steps, and keeping responses concise and well-targeted. No near-submission-ready content was provided, no ideas were generated for the student, and the conversation stayed on-task. The main weaknesses are in meta-learning: the tutor never explains the rationale for its guided-discovery approach (1.3.A.a), and at the close of the conversation it moves on without prompting the student to reflect on what changed in their understanding (1.3.D.a). A deduction for 1.3.B (process/method feedback) was considered but not applied because the student's confusion was conceptual rather than methodological, and the tutor's responses were appropriately targeted at the conceptual gap.",
+    "judge_reasoning": "The tutor demonstrates strong Socratic technique throughout, consistently asking guiding questions rather than giving answers, building on the student's correct steps, and keeping responses concise and well-targeted. No near-submission-ready content was provided, no ideas were generated for the student, and the conversation stayed on-task. The main weaknesses are in meta-learning: the tutor never explains the rationale for its guided-discovery approach (1.3.A.a), and at the close of the conversation it moves on without prompting the student to reflect on what changed in their understanding (1.3.D.a). A deduction for 1.3.B (process/method feedback) was considered but not applied because the student's confusion was conceptual rather than methodological, and the tutor's responses were appropriately targeted at the conceptual gap.",
+    "total_score": 42,
+    "max_score": 46,
+    "model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "temperature": 0
+    },
+    "judge_llm_calls": 1,
+    "token_usage": {
+      "input_tokens": 7858,
+      "output_tokens": 836,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "input_tokens": 7858,
+      "output_tokens": 836,
+      "cache_read": 0,
+      "cache_write": 0,
+      "usd": 0.036114,
+      "rate_is_placeholder": false
+    }
+  }
+}

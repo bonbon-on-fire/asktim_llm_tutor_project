@@ -56,6 +56,67 @@ def _reconcile_columns() -> None:
                     pass
 
 
+def _migrate_email_to_username() -> None:
+    """Finish the ``email`` -> ``username`` rename on the long-lived Sandbox DB.
+
+    sandbox_ui skips Alembic, so the rename main_ui applied via migration never
+    ran here. ``_reconcile_columns`` above already ADDED the new nullable
+    ``username`` column, but the legacy ``email`` column survives — and on
+    ``students`` it's the NOT NULL primary key, so every identity insert (which
+    supplies only ``username``) fails with NotNullViolation. This completes the
+    rename idempotently on boot: backfill ``username`` from ``email``, move the
+    primary key / NOT NULL onto ``username``, and drop the dead ``email``
+    column. A no-op once ``email`` is gone, and race-safe across gunicorn
+    workers (each step is guarded and the whole table repair is one atomic
+    transaction, so a worker that loses the race just rolls back).
+
+    Postgres-only: local SQLite builds a fresh schema straight from the models,
+    so the legacy ``email`` column never exists there and there is nothing to do.
+    """
+    if engine.dialect.name != "postgresql":
+        return
+
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+
+    def _cols(table_name: str) -> set[str]:
+        return {c["name"] for c in inspector.get_columns(table_name)}
+
+    # students: email is the legacy NOT NULL primary key; username was added
+    # nullable by _reconcile_columns. Promote username to the PK, drop email.
+    if "students" in tables and {"email", "username"} <= _cols("students"):
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text("UPDATE students SET username = email WHERE username IS NULL")
+                )
+                conn.execute(
+                    text("ALTER TABLE students DROP CONSTRAINT IF EXISTS students_pkey")
+                )
+                conn.execute(text("ALTER TABLE students ALTER COLUMN username SET NOT NULL"))
+                conn.execute(text("ALTER TABLE students ADD PRIMARY KEY (username)"))
+                conn.execute(text("ALTER TABLE students DROP COLUMN email"))
+        except Exception:
+            # A racing worker already completed the rename — email ends up gone
+            # either way.
+            pass
+
+    # conversations: email is a legacy nullable column superseded by username.
+    if "conversations" in tables and {"email", "username"} <= _cols("conversations"):
+        try:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "UPDATE conversations SET username = email "
+                        "WHERE username IS NULL AND email IS NOT NULL"
+                    )
+                )
+                conn.execute(text("DROP INDEX IF EXISTS idx_conversations_email"))
+                conn.execute(text("ALTER TABLE conversations DROP COLUMN email"))
+        except Exception:
+            pass
+
+
 app = create_app(
     import_name=__name__,
     config=load_config(),
@@ -65,7 +126,12 @@ app = create_app(
     # sandbox_ui owns a separate, throwaway database and skips Alembic — the
     # schema is created directly from the models on boot. create_all makes
     # missing tables; _reconcile_columns backfills columns added to tables
-    # that already existed (e.g. uploaded_images.data) so the long-lived
-    # Sandbox DB never needs a manual reset.
-    on_startup=lambda: (Base.metadata.create_all(engine), _reconcile_columns()),
+    # that already existed (e.g. uploaded_images.data); _migrate_email_to_username
+    # finishes the email->username rename (which reconcile can't, since it only
+    # adds columns) so the long-lived Sandbox DB never needs a manual reset.
+    on_startup=lambda: (
+        Base.metadata.create_all(engine),
+        _reconcile_columns(),
+        _migrate_email_to_username(),
+    ),
 )

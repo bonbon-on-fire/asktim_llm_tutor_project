@@ -126,7 +126,7 @@ def api_conversations():
                     {
                         "error": "schema_outdated",
                         "message": (
-                            "Database schema is out of date — redeploy main_ui "
+                            "Database schema is out of date — redeploy askTIM-main "
                             "to run migrations."
                         ),
                     }

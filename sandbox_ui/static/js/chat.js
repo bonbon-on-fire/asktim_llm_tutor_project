@@ -457,7 +457,7 @@
       return;
     }
     if (!conversations || conversations.length === 0) {
-      showSidebarEmpty("No past conversations yet.");
+      showSidebarEmpty("No past conversations yet");
       return;
     }
     // Have entries — make sure the loading/empty banner is hidden.

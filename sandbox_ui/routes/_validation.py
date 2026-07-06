@@ -23,7 +23,7 @@ _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
 _TUTOR_PROMPTS_DIR = _REPO_ROOT / "tutor" / "prompts"
 
 DEFAULT_TUTOR = "tutor_05"
-DEFAULT_COURSE = "cities_and_climate_change"
+DEFAULT_COURSE = "supply_chain_design"
 DEFAULT_EXERCISE = "01"
 
 

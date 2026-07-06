@@ -68,7 +68,6 @@ def _discover_raw_transcripts(source_suffix: str = "raw") -> list[Path]:
     active_types = {
         persona.split("_", 1)[0].strip().lower()
         for persona in list_personas()
-        if "_" in persona
     }
     all_files = sorted(TRANSCRIPTS_DIR.glob(f"*/*_{source_suffix}/transcript_*.json"))
     return [

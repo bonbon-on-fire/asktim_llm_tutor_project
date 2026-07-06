@@ -34,6 +34,13 @@ def _resolve_transcripts_dir() -> Path:
 
 TRANSCRIPTS_DIR = _resolve_transcripts_dir()
 
+# Which run variant the dashboard shows. With DASHBOARD_RAG truthy it reads the RAG
+# runs — raw from ``*_raw_rag/`` and graded from ``*_<provider>_rag/`` — instead of
+# the default non-RAG runs (``*_raw/`` and ``*_<provider>/``).
+_RAG = os.environ.get("DASHBOARD_RAG", "").strip().lower() in {"1", "true", "yes", "on"}
+RAW_SUFFIX = "raw_rag" if _RAG else "raw"
+GRADED_SUFFIX = "_rag" if _RAG else ""
+
 
 def _discover_persona_groups() -> list[str]:
     """Return persona group names that have a *_raw/ subfolder."""
@@ -43,7 +50,7 @@ def _discover_persona_groups() -> list[str]:
     groups: list[str] = []
     for persona_dir in sorted(p for p in TRANSCRIPTS_DIR.iterdir() if p.is_dir()):
         persona = persona_dir.name
-        raw_dir = persona_dir / f"{persona}_raw"
+        raw_dir = persona_dir / f"{persona}_{RAW_SUFFIX}"
         if raw_dir.is_dir():
             groups.append(persona)
     return groups
@@ -127,12 +134,12 @@ def _json_stems(path: Path) -> set[str]:
 
 def _transcript_path_for(*, group: str, provider: str, stem: str) -> Path:
     """Construct the filesystem path for a transcript JSON file."""
-    return TRANSCRIPTS_DIR / group / f"{group}_{provider}" / f"{stem}.json"
+    return TRANSCRIPTS_DIR / group / f"{group}_{provider}{GRADED_SUFFIX}" / f"{stem}.json"
 
 
 def _counterpart_candidates(*, group: str, provider: str, raw_stem: str) -> list[Path]:
     """Find all graded JSON files in the provider folder matching raw_stem (exact or suffixed)."""
-    provider_dir = TRANSCRIPTS_DIR / group / f"{group}_{provider}"
+    provider_dir = TRANSCRIPTS_DIR / group / f"{group}_{provider}{GRADED_SUFFIX}"
     if not provider_dir.is_dir():
         return []
 
@@ -187,7 +194,7 @@ def _mini_stems_for_group(group: str) -> list[str]:
 
 def _raw_stems_for_group(group: str) -> list[str]:
     """Return numerically sorted raw transcript stems for a persona group."""
-    raw_dir = TRANSCRIPTS_DIR / group / f"{group}_raw"
+    raw_dir = TRANSCRIPTS_DIR / group / f"{group}_{RAW_SUFFIX}"
     return sorted(_json_stems(raw_dir), key=_stem_sort_key)
 
 
@@ -246,7 +253,7 @@ def _list_transcript_rows() -> list[dict]:
     out: list[dict] = []
     for group in _discover_persona_groups():
         for raw_stem in _raw_stems_for_group(group):
-            raw_data = _load_json(TRANSCRIPTS_DIR / group / f"{group}_raw" / f"{raw_stem}.json")
+            raw_data = _load_json(TRANSCRIPTS_DIR / group / f"{group}_{RAW_SUFFIX}" / f"{raw_stem}.json")
             if not raw_data:
                 continue
             meta = {k: v for k, v in raw_data.items() if k not in ("exchanges", "grade")}
@@ -295,7 +302,7 @@ def api_get_transcript(group: str, version: str):
     if group not in _discover_persona_groups():
         return jsonify({"error": "Unknown group"}), 404
 
-    raw_data = _load_json(TRANSCRIPTS_DIR / group / f"{group}_raw" / f"{version}.json")
+    raw_data = _load_json(TRANSCRIPTS_DIR / group / f"{group}_{RAW_SUFFIX}" / f"{version}.json")
     if not raw_data:
         return jsonify({"error": "Transcript not found"}), 404
 

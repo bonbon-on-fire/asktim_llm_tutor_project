@@ -125,10 +125,7 @@ def api_conversations():
                 jsonify(
                     {
                         "error": "schema_outdated",
-                        "message": (
-                            "Database schema is out of date — redeploy askTIM-main "
-                            "to run migrations."
-                        ),
+                        "message": "Redeploy askTIM-main to run migrations",
                     }
                 ),
                 503,

@@ -128,7 +128,16 @@
     showSidebarEmpty("Loading…");
     try {
       const r = await fetch("/api/conversations?sort=date");
-      if (!r.ok) return showSidebarEmpty("Could not load conversations");
+      if (!r.ok) {
+        // Surface a stale-schema error specifically; fall back to the generic
+        // message for anything else (or an unparseable body).
+        let msg = "Could not load conversations";
+        try {
+          const body = await r.json();
+          if (body && body.error === "schema_outdated" && body.message) msg = body.message;
+        } catch (_) {}
+        return showSidebarEmpty(msg);
+      }
       const data = await r.json();
       renderSidebar(data.conversations);
     } catch (e) {

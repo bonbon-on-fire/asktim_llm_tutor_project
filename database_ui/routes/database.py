@@ -31,6 +31,8 @@ from flask import (
     url_for,
 )
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from database_ui.auth import check_password, clear_auth, mark_authed
 from database_ui.services import conversations as svc
 
@@ -38,6 +40,23 @@ database_bp = Blueprint("database", __name__)
 
 _VALID_SORTS = {"date", "student"}
 _MAX_PAGE = 200
+
+# Substrings various backends use when a query references a column the DB lacks.
+# This app is read-only and never migrates; a missing column means the deployed
+# schema is behind the models (main_ui owns migrations), so we surface a clear
+# "redeploy main" message instead of a generic failure.
+_SCHEMA_DRIFT_MARKERS = (
+    "does not exist",   # postgres: column "x" does not exist
+    "undefinedcolumn",  # postgres error class name
+    "no such column",   # sqlite
+    "unknown column",   # mysql
+)
+
+
+def _is_schema_drift(exc: Exception) -> bool:
+    """True if *exc* reads like a missing-column error from an out-of-date schema."""
+    message = str(getattr(exc, "orig", exc)).lower()
+    return any(marker in message for marker in _SCHEMA_DRIFT_MARKERS)
 
 
 @database_bp.get("/")
@@ -94,9 +113,28 @@ def api_conversations():
         sort = "date"
     limit = _clamp_int(request.args.get("limit"), default=None, lo=1, hi=_MAX_PAGE)
     offset = _clamp_int(request.args.get("offset"), default=0, lo=0, hi=None)
-    conversations = svc.list_all_conversations(
-        g.db, sort=sort, limit=limit, offset=offset
-    )
+    try:
+        conversations = svc.list_all_conversations(
+            g.db, sort=sort, limit=limit, offset=offset
+        )
+    except SQLAlchemyError as exc:
+        g.db.rollback()
+        if _is_schema_drift(exc):
+            current_app.logger.error("conversations query failed on schema drift: %s", exc)
+            return (
+                jsonify(
+                    {
+                        "error": "schema_outdated",
+                        "message": (
+                            "Database schema is out of date — redeploy main_ui "
+                            "to run migrations."
+                        ),
+                    }
+                ),
+                503,
+            )
+        current_app.logger.exception("conversations query failed")
+        return jsonify({"error": "query_failed", "message": "Could not load conversations"}), 500
     return jsonify({"sort": sort, "conversations": conversations})
 
 

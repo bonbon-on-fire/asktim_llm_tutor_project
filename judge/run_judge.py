@@ -24,6 +24,7 @@ if str(_REPO_ROOT) not in sys.path:
 load_dotenv(_REPO_ROOT / ".env")
 
 from utils.figures import build_multimodal_content, resolve_figure_filenames
+from utils.pricing import model_from_message, priced, usage_from_message
 
 Provider = Literal["gpt", "claude"]
 
@@ -63,6 +64,10 @@ class JudgeState(TypedDict):
     last_output: NotRequired[str]
     last_error: NotRequired[str]
     grade_json: NotRequired[dict[str, Any]]
+    # Accumulated judge-model token usage across all (retry) attempts, and the
+    # actual model id reported by the provider on the last call.
+    token_usage: NotRequired[dict[str, int]]
+    judge_model: NotRequired[str]
 
 
 def _coerce_int(value: Any, default: int = 0) -> int:
@@ -559,6 +564,8 @@ def _order_grade_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "max_score",
         "model",
         "judge_llm_calls",
+        "token_usage",
+        "cost_estimate",
         "timestamp_utc",
     ):
         if key in payload:
@@ -593,8 +600,10 @@ def _create_model_invoke(provider: Provider, model_name: str, api_key: str, reas
     return model.invoke
 
 
-def _create_judge_graph(*, invoke_model: Callable[[list[Any]], Any]) -> Any:
+def _create_judge_graph(*, invoke_model: Callable[[list[Any]], Any], model_name: str) -> Any:
     """Build a retrying LangGraph pipeline for judge generation and validation."""
+
+    _USAGE_KEYS = ("input_tokens", "output_tokens", "cache_read", "cache_write")
 
     def judge_node(state: JudgeState) -> dict[str, Any]:
         """Call the model with either a fresh prompt or repair prompt."""
@@ -612,9 +621,15 @@ def _create_judge_graph(*, invoke_model: Callable[[list[Any]], Any]) -> Any:
         conversation_content = build_multimodal_content(state["conversation_text"], figures)
         messages.append(HumanMessage(content=conversation_content))
         resp = invoke_model(messages)
+        # Accumulate token usage across attempts so retries are billed too.
+        prev = state.get("token_usage") or {}
+        call_usage = usage_from_message(resp)
+        token_usage = {k: int(prev.get(k, 0)) + int(call_usage.get(k, 0)) for k in _USAGE_KEYS}
         return {
             "last_output": _extract_text_from_model_content(getattr(resp, "content", resp)),
             "attempts": int(state.get("attempts", 0)) + 1,
+            "token_usage": token_usage,
+            "judge_model": model_from_message(resp, model_name),
         }
 
     def validate_node(state: JudgeState) -> dict[str, Any]:
@@ -677,7 +692,7 @@ def _judge_transcript(
         reasoning = "off"
 
     invoke_model = _create_model_invoke(provider, model_name, api_key, reasoning)
-    graph = _create_judge_graph(invoke_model=invoke_model)
+    graph = _create_judge_graph(invoke_model=invoke_model, model_name=model_name)
 
     system_prompt = load_judge_prompt(prompt_name=prompt_name, rubric_name=rubric_name)
     conversation_text = _format_conversation_for_judge(transcript)
@@ -715,6 +730,16 @@ def _judge_transcript(
     else:
         grade_payload["model"] = {"provider": "anthropic", "model": model_name, "temperature": 0}
     grade_payload["judge_llm_calls"] = int(result.get("attempts", 0))
+    # Judge token usage + estimated cost (mirrors the tutor's per-call pricing).
+    judge_usage = result.get("token_usage") or {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+    }
+    judge_model = result.get("judge_model") or model_name
+    grade_payload["token_usage"] = judge_usage
+    grade_payload["cost_estimate"] = priced(judge_model, judge_usage)
     if _env_truthy("JUDGE_INCLUDE_TIMESTAMP"):
         grade_payload["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
     grade_payload = _order_grade_payload(grade_payload)

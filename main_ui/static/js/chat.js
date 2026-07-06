@@ -276,7 +276,9 @@
   }
 
   function emailLooksValid(value) {
-    return value.includes("@") && value.includes(".");
+    // Login is by username, not email — accept any non-empty value within
+    // the length the backend allows (see _validate_username).
+    return value.length > 0 && value.length <= 100;
   }
 
   function passwordLooksValid(value) {

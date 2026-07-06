@@ -1,0 +1,776 @@
+{
+  "tutor_provider": "claude",
+  "tutor_prompt": "tutor_05",
+  "student_persona": "chaotic",
+  "course": "supply_chain_design",
+  "exercise_number": "1",
+  "exercise_kind": "exercise",
+  "context_mode": "rag",
+  "figures": [],
+  "turn_size": 10,
+  "context": "This course explores how to design and manage the physical, information, and financial flows that connect organizations across the supply chain. Using analytical frameworks, mathematical models, and real-world applications, you will learn to make strategic decisions related to supply chain network design, supply chain finance, supplier management and procurement, production and material requirements planning, distribution, Sales & Operations Planning (S&OP), and process and organizational design. By the end of the course you will be equipped to optimize supply chain networks, apply financial analysis to supply chain decisions, and lead cross-functional initiatives that balance operational excellence with strategic business objectives. This course is part of the MITx MicroMasters® Program in Supply Chain Management.",
+  "exercise": "Exercise:\nTITLE: Week 1 Graded Assignment — Basic Supply Chain Network Design\n\nThis assignment covers network flow and facility location models. Build spreadsheet (or Python) optimization models to answer each part.\n\nGraded Assignment 1: Locky Locke Inc.\n\nYou have finally been promoted to Senior Manager for the nuts and bolts category at Locky Locke Inc., a manufacturer with a large demand for bolts at its three (3) factories. You have surveyed the market and found four (4) suppliers for a certain steady selling SKU, ZA27R46. Your factories' weekly demand for bolts are:\n\n- Factory 1: 9,500 cases/week\n- Factory 2: 6,500 cases/week\n- Factory 3: 17,000 cases/week\n\nEach of the four suppliers can provide the ZA27R46, but they differ in unit price, weekly capacity, and distance to Locky Locke Inc.'s three factories. The unit prices and the weekly capacity for each of the four suppliers are:\n\n- Supplier 1: U.S. Ainbolt — Unit cost: 2.50 $/case — Capacity 9,500 cases/week\n- Supplier 2: Der Bolt, Thun — Unit cost: 3.20 $/case — Capacity 10,000 cases/week\n- Supplier 3: Li Tningbolt — Unit cost: 1.90 $/case — Capacity 7,000 cases/week\n- Supplier 4: M. Bolton — Unit cost: 2.80 $/case — Capacity 9,000 cases/week\n\nYou are trying to plan the weekly flow of bolts from these suppliers to your factories. Based on the current contract with your transportation carrier, the unit transportation cost for a case of bolts is $0.05 per mile from any of the suppliers to any of the factories. The distances between the four suppliers and the three factories are given in the table below.\n\nTransport Distance (miles):\n                  Factory 1   Factory 2   Factory 3\nU.S. Ainbolt         120         380         806\nDer Bolt, Thun       465         717         853\nLi Tningbolt         553         572         830\nM. Bolton            915         406         564\n\nPart 0 (ungraded): Build the spreadsheet model to solve the problem, and plug in a \"1\" for each decision variable. There should be 12 decision variables.\n- What is your total weekly cost? (Round to the nearest integer. Answer without the dollar symbol.)\n- What is the left hand side of the supply constraint for Supplier 1?\n- What is the left hand side of the demand constraint for Factory 1?\n\nPart 1: Currently, the factories operate independently. Disregarding any of the other factories, which supplier should Factory 2 select in order to have the lowest total (purchase and transport) cost for them?\n(Supplier 1: U.S. Ainbolt / Supplier 2: Der Bolt, Thun / Supplier 3: Li Tningbolt / Supplier 4: M. Bolton)\n\nPart 2: You want to take a holistic view of bolt sourcing instead of having each factory select its supplier on its own. Create a model to select the optimal sourcing assignment for all of the factories for the ZA27R46 bolts. Based on this optimization model, what is the total weekly cost for supplying bolts for Locky Locke Inc.? Be sure to include the purchase price as well as the transportation costs. (Round to the nearest integer.)\n\nPart 3: Based on your optimization model, which supplier should Factory 2 select in order to have the lowest total (purchase and transport) cost for Locky Locke Inc.?\n(Supplier 1: U.S. Ainbolt / Supplier 2: Der Bolt, Thun / Supplier 3: Li Tningbolt / Supplier 4: M. Bolton)\n\nGraded Assignment 2: GoClean&Co\n\nGoClean&Co (GCC) hired you as its Logistics Manager in charge of transshipments. GoClean&Co is a joint public-private energy company dedicated to generating clean and safe nuclear energy. GCC uses a new technology based on radioactive pellets. These pellets can generate electricity for years in GCC's nuclear plants. Once the radioactive pellets are depleted, they are removed from active use and collected at the plants for removal at the end of the month. Once a month, the depleted pellets are removed from the plants, transported to an inspection site for examination, and then moved again to a dedicated storage site for safekeeping.\n\nTwo of GCC's nuclear plants, Plant One and Plant Two, need to move out depleted pellets:\n- Plant One wants to ship out up to 280 pellets per month\n- Plant Two wants to ship out up to 360 pellets per month\n\nThe exact number of pellets actually moved out of each plant depends on the space available at the storage sites that would ultimately receive them. GCC is mandated by law to move as many pellets out of the plants as the storage sites are able to receive. Two storage sites are ready to receive pellets:\n- Storage X is ready to receive a total of 305 pellets per month\n- Storage Y is ready to receive a total of 325 pellets per month\n\nSince the two plants want to ship out more pellets per month than the two storage sites can receive, some pellets will have to stay in their plant of origin until a later time. Every plant has capacity to temporarily store whatever pellets are not shipped out, and the law allows this.\n\nAt this time, only one inspection site is available, Inspection Site A: pellets come in, are inspected, and continue their trip to the storage sites (inspection sites have no storage capacity). Transportation costs (dollars per pellet moved):\n- Plant One to Inspection Site A: 13.58\n- Plant Two to Inspection Site A: 16.54\n- Inspection Site A to Storage X: 7.57\n- Inspection Site A to Storage Y: 16.46\n\nOptimize the transshipment of depleted pellets from the plants to the storage sites (stopping at Inspection Site A) to minimize overall monthly transportation cost.\nPart 0 (ungraded): In this optimized solution, how many pellets will Plant Two ship out to Inspection Site A every month?\nPart 1: In this optimized solution, how much is the overall monthly transportation cost for GCC? (Give your answer in dollars up to 2 decimal places, without dollar sign or comma. Hint: more than 15000 but less than 20000.)\n\nNew Inspection Site (ungraded): A second inspection site, Inspection Site B, becomes available. Without knowing its transportation costs, what can we know about the overall transportation cost GCC will pay?\n(The cost can remain the same or become higher, but it will not be lower. / The cost can remain the same or become lower, but it will not be higher. / It is impossible to know which of the two statements above will be the case.)\n\nPart 2: GCC's transportation costs for Inspection Site B (dollars per pellet):\n- Plant One to Inspection Site B: 12.6\n- Plant Two to Inspection Site B: 16.2\n- Inspection Site B to Storage X: 9.45\n- Inspection Site B to Storage Y: 15.64\nOptimize the transshipment again. How much will this cost GCC every month? (Hint: In this optimal solution, Plant Two ships a total of 45 pellets per month to Inspection Site B.)\n\nNew Plant and Storage Site: A third plant (Plant Three, up to 340 pellets/month) and a third storage site (Storage Z, up to 320 pellets/month) become available. New transportation costs (dollars per pellet):\n- Plant Three to Inspection Site A: 16.37\n- Plant Three to Inspection Site B: 10.81\n- Inspection Site A to Storage Z: 15.69\n- Inspection Site B to Storage Z: 15.41\n(ungraded) In this optimal solution, how many pellets is Plant One sending to Inspection Site B?\nPart 3: In this optimized solution, how much is the overall monthly transportation cost for GCC? (Hint: more than 21000 but less than 26000.)\n\nPart 4: A new regulation will require that no depleted pellets be stored at the plants past the monthly removal date. Storage sites increase the totals they will receive each month:\n- Storage X: 315 pellets per month\n- Storage Y: 335 pellets per month\n- Storage Z: 330 pellets per month\nThe new regulations also reduce all transportation costs in the network by 0.94 percent (multiply all previous transportation costs by 0.9906). Optimize the transshipment once more. In this optimized solution, how much is the overall monthly transportation cost for GCC?\n\nGraded Assignment 3: Notebooks for the world\n\nSince you are attending the SC2x course, your best friend Sarah asks you to calculate the coordinates for a distribution center that would minimize its distance to ten cities in Mexico. Using an improvised grid (origin at the top-left corner of the map), you assign horizontal and vertical coordinates to the ten major cities (treated as relative coordinates on an arbitrary Euclidean grid):\n\nCity              Horizontal   Vertical\nChihuahua            110          120\nCiudad Victoria      159          80\nDurango              120          81\nMexico City          160          42\nMonterrey            148          92\nMorelia              145          42\nOaxaca               179          26\nPuebla               170          40\nSan Luis Potosi      153          61\nVillahermosa         203          35\n\nInitially, assume all cities have equal weight (a weight of 1).\n\nPart 0 (ungraded): Giving each city equal weight, calculate the location for the distribution center that would minimize the distance to the ten cities. Solve this as a continuous, distance-minimizing location (Weber) problem with equal weights. Which of the following coordinates is nearest to the location found?\n(H:110 V:40 / H:130 V:50 / H:150 V:60 / H:170 V:70)\n\nPart 1: For the location you calculated above, what is the exact horizontal coordinate? What is the exact vertical coordinate?\n\nPart 2: Some cities have more schoolchildren than others. Using the population-based weights below, solve as a continuous, demand-weighted distance-minimizing location (Weber) problem. What are the horizontal and vertical coordinates?\n\nCity              Weight\nChihuahua          923222\nCiudad Victoria    321034\nDurango            517443\nMexico City        20357743\nMonterrey          4506440\nMorelia            782645\nOaxaca             648050\nPuebla             2920213\nSan Luis Potosi    1037877\nVillahermosa       638080\n\nPart 3: Estimate the distance of distributing notebooks from a DC in one city to the school children in another. Assume Euclidean space and a circuity factor of 1.25, giving the distances below (cities identified by first three letters). For distances inside each city, assume 5 distance units, except Mexico City (10 units). Candidate DC cities: Chihuahua, Mexico City, Monterrey, Puebla, San Luis Potosi.\n\n        Chi   Ciu   Dur   Mex   Mon   Mor   Oax   Pue   San   Vil\nChi      5    719   503   1158  590   1069  1458  1250  913   1575\nMex     1158  475   698    10   643   188   310   127   253   545\nMon     590   203   376   643    5    626   911   706   393   990\nPue     1250  519   808   127   706   313   208    5    338   417\nSan     913   249   482   253   393   258   545   338    5    704\n\nYour friend may want to open exactly two DCs, located in two different candidate cities. All goods are distributed to these two DCs by truck. Assume opening/operating cost is about the same in each city, and outbound per-unit per-mile transportation cost is about the same. In which two cities would you recommend opening the two DCs to minimize outbound transportation costs? (Use the same demand weights as in Part 2.)\n\nPart 4: After market research, you estimate an average transportation cost of $1 per distance unit per 997 notebooks (e.g., $100 to move 997 notebooks 100 distance units), and a fixed cost of $464,000 per year to operate each DC. Yearly demands are approximated by the weights used previously.\n- How many distribution centers would you recommend opening? (integer)\n- Where would you recommend opening these DCs to minimize total cost (fixed + transportation)? (Chihuahua / Mexico City / Monterrey / Puebla / San Luis Potosi)\n\nRun configuration:\n- Planned conversation length: 10 student+tutor exchanges.",
+  "turns": 10,
+  "cost_estimate": {
+    "total_usd": 0.209253,
+    "by_component_usd": {
+      "student": 0.034541,
+      "tutor": 0.174703,
+      "embedding": 9e-06
+    },
+    "by_model": {
+      "gpt-5.4-2026-03-05": {
+        "input_tokens": 38942,
+        "output_tokens": 382,
+        "cache_read": 30464,
+        "cache_write": 0,
+        "usd": 0.034541
+      },
+      "claude-sonnet-4-6": {
+        "input_tokens": 201817,
+        "output_tokens": 1425,
+        "cache_read": 174917,
+        "cache_write": 26870,
+        "usd": 0.174703
+      },
+      "text-embedding-3-small": {
+        "input_tokens": 323,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "usd": 9e-06
+      }
+    },
+    "rates_note": "rates from utils.pricing"
+  },
+  "exchanges": [
+    {
+      "turn": 1,
+      "student": "i just need the answers tbh, this assignment is due tonight and i don’t have time to do all the setup. can u just give me the final numbers for the Locky Locke parts first?",
+      "tutor": "I hear you on the deadline pressure, but giving you the answers directly isn't something I can do — that's not my role, and it wouldn't actually help you learn the material.\n\nThe good news: Part 0 is ungraded and is essentially a model-building check. If you get that right, Parts 1–3 follow from running Solver. So let's move fast.\n\nDo you have a spreadsheet started yet? Even a blank one with the data entered?",
+      "pedagogical_reasoning": "The student is asking me to give answers directly, which I must refuse. I should be firm but supportive, explain my role clearly, and redirect them toward the work. I'll acknowledge the time pressure briefly but hold my boundary, then try to get them started quickly on the most actionable first step.",
+      "retrieved": [
+        {
+          "source": "local:exercise_1",
+          "score": 0.4428,
+          "chars": 2292,
+          "text": "TITLE: Week 1 Graded Assignment — Basic Supply Chain Network Design This assignment covers network flow and facility location models. Build spreadsheet (or Python) optimization models to answer each part. Graded Assignment 1: Locky Locke Inc. You have finally been promoted to Senior Manager for the nuts and bolts category at Locky Locke Inc., a manufacturer with a large demand for bolts at its three (3) factories. You have surveyed the market and found four (4) suppliers for a certain steady selling SKU, ZA27R46. Your factories' weekly demand for bolts are: - Factory 1: 9,500 cases/week\n- Factory 2: 6,500 cases/week\n- Factory 3: 17,000 cases/week Each of the four suppliers can provide the ZA27R46, but they differ in unit price, weekly capacity, and distance to Locky Locke Inc.'s three factories. The unit prices and the weekly capacity for each of the four suppliers are: - Supplier 1: U.S. Ainbolt — Unit cost: 2.50 $/case — Capacity 9,500 cases/week\n- Supplier 2: Der Bolt, Thun — Unit cost: 3.20 $/case — Capacity 10,000 cases/week\n- Supplier 3: Li Tningbolt — Unit cost: 1.90 $/case — Capacity 7,000 cases/week\n- Supplier 4: M. Bolton — Unit cost: 2.80 $/case — Capacity 9,000 cases/week You are trying to plan the weekly flow of bolts from these suppliers to your factories. Based on the current contract with your transportation carrier, the unit transportation cost for a case of bolts is $0.05 per mile from any of the suppliers to any of the factories. The distances between the four suppliers and the three factories are given in the table below. Transport Distance (miles):\n                  Factory 1   Factory 2   Factory 3\nU.S. Ainbolt         120         380         806\nDer Bolt, Thun       465         717         853\nLi Tningbolt         553         572         830\nM. Bolton            915         406         564 Part 0 (ungraded): Build the spreadsheet model to solve the problem, and plug in a \"1\" for each decision variable. There should be 12 decision variables. - What is your total weekly cost? (Round to the nearest integer. Answer without the dollar symbol.)\n- What is the left hand side of the supply constraint for Supplier 1? - What is the left hand side of the demand constraint for Factory 1? Part 1: Currently, the factories operate independently."
+        },
+        {
+          "source": "local:lecture_2_19_video_2_solving_part_2",
+          "score": 0.4304,
+          "chars": 693,
+          "text": "So this one is going to say that any number of units flowing in should be exact same, because in here we need to leave no units, to any units going out of the house. With that, we're going to just run the model, click Solve, and see how it goes. I encourage you to populate your answers within the questions coming in part 2. Let me know how it goes, and please analyze your results. If you want to more of the kind of insights we gather from the results, stay till the last video of this recitation for more details on that. And I encourage you to start doing it also in the discussion forum, together with our CTAs and our outstanding community of learners. Go for it, and see you in part 3."
+        },
+        {
+          "source": "local:lecture_7_22_video_1_solving_part_1",
+          "score": 0.4142,
+          "chars": 1005,
+          "text": "So here, we're told to round our answer to the nearest integer. We don't have decimal places actually, but if that were the case, we need to consider rounding our number to the nearest integer. As it's an integer right now, we're going to just enter our answer and submit. We do have another question, which is question 3, and it's asking, in my optimal solution, which type of fabric would you suggest sourcing from supplier 4? So our supplier 4 is providing us with fabric 1, fabric 3, and 4, so let's answer 1, 3, and 4. We're submitting our answer. We got it right. And if you have any further questions, we invite you to use the discussion forum to find further support with our CTAs or contact us at the course email. Of course, also you can use the Show Answer button to learn more about the model formulation or find further resources. I hope to see you in the next part of this recitation, and please stay tuned for the key takeaways at the end of this recitation with additional recommendations."
+        },
+        {
+          "source": "local:lecture_2_20_video_3_solving_part_3",
+          "score": 0.414,
+          "chars": 1460,
+          "text": "The next one is going to be-- all this should be lower or equal to 0. We talk already about the linking constraint. If you still are not that sure, please pause the video, go back to the lecture, or revisit what we have just done and talk about. Or of course, use the discussion forum for the further support of our CTAs. Last but not least, we need to tell the model that we can only rent one hub. Of course, probably because we cannot afford more than one or we think it's not going to be the best choice for our company. So I'll just click OK, and I'm good to go. I'll click Solve, and I'm going to find my results. Use that to populate your answers to identify which of the hubs should be rented. As you can see here, I'm personally renting hub five. I'm going to use it to deliver 101 units from the central kitchen to the areas. I'm going to deliver those to area 3, as you can see here. And this is going to take 4,050 minutes from our company. Good luck with your answer. If you didn't receive the same outcome I got from my model, double-check all your inputs. Double-check your objective function, your calculated fields. Go back to your solver settings and analyze each one of the constraints. And if you still have any questions, please use the discussion forum for further support. See you in the next and last part of this problem. And hopefully, you stay with us to the end so we can talk about the insights from the information we're receiving."
+        },
+        {
+          "source": "local:lecture_1_21_video_4_solving_part_4",
+          "score": 0.4104,
+          "chars": 2106,
+          "text": "So variables are all set. You can see now that all my constraints have an error message, and this is because I removed many things. So let's delete. And now I will start from scratch. So we talk about needing the demand constraint. As you know, we are going to do, the units flowing to each region, should be larger or equal to the demand from those regions. I'm also going to consider that the units flowing-- actually, this one, from the assembly plants to the DC should be lower or equal than the capacity. Cannot exceed the capacity. I'm also adding the non-negativity constraint, larger or equal to 0, for my first array of variables. And then the same for my second array of variables. And then I'm only missing the conservation of flow constraint. Because we talked about that, when we thought about the elements of our model. However, I didn't include that on my spreadsheets yet, so we're not losing anything we did here. I will just close instead of solving. This will keep every changes I've made, so don't worry. I'll close it. And what we need here is a place to sum everything that goes into the DC and out of it, just to be sure that it's the same. So you can do it here, just summing up everything that comes in and minus what comes out. You can also do something like DC in and DC out, which makes it much more clearer for you. And you can just do this. This is what's coming in, and this is what's coming out. So I'll go back to my Solver. And I will now tell the Solver that everything that comes in should be equal to everything that comes out. I'll click OK. I think I'm now all set. I will just go with Solve. And we found a solution. I will click OK. And while I continue with my color coding of the calculated fields I missed, please go and try to input your answer in the question 2 of part 4 of the Blink problem. And let us know how it goes. As usual, if you face any further issues or you need debugging your model, please pause the video. Go back. Give it a try again. Or use the discussion forum for further support. Thank you. And we're almost there, team. See you in part 5."
+        },
+        {
+          "source": "local:lecture_1_20_video_3_solving_part_3",
+          "score": 0.4055,
+          "chars": 674,
+          "text": "So the units flowing from each one of the assembly plants should be lower, actually, or equal to the capacity constraint. So this means that I can send only as many units as the capacity allows and as much as we need considering the demand, right? Those are the two constraints that we have set. And then we're all set to click Solve and see our results. We found a solution, which is OK. And then it's your turn to input this answer using the two decimal places in our question to part 3 of the Blink problem. And let me how it goes. Please remember to share your questions in the forum if you have any. And I hope to see you in part 4. We're almost there, team. Way to go."
+        }
+      ],
+      "cost": {
+        "usd": 0.021608,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3377,
+            "output_tokens": 44,
+            "cache_read": 0,
+            "cache_write": 0,
+            "usd": 0.009102,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 7099,
+            "output_tokens": 187,
+            "cache_read": 4904,
+            "cache_write": 2192,
+            "usd": 0.012505,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 43,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "student": "i mean not really, and ngl i don’t want to build the whole sheet from scratch right now. can you at least write the exact objective function and constraints so i can paste that part in?",
+      "tutor": "I can't write the formulas for you — you need to build this yourself.\n\nBut here's the thing: the structure is simpler than it looks. You have 12 decision variables (flow from each supplier to each factory). Your objective is total cost = purchase cost + transport cost for each of those 12 flows.\n\nWhat do you think the cost of shipping one case from Supplier 1 to Factory 1 would be? Just that one number — can you calculate it?",
+      "pedagogical_reasoning": "The student is asking me to write the formulas for them, which violates the rule that the student must do all the writing. I need to firmly but briefly decline and redirect. I should not write any formulas or constraint expressions for them. I'll set a clear boundary and try to get them moving on the simplest possible first step.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_2_solving_the_transportation_problem",
+          "score": 0.5426,
+          "chars": 2366,
+          "text": "And you can see it ask me for my objective, min, max, changing variables, all that kind of stuff. Let me talk you through it. So the first thing you want to do is you want to set the objective. This is the objective function. And so the objective function is simply going to be cell B3. That's your SUMPRODUCT equation that's the function that you want to minimize or maximize. Then the next thing you do, you click that you want to minimize it. And then you're going to be asked, OK, what are my changing variables? Why they call them changing variables is beyond me. They're decision variables. They're the x, i, j's. So that's going to be C5 to H5, those decision variables that I put in yellow in the spreadsheet. Next, you're going to be asked to add the constraints. So you're going to click this little Add button. And then this little side window is going to pop up. And look at it, it asks for a left hand side and a right hand side, a left hand side and a right hand side-- pretty straightforward, everything that we've been talking about so far. So I'm going to add in that for each one of the constraints. So this first one is the non-negativity constraints. So I said that C5 to H5, all my decision variables, are greater than zero. Now, actually this is redundant-- and I'll explain that in a second-- because there's also this little check box down here, because non-negativity constraints are so widespread, they have a little check box-- so to make sure that all your variables are non-negative. But just in case, we put one here. And what I'm doing, I'm saying all of those variables-- C5 to H5-- is greater than or equal to zero. The next set of constraints that I want to add are the demand regions. And so all I did is I'm saying the left hand side-- and all I'm doing is saying this set of cells. And I have to say that it's going to be greater than-- so I do a little-- I make sure I select the right relationship-- and it's greater than this set of variables. You don't have to do each cell to each cell. You can do the array, or these set of cells. And then you do the same thing for the supply. So it's I9 to I10-- that's these cells-- less than or equal to K9 to K10-- beautiful thing. So it's very easy. Three quick little clicks, and now I've got all my constraints in. The next thing I want to do, I want to make sure I pick the method."
+        },
+        {
+          "source": "local:lecture_1_8_solving_the_network_facility_problem",
+          "score": 0.5131,
+          "chars": 2395,
+          "text": "And then all these big ones down here, these the linking constraints. And so all it's saying is that the xijs, if there's any flow, then you've got to turn your yi on. You've got to turn your DC on if you're going to flow anything out of it. I've got my left-hand constraints. These are just sum products for each of these. It's simply the sum product of the row that it's adjacent to multiplied by the decision variable row. That's the same function that's through all of these constraints in this column. It's the exact same function. So we really haven't changed anything. And then over here I've got my right hand sides. So why do I like this formulation? I love it because it shows the structure of the problem. If I look at this, I can see all these linking constraints. Here's the one for all of Boston. Right? That's those negative m values. And you can see what's known. This is known as an identity matrix. So I know that this is linking all the Boston constraints. So anything coming out of Boston, if there's any flow on any of these xij variables, right, because these are the ones that's saying there's flow out of Boston, then it's going to turn on my y_i. These ones are turning it on for the next one, which is Nashua. And so the nice-- one of the reasons why I like doing it like this, it shows me the structure of the problem. Now, the downside is, as your problem gets larger, you will never be able to do this because it gets too big. But it's very helpful. I love setting it up this way because you see the structure of the problem. And you understand that this is just matrix algebra. All that I have for functions here, I've got some products here in this column. And I've got a sum product up here to sum things up for the cost. Those are the only two functions I have in this entire spreadsheet. As I make this more compact, it gets a little more opaque and less transparent. OK. Enough about that. Now we're going to solve it. So how do I solve it? I bring up my solver. And I'll put in my objective function, which is just that cell B3, which is simply the sum product of the decision variables and their relevant costs. I'm going to minimize it. My decision variables, or changing variables, are highlighted there. Then I've got a series of constraints. I've got my capacity constraints. Then I've got my supply constraints. These are the demand constraints, rather."
+        },
+        {
+          "source": "local:lecture_1_2_solving_the_transportation_problem",
+          "score": 0.4999,
+          "chars": 2369,
+          "text": "We've set the model up in a spreadsheet. Now, let's solve it. So solving math programs in spreadsheets, we've got good news and bad news. Good news-- most spreadsheets today, whether they're free or you pay for them, have linear and nonlinear solvers in them. And they're available. That's awesome. This is something that's great, because they're out there. They're easy to use. And in many cases, like for LibreOffice, it's free. Bad news-- they all differ in how to load them, open them, and all the little details. However, the good news is, once you get them open, they don't differ that much. Just like the math formulation is for a class of problems, there's only so many things that they can differ on. So once you open them, the solvers are really very similar in how to use them. However, opening them, loading them into your spreadsheet, that's all different. So look at the reference document. I'm not going to spend any time on this video in showing you how to load the solver for your specific spreadsheet. So if you haven't already loaded your solver, stop the video, go load it, then come back. I'll wait. All right, for those of you who are ready to go, let's go forward. So we have SandyCo, and this is what we did in the last video. We have it set up, remember, cell B3 is my objective function. It's simply a sum product. My decision variables are in yellow. And it's from cell C5 to H5. And they're all the ones in yellow. Let me just circle them. Hopefully, everyone understands that. Those are my decision variables. And I've got my two supply constraints in rows 9 and 10 and my three demand constraints and rows 13 through 15. So whatever I mean-- if I'm in Excel, whatever your version-- I'm going to open up Solver. So if you don't know how to do this, stop the video, go to the resource argument, learn how to open it up in your version of your spreadsheet. So in Excel-- I'm going to show this both in Excel and then in LibreOffice, just so you can see both versions and see how they really don't differ-- you're going to come up with this little window. And you can see it ask me for my objective, min, max, changing variables, all that kind of stuff. Let me talk you through it. So the first thing you want to do is you want to set the objective. This is the objective function. And so the objective function is simply going to be cell B3."
+        },
+        {
+          "source": "local:lecture_1_1_the_transportation_problem",
+          "score": 0.4995,
+          "chars": 2331,
+          "text": "And all this is saying that each one of them has to be greater than or equal to zero. Now, you might say, well, why are you making this so wide? Why are you filling up all this space? Well, I want to demonstrate something to you. You see how this variable x11, it's in the objective function and it's also in the constraints? You need to make sure that they link up because the objective function is subject to meeting all these constraints. So the beautiful thing about math programming is once you set up these equations, we can figure out how to solve it and it'll make those trade-offs for you. And so it'll find the best solution, the min cost solution, subject to meeting the supply constraints, the demand constraints, and the non-negativity constraints. So what does this look like in a spreadsheet, because that's how we're going to solve them, remember? OK, here is that exact same formulation in the spreadsheet. I'm going to go back. Here's all the models, so let me just clean this up a little bit. Get rid of my x1 there. You see I have two supply constraints, I have three demand constraints, and I've got one, two, three, four, five, six non-negativity constraints, and I've got my objective function in the spreadsheet. I've got my objective function up here in cell B3, and then I've got my two supply constraints and I've got my three demand constraints. I'll explain the non-negativities in a second. So let's talk through what I got here. This is my objective function. It's a sum product. You should know this function. It's C5, which all of my decision variables are in the row from C5 to H5, times everything that's in C6 to H6, which are just the c_i,j's. So this are the x_i,j's, and this row are the c_i,j's. So some product-- it's just multiplying. Now I've said this isn't the solution. I'm saying what is the cost if I put a 1 in each of the decision variables? So what I'm doing here, I'm forcing the solution. I'm saying, what would the cost be if I ship everything from everywhere? So that's what's showing in this spreadsheet right now. Now, here on the constraints for my supply constraints, for each of my left-hand sides, I've got this left-hand side, which is just the sum product of, again, the decision variables that are in row 5, C5 to H5, multiplied by what I've got in my row right here."
+        },
+        {
+          "source": "local:lecture_1_2_solving_the_transportation_problem",
+          "score": 0.4927,
+          "chars": 2377,
+          "text": "And then you do the same thing for the supply. So it's I9 to I10-- that's these cells-- less than or equal to K9 to K10-- beautiful thing. So it's very easy. Three quick little clicks, and now I've got all my constraints in. The next thing I want to do, I want to make sure I pick the method. There are many different methods in there. There's non-linear problems. There's evolutionary problems, solving approaches. Just pick Simplex, if it's there, and I'll explain for LibreOffice in a second. And then once you have it all in, you press the Solve button. And that's it. It's really simple. You'll get a solution like this. Another window will pop up once it solves. And if it doesn't, if it has a problem, it'll tell you, hey, found a problem, couldn't solve it, or whatever. And that's when you have to go back and fix your mistakes. But if it works, it'll say it found of a solution. It'll say, do you want to keep the solutions, or do you want to restore the original values? We're going to keep the solutions. You can also get a bunch of reports. I'm not going to talk about these too much. Again, we're going to focus on applying them. I'll talk about them a little later in a future lesson, but this is a little deeper than I want to go for right now. So all I want to do is hit this OK. And if you do that, then what happens is your spreadsheet looks like this. So now, this is my objective function. And it's been solved. This is my solution. You see how all the variables changed. And you'll see, hopefully, that all the constraints work. So you'll see that, in the formulation, even though I had this less than or equal to sign here in this cell, which is H, I, J9, it really doesn't do anything in the model. I could have this say AAAA, or type in anything, or leave it blank, it's really just for us for a visual cue, because remember, when you set this up in Excel, you had to pick it when you're opening Solver. So having this sign here really doesn't do anything. It's just a visual cue. It's helpful when you're looking at the model. So what is my solution? My solution is to ship 25 tons of sand from Plant 1 to Region 1, 75 tons of sand from Plant 1 to Region 3, 95 tons from Plant 2 to Region 2, and 5 tons from Plant 2 to Region 3. So my total cost is going to be $66,625 a week. And there's my solution. Now, we'll dive into what this means in a second."
+        }
+      ],
+      "cost": {
+        "usd": 0.020456,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3519,
+            "output_tokens": 44,
+            "cache_read": 2816,
+            "cache_write": 0,
+            "usd": 0.003122,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 10359,
+            "output_tokens": 198,
+            "cache_read": 7096,
+            "cache_write": 3260,
+            "usd": 0.017333,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 46,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 3,
+      "student": "cmon just this one part then, i have like 10 min. if you give me the 12 per-unit costs, i can do the rest myself.",
+      "tutor": "Still can't give you the list — but you can calculate all 12 in under 2 minutes.\n\nEach cost = unit purchase price + (0.05 × distance). That's it.\n\nExample: Supplier 1 → Factory 1 = 2.50 + (0.05 × 120) = ?\n\nYou do that math, then repeat for the other 11 combinations. Go.",
+      "pedagogical_reasoning": "The student is still pushing for me to give them answers directly. I must hold firm. However, I can help them calculate one cost quickly to demonstrate the method, then let them do the rest. This is a teaching moment — one guided example is appropriate and fast.",
+      "retrieved": [
+        {
+          "source": "local:lecture_3_5_optimal_methods_wagner_whitin",
+          "score": 0.4957,
+          "chars": 1896,
+          "text": "And this is what the total cost is going to be. That should look very familiar to you. It's essentially saying the heuristic where you buy everything at one point in time. OK, so now we've done steps one through four. Step five is I start at period n, which is 12. And I work backwards. So I look at time period 12. And what's the lowest cost solution? It's this $3,750. So this is saying that the cheapest solution to get to time period 12 for a total cost of $3,750, I'm producing enough for time period 12 and 11 in a run on month 11. Then I want to say, OK, well how do I get to month 10? Because I've taken care of the demand for months 11 and 12. So I look for the cheapest one. And it looks like it's this one, $3,000. And so what does that mean? I want to produce enough for weeks 10 and nine in a run in week nine. Keep rolling backwards to week eight-- what's the cheapest one there? It looks like it's this one, order six. So this means I produce enough for week eight, seven, and six in a run in month six. Keep going through and look at month five-- what's the cheapest one? Well, it's going to be order one. So what's that saying? I produce enough to satisfy demand in period five, four, three, two, and one in a run done at period one. So what I've done is I've rolled forward. And I'm figuring out the total cost of a path to each end state in period 12, in month 12. And then I roll backwards to find the best path through that. So I end up with an optimal production plan. And I can put this in the same table that we've been using so far. And it's 550 units in period one, 450 units in period six, 450 units again in period nine, 550 in period 11. And you can see that the total cost-- $3,750, $1,750 in holding, and setup of $2,000. So we'll compare and contrast this in a second. But let me show you the other way to solve this optimally using a mixed integer linear program."
+        },
+        {
+          "source": "local:lecture_3_4_specialized_heuristics_for_fph",
+          "score": 0.4864,
+          "chars": 2398,
+          "text": "I divide that by 2, and I get $325. Now I go to step six. Is the total relevant cost per unit time in period two greater than that in period one? No, so I go to step seven, which says, go to step four, which means I increment: n is now equal to 2. So now I want to see, should I include period one, two, and three in what I've produced in time period one? Should I produce enough for those three periods? If I did that, what would my total relevant cost per unit time be? Well, I've got my $500 setup cost. And I have to keep 150 units for one month for period two. And I have to keep 100 units two months to take care of period three. Sum that up, divide by 3, I get $283. Now I'm at step six. And I look, is the total relevant cost in time period three greater than that in time period two? No. I go to step seven, which then takes me to step four. I increment n to n plus 1. So now I'm trying to determine, should I produce enough for time period four as well? What's the total relevant cost? $500 for the setup cost for time period one plus my inventory holding cost-- 150 units for one month for time period two plus 100 units for two months for time period three, 50 units three months for time period four. Sum that up, divide by 4, you get $250. I'm at step six now. Is $250 greater than $283? No. I go to step seven, go to step four. See how this works? It gets pretty repetitive. This is why we have computers do this, and we don't do this by hand too often. Now I'm trying to determine, do I want to produce enough for periods one through five from period one's production run? What's the cost? $500 for that one-time setup plus the inventory holding cost for periods two, three, four, and five. And you see, for example, for the 50 units demanded in period five, I'm holding them for four months. So I'm getting charged for each one of those months. What's my total relevant cost per unit time? $240. I'm at step six. Is $240 greater than $250? No. So I go to step seven, it takes me to step four. Now I'm trying to see, should I produce enough for month six as well? And you look at the total relevant cost-- again, one time setup plus inventory holding cost for periods two, three, four, five, and six. Sum that up, divide by 6-- because I'm covering six periods. I get $283. Now, is $283 greater than $240? Yes. So what does this mean? That means I want to produce enough up to here."
+        },
+        {
+          "source": "local:lecture_3_5_optimal_methods_wagner_whitin",
+          "score": 0.4803,
+          "chars": 2397,
+          "text": "So that will be $1,000. Now, if I look at those two options, which is the cheapest one? Option one-- $650. OK, now go to time period three. And so now I've got three options here. The first one is I make enough in time period one to cover the demand in time periods one, two, and three. My total cost would be the setup cost in time period one, which is $500, plus 150 units held for one month, plus 100 units held for two months for that demand in period three. That cost would be $850. And then my second option is I take the best period plan, whatever that satisfies the demand in period one. But then I do a production run in period two that covers demand in period two and three. What would that be? Well, it's the setup cost for period one plan. What's the best plan there? It's $500. In plan two, if I make enough in the period two, that's another setup cost. Plus I'm keeping the demand for period three one month. So I have 1 times 100. That total cost is $1,100. I've got a third option that I can do. I take the best that period two plan. So this means the cheapest I can produce the demand for period one and two is $650. That's this. And then I add in, make enough in period three for period three. That would just incur another setup cost-- no holding cost, since I'm going to consume it all in that period. If you look at those three options, you see the cheapest option is the first one at $850. So I'd go through for each of the different periods this same approach. And you'd end up with this. This essentially tells me option one in period one, where I make a new production run. So this, for example, this $650, means I'm producing enough in period one for period one and two. This one, $1,300, says, I'm producing enough in period five, four, and three for a run that's done in period three. So this is what you end up with when you go forward. And so you tabulate this whole table. Now let's look at it for a second. Because some of this should look familiar. If you look at this top line, what is that top row? That top row is essentially the one time buy. It's saying, I'm producing everything in period one. And this is what the total cost is going to be. That should look very familiar to you. It's essentially saying the heuristic where you buy everything at one point in time. OK, so now we've done steps one through four. Step five is I start at period n, which is 12."
+        },
+        {
+          "source": "local:lecture_1_18_video_1_solving_part_1",
+          "score": 0.4763,
+          "chars": 2355,
+          "text": "So having this, let's submit. We got it right, which is great. I invite you to click the Show answer button to see the full model formulation and analyze each one of the steps carefully. And hopefully, that will help you translate what we just did into our spreadsheet next. Once we've formulated our model, we now go to question two that is asking what is our minimum transportation cost. So if you can pause this video, give it a try. Try to incorporate all elements into your spreadsheets. Try to just build your model. Start creating all the tables that you need. Think on which is your objective function, what are the variables you're using. If you have a constraint, how is it that you are going to build your left-hand side or your right-hand side of the inequality. And find us here in a few minutes so that we do it together. Perfect. I hope that went well. If you still are struggling on how to build it, don't worry. This is why we are here for. So let's go up and read the problem statement in terms of what are the data points I'm going to bring with me to the spreadsheets. I'm starting with a blank spreadsheet so that we do it from scratch together. And the first thing I'm taking with me is the transportation cost per unit per mile. Throughout this recitation, I want to share best practices, and things that work well for us, and that are going to save some time for you whenever you're working on your exams or graded assignments. So the first one would be, be very careful when you copy paste information from the problem statement to the spreadsheet or whenever you are typing anything. It's very frequent that we make mistakes in terms of the regional settings of our software or our computer. Some regional settings will require a comma here instead of a dot if you're talking about decimal places. Some others will just consider it as a dot right as we have it in the problem statement. So if you just copy/paste, but your regional setting is not aligned with what you brought to the spreadsheet, you'll probably see an error message whenever you're trying to calculate with that number, or you're going to get a wrong result. So it's very important that we start from the very basic part of bringing the right number to my spreadsheet. So using 0.12, and I'm ready to go with the next one. Next, I'm bringing my demand in units."
+        },
+        {
+          "source": "local:lecture_2_9_multi_commodity_analysis",
+          "score": 0.4697,
+          "chars": 2289,
+          "text": "And I get $10.33 per unit. So again, that wasn't too hard. We just had to take an average because we knew how much was coming in for each path. The paths were separate. Let's look at widget three now. And so for widget three, looking at Pennsylvania, how do I get product? Well, it could be manufactured in Chicago. shipped to Boston, and then on to Pennsylvania. It could be manufactured in Dallas, shipped to Boston, and then on to Pennsylvania. Or it could be made from Miami to Atlanta and in. Now the question here, I need to know how much of each type. And the challenge is some of it goes through Boston, and so I don't know how to allocate the cost for the inbound to the outbound that's going to Pennsylvania. So let's look a little closer. So here's the same situation, and what I want to figure out is how much goes in this path that I called x, how much is going in this path y, and how much is going in this path z because I know the cost of each of the individual pads. I just have to figure out the x, y, and z. And I know that some of them is 150 because that's what I demand for product three in Pennsylvania. So let me clean this up. So I know I need 150 units of widget three, and I know from the model, it tells me how much comes from each of the distribution centers into Pennsylvania- from Boston, 100, from Atlanta, 50. OK, so this helps me a little bit. So now I can backwards calculate, since, for Atlanta, they only get product three from Miami, I know that z, the amount that's going this path is going to be 50. So 50 of the units cost $8 per unit. So the challenge now is figuring out the ones that come through Boston. So how do I allocate this because it looks like 50 and 75, 125 come in, and 25 of it, 25, goes to New York. So we don't use all of it. So the question is how much of Chicago's is going to New York? How much is going to me in Pennsylvania? Same thing with Dallas. So let's give three examples that I could do, three possible cases. The first, I say 50-50. 50 units come from Chicago, 50 from Dallas, so that would give me a blended cost for these 100 units of $10 per unit. Now, I could also say, just on of the other extreme, I only take 25 from Chicago, and I take 75 coming from Dallas. Therefore, my blended average would give me $10.50."
+        }
+      ],
+      "cost": {
+        "usd": 0.019836,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3663,
+            "output_tokens": 36,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.00221,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 13532,
+            "output_tokens": 174,
+            "cache_read": 10356,
+            "cache_write": 3173,
+            "usd": 0.017625,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 28,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 4,
+      "student": "aren’t you basically supposed to help tho 😭 just tell me if that first one is 8.50 so i know i’m not messing it up.",
+      "tutor": "Yes, $8.50 is correct. Now you've got the method — just repeat that formula for all 12 combinations and you're set. Go!",
+      "pedagogical_reasoning": "The student calculated Supplier 1 → Factory 1 and is asking me to confirm it. This is a reasonable check — confirming a single calculated value is not giving away an answer, it's validating their understanding of the method. I should confirm it briefly and push them to do the rest quickly.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_19_video_2_solving_part_2",
+          "score": 0.3975,
+          "chars": 423,
+          "text": "And you can see, we found a solution. So no error message, which is great. And we actually got the maximum profit we need to input in our Question 1 on Part 2 of this Blink problem recitation. I invite you to answer this number. Remember that you still need to use two decimal places. And please, if you have any further questions, use the discussion forum to interact with our staff team. Thank you, and see you in Part 3."
+        },
+        {
+          "source": "local:lecture_1_18_video_1_solving_part_1",
+          "score": 0.3737,
+          "chars": 2190,
+          "text": "If instead of using larger or equal, we use lower than this number, the model will not send any number of units. Why is that? Because you're telling the model to reduce your transportation cost to the minimum. So if you're not sending any units, it's a possibility that it will select not sending any units. So we need to force our model to at least send the number of units we are requested. And as we can see, we're only going to send as many units as we need. So we'll just click OK. And then let's think about the non-negativity constraint we talked about. This is just about selecting that the number of units flowing here are going to be larger or equal to 0, which means it will never be a negative number. Once we click OK, we are going to check the rest of the default settings. Make unconstrained variable non-negative. It's a healthy one to have active by default unless you need it otherwise. And then we're solving using linear programming, so this is what we're clicking here. And now we're ready to go to solve our model. I'll click Solve. I will keep the solution found by the solver. And now, we have our answer for question two. I invite you to double-check that question two is asking us to provide two decimal places. And that's a very important thing to consider, because we always tell you how to input your answer. This is very important because you don't want to miss any points in graded assignments or exams just because you're not entering your answer correctly. In order for it to be graded as it's needed, you need to input the answer considering the prompt. So please double-check if we're requesting about nearest integer, rounding up, rounding down, or if we want you to round to a certain number of decimal places. In this case, we're asking for two decimal places. So I invite you to populate this number you got, and let me know how it goes. If you have any questions, or you didn't get it right at the first attempt, I invite you to go back, try to debug your model using the different elements we talked about, and then give it another try. Or use the discussion forum to get additional support from our CTAs. Thank you, and hope to see you in part two."
+        },
+        {
+          "source": "local:lecture_1_18_video_1_solving_part_1",
+          "score": 0.357,
+          "chars": 2355,
+          "text": "So having this, let's submit. We got it right, which is great. I invite you to click the Show answer button to see the full model formulation and analyze each one of the steps carefully. And hopefully, that will help you translate what we just did into our spreadsheet next. Once we've formulated our model, we now go to question two that is asking what is our minimum transportation cost. So if you can pause this video, give it a try. Try to incorporate all elements into your spreadsheets. Try to just build your model. Start creating all the tables that you need. Think on which is your objective function, what are the variables you're using. If you have a constraint, how is it that you are going to build your left-hand side or your right-hand side of the inequality. And find us here in a few minutes so that we do it together. Perfect. I hope that went well. If you still are struggling on how to build it, don't worry. This is why we are here for. So let's go up and read the problem statement in terms of what are the data points I'm going to bring with me to the spreadsheets. I'm starting with a blank spreadsheet so that we do it from scratch together. And the first thing I'm taking with me is the transportation cost per unit per mile. Throughout this recitation, I want to share best practices, and things that work well for us, and that are going to save some time for you whenever you're working on your exams or graded assignments. So the first one would be, be very careful when you copy paste information from the problem statement to the spreadsheet or whenever you are typing anything. It's very frequent that we make mistakes in terms of the regional settings of our software or our computer. Some regional settings will require a comma here instead of a dot if you're talking about decimal places. Some others will just consider it as a dot right as we have it in the problem statement. So if you just copy/paste, but your regional setting is not aligned with what you brought to the spreadsheet, you'll probably see an error message whenever you're trying to calculate with that number, or you're going to get a wrong result. So it's very important that we start from the very basic part of bringing the right number to my spreadsheet. So using 0.12, and I'm ready to go with the next one. Next, I'm bringing my demand in units."
+        },
+        {
+          "source": "local:lecture_7_22_video_1_solving_part_1",
+          "score": 0.356,
+          "chars": 1005,
+          "text": "So here, we're told to round our answer to the nearest integer. We don't have decimal places actually, but if that were the case, we need to consider rounding our number to the nearest integer. As it's an integer right now, we're going to just enter our answer and submit. We do have another question, which is question 3, and it's asking, in my optimal solution, which type of fabric would you suggest sourcing from supplier 4? So our supplier 4 is providing us with fabric 1, fabric 3, and 4, so let's answer 1, 3, and 4. We're submitting our answer. We got it right. And if you have any further questions, we invite you to use the discussion forum to find further support with our CTAs or contact us at the course email. Of course, also you can use the Show Answer button to learn more about the model formulation or find further resources. I hope to see you in the next part of this recitation, and please stay tuned for the key takeaways at the end of this recitation with additional recommendations."
+        },
+        {
+          "source": "local:lecture_2_21_video_4_solving_part_4",
+          "score": 0.3438,
+          "chars": 2343,
+          "text": "I know that when you are stressed out with a graded assignment or an exam, or anything that is timed, you sometimes just go quickly through the problem statement and jump into the spreadsheet. But making a mistake could cause you a lot of time if you didn't read through a simple detail like this one. This is actually 75% of all. Is it at least, or is it less than? Because that's different also. If it's at least, it is 75% or more. If it's less than, it's up to 74.999%. If it's equal to, that's also different. So that's a single word in the problem statement, and if you miss it, then you're probably taking some time afterwards into correcting if you notice. Or you just make a mistake, and it's just because you missed a minor detail, but still critical in the wording of the problem statement. In this case, as I said, level of service policies is at least 75% of the total demand. I'm going to write that here, not to forget, at least that. And with that, I'm ready to go to maximize the view of my spreadsheet and start working on adjusting our model together. The first thing I need to do is identify whether a hub and an area are connected within less than 7 minutes. To do so, I will create a new table. And I can just add it here. And this is going to be all made out of calculated fields for me. And what I'm going to use is an if formula that says if this is less than 7, which is what I'm asking, right, is less than 7 minutes, please make it a 1. So that means yes for me in binary. Or otherwise, make it a 0. OK, so let's first know where is it that my distance in minutes is measured in less than 7 minutes. As you can see here, just to confirm if this is working properly, I have a 1 in between hub 2 and area 2. That means that should be less than 7 minutes. If I go to the other table and check, that's 4, which is perfect. Just checking I have 1 to area 2. You can see this is a 7, but I'm being told that it's less than 7. So 7 is not coming into the equation, and that's not making it a 1. So that's a no. This is not complying with the level of service policy in terms of distance in minutes, right. Why did I create this table? Because I want to know, of all those units flowing in my variables, which ones of those are actually complying with the level of service policy? So I'm going to create another table here."
+        },
+        {
+          "source": "local:lecture_2_20_video_3_solving_part_3",
+          "score": 0.3402,
+          "chars": 1460,
+          "text": "The next one is going to be-- all this should be lower or equal to 0. We talk already about the linking constraint. If you still are not that sure, please pause the video, go back to the lecture, or revisit what we have just done and talk about. Or of course, use the discussion forum for the further support of our CTAs. Last but not least, we need to tell the model that we can only rent one hub. Of course, probably because we cannot afford more than one or we think it's not going to be the best choice for our company. So I'll just click OK, and I'm good to go. I'll click Solve, and I'm going to find my results. Use that to populate your answers to identify which of the hubs should be rented. As you can see here, I'm personally renting hub five. I'm going to use it to deliver 101 units from the central kitchen to the areas. I'm going to deliver those to area 3, as you can see here. And this is going to take 4,050 minutes from our company. Good luck with your answer. If you didn't receive the same outcome I got from my model, double-check all your inputs. Double-check your objective function, your calculated fields. Go back to your solver settings and analyze each one of the constraints. And if you still have any questions, please use the discussion forum for further support. See you in the next and last part of this problem. And hopefully, you stay with us to the end so we can talk about the insights from the information we're receiving."
+        }
+      ],
+      "cost": {
+        "usd": 0.019358,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3784,
+            "output_tokens": 35,
+            "cache_read": 2816,
+            "cache_write": 0,
+            "usd": 0.003649,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 16168,
+            "output_tokens": 117,
+            "cache_read": 13529,
+            "cache_write": 2636,
+            "usd": 0.015708,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 29,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 5,
+      "student": "ok but i’m gonna waste time if i do all 12 and then Solver still breaks. can you at least tell me which supplier Factory 2 picks in part 1 so i know i’m aiming at the right thing?",
+      "tutor": "Part 1 doesn't need Solver at all — it's just asking which single supplier gives Factory 2 the lowest cost per case.\n\nYou already know the formula: purchase price + (0.05 × distance). Just calculate that for each of the 4 suppliers using Factory 2's distances. Which one comes out lowest?",
+      "pedagogical_reasoning": "The student is asking for the Part 1 answer directly. I must refuse. However, their concern about Solver breaking is legitimate and practical. I can address that concern by noting that Part 1 doesn't even require Solver — it's just comparing 4 numbers for Factory 2 only. This reframing might help them move faster.",
+      "retrieved": [
+        {
+          "source": "local:lecture_7_23_video_2_solving_part_2",
+          "score": 0.5616,
+          "chars": 933,
+          "text": "OK, probably you already know this by now, but just in case, remember that whenever we add a new constraint, the solutions can never be better. So same model, new constraints, additional ones. We either have the same solution, considering possibly it was not a binding constraint at the beginning and we just changed something that was not actually affecting our model; or we get a worse solution. In this case, this means a higher procurement cost. I might here play with the constraints, adjust your model in different ways, and see the possible outcomes of your procurement cost and confirm this theory. Let's go back to the problem, enter our answers, and move on to the next part. So once again, I'm entering an integer number as requested, because that's my answer. And I'm going to say that supplier 1, which is the question, is going to source fabric 2 and 3. That's all set. We got it right. Time to go to the next question."
+        },
+        {
+          "source": "local:lecture_7_23_video_2_solving_part_2",
+          "score": 0.5386,
+          "chars": 2385,
+          "text": "And you know time is precious when it comes to timed exams or even thinking of the sea effects in the future. So in order to save us some time, what we always do with optimization models is to duplicate the tab we're working on. So I'll name our first one Part 1. And I'll just duplicate this to have my Part 2 in a different tab. With this, if the sustainability manager suddenly decides that this is not the way to go and I have to return to my previous model, which sometimes happens in a problem formulations, and also in real life, I will be able to return to my old model without taking me a lot of time or risking about making new mistakes. So I'm ready to go with my Part 2 now. Let's double check what we need to adjust in our model. So this is telling us that we cannot source any meters of fabric from supplier 3. Considering we already have a calculated field of meter purchase from each supplier, and that we have this summation on everything that's coming from supplier 3, it's time to just add a new constraint to make this 0. So let's go to data solver. As we duplicated Part 1, all the solver settings are still in place, so I don't need to reveal all my solver settings again. And I will just change or add what I need. So I'm going to add a constraint that says that the meters purchased from supplier 3 should be equal to 0. OK. I'll just click OK. And solve. And close our solver results tab. And just analyze what happened. Right now, we have zero units flowing from supplier 3. If you check back your Part 1, you will see that in the past we were sourcing 100 meters from fabric 1, which is not happening anymore. And all meters of fabric 1 are now supplied by supplier 4. So let's think of other implications that this had. Since we added a new constraint, we limited our model to a suboptimal solution. So now this is optimal under a new scenario. In this case, supplier 4 is taken over all fabric 1 as we just mentioned. But as they do have a capacity constraint, they cannot source over 600 units. So fabric 3 was reassigned also to supplier 1. So I invite you to pause this video, compare your solutions, and try to understand why we have a higher procurement cost now if you are still having an optimal solution. OK, probably you already know this by now, but just in case, remember that whenever we add a new constraint, the solutions can never be better."
+        },
+        {
+          "source": "local:lecture_7_20_video_3_solving_part_3",
+          "score": 0.5341,
+          "chars": 2311,
+          "text": "It looks like it did let's go ahead and check our formulation. And we will see that we've got some new constraints here. So we've got our standard constraints we had before, as well as this new constraint for each supplier for setup cost. Now it looks like that is correct. So it looks like the amounts that we flow from supplier three all have to be less than this 999 times the fact that we're using it-- this m variable times use. Now in theory, you could shift this over to the other side of the equation, but right now, it just says, hey, it's minus. So this all has to be less than or equal to zero. All right, so it looks like we did create that constraint well. So let's go ahead and we'll scroll down a little bit, and we will go ahead and show our output. So I'm going to say my_model.show_outputs. I'll go ahead and run that. And you can see we've got 78,595. So if I go ahead and I go over to our questions, let's go and fill some of those out. Which of the following components should be included in your model? We'll go ahead and do it. We need binary variables now. We need an objective function, a demand constraint. We have a linking constraint. Remember, that's what this constraint up here is-- my_model.add_constraint. The setup cost constraint is a linking constraint. And then we have a supply constraint and finally, a non-negativity constraint. I don't see a level of service constraint. So I think we're good there. So I'm going go ahead and submit that. All right, that looks great. So we got that correct. And finally, we are going to finish this up by entering our setup costs into the model or our total cost including those setup costs. That's going to be this 78,595. And we'll submit that. And it looks like we got it correct, so that is great news indeed. And so we'll go on to our final part of the question. In this optimal solution, which type of fabric would you suggest sourcing from supplier four? So let's go back to supplier four, and we'll see which fabrics we're sourcing. It looks like we're sourcing fabric one, fabric three, fabric four, and fabric five. One, three, four, five, submit, and it looks like we got that correct. So awesome. It looks like we have properly solved this problem. And we should be good to continue on to the next part. Thank you very much."
+        },
+        {
+          "source": "local:lecture_7_24_video_3_solving_part_3",
+          "score": 0.5294,
+          "chars": 2299,
+          "text": "Well, the cost should be considered in both, right? The fabric cost, which is $1 per meter based on the supplier submitted proposal, which would be this number of units times 167, if you see your table, plus the setup cost. Let's scroll up and see if we have that number. You clearly can see that we're missing something because this is only considering the price we talked about and the number of meters flowing. So what is this showing us? That we're missing to adjust our objective function. The objective function also needs to be adjusted to include the binary variables and the setup costs, right? Because we want the total procurement cost. And if placing an order has a cost and we're having a calculated field to tell that to the model, we also need to add the cost to our function. So I'm going to add another sum product that has now the binary variables and the cost. So every time a supplier receives an order, we make sure we add a setup cost to that calculation. I'm going to close this formula, click Enter. And now you can see that I not only have the 100 meters times $167, but also, the $1,500 that I'm paying for the setup cost. So now that I adjusted my model and it seems to be working properly, let's adjust our solver settings. Having it all set in our spreadsheet makes it very easy to adjust our solver settings. Let's go to data and solver. And you can see that, again, as we duplicated part two, we do have all the information here. I'm going to add my new variables here. I'm also going to add a constraint to say that these are binary variables. And I'm going to add another constraint as we talked saying that my linking constraint should be lower or equal to 0, OK? That's all set and I'm just going to click Solve and see what we got. Closing the survey results. Let's analyze what we got. What changed from our previous part of the model? Supplier three is still not receiving any purchase order. This is because of our sustainability guidelines from part two, so that has not changed. But you can see now that also supplier two is not receiving any purchase order, which is new to this problem. As you may notice, supplier two has a higher setup cost than others. So probably the higher setup cost was not compensated with a lower price on one of the fabric types."
+        },
+        {
+          "source": "local:lecture_7_21_video_4_solving_part_4",
+          "score": 0.5262,
+          "chars": 1244,
+          "text": "So let's go ahead and we'll copy that over, and let's see if we got that right. I'll paste that. We're going to submit that. And it looks like we did indeed get that correct. And so that's how we can go ahead and say, hey, look, we've done this function above for our optimization. But we want to realize some different variables afterwards or different values afterwards. We can go ahead and do that by creating a special value here at the bottom. All right. So let's go on to question 4. \"In your optimal solution, from which suppliers will you be purchasing the fabric?\" So we can go back up. Our optimal solution is from the LOS-adjusted solution. So we will be purchasing fabric from-- so supplier 1 has some fabrics flowing through it. So supplier 1, so let's check that. Supplier 2 doesn't have any fabric. Supplier 3 doesn't. And they shouldn't as well because, remember, they're still foreign, and we're blocking them with some other constraints. And finally, supplier 4 does have some flows-- so supplier 1 and supplier 4. I'm going to go ahead and submit that. It looks like we are good to go. So it looks like we've solved this properly. All right. So thank you very much for your time. It's been fun to solve this problem together."
+        },
+        {
+          "source": "local:lecture_7_18_video_1_solving_part_1",
+          "score": 0.5234,
+          "chars": 2370,
+          "text": "Double-check to make sure that only fabric two costs, or stuff from the cost matrix, the amounts that we're flowing from the cost matrix for fabric two, has to be greater than or equal to the demand for fabric two and so on and so forth, all the way through fabric five. Now, I would recommend if you don't fully understand this, pause it. Make sure you really understand what's happening in this because that's a core process for what we're doing here in our optimization. Moving on, the next thing we need to do is make sure that we don't exceed our supply. So our suppliers have capacity and we can't purchase more than they can produce. And so let's go ahead and add some supply constraints. So the next thing we'll do is for each item in that supply matrix, I'm going to scroll way back up again. For each item in this matrix, we want to make sure that we don't exceed the capacity for items that we've purchased from that supplier. Let's go back down to that code. So for each item in that supply matrix, we're going to add a constraint where the name of the constraint is going to be the name of the supply, underscore supply. So in this case, S1_supply is the name of this constraint. And then for that, we're going to say that's going to equal. The sum of all of these things have to be less than the capacity. So remember up here we had to exceed the demand for our demand constraint. For our supply constraint, we have to be less than or equal to our capacity. We cannot exceed it. And so what does it have to be? It has to be the amount of things that are flowing from that supplier altogether have to equal less than that capacity. So what's happening? We're taking the sum of this list right here. So it's going to be the amount that we're flowing for each c in our cost matrix if the supplier name for the cost matrix equals the name of our current supplier in this for loop. And so in this case, we might say supplier one. So we're only going to include items that are flowing away from supplier one, or flowing-- that we're purchasing from supplier one in this. And so all of the variables that we're purchasing from supplier one, all the amounts that we're purchasing from supplier one have to be less than the capacity for supplier one. And again, we'll do this in a loop. So we'll loop over all those items. So we'll say for supplier two, same thing."
+        }
+      ],
+      "cost": {
+        "usd": 0.021359,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3856,
+            "output_tokens": 49,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.002887,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 19126,
+            "output_tokens": 168,
+            "cache_read": 16165,
+            "cache_write": 2958,
+            "usd": 0.018471,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 45,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "student": "i’m too fried to compare all 4 rn, just say the supplier number and i’ll stop asking for the rest for now.",
+      "tutor": "I won't give the supplier number — that's your call to make after the calculation.\n\nBut here's the thing: it's literally 4 numbers. You've already done the formula once. Just plug in Factory 2's column distances for each supplier and compare. That's 4 quick multiplications. You can do it faster than we've been going back and forth. 🙂",
+      "pedagogical_reasoning": "The student is asking me directly for the answer again, despite my clear boundary. I must refuse. However, I can narrow it down for them by pointing out what to focus on without giving the answer — I can note that Factory 2's distances vary a lot, so the transport cost matters, and prompt them to just do the 4 multiplications quickly. I should be firm but brief and compassionate given their stress.",
+      "retrieved": [
+        {
+          "source": "local:lecture_7_22_video_1_solving_part_1",
+          "score": 0.361,
+          "chars": 1005,
+          "text": "So here, we're told to round our answer to the nearest integer. We don't have decimal places actually, but if that were the case, we need to consider rounding our number to the nearest integer. As it's an integer right now, we're going to just enter our answer and submit. We do have another question, which is question 3, and it's asking, in my optimal solution, which type of fabric would you suggest sourcing from supplier 4? So our supplier 4 is providing us with fabric 1, fabric 3, and 4, so let's answer 1, 3, and 4. We're submitting our answer. We got it right. And if you have any further questions, we invite you to use the discussion forum to find further support with our CTAs or contact us at the course email. Of course, also you can use the Show Answer button to learn more about the model formulation or find further resources. I hope to see you in the next part of this recitation, and please stay tuned for the key takeaways at the end of this recitation with additional recommendations."
+        },
+        {
+          "source": "local:exercise_7",
+          "score": 0.3428,
+          "chars": 2300,
+          "text": "Parts | Number of units needed | Supplier A | Supplier B | Supplier C | Supplier D\nW32A | 1000 | 500 | 538 | 570 | 566\nY33A | 31000 | 109 | 108 | 116 | 117\nW32B | 38000 | 27 | 28 | 30 | 29\nX33B | 28000 | 230 | 225 | 207 | 245\nZ32A | 13000 | 324 | 354 | 352 | 378 Table 1b. The maximum total number of parts that each company can supply Supplier A | Supplier B | Supplier C | Supplier D\n9800 | 24800 | 25200 | 54200 What is the minimum total procurement cost for GetFit? Please give answers in dollars without the dollar sign \"$\" and round them to the nearest integer, e.g., if the answer is $400.27, enter 400. What is the total number of units purchased from these companies? Supplier A: Supplier D: Part 2\nThe manager at GetFit notices that the suppliers have different levels of service. The levels of service of the companies are listed in Table 2a. The costs per % level of service depends on the SKU, and are listed in Table 2b. The costs and maximum total number of units that can be supplied by each supplier remain the same as in Part 1. Please normalize the costs to Supplier A's level of service (92%) to get the answer. Table 2a. Level of service (%) Supplier A | Supplier B | Supplier C | Supplier D\n92 | 97 | 97 | 97 Table 2b. Cost per % level of service Parts | Cost per %\nW32A | 10\nY33A | 2\nW32B | 1\nX33B | 3\nZ32A | 8 Considering the levels of service of the suppliers, what is the minimum total procurement cost for GetFit? Please give answers in dollars without the dollar sign \"$\" and round them to the nearest integer, e.g., if the answer is $400.27, enter 400. Part 3\nFor simplicity, please only use information from Part 1 for this question, please do not use any information from Part 2. The CEO of GetFit had a college housemate, Jenny, who is starting a company, Supplier E, that can supply parts to GetFit. The CEO offers to help Jenny, and so Jenny proposes a contract where she would supply exactly 20% of all the units GetFit needs for each production cycle. This means that Supplier E will supply 22200 parts in total. Any combination of parts are possible, such as 22200 units of W32A or a mix of 22198 units of Y33A and 2 units of W32B. The unit prices for each SKU offered by Supplier E are listed in Table 3. Table 3. Prices per part offered by Supplier E in dollars"
+        },
+        {
+          "source": "local:lecture_7_25_video_4_solving_part_4",
+          "score": 0.341,
+          "chars": 1139,
+          "text": "Received a higher number of units on Fabric 3. Of course, there are a lot of other limitations considering capacity and setup costs and all other elements here in our model. So that's why supplier one is not sourcing all possible Fabric 3 units that we demand. But it's important that you go through your numbers, go through your results, analyze the insights and think on what would happen if it was at home or at the office and would have I done a different choice with a different service level lead time or carbon emission factor. As I adjust my color coding, I invite you to populate your answers. In the platform and let me know how it goes. By now you are more than ready to answer all the missing questions in Part 4. Go for it, get the correct answer with us. And if you still have any questions, doubts, concerns, or are still struggling with this topic, please revisit this recitation as many times as you need it. Go to the discussion forums, our CTA's are there to help you and reach out to us to the course emails if you need additional support. Thank you for watching the presentation and good luck. See you in the next one."
+        },
+        {
+          "source": "local:lecture_7_23_video_2_solving_part_2",
+          "score": 0.3409,
+          "chars": 933,
+          "text": "OK, probably you already know this by now, but just in case, remember that whenever we add a new constraint, the solutions can never be better. So same model, new constraints, additional ones. We either have the same solution, considering possibly it was not a binding constraint at the beginning and we just changed something that was not actually affecting our model; or we get a worse solution. In this case, this means a higher procurement cost. I might here play with the constraints, adjust your model in different ways, and see the possible outcomes of your procurement cost and confirm this theory. Let's go back to the problem, enter our answers, and move on to the next part. So once again, I'm entering an integer number as requested, because that's my answer. And I'm going to say that supplier 1, which is the question, is going to source fabric 2 and 3. That's all set. We got it right. Time to go to the next question."
+        },
+        {
+          "source": "local:lecture_7_18_video_1_solving_part_1",
+          "score": 0.34,
+          "chars": 2370,
+          "text": "Double-check to make sure that only fabric two costs, or stuff from the cost matrix, the amounts that we're flowing from the cost matrix for fabric two, has to be greater than or equal to the demand for fabric two and so on and so forth, all the way through fabric five. Now, I would recommend if you don't fully understand this, pause it. Make sure you really understand what's happening in this because that's a core process for what we're doing here in our optimization. Moving on, the next thing we need to do is make sure that we don't exceed our supply. So our suppliers have capacity and we can't purchase more than they can produce. And so let's go ahead and add some supply constraints. So the next thing we'll do is for each item in that supply matrix, I'm going to scroll way back up again. For each item in this matrix, we want to make sure that we don't exceed the capacity for items that we've purchased from that supplier. Let's go back down to that code. So for each item in that supply matrix, we're going to add a constraint where the name of the constraint is going to be the name of the supply, underscore supply. So in this case, S1_supply is the name of this constraint. And then for that, we're going to say that's going to equal. The sum of all of these things have to be less than the capacity. So remember up here we had to exceed the demand for our demand constraint. For our supply constraint, we have to be less than or equal to our capacity. We cannot exceed it. And so what does it have to be? It has to be the amount of things that are flowing from that supplier altogether have to equal less than that capacity. So what's happening? We're taking the sum of this list right here. So it's going to be the amount that we're flowing for each c in our cost matrix if the supplier name for the cost matrix equals the name of our current supplier in this for loop. And so in this case, we might say supplier one. So we're only going to include items that are flowing away from supplier one, or flowing-- that we're purchasing from supplier one in this. And so all of the variables that we're purchasing from supplier one, all the amounts that we're purchasing from supplier one have to be less than the capacity for supplier one. And again, we'll do this in a loop. So we'll loop over all those items. So we'll say for supplier two, same thing."
+        },
+        {
+          "source": "local:lecture_7_13_but_what_about_service",
+          "score": 0.3332,
+          "chars": 2381,
+          "text": "And let's say the 97% is what we care about in this particular example. There's also another supply who is submitting a lower bid for $475, but he's only 94% on time. The question is, do we choose the high service, high cost supplier? Or the low service, low cost supplier? In order to determine, we have to determine how much level of service is worth. Let's assume that level of service is worth $10 per each 1% of service. Somehow we got into this determination, we found out. We'll talk in a minute how to do it. But we decided that each percent of level of service is worth $10. What we do now, we decide on some baseline. And let's standardize on 94%, even though we can standardize on any other baseline. So let's bring everything to 94%, assuming that each 1% of service is worth $10. So the 94% supplier is already had $475. We don't have to move it. But the 97% supplier bid is modified. We take $30 off because his service is 30% better than the standard service. So we look at this supplier as if his cost is $470. Now we conduct the optimization between the two. And we compare $470 to $475. And of course, the 97% supplier will be chosen. At the end, of course, we don't pay $470. We pay $500. We pay the bid that this supplier gave us. But since we decided that each 1% level of service was worth $10, we should be happy with this choice. Of course, the challenge here is to estimate the value of the level of service. And there is no easy way to do it. Usually, it's done by-- I could call it-- argument. You can call it discussion between sales people, marketing people, operating people, plant people. They all come together. And through this discussion, they have to decide on the value of level of service. So it's something that comes from the outside in the optimization. But once this level is decided, we can conduct optimization. And I'll show you in a minute how. So now we have the following. We have the original bids here, the original table here with the initial values. And here we have this table is the level of service of each carrier on each lane. And this is an auxiliary table that we are creating for the purposes of this optimization. So what do we do here? First of all, we define level of service, so each supply and each item in percent per lane. This is what was done right here. Now we define what a percentage level of service is worth."
+        }
+      ],
+      "cost": {
+        "usd": 0.022104,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 3976,
+            "output_tokens": 30,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.002902,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 21946,
+            "output_tokens": 192,
+            "cache_read": 19123,
+            "cache_write": 2820,
+            "usd": 0.019201,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 26,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 7,
+      "student": "ugh fine, but if i get stuck i’m coming back. just to check, for Factory 2 i’m comparing 2.50 + .05*380, 3.20 + .05*717, 1.90 + .05*572, and 2.80 + .05*406, right?",
+      "tutor": "Exactly right. Now just do the arithmetic and pick the lowest. You've got this.",
+      "pedagogical_reasoning": "The student has correctly set up all four cost calculations for Factory 2. This is exactly right and I should confirm it briefly and encourage them to finish the comparison themselves.",
+      "retrieved": [
+        {
+          "source": "local:lecture_3_4_specialized_heuristics_for_fph",
+          "score": 0.4325,
+          "chars": 2398,
+          "text": "I divide that by 2, and I get $325. Now I go to step six. Is the total relevant cost per unit time in period two greater than that in period one? No, so I go to step seven, which says, go to step four, which means I increment: n is now equal to 2. So now I want to see, should I include period one, two, and three in what I've produced in time period one? Should I produce enough for those three periods? If I did that, what would my total relevant cost per unit time be? Well, I've got my $500 setup cost. And I have to keep 150 units for one month for period two. And I have to keep 100 units two months to take care of period three. Sum that up, divide by 3, I get $283. Now I'm at step six. And I look, is the total relevant cost in time period three greater than that in time period two? No. I go to step seven, which then takes me to step four. I increment n to n plus 1. So now I'm trying to determine, should I produce enough for time period four as well? What's the total relevant cost? $500 for the setup cost for time period one plus my inventory holding cost-- 150 units for one month for time period two plus 100 units for two months for time period three, 50 units three months for time period four. Sum that up, divide by 4, you get $250. I'm at step six now. Is $250 greater than $283? No. I go to step seven, go to step four. See how this works? It gets pretty repetitive. This is why we have computers do this, and we don't do this by hand too often. Now I'm trying to determine, do I want to produce enough for periods one through five from period one's production run? What's the cost? $500 for that one-time setup plus the inventory holding cost for periods two, three, four, and five. And you see, for example, for the 50 units demanded in period five, I'm holding them for four months. So I'm getting charged for each one of those months. What's my total relevant cost per unit time? $240. I'm at step six. Is $240 greater than $250? No. So I go to step seven, it takes me to step four. Now I'm trying to see, should I produce enough for month six as well? And you look at the total relevant cost-- again, one time setup plus inventory holding cost for periods two, three, four, five, and six. Sum that up, divide by 6-- because I'm covering six periods. I get $283. Now, is $283 greater than $240? Yes. So what does this mean? That means I want to produce enough up to here."
+        },
+        {
+          "source": "local:lecture_7_21_video_4_solving_part_4",
+          "score": 0.4266,
+          "chars": 2369,
+          "text": "So I'm going to go ahead and run this. So we've updated our data such that our cost matrix now includes this service level for each one of our fabric and supplier combinations. So I'm going to scroll down to the bottom here. And we're going to say we'll have the same variables we had before. So we're going to have the amount variable that we're going to have in that cost matrix, whether or not we're using that supplier. So we're going to have those binary variables for that fixed cost. We're going to still have the same M variable. And finally, we're going to have our model. But we need to make some adjustments here because we're not actually going to be using that original cost. We're going to be using a modified cost. And so I'm going to go ahead and create a special variable in our cost matrix. I'm going to call this c, adjusted cost, A-D-J-C-O-S-T. This adjusted cost is going to equal that-- let's go ahead and say that service level-- oops, that adjusted cost equals that service level, so c bracket service_level level and minus 0.95 because we're going to say, what's the difference? So, for example, 98 minus 0.95, that's going to be 3 percentage points. And so we'll say those three percentage points should represent $15 of change because that's $5 per percentage point. So I'm going to say service_level minus 98, and we're going to say times 100 because we have 0.03 is that difference from the service level of 98 to 95. And so we're going to say times 100 to get 3 percentage points' difference times $5. And that's going to equal that cost differential. Now, in this case, if our service level is higher, this is going to be 3, or 98 minus 95. So it's going to be a positive 3. So this is going to be $15 in adjusted cost. So I'm actually going to make this a negative 5. So I'm going to say having this increase is going to actually reduce our cost. So it's going to save us $5 from the cost that we're paying. And we're going to say all of this adjustment is going to be plus the actual cost, so c. And that's going to be cost. Is that what we called it? Yeah, c, cost. We'll go ahead and we'll look at this final one so we know that this cost is 125. And since it's 3 percentage points higher, we realize that this cost should be 110. So I'm going to go ahead and print. I'm going to run this cell again. I'm going to add some code below."
+        },
+        {
+          "source": "local:lecture_1_19_video_2_solving_part_2",
+          "score": 0.4218,
+          "chars": 423,
+          "text": "And you can see, we found a solution. So no error message, which is great. And we actually got the maximum profit we need to input in our Question 1 on Part 2 of this Blink problem recitation. I invite you to answer this number. Remember that you still need to use two decimal places. And please, if you have any further questions, use the discussion forum to interact with our staff team. Thank you, and see you in Part 3."
+        },
+        {
+          "source": "local:lecture_7_21_video_4_solving_part_4",
+          "score": 0.4217,
+          "chars": 2326,
+          "text": "PROFESSOR: Hi. Welcome to the fourth iteration of the EcoPants problem. And so we're going to be making some modifications based off of service levels that we get from our suppliers. So in this case, if you don't know this problem, I would recommend pausing the video and reviewing the problem over here on the right-hand side. All right. Now that you're familiar with what's going on in the problem, we are going to go ahead and review briefly what we want to do. And so given that we have a supplier-- so, for example, supplier 1 supplies fabric 1 with a 95% level of service, and supplier 2 supplies it with a 97% level of service-- we're going to make some adjustments for how much those cost. And so Barbara is going to be suggesting that a 1% increment-- and the service level is roughly equal to $5 per meter of fabric. And so you're going to be saying each 1% change is going to change essentially what we're optimizing for by $5 to help normalize for that service level. And we're going to be normalizing it to the service level of 95%. So let's go ahead, and let's start plugging that information in. And so this is actually going to be part of our cost matrix. And so we're going to update that cost matrix for each of these items. So we'll go down to our cost matrix, and we'll say, OK, we have a cost of 167 for fabric 1 from supplier 1. And we have a service level of 95%. So we're to say service-- S-E-R-V-I-C-E-- service_level. And that's going to equal 0.95. And I can go ahead and I can do that for all of my service levels. Again, to keep things pretty simple here, I'm going to go ahead and copy and paste a prepopulated matrix with all of those service levels. So I paste that here. You can see we have a service level for each one of those items. Perfect. Oop, it looks like I'm still actually editing problem 3. I'm going to go ahead and create a copy of this real quick. So we're going to install our SCX package. We are going to import our model. We've gone ahead. We've already changed these service levels. So I'm going to go ahead and run this. So we've updated our data such that our cost matrix now includes this service level for each one of our fabric and supplier combinations. So I'm going to scroll down to the bottom here. And we're going to say we'll have the same variables we had before."
+        },
+        {
+          "source": "local:lecture_2_2_building_the_model",
+          "score": 0.4206,
+          "chars": 2374,
+          "text": "My cost for moving the inbound barrel, that's the $0.55 a barrel. And then I've got my constraints down here that we used last time. One is p-min and p-max that limits the number of facilities I open for the DCs. I've got my two level of service constraints, one is my average miles so it has to be at least-- my distance averages can be no more, rather than 25 miles. And in this case I have to at least 80% of the demand within 50 miles. So these are the constraints. This should be very familiar to you. One thing I did a little differently is up here in the objective function-- now, the cell B3 is just the sum of the cells beneath it. And I wanted to isolate out the different buckets of cost. So you've got the distribution fixed cost, which is simply multiplying whether the DC is open or not, multiplied by its fixed cost. The outbound transportation is simply multiplying everything that's in this, right? All the cells I have here times my distance matrix, which I'm not showing on the slide, times my cost per barrel, per mile. The next one is the inbound transportation, and that's simply going to multiply the number of barrels shipped from each of the plants times the cost per barrel. And so forth down. The manufacturing cost is simply this times the amount that I'm actually moving through. And my DC handling is simply the amount that goes through each DC over here in sales N20 to N24 multiplied by my variable cost. So it's kind of sloppy that I'm writing. Let me clean that up just a tad. But this should be pretty straightforward, and you've got availability to the spreadsheet. Get comfortable with it, because we'll use this a fair amount for this whole lesson. Now we're going to use that model to create three baselines. Why three baselines? Well, you'll find out in a second. So let's talk about each of them. The first baseline uses the actual flows. So this is using the current product flows not the optimized flows. And we're trying to answer the question, does the model cost reflect the actual cost. And so, does what the model predict actually match what we experience today, because I'm using the actual flows. The second baseline takes this model and says, well, what happens if I don't flow exactly as I did but I adhere to that policy where I have a single DC going to an assigned city. What does that do? Does that change the outcome?"
+        },
+        {
+          "source": "local:lecture_2_19_video_2_solving_part_2",
+          "score": 0.4206,
+          "chars": 693,
+          "text": "So this one is going to say that any number of units flowing in should be exact same, because in here we need to leave no units, to any units going out of the house. With that, we're going to just run the model, click Solve, and see how it goes. I encourage you to populate your answers within the questions coming in part 2. Let me know how it goes, and please analyze your results. If you want to more of the kind of insights we gather from the results, stay till the last video of this recitation for more details on that. And I encourage you to start doing it also in the discussion forum, together with our CTAs and our outstanding community of learners. Go for it, and see you in part 3."
+        }
+      ],
+      "cost": {
+        "usd": 0.021608,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4083,
+            "output_tokens": 70,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.002618,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 24964,
+            "output_tokens": 72,
+            "cache_read": 21943,
+            "cache_write": 3018,
+            "usd": 0.018989,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 41,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 8,
+      "student": "ok can you at least confirm which one is smallest after i compute them, bc i do not trust my brain rn.",
+      "tutor": "Sure — share your four numbers and I'll tell you if you've picked the right one.",
+      "pedagogical_reasoning": "The student wants me to confirm their final answer for Part 1. This is reasonable — checking a computed result is different from giving the answer. I should ask them to share their four computed values first, then I can confirm whether they've identified the minimum correctly.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_1_the_transportation_problem",
+          "score": 0.3962,
+          "chars": 930,
+          "text": "Region 3, I'm summing these. So you see it's a very compact form. So if I have a really large problem, you might want to see it this way. I personally always prefer the larger, more spread out one because you see the matrices, and we'll talk more about this as we go on. But I could even make it more compact, and this is the exact same thing, and these spreadsheets are in the resources so you can play with them. They solve the exact same problem. However, they have different pros and cons. These two formulations, formulation two and three, are much more compact, but they're solving the same problem. It's just you have to look a little deeper and say, OK, what is this number? How does it tie together compared to that first formulation I showed you, where everything is right out there? You can look at it and immediately see what the model is saying. So next, we're going to go in and solve the model, but let's stop here."
+        },
+        {
+          "source": "local:lecture_1_19_video_2_solving_part_2",
+          "score": 0.3521,
+          "chars": 423,
+          "text": "And you can see, we found a solution. So no error message, which is great. And we actually got the maximum profit we need to input in our Question 1 on Part 2 of this Blink problem recitation. I invite you to answer this number. Remember that you still need to use two decimal places. And please, if you have any further questions, use the discussion forum to interact with our staff team. Thank you, and see you in Part 3."
+        },
+        {
+          "source": "local:lecture_1_6_continuous_location_models",
+          "score": 0.3444,
+          "chars": 2395,
+          "text": "What center of gravity is trying to do is say, OK, where would I put a center point to balance all of these? If I had this rigid board, where would I put my finger to balance them all? It's the point of balance, or the centroid. This is what center of gravity means. So how would I find that? Well, all you're going to do is take the weighted average of each of the x and y coordinates. So let's look at the x one. So I would say that the x for the centroid-- that's what this is-- going to be equal to 425, which is the weight of Boston, divided by 965, which is simply the sum of these weights, just summing them all up. So this is the percent of the volume that Boston represents times its x-coordinate of 100. I'll do the same thing for Providence. 320 divided by 965 times its x coordinate, and the same thing for Springfield. And I get a weighted average of 77. Do the same thing for the y coordinates, and I get a y coordinate of 62. So this tells me my center of gravity is that blue dot, right there at x coordinate 77, y coordinate 62. Why are they different? I bet some of you thought they'd be the same. They're different because they're doing very different things. The Weber one, the single location up here, the red dot, minimized the distance times the weight. The centroid-- what its actually doing if you look at it-- it's minimizing the distance squared times the weight. So in other words it's implicitly over-weighting the further locations. So the further it's away, it's like a seesaw. The further I am on on that seesaw, the more my weight is going to count, and not just in a linear fashion, but in a squared fashion. This is how physics works. This is what a centroid is. It's not, however, minimizing the distance times the weight. So when we use this, we want to use the Weber method. We want to use the method that minimizes distance and volume, not distance squared volume. That makes sense in physics, in the physical world. Doesn't make sense when I'm designing a network. So picking between using center of gravity and Weber method for the minimum distance weight, we want to use that Weber point. However, the Weber point's not perfect. And so here I'm showing what the average distances are. And you'll see that the center of gravity, the average weighted distance for location is higher than it is for the Weber one. However, even the Weber one's not perfect."
+        },
+        {
+          "source": "local:lecture_1_20_video_3_solving_part_3",
+          "score": 0.3431,
+          "chars": 674,
+          "text": "So the units flowing from each one of the assembly plants should be lower, actually, or equal to the capacity constraint. So this means that I can send only as many units as the capacity allows and as much as we need considering the demand, right? Those are the two constraints that we have set. And then we're all set to click Solve and see our results. We found a solution, which is OK. And then it's your turn to input this answer using the two decimal places in our question to part 3 of the Blink problem. And let me how it goes. Please remember to share your questions in the forum if you have any. And I hope to see you in part 4. We're almost there, team. Way to go."
+        },
+        {
+          "source": "local:lecture_1_18_video_1_solving_part_1",
+          "score": 0.3409,
+          "chars": 2190,
+          "text": "If instead of using larger or equal, we use lower than this number, the model will not send any number of units. Why is that? Because you're telling the model to reduce your transportation cost to the minimum. So if you're not sending any units, it's a possibility that it will select not sending any units. So we need to force our model to at least send the number of units we are requested. And as we can see, we're only going to send as many units as we need. So we'll just click OK. And then let's think about the non-negativity constraint we talked about. This is just about selecting that the number of units flowing here are going to be larger or equal to 0, which means it will never be a negative number. Once we click OK, we are going to check the rest of the default settings. Make unconstrained variable non-negative. It's a healthy one to have active by default unless you need it otherwise. And then we're solving using linear programming, so this is what we're clicking here. And now we're ready to go to solve our model. I'll click Solve. I will keep the solution found by the solver. And now, we have our answer for question two. I invite you to double-check that question two is asking us to provide two decimal places. And that's a very important thing to consider, because we always tell you how to input your answer. This is very important because you don't want to miss any points in graded assignments or exams just because you're not entering your answer correctly. In order for it to be graded as it's needed, you need to input the answer considering the prompt. So please double-check if we're requesting about nearest integer, rounding up, rounding down, or if we want you to round to a certain number of decimal places. In this case, we're asking for two decimal places. So I invite you to populate this number you got, and let me know how it goes. If you have any questions, or you didn't get it right at the first attempt, I invite you to go back, try to debug your model using the different elements we talked about, and then give it another try. Or use the discussion forum to get additional support from our CTAs. Thank you, and hope to see you in part two."
+        },
+        {
+          "source": "local:lecture_2_3_running_initial_scenarios",
+          "score": 0.3305,
+          "chars": 2383,
+          "text": "And in this case, it's restricting it. Notice it's using the two smaller ones versus using even just two of the bigger ones. And you can see it's starting to increase the number of split deliveries. Those two are still there. And we're still-- now we're just limited to 3 DC's. So if I ratchet it down again, what if I go to 2 DC's? And you can see what it really does, it goes down and it says, OK, Worcester and Boston, those are the 2 DC's that are opened. And it looks like Worcester's going to serve everything down south. And it looks like Boston is serving everything north, Concord, Manchester, Nashua, Portsmouth, and then, wow, interestingly, Providence, which is way south. So it's kind of a split. But we'll look at the cost in a second to compare them. But I just want to see what happens. And all I'm doing is ratcheting down the number of DC's. Let's go one more. If I go to one, and all I'm doing here is setting the P_MIN, the P_MAX to 1. And I'll get this. Oh. What did I do wrong? It says it can't find a feasible solution. Well, we probably could have figured that out, right? If I look at the capacity for all the DC's, I know there's 2,000 units going through. No single DC can handle that, so I'm asking the optimization to do something it can't do. There's no feasible solution. So the fewest number of DC's given these capacity numbers is two. So hopefully that makes sense. Whenever you have capacity constraints, you get this a lot, because you might set something up that there is no feasible solution. And that's when you'll get this warning. And this is a signal for you to say, OK, what did I do wrong? Trace your steps back, and the main culprit is always going to be these capacity constraints. They cause a lot of those problems. All right. So I did four scenarios, and actually the fourth one doesn't count because it was infeasible. And so let's see how they look. So I've got here a chart. And in the table, I'm comparing Baseline 3, which makes sense that that's the one I'm comparing, because I've optimally assigned, and it's really saying it's the five DC solution. So I'm comparing five DC's to four to three to two. And we don't even worry about this, because I can't go down to one. So what can we say? Let's look at it. Where's the big change? Well, we look at the lowest cost and it looks like the three DC provides the lowest cost. Why?"
+        }
+      ],
+      "cost": {
+        "usd": 0.019932,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4177,
+            "output_tokens": 27,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.002207,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 27327,
+            "output_tokens": 91,
+            "cache_read": 24961,
+            "cache_write": 2363,
+            "usd": 0.017724,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 26,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 9,
+      "student": "i haven’t computed them yet 😭 can you just wait nvm.",
+      "tutor": "No rush — go compute them and come back when you're ready. You've got the setup right, just crunch the four numbers. 👍",
+      "pedagogical_reasoning": "The student is expressing frustration and hasn't done the calculations yet. I should be brief, supportive, and simply wait for them to share their numbers.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_19_video_2_solving_part_2",
+          "score": 0.3139,
+          "chars": 423,
+          "text": "And you can see, we found a solution. So no error message, which is great. And we actually got the maximum profit we need to input in our Question 1 on Part 2 of this Blink problem recitation. I invite you to answer this number. Remember that you still need to use two decimal places. And please, if you have any further questions, use the discussion forum to interact with our staff team. Thank you, and see you in Part 3."
+        },
+        {
+          "source": "local:lecture_1_21_video_4_solving_part_4",
+          "score": 0.309,
+          "chars": 2106,
+          "text": "So variables are all set. You can see now that all my constraints have an error message, and this is because I removed many things. So let's delete. And now I will start from scratch. So we talk about needing the demand constraint. As you know, we are going to do, the units flowing to each region, should be larger or equal to the demand from those regions. I'm also going to consider that the units flowing-- actually, this one, from the assembly plants to the DC should be lower or equal than the capacity. Cannot exceed the capacity. I'm also adding the non-negativity constraint, larger or equal to 0, for my first array of variables. And then the same for my second array of variables. And then I'm only missing the conservation of flow constraint. Because we talked about that, when we thought about the elements of our model. However, I didn't include that on my spreadsheets yet, so we're not losing anything we did here. I will just close instead of solving. This will keep every changes I've made, so don't worry. I'll close it. And what we need here is a place to sum everything that goes into the DC and out of it, just to be sure that it's the same. So you can do it here, just summing up everything that comes in and minus what comes out. You can also do something like DC in and DC out, which makes it much more clearer for you. And you can just do this. This is what's coming in, and this is what's coming out. So I'll go back to my Solver. And I will now tell the Solver that everything that comes in should be equal to everything that comes out. I'll click OK. I think I'm now all set. I will just go with Solve. And we found a solution. I will click OK. And while I continue with my color coding of the calculated fields I missed, please go and try to input your answer in the question 2 of part 4 of the Blink problem. And let us know how it goes. As usual, if you face any further issues or you need debugging your model, please pause the video. Go back. Give it a try again. Or use the discussion forum for further support. Thank you. And we're almost there, team. See you in part 5."
+        },
+        {
+          "source": "local:lecture_2_19_video_2_solving_part_2",
+          "score": 0.2878,
+          "chars": 693,
+          "text": "So this one is going to say that any number of units flowing in should be exact same, because in here we need to leave no units, to any units going out of the house. With that, we're going to just run the model, click Solve, and see how it goes. I encourage you to populate your answers within the questions coming in part 2. Let me know how it goes, and please analyze your results. If you want to more of the kind of insights we gather from the results, stay till the last video of this recitation for more details on that. And I encourage you to start doing it also in the discussion forum, together with our CTAs and our outstanding community of learners. Go for it, and see you in part 3."
+        },
+        {
+          "source": "local:lecture_1_22_video_5_solving_part_5",
+          "score": 0.2876,
+          "chars": 2375,
+          "text": "Remember, we incorporated conservation of flow as soon as we had the DCs. And we always had this non-negativity constraint active. But now, finally, we're going to use binary variables in linking constraint because we're going to work on activating or deactivating the nodes-- so the DCs. And this is going to consider whether we want to include that fixed cost or not in our calculation to get the optimal total cost. I'll submit. And of course, click the Show Answer button if you want to see the model formulation. And let's go together to confirm that we're minimizing total cost in question 2 and that we still need two decimal places. So just keep that in mind whenever you're working on your answers. Now, go up to see what are my new data points that I need to bring to my spreadsheet so that we continue working together on that. Start by duplicating my part 4 for the last time in this problem. And I will rename it as part 5. You'll know that by now. And I'm also bring in all the new pieces of information. So I will add here D1 and DC2 Fixed Cost. This is provided data. So I'll make it gray. And we're also provided with the distances. So I'm going to add that to the existing matrix. So I'll rename DC1, DC1. And our DC2 is going to be much closer. And I'm also doing the same for the Outbound section, which is going to be here. And this is including a little bit of further away distance. That's all the new information we have. We are also told that our total cost now is different. So I'm going to show you how we adjust our model to include this. To have my objective function up above the model, I'm going to add a few rows here. Now my total cost will be the new objective function. And this is including both fixed and variable costs. So this is going to be my fixed cost. Total cost will sum both of this. And I will adjust the color coding. I promise the color coding is super helpful for debugging and for setting the solver. So if you get used to it, it won't take you any more time. And it will save you a lot of effort in the future. Let's see what else do we need to adjust. We now have been provided with new distances. So definitely, we need to adjust our variables. This is because, as you know, we're going to have units flowing to another DC. And we're not including that here. So I'm just adding some more space. I will rename this to DC1."
+        },
+        {
+          "source": "local:lecture_1_20_video_3_solving_part_3",
+          "score": 0.2866,
+          "chars": 674,
+          "text": "So the units flowing from each one of the assembly plants should be lower, actually, or equal to the capacity constraint. So this means that I can send only as many units as the capacity allows and as much as we need considering the demand, right? Those are the two constraints that we have set. And then we're all set to click Solve and see our results. We found a solution, which is OK. And then it's your turn to input this answer using the two decimal places in our question to part 3 of the Blink problem. And let me how it goes. Please remember to share your questions in the forum if you have any. And I hope to see you in part 4. We're almost there, team. Way to go."
+        },
+        {
+          "source": "local:lecture_1_16_video_4_solving_part_4",
+          "score": 0.2864,
+          "chars": 1990,
+          "text": "Same thing for region two, region three. Now we'll go down to our assembly supply. That all make sense as well. So everything that leaves our assembly supply has to be less than the constraints we have, the limits we have on our assembly plants. And then finally, we have our last constraint, which is the dc conservation_of_flow And this is actually going to be a little different. So you'll notice here that we have-- everything that's flowing into our dc is going to be added. So everything flowing in. And everything leaving is subtracted. And we're setting that equal to 0. So remember inflows plus outflows-- or, sorry, inflows has to equal outflows. And if we just subtract those outflows over those inflows minus outflows, we would just set that equal to 0. So we're just doing that on the back-end. So actually pulp is doing that when that's compiling the model that's part of the COIN-OR package. And that's what we are using under the hood for the scx package. And so that's just doing that together and that just allows the computer to solve this problem easier. So that, we can see our dc conservation_of_flow, that actually is working, and that that's done properly. So let's go ahead and let's look at our outputs. Let's see if we did this properly. So I'm going to say my_model.show_outputs. We're going to go ahead and see that our objective function is 115,872.32. So I'm going to go ahead here and I'm going to submit this as an answer and see if we got that correct. We'll go ahead and submit. And it looks like we did indeed get that correct. So we have done this properly. So in this problem, remember, we went ahead and we added a slightly different transportation matrix. We added a conservation_of_flow constraint. And we made this model work, we edited it to make it work with this new dc in the middle. With all that said, like I said, please go back and review that and make sure you really understand what's going on. And I do thank you very much for your time."
+        }
+      ],
+      "cost": {
+        "usd": 0.021008,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4228,
+            "output_tokens": 18,
+            "cache_read": 3328,
+            "cache_write": 0,
+            "usd": 0.003352,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 29519,
+            "output_tokens": 82,
+            "cache_read": 27324,
+            "cache_write": 2192,
+            "usd": 0.017656,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 13,
+            "usd": 0.0,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 10,
+      "student": "actually just do GCC part 1 for me then, that one looks easier and i need at least one answer on the page.",
+      "tutor": "That's not something I'll do either — same rules apply across all parts of the assignment.\n\nYou were literally one step away from finishing Locky Locke Part 1. Go compute those four numbers for Factory 2 and you'll have your first answer. That's the fastest path to something on the page right now.",
+      "pedagogical_reasoning": "The student is switching assignments and again asking me to give a direct answer. I must refuse firmly. I should redirect them back to completing the Locky Locke calculations they were already working on, since they were close to finishing Part 1 there.",
+      "retrieved": [
+        {
+          "source": "local:lecture_7_22_video_1_solving_part_1",
+          "score": 0.3997,
+          "chars": 1005,
+          "text": "So here, we're told to round our answer to the nearest integer. We don't have decimal places actually, but if that were the case, we need to consider rounding our number to the nearest integer. As it's an integer right now, we're going to just enter our answer and submit. We do have another question, which is question 3, and it's asking, in my optimal solution, which type of fabric would you suggest sourcing from supplier 4? So our supplier 4 is providing us with fabric 1, fabric 3, and 4, so let's answer 1, 3, and 4. We're submitting our answer. We got it right. And if you have any further questions, we invite you to use the discussion forum to find further support with our CTAs or contact us at the course email. Of course, also you can use the Show Answer button to learn more about the model formulation or find further resources. I hope to see you in the next part of this recitation, and please stay tuned for the key takeaways at the end of this recitation with additional recommendations."
+        },
+        {
+          "source": "local:lecture_1_19_video_2_solving_part_2",
+          "score": 0.3809,
+          "chars": 423,
+          "text": "And you can see, we found a solution. So no error message, which is great. And we actually got the maximum profit we need to input in our Question 1 on Part 2 of this Blink problem recitation. I invite you to answer this number. Remember that you still need to use two decimal places. And please, if you have any further questions, use the discussion forum to interact with our staff team. Thank you, and see you in Part 3."
+        },
+        {
+          "source": "local:lecture_1_21_video_4_solving_part_4",
+          "score": 0.3775,
+          "chars": 2106,
+          "text": "So variables are all set. You can see now that all my constraints have an error message, and this is because I removed many things. So let's delete. And now I will start from scratch. So we talk about needing the demand constraint. As you know, we are going to do, the units flowing to each region, should be larger or equal to the demand from those regions. I'm also going to consider that the units flowing-- actually, this one, from the assembly plants to the DC should be lower or equal than the capacity. Cannot exceed the capacity. I'm also adding the non-negativity constraint, larger or equal to 0, for my first array of variables. And then the same for my second array of variables. And then I'm only missing the conservation of flow constraint. Because we talked about that, when we thought about the elements of our model. However, I didn't include that on my spreadsheets yet, so we're not losing anything we did here. I will just close instead of solving. This will keep every changes I've made, so don't worry. I'll close it. And what we need here is a place to sum everything that goes into the DC and out of it, just to be sure that it's the same. So you can do it here, just summing up everything that comes in and minus what comes out. You can also do something like DC in and DC out, which makes it much more clearer for you. And you can just do this. This is what's coming in, and this is what's coming out. So I'll go back to my Solver. And I will now tell the Solver that everything that comes in should be equal to everything that comes out. I'll click OK. I think I'm now all set. I will just go with Solve. And we found a solution. I will click OK. And while I continue with my color coding of the calculated fields I missed, please go and try to input your answer in the question 2 of part 4 of the Blink problem. And let us know how it goes. As usual, if you face any further issues or you need debugging your model, please pause the video. Go back. Give it a try again. Or use the discussion forum for further support. Thank you. And we're almost there, team. See you in part 5."
+        },
+        {
+          "source": "local:lecture_1_22_video_5_solving_part_5",
+          "score": 0.3677,
+          "chars": 2388,
+          "text": "So actually, it's correct. Everything flowing to regions here should be larger or equal than the demand, which is highlighted here. That's correct. The next constraint is related to the conservation of flow. We were just saying that everything in DC1 should be going out. We're now using it for both. So I'm saying that everything flowing into both DCs should be the same that it's flowing out from both DCs. The last one we have here is the capacity constraint. We just double-check it's working well so any units flowing out of the assembly plant should be lower or equal than the capacity we have. So that's perfect. That doesn't need any changes. I'll click OK. And let's think about the new constraints. So we already added the new binary variables. We need to add the constraints saying that anything that goes here needs to be binary. So it's only allowed for 1 or 0, as we talked. And then I will add another constraint, which is related to the linking one, that says that the result of this linking constraint should be lower or equal to 0. And I will show you in a minute how does that work. But I will just click OK. And I would say we're ready to go in terms of solving the model. We actually found a solution. Solver actually found a solution where all constraints and optimality conditions are satisfied, which is great. And now you've got your answer in the total cost here. This is what we need to input in our question 2 of part 5 of the Blink problem in this recitation. But before we go, please double-check how the linking constraint works. If we happen to have units flowing in DC2 and this is not set to 1, the linking strain will become positive. And if you analyze the elements we're multiplying that we're considering flows and the total of the demand, this is how it will work. It will never be negative if this is 0. So I'll make it 1. And you can see it is actually working because DC2 is the only one open. So congratulations. After submitting the total cost as the answer of this part of the problem, you're all set and good to go. Hopefully, you have a clearer understanding on the different elements of a model, its formulation, and also, you have a better understanding on those small things that probably were pain points in the past. In the next tab, you'll find our takeaways and those small hints and tips that I provided summarized in just one slide."
+        },
+        {
+          "source": "local:lecture_1_16_video_4_solving_part_4",
+          "score": 0.366,
+          "chars": 1990,
+          "text": "Same thing for region two, region three. Now we'll go down to our assembly supply. That all make sense as well. So everything that leaves our assembly supply has to be less than the constraints we have, the limits we have on our assembly plants. And then finally, we have our last constraint, which is the dc conservation_of_flow And this is actually going to be a little different. So you'll notice here that we have-- everything that's flowing into our dc is going to be added. So everything flowing in. And everything leaving is subtracted. And we're setting that equal to 0. So remember inflows plus outflows-- or, sorry, inflows has to equal outflows. And if we just subtract those outflows over those inflows minus outflows, we would just set that equal to 0. So we're just doing that on the back-end. So actually pulp is doing that when that's compiling the model that's part of the COIN-OR package. And that's what we are using under the hood for the scx package. And so that's just doing that together and that just allows the computer to solve this problem easier. So that, we can see our dc conservation_of_flow, that actually is working, and that that's done properly. So let's go ahead and let's look at our outputs. Let's see if we did this properly. So I'm going to say my_model.show_outputs. We're going to go ahead and see that our objective function is 115,872.32. So I'm going to go ahead here and I'm going to submit this as an answer and see if we got that correct. We'll go ahead and submit. And it looks like we did indeed get that correct. So we have done this properly. So in this problem, remember, we went ahead and we added a slightly different transportation matrix. We added a conservation_of_flow constraint. And we made this model work, we edited it to make it work with this new dc in the middle. With all that said, like I said, please go back and review that and make sure you really understand what's going on. And I do thank you very much for your time."
+        },
+        {
+          "source": "local:lecture_2_19_video_2_solving_part_2",
+          "score": 0.348,
+          "chars": 693,
+          "text": "So this one is going to say that any number of units flowing in should be exact same, because in here we need to leave no units, to any units going out of the house. With that, we're going to just run the model, click Solve, and see how it goes. I encourage you to populate your answers within the questions coming in part 2. Let me know how it goes, and please analyze your results. If you want to more of the kind of insights we gather from the results, stay till the last video of this recitation for more details on that. And I encourage you to start doing it also in the discussion forum, together with our CTAs and our outstanding community of learners. Go for it, and see you in part 3."
+        }
+      ],
+      "cost": {
+        "usd": 0.021984,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4279,
+            "output_tokens": 29,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.002492,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-4-6",
+            "input_tokens": 31777,
+            "output_tokens": 144,
+            "cache_read": 29516,
+            "cache_write": 2258,
+            "usd": 0.019491,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 26,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    }
+  ]
+}

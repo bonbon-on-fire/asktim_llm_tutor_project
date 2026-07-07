@@ -28,7 +28,7 @@ def has_index(course: str) -> bool:
 
 
 def retrieve_scored(
-    course: str, query: str, *, k: int = 6, max_chars: int = 12000
+    course: str, query: str, *, k: int = 3, max_chars: int = 8000
 ) -> list[tuple[Chunk, float]]:
     """Return up to *k* ``(chunk, cosine_score)`` pairs for *query*, capped at *max_chars*.
 
@@ -49,7 +49,7 @@ def retrieve_scored(
     return out
 
 
-def retrieve(course: str, query: str, *, k: int = 6, max_chars: int = 12000) -> list[Chunk]:
+def retrieve(course: str, query: str, *, k: int = 3, max_chars: int = 8000) -> list[Chunk]:
     """Return up to *k* relevant chunks for *query*, capped at *max_chars* total."""
     return [c for c, _ in retrieve_scored(course, query, k=k, max_chars=max_chars)]
 

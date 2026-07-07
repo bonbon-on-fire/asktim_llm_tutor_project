@@ -79,12 +79,12 @@ DEFAULT_TURN_SIZE = 10
 DEFAULT_TRIALS = 3
 DEFAULT_WORKERS = 15
 DEFAULT_OUTPUT_SUFFIX = "raw_rag"
-# Gen Z-voiced variants only: 04 (scripted), 05 (unscripted), 06 (strategy-sweep)
+# Gen Z-voiced variants only: 01 (scripted), 02 (unscripted), 03 (strategy-sweep)
 # — one per behavior mode, giving diversity without the formal-register duplicates.
 DEFAULT_PERSONAS = [
     f"{ptype}_{i:02d}"
     for ptype in ("chaotic", "clueless", "cooperative")
-    for i in (4, 5, 6)
+    for i in (1, 2, 3)
 ]
 # (kind, number) — 3 graded exercises + 3 practice problems.
 DEFAULT_PROBLEMS = [

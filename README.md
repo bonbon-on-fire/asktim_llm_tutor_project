@@ -130,6 +130,8 @@ flowchart TD
 
 **UI Runners (`internal_testing/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_transcript.py`), RAG-context transcript generation (`run_transcript_rag.py`, which retrieves the relevant chunks per student turn and records both what RAG retrieved and per-turn / per-transcript cost estimates via `utils/pricing.py`), and transcript judging (`run_transcript_judge.py`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
 
+**RAG evaluation (`eval/rag/`):** A retrieval ground-truth dataset plus its generator, for measuring whether the RAG system pulls the *right* lecture passage for a student question. `generate_ground_truth.py` works passage → question (so gold is automatic): it segments lectures into sentence-aligned passages, asks Claude for student-voiced questions each with a verbatim supporting quote, and pins the gold to **source coordinates** — `(lecture file, char span) + quote`, not chunk ids — so labels survive re-chunking and stay comparable across different RAG systems. Each row also records whether baseline retrieval found the gold (recall@k) so the hard cases surface. See [`eval/rag/README.md`](eval/rag/README.md).
+
 **Shared web layer (`ui_core/`):** Common infrastructure factored out of `main_ui` and `sandbox_ui` (and partly reused by `database_ui`) so it isn't duplicated three times — DB engine/session helpers (`db/session.py`), shared `Message`/`Student`/`UploadedImage` model mixins (`db/models_common.py`), app-agnostic conversation/image/student services parameterized by each app's own models (`services/`), a `TutorBridge` base class exposing hooks like `prepare_ctx`, `cache_key`, `build_assignment_text`, and `retrieved_context` for subclasses to override (`tutor_bridge.py`), an identity/history blueprint factory pair (`web/blueprints/identity.py`, `web/blueprints/history.py`), a static blueprint serving the shared `chat.css` at `/ui-core` (`web/static_blueprint.py`), a shared page shell (`templates/base_chat.html`), and the `create_app` Flask-assembly factory (`app_factory.py`) that both chat apps build on.
 
 **Dashboard (`dashboard_ui/`):** Flask app (port 5002) that discovers all raw transcripts on disk, attaches each one's Claude judge grade, and serves a sortable table (with a Score column) plus a per-transcript detail view (full conversation + grade panel) via a single-page JS frontend.
@@ -146,7 +148,7 @@ flowchart TD
 - Requires guided questions that move the student toward insights themselves
 - Limits responses to one or two focused questions or observations per turn
 
-### 2. Student Persona (`students/personas/chaotic.txt`)
+### 2. Student Persona (`students/personas/chaotic_01.txt`)
 
 - Simulates a student who pushes back against Socratic questioning
 - Demands direct answers and complains the method is unhelpful
@@ -278,7 +280,7 @@ asktim_llm_tutor_project_2026/
 │
 ├── students/
 │   ├── run_student.py       # Shared LangGraph engine for all personas
-│   └── personas/            # chaotic, cooperative, clueless (one per type)
+│   └── personas/            # chaotic/cooperative/clueless _01.._03 (scripted/unscripted/strategy-sweep, Gen Z voice)
 │
 ├── tutor/
 │   ├── run_tutor.py         # LangGraph engine + prompt loading + response parsing
@@ -294,6 +296,9 @@ asktim_llm_tutor_project_2026/
 │   ├── run_transcript.py            # Generate raw transcripts in bulk (--output-suffix, --yes)
 │   ├── run_transcript_judge.py          # Grade transcripts (--provider, --source-suffix, --output-suffix, --yes)
 │   └── cli_utils.py             # Shared interactive selection-prompt helpers
+│
+├── eval/
+│   └── rag/                 # RAG retrieval eval: generate_ground_truth.py + ground_truth/<course>.jsonl
 │
 ├── transcripts/             # Generated conversations, one folder per persona family.
 │   │                        # Current corpus: SC2x with-lecture-context, tutor_05, 108 files each.

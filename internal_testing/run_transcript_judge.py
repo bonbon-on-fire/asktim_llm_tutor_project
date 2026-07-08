@@ -78,16 +78,16 @@ def _discover_raw_transcripts(source_suffix: str = "raw") -> list[Path]:
 
 
 def _discover_judge_prompts() -> list[str]:
-    """Return available judge prompt names from eval/judge/prompts/."""
-    judge_prompts_dir = _REPO_ROOT / "eval" / "judge" / "prompts"
+    """Return available judge prompt names from eval/tutor_judge/prompts/."""
+    judge_prompts_dir = _REPO_ROOT / "eval" / "tutor_judge" / "prompts"
     if not judge_prompts_dir.exists():
         return []
     return sorted(path.stem for path in judge_prompts_dir.glob("judge_*.txt"))
 
 
 def _discover_judge_rubrics() -> list[str]:
-    """Return available judge rubric names from eval/judge/rubrics/."""
-    judge_rubrics_dir = _REPO_ROOT / "eval" / "judge" / "rubrics"
+    """Return available judge rubric names from eval/tutor_judge/rubrics/."""
+    judge_rubrics_dir = _REPO_ROOT / "eval" / "tutor_judge" / "rubrics"
     if not judge_rubrics_dir.exists():
         return []
     return sorted(path.stem for path in judge_rubrics_dir.glob("rubric_*.md"))
@@ -140,7 +140,7 @@ def _grade_one(
         )
     shutil.copyfile(raw_path, target_path)
 
-    from eval.judge.run_judge import judge_transcript
+    from eval.tutor_judge.run_judge import judge_transcript
 
     result = judge_transcript(
         _relative_stem(target_path),
@@ -203,7 +203,7 @@ def _get_interactive_config() -> tuple[str, str, str]:
     # Judge prompt selection
     available_prompts = _discover_judge_prompts()
     if not available_prompts:
-        raise RuntimeError("No judge prompts found in eval/judge/prompts/")
+        raise RuntimeError("No judge prompts found in eval/tutor_judge/prompts/")
     
     prompt_name = prompt_single_selection(
         "Judge prompt",
@@ -214,7 +214,7 @@ def _get_interactive_config() -> tuple[str, str, str]:
     # Judge rubric selection
     available_rubrics = _discover_judge_rubrics()
     if not available_rubrics:
-        raise RuntimeError("No judge rubrics found in eval/judge/rubrics/")
+        raise RuntimeError("No judge rubrics found in eval/tutor_judge/rubrics/")
     
     rubric_name = prompt_single_selection(
         "Judge rubric",
@@ -245,11 +245,11 @@ Examples:
     )
     parser.add_argument(
         "--prompt",
-        help="Judge prompt stem (from eval/judge/prompts/judge_*.txt)",
+        help="Judge prompt stem (from eval/tutor_judge/prompts/judge_*.txt)",
     )
     parser.add_argument(
         "--rubric",
-        help="Judge rubric stem (from eval/judge/rubrics/rubric_*.md)",
+        help="Judge rubric stem (from eval/tutor_judge/rubrics/rubric_*.md)",
     )
     parser.add_argument(
         "--source-suffix",

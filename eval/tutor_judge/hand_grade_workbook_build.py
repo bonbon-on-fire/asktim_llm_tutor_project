@@ -17,7 +17,7 @@ from openpyxl.utils import get_column_letter
 
 REPO = Path(__file__).resolve().parents[2]
 TRANSCRIPTS = REPO / "transcripts"
-OUT_XLSX = REPO / "eval" / "judge" / "hand_grade_workbook.xlsx"
+OUT_XLSX = REPO / "eval" / "tutor_judge" / "hand_grade_workbook.xlsx"
 EXCEL_CELL_MAX = 32767
 
 # (persona_type, transcript_number) — same 20 as stratified list (seed 42).
@@ -206,7 +206,7 @@ def main() -> int:
 
     fill_spec = importlib.util.spec_from_file_location(
         "hand_grade_workbook_claude_fill",
-        REPO / "eval" / "judge" / "hand_grade_workbook_claude_fill.py",
+        REPO / "eval" / "tutor_judge" / "hand_grade_workbook_claude_fill.py",
     )
     if fill_spec and fill_spec.loader:
         fill_mod = importlib.util.module_from_spec(fill_spec)

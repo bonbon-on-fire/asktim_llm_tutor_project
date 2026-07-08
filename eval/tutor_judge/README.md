@@ -2,7 +2,7 @@
 
 LLM-based grader that scores tutor–student conversation transcripts against a rubric.
 
-Current defaults in code (`eval/judge/run_judge.py`):
+Current defaults in code (`eval/tutor_judge/run_judge.py`):
 - prompt: `judge_05`
 - rubric: `rubric_05`
 
@@ -43,7 +43,7 @@ Transcripts live in the top-level `transcripts/` folder (not inside `judge/`).
 
 ## Manual grading workbook
 
-`eval/judge/hand_grade_workbook.xlsx` is structured for rubric-level deduction entry with 4 sheets:
+`eval/tutor_judge/hand_grade_workbook.xlsx` is structured for rubric-level deduction entry with 4 sheets:
 - `compiled grading`
 - `faizan grading`
 - `romain grading`
@@ -52,7 +52,7 @@ Transcripts live in the top-level `transcripts/` folder (not inside `judge/`).
 `faizan grading` / `romain grading` / `nishita grading` include a `transcript` column after `transcript number` (plain text per turn, same field order as raw JSON: `turn`, `student`, `tutor`, `pedagogical_reasoning`, labeled `turn:` / `student:` / `tutor:` / `pedagological reasoning:`).
 Deduction columns follow `rubric_08` subsections (excluding `1.3.C`).
 `total score` is computed as `40 - SUM(deductions)` per row (rubric_08 base total).
-In `compiled grading`, rows for `faizan`/`romain`/`nishita` auto-pull deduction values from the corresponding grader sheet via key-based lookup formulas. `claude` rows can be filled from existing `*_claude` transcript grades with `python eval/judge/hand_grade_workbook_claude_fill.py` (subsection deductions derived from each grade’s `sub_criterion_id` / `points` fields). To rebuild the stratified 20-transcript workbook from scratch and run that fill step, use `python eval/judge/hand_grade_workbook_build.py`.
+In `compiled grading`, rows for `faizan`/`romain`/`nishita` auto-pull deduction values from the corresponding grader sheet via key-based lookup formulas. `claude` rows can be filled from existing `*_claude` transcript grades with `python eval/tutor_judge/hand_grade_workbook_claude_fill.py` (subsection deductions derived from each grade’s `sub_criterion_id` / `points` fields). To rebuild the stratified 20-transcript workbook from scratch and run that fill step, use `python eval/tutor_judge/hand_grade_workbook_build.py`.
 
 ## How it works
 
@@ -164,7 +164,7 @@ Maximum total score: **40** (`rubric_08`). The earlier `rubric_05` was **46** (P
 
 ## Claude Judge Module
 
-`eval/judge/run_judge.py` handles both providers with `provider="gpt"|"claude"`:
+`eval/tutor_judge/run_judge.py` handles both providers with `provider="gpt"|"claude"`:
 - Same transcript input/output contract.
 - Same schema validation, sanitization, and retry behavior.
 - Uses `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` (default: `claude-sonnet-4-6`).

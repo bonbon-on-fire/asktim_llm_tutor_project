@@ -15,7 +15,7 @@ from openpyxl.utils import get_column_letter
 
 REPO = Path(__file__).resolve().parents[2]
 TRANSCRIPTS = REPO / "transcripts"
-OUT_XLSX = REPO / "eval" / "judge" / "hand_grade_workbook.xlsx"
+OUT_XLSX = REPO / "eval" / "tutor_judge" / "hand_grade_workbook.xlsx"
 RNG = random.Random(42)
 EXCEL_CELL_MAX = 32767
 

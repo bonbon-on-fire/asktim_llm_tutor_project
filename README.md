@@ -126,7 +126,7 @@ flowchart TD
 
 **Student Bot (`students/run_student.py`):** Shares the same LangGraph infrastructure as the tutor, but uses a persona prompt from `students/personas/` to simulate a specific type of student. Includes a heuristic guard and automatic retry if the bot starts sounding like a tutor.
 
-**Judge (`eval/judge/run_judge.py`):** Reads a transcript, constructs a grading prompt by injecting the rubric and output schema, and calls the selected provider (`gpt` or `claude`). Validates the JSON response against the rubric spec, auto-repairs on failure up to 3 attempts, and writes the grade back into the transcript file. The latest rubric (`rubric_08`, 40 pts) scores three sections: Pedagogy (20 pts — Socratic method/no direct work, scaffolding, meta-learning), Dialogue Quality (12 pts — redundancy, assignment anchoring), and Communication Quality (8 pts — bite-sized responses, tone). (The earlier `rubric_05` was 46 pts and remains the in-code default.)
+**Judge (`eval/tutor_judge/run_judge.py`):** Reads a transcript, constructs a grading prompt by injecting the rubric and output schema, and calls the selected provider (`gpt` or `claude`). Validates the JSON response against the rubric spec, auto-repairs on failure up to 3 attempts, and writes the grade back into the transcript file. The latest rubric (`rubric_08`, 40 pts) scores three sections: Pedagogy (20 pts — Socratic method/no direct work, scaffolding, meta-learning), Dialogue Quality (12 pts — redundancy, assignment anchoring), and Communication Quality (8 pts — bite-sized responses, tone). (The earlier `rubric_05` was 46 pts and remains the in-code default.)
 
 **UI Runners (`internal_testing/`):** Parallelized runners using `ThreadPoolExecutor` (default 6 workers) — raw transcript generation (`run_transcript.py`), RAG-context transcript generation (`run_transcript_rag.py`, which retrieves the relevant chunks per student turn and records both what RAG retrieved and per-turn / per-transcript cost estimates via `utils/pricing.py`), and transcript judging (`run_transcript_judge.py`). Runners accept `--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--output-suffix`, and `--yes` CLI flags as applicable.
 
@@ -177,7 +177,7 @@ flowchart TD
         CUR["Curriculum\n(course.txt, exercise_*.txt)"]
         TUT["Tutor prompts\n(tutor/prompts/*.txt)"]
         PER["Student personas\n(students/personas/*.txt)"]
-        JR["Judge prompt + rubric\n(eval/judge/prompts, eval/judge/rubrics)"]
+        JR["Judge prompt + rubric\n(eval/tutor_judge/prompts, eval/tutor_judge/rubrics)"]
     end
 
     subgraph gen["1. Generate conversations"]
@@ -292,7 +292,7 @@ asktim_llm_tutor_project_2026/
 │   └── cli_utils.py             # Shared interactive selection-prompt helpers
 │
 ├── eval/                    # Both evaluators live here
-│   ├── judge/               # Tutor-behavior judge (moved from top-level judge/)
+│   ├── tutor_judge/         # Tutor-conversation judge
 │   │   ├── run_judge.py     # Unified single-transcript judge (provider gpt/claude)
 │   │   ├── hand_grade_workbook*.py  # Build/fill/rebuild the hand-grade calibration workbook
 │   │   ├── prompts/         # judge_01.txt .. judge_08.txt (current default: judge_05)

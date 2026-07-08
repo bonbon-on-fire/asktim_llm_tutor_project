@@ -29,8 +29,8 @@ from utils.pricing import model_from_message, priced, usage_from_message
 Provider = Literal["gpt", "claude"]
 
 TRANSCRIPTS_DIR = _REPO_ROOT / "transcripts"
-PROMPTS_DIR = _REPO_ROOT / "eval" / "judge" / "prompts"
-RUBRICS_DIR = _REPO_ROOT / "eval" / "judge" / "rubrics"
+PROMPTS_DIR = _REPO_ROOT / "eval" / "tutor_judge" / "prompts"
+RUBRICS_DIR = _REPO_ROOT / "eval" / "tutor_judge" / "rubrics"
 
 DEFAULT_JUDGE_PROMPT = "judge_05"
 DEFAULT_RUBRIC = "rubric_05"

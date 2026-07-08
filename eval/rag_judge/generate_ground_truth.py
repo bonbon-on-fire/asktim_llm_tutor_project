@@ -46,6 +46,7 @@ load_dotenv(_REPO_ROOT / ".env")
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
 
+from eval.rag_judge.render_markdown import render_file
 from rag.retrieve import retrieve_scored
 
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
@@ -264,10 +265,14 @@ def main() -> int:
         for row in rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
+    # Keep the human-readable Markdown companion in sync with the JSONL.
+    md_path = render_file(out_path, args.course)
+
     hits = [r for r in rows if r["flags"].get("gold_hit")]
     topics = {r["topic"] for r in rows}
     print(
         f"\nWrote {len(rows)} questions -> {out_path}\n"
+        f"  rendered companion -> {md_path}\n"
         f"  gold in top-k (baseline retrieval): {len(hits)}/{len(rows)}\n"
         f"  distinct lectures covered: {len(topics)}"
     )

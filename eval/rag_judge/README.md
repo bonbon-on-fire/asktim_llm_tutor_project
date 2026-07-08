@@ -42,6 +42,19 @@ answer exists but the current retriever misses it) that make the eval
 discriminating. Questions whose quote can't be located verbatim in the source
 (the model paraphrased) are dropped at generation time.
 
+### Readable companion (`<course>.md`)
+
+The JSONL is the source of truth that code reads; a sibling `<course>.md`
+renders the same rows in a skimmable form (question, gold quote, source span,
+baseline result, review status). The generator writes it automatically, and
+`render_markdown.py` regenerates it on demand — run it after editing the JSONL:
+
+```
+python eval/rag_judge/render_markdown.py --course supply_chain_design
+```
+
+Edit the JSONL, never the `.md` (it's overwritten on every render).
+
 ## Generating candidates
 
 ```
@@ -66,7 +79,7 @@ Generated rows are **candidates** (`needs_review: true`). Human pass:
 2. Confirm the quote is the *best* passage — if another lecture answers it
    better, fix `gold` (or add a second gold passage).
 3. Drop generic questions answerable from many passages.
-4. Set `needs_review: false`.
+4. Set `needs_review: false`, then re-render the `.md` (see above).
 
 Aim for a ~40-question pilot to validate the pipeline, then scale to ~150–250
 spread across lectures (weighted toward exam-relevant topics), including some

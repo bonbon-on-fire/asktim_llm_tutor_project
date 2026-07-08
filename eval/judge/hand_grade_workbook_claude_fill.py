@@ -10,8 +10,8 @@ from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
-REPO = Path(__file__).resolve().parents[1]
-HAND_XLSX = REPO / "judge" / "hand_grade_workbook.xlsx"
+REPO = Path(__file__).resolve().parents[2]
+HAND_XLSX = REPO / "eval" / "judge" / "hand_grade_workbook.xlsx"
 MAX_BASE = 40
 
 # Order must match hand-grade workbook deduction columns (rubric_08, no 1.3.C).

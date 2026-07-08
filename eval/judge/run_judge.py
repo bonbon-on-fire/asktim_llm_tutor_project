@@ -18,7 +18,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import NotRequired, TypedDict
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 load_dotenv(_REPO_ROOT / ".env")
@@ -29,8 +29,8 @@ from utils.pricing import model_from_message, priced, usage_from_message
 Provider = Literal["gpt", "claude"]
 
 TRANSCRIPTS_DIR = _REPO_ROOT / "transcripts"
-PROMPTS_DIR = _REPO_ROOT / "judge" / "prompts"
-RUBRICS_DIR = _REPO_ROOT / "judge" / "rubrics"
+PROMPTS_DIR = _REPO_ROOT / "eval" / "judge" / "prompts"
+RUBRICS_DIR = _REPO_ROOT / "eval" / "judge" / "rubrics"
 
 DEFAULT_JUDGE_PROMPT = "judge_05"
 DEFAULT_RUBRIC = "rubric_05"

@@ -1,23 +1,48 @@
-"""Rebuild judge/hand_grade_workbook.xlsx with stratified sample and embedded transcript text."""
+"""Build judge/hand_grade_workbook.xlsx with 20 stratified transcripts (Claude-score spread).
+
+Layout matches rebuild_hand_grade_workbook.py: faizan/romain/nishita sheets plus compiled grading
+with INDEX/MATCH pull-through and =40-SUM(...) totals (rubric_08, 13 deduction columns incl. 1.3.B).
+"""
 
 from __future__ import annotations
 
+import importlib.util
 import json
-import random
-import re
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 TRANSCRIPTS = REPO / "transcripts"
-OUT_XLSX = REPO / "judge" / "hand_grade_workbook.xlsx"
-RNG = random.Random(42)
+OUT_XLSX = REPO / "eval" / "judge" / "hand_grade_workbook.xlsx"
 EXCEL_CELL_MAX = 32767
+
+# (persona_type, transcript_number) — same 20 as stratified list (seed 42).
+SAMPLE_20: list[tuple[str, str]] = [
+    ("clueless", "0218"),
+    ("chaotic", "0097"),
+    ("clueless", "0044"),
+    ("chaotic", "0085"),
+    ("chaotic", "0079"),
+    ("clueless", "0025"),
+    ("clueless", "0013"),
+    ("chaotic", "0015"),
+    ("chaotic", "0007"),
+    ("clueless", "0242"),
+    ("chaotic", "0021"),
+    ("clueless", "0297"),
+    ("clueless", "0248"),
+    ("clueless", "0123"),
+    ("chaotic", "0039"),
+    ("chaotic", "0198"),
+    ("clueless", "0144"),
+    ("chaotic", "0062"),
+    ("chaotic", "0228"),
+    ("chaotic", "0243"),
+]
 
 subsections = [
     "1.1.A",
@@ -68,95 +93,23 @@ def format_transcript_cell(data: dict) -> str:
     return text
 
 
-def load_by_persona() -> dict[str, list[str]]:
-    """Group raw transcript stems by their student persona across the three families."""
-    by_persona: dict[str, list[str]] = defaultdict(list)
-    for family in ("chaotic", "cooperative", "clueless"):
-        raw_dir = TRANSCRIPTS / family / f"{family}_raw"
-        if not raw_dir.is_dir():
-            continue
-        for path in raw_dir.glob("transcript_*.json"):
-            stem = path.relative_to(TRANSCRIPTS).as_posix()[:-5]
-            try:
-                data = json.loads(path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
-                continue
-            persona = str(data.get("student_persona", "")).strip()
-            if not persona:
-                persona = "unknown"
-            by_persona[persona].append(stem)
-    return by_persona
-
-
-def sample_family(by_persona: dict[str, list[str]], family: str, n_target: int) -> list[str]:
-    """Round-robin sample up to ``n_target`` transcript stems across a family's personas.
-
-    Draws one random unseen stem per persona per pass to spread the sample evenly,
-    falling back to deterministic fill if randomized passes run short.
-    """
-    keys = sorted(k for k in by_persona if k == family or k.startswith(family + "_"))
-    selected: list[str] = []
-    seen: set[str] = set()
-    while len(selected) < n_target:
-        progressed = False
-        for pk in keys:
-            if len(selected) >= n_target:
-                break
-            pool = [s for s in by_persona[pk] if s not in seen]
-            if not pool:
-                continue
-            selected.append(RNG.choice(pool))
-            seen.add(selected[-1])
-            progressed = True
-        if not progressed:
-            break
-    if len(selected) < n_target:
-        for pk in keys:
-            for s in by_persona[pk]:
-                if s not in seen and len(selected) < n_target:
-                    selected.append(s)
-                    seen.add(s)
-    return selected[:n_target]
-
-
-def stem_to_meta(stem: str) -> tuple[str, str, Path]:
-    """Split a transcript stem into its (persona_type, number, absolute path)."""
-    parts = stem.split("/")
-    persona_type = parts[0]
-    fname = parts[-1]
-    m = re.match(r"transcript_(\d+)$", fname)
-    num = m.group(1) if m else fname.removeprefix("transcript_")
-    path = REPO / "transcripts" / f"{stem}.json"
-    return persona_type, num, path
-
-
 def main() -> int:
-    """Rebuild the 30-transcript hand-grade workbook (10 per family) from raw transcripts.
+    """Build the sample-20 hand-grading workbook and fill in Claude's rows.
 
-    Samples the transcripts, lays out the per-grader and compiled grading sheets, and
-    writes the output workbook. Returns 0 on success, 1 if the sample count is wrong or
-    a transcript cannot be read.
+    Loads the 20 sampled raw transcripts, lays out the per-grader and compiled
+    grading sheets, saves the workbook (falling back to an alternate name if the
+    target is locked), then invokes the Claude-fill pass. Returns 0 on success.
     """
-    by_persona = load_by_persona()
-    selected = (
-        sample_family(by_persona, "chaotic", 10)
-        + sample_family(by_persona, "cooperative", 10)
-        + sample_family(by_persona, "clueless", 10)
-    )
-    if len(selected) != 30:
-        print(f"Expected 30 stems, got {len(selected)}", file=sys.stderr)
-        return 1
-
     rows: list[tuple[str, str, str]] = []
-    for stem in selected:
-        persona_type, num, tpath = stem_to_meta(stem)
+    for persona_type, tnum in SAMPLE_20:
+        tpath = TRANSCRIPTS / persona_type / f"{persona_type}_raw" / f"transcript_{tnum}.json"
         try:
             data = json.loads(tpath.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as e:
             print(f"Failed to read {tpath}: {e}", file=sys.stderr)
             return 1
         body = format_transcript_cell(data)
-        rows.append((persona_type, num, body))
+        rows.append((persona_type, tnum, body))
 
     rows.sort(key=lambda r: (r[0], int(r[1])))
 
@@ -237,8 +190,30 @@ def main() -> int:
             row += 1
 
     OUT_XLSX.parent.mkdir(parents=True, exist_ok=True)
-    wb.save(OUT_XLSX)
-    print(f"Wrote {OUT_XLSX} ({len(rows)} transcripts)")
+    try:
+        wb.save(OUT_XLSX)
+        out_path = OUT_XLSX
+    except PermissionError:
+        alt = OUT_XLSX.with_name("hand_grade_workbook_sample20_ready.xlsx")
+        wb.save(alt)
+        print(
+            f"WARNING: {OUT_XLSX.name} is open or locked; wrote {alt.name} instead. "
+            "Close Excel and rename or copy over the main workbook.",
+            file=sys.stderr,
+        )
+        out_path = alt
+    print(f"Wrote {out_path} ({len(rows)} transcripts; {len(rows) * len(compiled_graders)} compiled rows)")
+
+    fill_spec = importlib.util.spec_from_file_location(
+        "hand_grade_workbook_claude_fill",
+        REPO / "eval" / "judge" / "hand_grade_workbook_claude_fill.py",
+    )
+    if fill_spec and fill_spec.loader:
+        fill_mod = importlib.util.module_from_spec(fill_spec)
+        fill_spec.loader.exec_module(fill_mod)
+        fr = fill_mod.fill_workbook(out_path)
+        if fr != 0:
+            return fr
     return 0
 
 

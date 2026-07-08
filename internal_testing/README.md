@@ -62,8 +62,8 @@ python -m internal_testing.run_transcript_judge
 
 This will prompt you to select from numbered options:
 - **Judge provider**: gpt or claude (required)
-- **Judge prompt**: Available from `judge/prompts/judge_*.txt` (required)
-- **Judge rubric**: Available from `judge/rubrics/rubric_*.md` (required)
+- **Judge prompt**: Available from `eval/judge/prompts/judge_*.txt` (required)
+- **Judge rubric**: Available from `eval/judge/rubrics/rubric_*.md` (required)
 
 **Command-line mode:**
 ```powershell

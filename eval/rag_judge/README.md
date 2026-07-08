@@ -45,7 +45,7 @@ discriminating. Questions whose quote can't be located verbatim in the source
 ## Generating candidates
 
 ```
-python eval/rag/generate_ground_truth.py --course supply_chain_design \
+python eval/rag_judge/generate_ground_truth.py --course supply_chain_design \
     --num-passages 25 --questions-per-passage 2
 ```
 

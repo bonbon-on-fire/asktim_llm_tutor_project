@@ -17,11 +17,11 @@ Pipeline (passage -> question, so the gold is automatic):
      the top-k? at what rank?) so hard cases can be kept and the baseline seen.
 
 Output is JSONL, one row per question, written to
-``eval/rag/ground_truth/<course>.jsonl``. Rows carry ``flags`` for human review;
+``eval/rag_judge/ground_truth/<course>.jsonl``. Rows carry ``flags`` for human review;
 nothing is silently dropped except questions whose quote can't be located.
 
 Usage:
-    python eval/rag/generate_ground_truth.py --course supply_chain_design \
+    python eval/rag_judge/generate_ground_truth.py --course supply_chain_design \
         --num-passages 25 --questions-per-passage 2
 """
 
@@ -244,7 +244,7 @@ def main() -> int:
     p.add_argument("--min-passage-chars", type=int, default=500)
     p.add_argument("--min-lecture-chars", type=int, default=1500)
     p.add_argument("--seed", type=int, default=13)
-    p.add_argument("--out", default=None, help="Output JSONL (default: eval/rag/ground_truth/<course>.jsonl)")
+    p.add_argument("--out", default=None, help="Output JSONL (default: eval/rag_judge/ground_truth/<course>.jsonl)")
     args = p.parse_args()
 
     rows = generate(
@@ -258,7 +258,7 @@ def main() -> int:
         seed=args.seed,
     )
 
-    out_path = Path(args.out) if args.out else _REPO_ROOT / "eval" / "rag" / "ground_truth" / f"{args.course}.jsonl"
+    out_path = Path(args.out) if args.out else _REPO_ROOT / "eval" / "rag_judge" / "ground_truth" / f"{args.course}.jsonl"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8") as f:
         for row in rows:

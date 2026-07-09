@@ -40,6 +40,7 @@ from sandbox_ui.routes._validation import (
     validate_selection,
     validate_tutor,
 )
+from sandbox_ui.services import files as files_service
 from sandbox_ui.services import images as images_service
 from sandbox_ui.services import tutor_bridge
 from sandbox_ui.services.conversation import (
@@ -50,7 +51,12 @@ from sandbox_ui.services.conversation import (
     get_history_for_tutor,
     start_exchange_student_only,
 )
-from utils.uploads import UploadValidationError, images_to_tuples
+from utils.attachments import (
+    AttachmentExtractionError,
+    AttachmentValidationError,
+    EmptyExtractionError,
+)
+from utils.uploads import UploadValidationError, enforce_combined_cap, images_to_tuples
 
 
 chat_bp = Blueprint("chat", __name__)
@@ -98,9 +104,11 @@ def chat():
     if is_multipart:
         src = request.form
         upload_files = request.files.getlist("images")
+        upload_docs = request.files.getlist("files")
     else:
         src = request.get_json(silent=True) or {}
         upload_files = []
+        upload_docs = []
 
     text = (src.get("text") or "").strip()
 
@@ -110,11 +118,25 @@ def chat():
     except UploadValidationError as exc:
         return _bad_request(str(exc), "bad_image")
 
-    if not text and not images:
-        return _bad_request("text or an image is required", "missing_text")
-    # Image-only turns get a placeholder so the bubble/history read cleanly and
-    # the non-student-like guard (which checks the text portion) doesn't fire.
-    student_text = text or "(Image attached.)"
+    try:
+        attachments = files_service.read_and_validate(upload_docs)
+    except AttachmentValidationError as exc:
+        return _bad_request(str(exc), "bad_file")
+    except EmptyExtractionError as exc:
+        return _bad_request(str(exc), "empty_extraction")
+    except AttachmentExtractionError as exc:
+        return _bad_request(str(exc), "extraction_failed")
+
+    try:
+        enforce_combined_cap(len(images), len(attachments))
+    except UploadValidationError as exc:
+        return _bad_request(str(exc), "too_many_attachments")
+
+    if not text and not images and not attachments:
+        return _bad_request("text or an attachment is required", "missing_text")
+    # Image/file-only turns get a placeholder so the bubble/history read cleanly
+    # and the non-student-like guard (which checks the text portion) doesn't fire.
+    student_text = text or ("(File attached.)" if attachments else "(Image attached.)")
 
     course = src.get("course")
     exercise = src.get("exercise")
@@ -282,6 +304,24 @@ def chat():
                 )
             )
 
+    # Persist uploaded non-image files linked to the student row, same shape as
+    # the image persist path above.
+    if attachments:
+        try:
+            files_service.persist_files(db, message=student_msg, files=attachments)
+        except Exception as exc:
+            return _abort_with(
+                (
+                    jsonify(
+                        {
+                            "error": "file_persist_failed",
+                            "reason": f"{type(exc).__name__}: {exc}",
+                        }
+                    ),
+                    500,
+                )
+            )
+
     # Capture all values we'll need inside the generator BEFORE commit, since
     # SQLAlchemy expires loaded attributes on commit by default.
     convo_id_str = str(convo.id)
@@ -321,7 +361,7 @@ def chat():
         exercise_kind=stream_exercise_kind,
         tutor=stream_tutor,
         history=history,
-        new_student_message=student_text,
+        new_student_message=student_text + files_service.files_to_text(attachments),
         images=images_to_tuples(images),
         include_course=stream_course_enabled,
         include_syllabus=stream_syllabus,

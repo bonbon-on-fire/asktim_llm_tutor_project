@@ -18,6 +18,7 @@ from ui_core.db.models_common import (
     _utcnow,
     MessageMixin,
     StudentMixin,
+    UploadedFileMixin,
     UploadedImageMixin,
 )
 
@@ -65,4 +66,8 @@ class Student(StudentMixin, Base):
 
 
 class UploadedImage(UploadedImageMixin, Base):
+    pass
+
+
+class UploadedFile(UploadedFileMixin, Base):
     pass

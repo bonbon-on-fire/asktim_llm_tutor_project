@@ -50,9 +50,10 @@ guards a long-lived remote Postgres connection and never writes.
 
 ### `db/models_common.py`
 
-Shared declarative mixins so `Message`, `Student`, and `UploadedImage` aren't
-redefined per app. Each app still declares the concrete class on its own
-`Base` (keeps the table in that app's own `metadata` for Alembic/`create_all`):
+Shared declarative mixins so `Message`, `Student`, `UploadedImage`, and
+`UploadedFile` aren't redefined per app. Each app still declares the concrete
+class on its own `Base` (keeps the table in that app's own `metadata` for
+Alembic/`create_all`):
 
 ```python
 class Message(MessageMixin, Base):
@@ -64,13 +65,18 @@ class Message(MessageMixin, Base):
 - `MessageMixin` — `messages` table: `id` (bigint/int PK), `conversation_id`
   (FK → `conversations.id`, cascade delete), `turn`, `role` (checked
   `student`/`tutor`), `content`, `pedagogical_reasoning` (nullable),
-  `created_at`; declares the `conversation` and `uploaded_images`
-  relationships plus the role check-constraint and an index on
-  `conversation_id`.
+  `created_at`; declares the `conversation`, `uploaded_images`, and
+  `uploaded_files` relationships plus the role check-constraint and an index
+  on `conversation_id`.
 - `UploadedImageMixin` — `uploaded_images` table: `id`, `message_id` (FK,
   cascade delete), `filename`, `mime_type`, `size_bytes`, `data` (raw bytes,
   stored in-DB since Railway's filesystem is ephemeral), `created_at`; declares
   the `message` relationship and an index on `message_id`.
+- `UploadedFileMixin` — `uploaded_files` table: `id`, `message_id` (FK,
+  cascade delete), `filename`, `kind`, `extracted_text` (plain text re-injected
+  into history every turn), `size_bytes`, `data` (raw bytes, stored in-DB same
+  as `UploadedImage`), `created_at`; declares the `message` relationship and an
+  index on `message_id`. Non-image attachments (csv/xlsx/pdf/etc.).
 - `_utcnow()` — tz-aware UTC `datetime` default; `_BigIntPk` — `BigInteger`
   that falls back to `Integer` on SQLite (so autoincrement works locally).
 

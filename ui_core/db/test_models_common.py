@@ -5,7 +5,8 @@ Run with:
 
 The mixins are tested in ISOLATION on a local Base — ui_core must not depend on
 the app packages. A minimal local Conversation provides the FK target and the
-back-populated relationship that the Message / UploadedImage mixins expect.
+back-populated relationship that the Message / UploadedImage / UploadedFile
+mixins expect.
 """
 
 from __future__ import annotations
@@ -24,7 +25,12 @@ from sqlalchemy.orm import (
 )
 
 from ui_core.db.session import build_engine
-from ui_core.db.models_common import MessageMixin, StudentMixin, UploadedImageMixin
+from ui_core.db.models_common import (
+    MessageMixin,
+    StudentMixin,
+    UploadedFileMixin,
+    UploadedImageMixin,
+)
 
 _PASSED = 0
 _FAILED = 0
@@ -72,11 +78,16 @@ class UploadedImage(UploadedImageMixin, _Base):
     pass
 
 
+class UploadedFile(UploadedFileMixin, _Base):
+    pass
+
+
 def test_tablenames() -> None:
     """Verify each mixin-derived model maps to its expected table name."""
     _check("message tablename", Message.__tablename__ == "messages")
     _check("student tablename", Student.__tablename__ == "students")
     _check("uploaded_image tablename", UploadedImage.__tablename__ == "uploaded_images")
+    _check("uploaded_file tablename", UploadedFile.__tablename__ == "uploaded_files")
 
 
 def test_mixins_map_and_roundtrip() -> None:
@@ -97,14 +108,22 @@ def test_mixins_map_and_roundtrip() -> None:
                     size_bytes=3, data=b"abc",
                 )
             )
+            s.add(
+                UploadedFile(
+                    message_id=msg.id, filename="a.csv", kind="csv",
+                    extracted_text="a,b\n1,2", size_bytes=8, data=b"a,b\n1,2",
+                )
+            )
             s.add(Student(username="u", password_hash="h"))
             s.commit()
 
             m2 = s.get(Message, msg.id)
             _check("message.conversation resolves", m2.conversation.id == c.id)
             _check("message.uploaded_images", [i.filename for i in m2.uploaded_images] == ["a.png"])
+            _check("message.uploaded_files", [f.filename for f in m2.uploaded_files] == ["a.csv"])
             _check("conversation.messages", [x.id for x in c.messages] == [msg.id])
             _check("uploaded_image.message", s.get(UploadedImage, 1).message.id == msg.id)
+            _check("uploaded_file.message", s.get(UploadedFile, 1).message.id == msg.id)
             _check("student round-trips", s.get(Student, "u").password_hash == "h")
         eng.dispose()
 

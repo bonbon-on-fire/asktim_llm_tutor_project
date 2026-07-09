@@ -97,6 +97,15 @@ class MessageMixin:
             passive_deletes=True,
         )
 
+    @declared_attr
+    def uploaded_files(cls) -> Mapped[list["UploadedFile"]]:  # noqa: F821
+        """Non-image attachments on this message (back-populates ``message``)."""
+        return relationship(
+            back_populates="message",
+            cascade="all, delete-orphan",
+            passive_deletes=True,
+        )
+
     @declared_attr.directive
     def __table_args__(cls):
         """Table-level constraints: a role check and an index on ``conversation_id``."""
@@ -137,3 +146,37 @@ class UploadedImageMixin:
     def __table_args__(cls):
         """Table-level args: an index on ``message_id``."""
         return (Index("idx_uploaded_images_message", "message_id"),)
+
+
+class UploadedFileMixin:
+    """Columns + relationship for the ``uploaded_files`` table (non-image attachments)."""
+
+    __tablename__ = "uploaded_files"
+
+    id: Mapped[int] = mapped_column(_BigIntPk, primary_key=True, autoincrement=True)
+    message_id: Mapped[int] = mapped_column(
+        _BigIntPk,
+        ForeignKey("messages.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    # Plain text extracted at upload time — this is what reaches the tutor and is
+    # re-injected into history every turn (persist-across-turns).
+    extracted_text: Mapped[str] = mapped_column(Text, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(nullable=False)
+    # Raw file bytes, stored in-DB like uploaded_images (Railway FS is ephemeral).
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+
+    @declared_attr
+    def message(cls) -> Mapped["Message"]:  # noqa: F821 - resolved per app
+        """Relationship to the owning ``Message`` (back-populates ``uploaded_files``)."""
+        return relationship(back_populates="uploaded_files")
+
+    @declared_attr.directive
+    def __table_args__(cls):
+        """Table-level args: an index on ``message_id``."""
+        return (Index("idx_uploaded_files_message", "message_id"),)

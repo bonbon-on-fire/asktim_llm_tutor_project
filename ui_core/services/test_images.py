@@ -25,7 +25,12 @@ from sqlalchemy.orm import (
 )
 from werkzeug.datastructures import FileStorage
 
-from ui_core.db.models_common import MessageMixin, StudentMixin, UploadedImageMixin
+from ui_core.db.models_common import (
+    MessageMixin,
+    StudentMixin,
+    UploadedFileMixin,
+    UploadedImageMixin,
+)
 from ui_core.db.session import build_engine
 from ui_core.services import images as svc
 from utils.uploads import ValidatedImage
@@ -74,6 +79,10 @@ class Student(StudentMixin, _Base):
 
 class UploadedImage(UploadedImageMixin, _Base):
     pass
+
+
+class UploadedFile(UploadedFileMixin, _Base):
+    """Not exercised by these tests; declared so MessageMixin.uploaded_files resolves."""
 
 
 def _img(name: str, data: bytes = b"abc") -> ValidatedImage:

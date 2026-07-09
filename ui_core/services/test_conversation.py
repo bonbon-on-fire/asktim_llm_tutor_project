@@ -27,7 +27,12 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from ui_core.db.models_common import MessageMixin, StudentMixin, UploadedImageMixin
+from ui_core.db.models_common import (
+    MessageMixin,
+    StudentMixin,
+    UploadedFileMixin,
+    UploadedImageMixin,
+)
 from ui_core.db.session import build_engine
 from ui_core.services import conversation as svc
 from ui_core.services.conversation import Models
@@ -93,6 +98,10 @@ class Student(StudentMixin, _Base):
 
 class UploadedImage(UploadedImageMixin, _Base):
     pass
+
+
+class UploadedFile(UploadedFileMixin, _Base):
+    """Not exercised by these tests; declared so MessageMixin.uploaded_files resolves."""
 
 
 _MODELS = Models(Conversation=Conversation, Message=Message, UploadedImage=UploadedImage)

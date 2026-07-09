@@ -90,3 +90,15 @@ def validate_images(items: list[tuple[str, str | None, bytes]]) -> list[Validate
 def images_to_tuples(images: list[ValidatedImage]) -> list[tuple[bytes, str]]:
     """Convert validated images to ``(bytes, mime)`` tuples for multimodal content."""
     return [(img.data, img.mime_type) for img in images]
+
+
+MAX_ATTACHMENTS_PER_MESSAGE = 3  # images + files combined, per message
+
+
+def enforce_combined_cap(n_images: int, n_files: int) -> None:
+    """Reject a turn whose image + file count exceeds the per-message cap."""
+    total = n_images + n_files
+    if total > MAX_ATTACHMENTS_PER_MESSAGE:
+        raise UploadValidationError(
+            f"Too many attachments: {total} (max {MAX_ATTACHMENTS_PER_MESSAGE} per message)."
+        )

@@ -39,6 +39,7 @@ class Models:
     Conversation: type
     Message: type
     UploadedImage: type
+    UploadedFile: type | None = None
 
 
 class WrongSessionError(Exception):
@@ -178,21 +179,38 @@ def complete_exchange_tutor(
     return tutor_msg
 
 
+def _content_with_attachments(content: str, attachments) -> str:
+    """Append each attachment's extracted text to a message's model-facing content."""
+    if not attachments:
+        return content
+    blocks = "".join(
+        f"\n\n[Attachment: {a.filename}]\n{a.extracted_text}" for a in attachments
+    )
+    return f"{content}{blocks}"
+
+
 def get_history_for_tutor(db: Session, conversation: Any, *, models: Models) -> list[dict]:
     """Return prior messages as [{role, content}, ...] in chronological order.
 
     Shape matches what `tutor_bridge.get_tutor_reply` expects, so callers can
-    pass the result straight through.
+    pass the result straight through. Student-turn ``uploaded_files`` extracted
+    text is re-injected into ``content`` here (not stored/displayed) so
+    attachments stay visible to the tutor on later turns.
     """
     stmt = (
         select(models.Message)
         .where(models.Message.conversation_id == conversation.id)
         .order_by(models.Message.turn, models.Message.id)
     )
-    return [
-        {"role": m.role, "content": m.content}
-        for m in db.execute(stmt).scalars().all()
-    ]
+    msgs = db.execute(stmt).scalars().all()
+    out: list[dict] = []
+    for m in msgs:
+        content = m.content
+        if m.role == "student" and getattr(models, "UploadedFile", None) is not None:
+            atts = list(getattr(m, "uploaded_files", []) or [])
+            content = _content_with_attachments(content, atts)
+        out.append({"role": m.role, "content": content})
+    return out
 
 
 def count_student_messages(db: Session, conversation: Any, *, models: Models) -> int:

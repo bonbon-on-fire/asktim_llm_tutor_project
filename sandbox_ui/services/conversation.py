@@ -12,11 +12,16 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from sandbox_ui.db.models import Conversation, Message, UploadedImage
+from sandbox_ui.db.models import Conversation, Message, UploadedFile, UploadedImage
 from ui_core.services import conversation as _shared
 from ui_core.services.conversation import Models, WrongSessionError
 
-_MODELS = Models(Conversation=Conversation, Message=Message, UploadedImage=UploadedImage)
+_MODELS = Models(
+    Conversation=Conversation,
+    Message=Message,
+    UploadedImage=UploadedImage,
+    UploadedFile=UploadedFile,
+)
 
 # Re-exported unchanged so `except WrongSessionError` keeps working at call sites.
 WrongSessionError = WrongSessionError

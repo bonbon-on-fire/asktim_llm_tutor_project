@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AskTIM{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/chat.css') }}">
+    <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/katex.min.css') }}">
 {% block head_extra %}{% endblock %}</head>
 <body data-has-email="{{ 'true' if has_email else 'false' }}">
     <script type="application/json" id="tutor-config">{{ tutor_config | tojson }}</script>
@@ -138,6 +139,8 @@
          Vendored locally (not a CDN) so they always load offline / behind a VPN
          and bake into the container image. Loaded with defer so they run, in
          order, before chat.js. -->
+    <script src="{{ url_for('ui_core.static', filename='js/katex.min.js') }}" defer></script>
+    <script src="{{ url_for('ui_core.static', filename='js/katex-marked.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
     <script src="{% block chat_js_src %}{{ url_for('static', filename='js/chat.js') }}{% endblock %}" defer></script>

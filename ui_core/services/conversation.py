@@ -326,6 +326,11 @@ def get_messages_for_conversation(
     # can render thumbnails via GET /api/image/<id>. One grouped query avoids
     # N+1 lookups.
     images_by_message = _images_by_message(db, [m.id for m in messages], models=models)
+    # Sibling metadata for non-image attachments: id + filename + kind only —
+    # never extracted_text or the raw bytes, which must not reach the browser.
+    attachments_by_message = _attachments_by_message(
+        db, [m.id for m in messages], models=models
+    )
     result = []
     for m in messages:
         entry = {
@@ -345,6 +350,7 @@ def get_messages_for_conversation(
                 except (ValueError, TypeError):
                     pass
         entry["images"] = images_by_message.get(m.id, [])
+        entry["attachments"] = attachments_by_message.get(m.id, [])
         result.append(entry)
     return result
 
@@ -367,6 +373,35 @@ def _images_by_message(
     out: dict[int, list[dict]] = {}
     for img_id, msg_id, mime in db.execute(stmt).all():
         out.setdefault(msg_id, []).append({"id": img_id, "mime_type": mime})
+    return out
+
+
+def _attachments_by_message(
+    db: Session, message_ids: list[int], *, models: Models
+) -> dict[int, list[dict]]:
+    """Map message_id -> [{"id", "filename", "kind"}, ...] for the given messages.
+
+    Column-scoped query — never selects ``extracted_text`` or ``data`` — since
+    this metadata is what the message-list API sends to the browser. No-op
+    (returns ``{}``) when the app doesn't bind ``UploadedFile``.
+    """
+    if not message_ids or getattr(models, "UploadedFile", None) is None:
+        return {}
+    stmt = (
+        select(
+            models.UploadedFile.id,
+            models.UploadedFile.message_id,
+            models.UploadedFile.filename,
+            models.UploadedFile.kind,
+        )
+        .where(models.UploadedFile.message_id.in_(message_ids))
+        .order_by(models.UploadedFile.id)
+    )
+    out: dict[int, list[dict]] = {}
+    for file_id, msg_id, filename, kind in db.execute(stmt).all():
+        out.setdefault(msg_id, []).append(
+            {"id": file_id, "filename": filename, "kind": kind}
+        )
     return out
 
 

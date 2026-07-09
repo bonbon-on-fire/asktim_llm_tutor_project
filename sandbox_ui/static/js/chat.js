@@ -34,13 +34,20 @@
   const imageInput = document.getElementById("image-input");
   const composerPreviews = document.getElementById("composer-previews");
 
-  // Client-side mirror of utils/uploads.py caps. The server re-validates, so
-  // these only exist to give fast, friendly feedback before upload.
+  // Client-side mirror of utils/uploads.py and utils/attachments.py caps. The
+  // server re-validates, so these only exist to give fast, friendly feedback
+  // before upload.
   const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg"];
   const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-  const MAX_IMAGES_PER_MESSAGE = 5;
+  const ALLOWED_FILE_EXTS = [".csv", ".tsv", ".xlsx", ".pdf", ".docx", ".txt"];
+  const MAX_FILE_BYTES = 5 * 1024 * 1024;
+  // Images + non-image files combined, per message — mirrors
+  // utils/uploads.py's enforce_combined_cap.
+  const MAX_ATTACHMENTS_PER_MESSAGE = 3;
   // Staged uploads for the next send: { file, url } (url = object URL preview).
   let stagedImages = [];
+  // Staged non-image files for the next send: { file } (rendered as chips, no preview).
+  let stagedFiles = [];
 
   const errorBanner = document.getElementById("error-banner");
   const errorText = document.getElementById("error-text");
@@ -109,7 +116,9 @@
 
   function updateSendButton() {
     const hasText = composerInput.value.trim().length > 0;
-    sendButton.disabled = isSending || (!hasText && stagedImages.length === 0);
+    sendButton.disabled =
+      isSending ||
+      (!hasText && stagedImages.length === 0 && stagedFiles.length === 0);
   }
 
   function setSending(sending) {
@@ -158,10 +167,32 @@
     if (imageLightbox) imageLightbox.hidden = true;
   }
 
+  // A "📎 <name>" pill — used both for a staged (not-yet-sent) file and for a
+  // file attached to an already-sent/past message.
+  function renderFileChip(name) {
+    const chip = document.createElement("span");
+    chip.className = "attachment-chip";
+    chip.textContent = "📎 " + name;
+    return chip;
+  }
+
+  // Staged-file variant of the chip: adds a remove (×) button.
+  function renderRemovableFileChip(name, onRemove) {
+    const chip = renderFileChip(name);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "attachment-chip-remove";
+    remove.setAttribute("aria-label", "Remove file");
+    remove.textContent = "×";
+    remove.addEventListener("click", onRemove);
+    chip.appendChild(remove);
+    return chip;
+  }
+
   function renderStagedPreviews() {
     if (!composerPreviews) return;
     composerPreviews.innerHTML = "";
-    if (stagedImages.length === 0) {
+    if (stagedImages.length === 0 && stagedFiles.length === 0) {
       composerPreviews.hidden = true;
       return;
     }
@@ -188,24 +219,51 @@
       thumb.appendChild(remove);
       composerPreviews.appendChild(thumb);
     });
+    stagedFiles.forEach((item, index) => {
+      const chip = renderRemovableFileChip(item.file.name, () => {
+        stagedFiles.splice(index, 1);
+        renderStagedPreviews();
+        updateSendButton();
+      });
+      composerPreviews.appendChild(chip);
+    });
+  }
+
+  function fileExtension(name) {
+    const idx = (name || "").lastIndexOf(".");
+    return idx === -1 ? "" : name.slice(idx).toLowerCase();
   }
 
   function addStagedFiles(fileList) {
     const files = Array.from(fileList || []);
     for (const file of files) {
-      if (stagedImages.length >= MAX_IMAGES_PER_MESSAGE) {
-        showError("You can attach up to " + MAX_IMAGES_PER_MESSAGE + " images.");
+      if (stagedImages.length + stagedFiles.length >= MAX_ATTACHMENTS_PER_MESSAGE) {
+        showError(
+          "Up to " + MAX_ATTACHMENTS_PER_MESSAGE + " attachments per message.",
+        );
         break;
       }
-      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        showError("Only PNG and JPEG images are supported.");
+      if (ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        if (file.size > MAX_IMAGE_BYTES) {
+          showError("Images must be 10 MB or smaller.");
+          continue;
+        }
+        stagedImages.push({ file: file, url: URL.createObjectURL(file) });
         continue;
       }
-      if (file.size > MAX_IMAGE_BYTES) {
-        showError("Images must be 10 MB or smaller.");
+      if (ALLOWED_FILE_EXTS.includes(fileExtension(file.name))) {
+        if (file.size > MAX_FILE_BYTES) {
+          showError("Files must be 5 MB or smaller.");
+          continue;
+        }
+        stagedFiles.push({ file: file });
         continue;
       }
-      stagedImages.push({ file: file, url: URL.createObjectURL(file) });
+      showError(
+        "Only PNG/JPEG images or " +
+          ALLOWED_FILE_EXTS.join(", ") +
+          " files are supported.",
+      );
     }
     renderStagedPreviews();
     updateSendButton();
@@ -241,6 +299,16 @@
       img.loading = "lazy";
       img.addEventListener("click", () => openImageLightbox(src, img.alt));
       wrap.appendChild(img);
+    }
+    li.appendChild(wrap);
+  }
+
+  function appendFileChips(li, names) {
+    if (!names || names.length === 0) return;
+    const wrap = document.createElement("div");
+    wrap.className = "message-attachments";
+    for (const name of names) {
+      wrap.appendChild(renderFileChip(name));
     }
     li.appendChild(wrap);
   }
@@ -296,7 +364,7 @@
     li.appendChild(details);
   }
 
-  function renderMessage(role, content, imageSrcs, reasoning, retrieved) {
+  function renderMessage(role, content, imageSrcs, reasoning, retrieved, attachmentNames) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
     if (imageSrcs && imageSrcs.length) {
@@ -313,6 +381,7 @@
     } else {
       setMessageContent(li, role, content);
     }
+    appendFileChips(li, attachmentNames);
     if (role === "tutor") {
       appendReasoning(li, reasoning);
       appendRetrieved(li, retrieved);
@@ -600,7 +669,15 @@
       ).length;
       for (const m of data.messages || []) {
         const srcs = (m.images || []).map((img) => `/api/image/${img.id}`);
-        renderMessage(m.role, m.content, srcs, m.pedagogical_reasoning, m.retrieved);
+        const attachmentNames = (m.attachments || []).map((a) => a.filename);
+        renderMessage(
+          m.role,
+          m.content,
+          srcs,
+          m.pedagogical_reasoning,
+          m.retrieved,
+          attachmentNames,
+        );
       }
       highlightActiveEntry();
     } catch (err) {
@@ -1340,19 +1417,34 @@
   async function sendMessage() {
     const text = composerInput.value.trim();
     const outgoingImages = stagedImages.slice();
-    if ((!text && outgoingImages.length === 0) || isSending) return;
+    const outgoingFiles = stagedFiles.slice();
+    if (
+      (!text && outgoingImages.length === 0 && outgoingFiles.length === 0) ||
+      isSending
+    )
+      return;
 
     hideError();
     // Optimistically render the student bubble (with any attached image
-    // thumbnails) + a "thinking" placeholder. As soon as the first streamed
-    // delta arrives we morph the thinking bubble into the tutor bubble.
+    // thumbnails / file chips) + a "thinking" placeholder. As soon as the
+    // first streamed delta arrives we morph the thinking bubble into the
+    // tutor bubble.
     const previewSrcs = outgoingImages.map((item) => item.url);
-    const studentBubble = renderMessage("student", text, previewSrcs);
+    const attachmentNames = outgoingFiles.map((item) => item.file.name);
+    const studentBubble = renderMessage(
+      "student",
+      text,
+      previewSrcs,
+      null,
+      null,
+      attachmentNames,
+    );
     const tutorBubble = renderThinking();
     let tutorBubbleActive = false; // false until first delta lands
     const originalText = composerInput.value;
     composerInput.value = "";
     stagedImages = [];
+    stagedFiles = [];
     renderStagedPreviews();
     setSending(true);
 
@@ -1378,13 +1470,16 @@
 
     let body;
     let headers;
-    if (outgoingImages.length > 0) {
+    if (outgoingImages.length > 0 || outgoingFiles.length > 0) {
       const form = new FormData();
       for (const [k, v] of Object.entries(fields)) {
         form.append(k, typeof v === "boolean" ? String(v) : v);
       }
       for (const item of outgoingImages) {
         form.append("images", item.file, item.file.name);
+      }
+      for (const item of outgoingFiles) {
+        form.append("files", item.file, item.file.name);
       }
       body = form; // browser sets the multipart Content-Type + boundary
       headers = undefined;

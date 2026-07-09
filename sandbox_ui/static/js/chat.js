@@ -270,17 +270,17 @@
   }
 
   function setMessageContent(el, role, content) {
-    // Tutor replies are markdown (tables, lists, bold). Render them to HTML so
-    // they display cleanly — but ALWAYS sanitize, since innerHTML would
-    // otherwise reintroduce the XSS hole that textContent guarded against.
-    // Student text and any case where the libs failed to load stay textContent.
-    const canRenderMarkdown =
-      role === "tutor" &&
-      typeof window.marked !== "undefined" &&
-      typeof window.DOMPurify !== "undefined";
-    if (canRenderMarkdown) {
+    // Tutor replies are markdown + LaTeX math (\(...\), \[...\]). renderTutorMarkdown
+    // parses markdown, renders math with KaTeX, and DOMPurify-sanitizes — one
+    // sanitized innerHTML write, so the no-raw-innerHTML XSS guarantee holds.
+    // Student text, and any case where the libs failed to load, stay textContent.
+    const rich =
+      role === "tutor" && typeof window.renderTutorMarkdown === "function"
+        ? window.renderTutorMarkdown(content)
+        : null;
+    if (rich !== null) {
       el.classList.add("message-rich");
-      el.innerHTML = window.DOMPurify.sanitize(window.marked.parse(content));
+      el.innerHTML = rich;
     } else {
       // textContent — never raw innerHTML — to prevent XSS from tutor/student text.
       el.textContent = content;

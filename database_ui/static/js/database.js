@@ -146,14 +146,15 @@
   }
 
   function setMessageContent(el, role, content) {
-    // Tutor replies are markdown; render + sanitize. Everything else is text.
-    const canMarkdown =
-      role === "tutor" &&
-      typeof window.marked !== "undefined" &&
-      typeof window.DOMPurify !== "undefined";
-    if (canMarkdown) {
+    // Tutor replies are markdown + LaTeX math; render + sanitize via the shared
+    // helper. Everything else is text.
+    const rich =
+      role === "tutor" && typeof window.renderTutorMarkdown === "function"
+        ? window.renderTutorMarkdown(content || "")
+        : null;
+    if (rich !== null) {
       el.classList.add("message-rich");
-      el.innerHTML = window.DOMPurify.sanitize(window.marked.parse(content || ""));
+      el.innerHTML = rich;
     } else {
       el.textContent = content || "";
     }

@@ -27,3 +27,19 @@ def client():
     _app.config.update(TESTING=True)
     with _app.test_client() as test_client:
         yield test_client
+
+
+@pytest.fixture()
+def db_session():
+    """A SQLAlchemy session bound to the same throwaway test DB the app uses.
+
+    For tests that need to read back rows the app just wrote (e.g. via
+    ``sandbox_ui.services.conversation``) without going through the HTTP API.
+    """
+    from sandbox_ui.db.session import SessionLocal
+
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()

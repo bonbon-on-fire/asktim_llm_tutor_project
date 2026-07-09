@@ -5,11 +5,7 @@
 (function (global) {
   function makeMathExtension(katex) {
     function render(tex, displayMode) {
-      // output: "html" (vs. KaTeX's default "htmlAndMathml") omits the
-      // <annotation encoding="application/x-tex"> tag that otherwise embeds
-      // the raw LaTeX source (e.g. "\frac{a}{b}") verbatim in the output —
-      // we only want the rendered KaTeX markup, not the source leaking back out.
-      return katex.renderToString(tex, { displayMode: displayMode, throwOnError: false, output: "html" });
+      return katex.renderToString(tex, { displayMode: displayMode, throwOnError: false });
     }
     return {
       extensions: [

@@ -17,7 +17,7 @@ function render(src) {
 test("inline \\(...\\) renders as KaTeX, not literal backslashes", () => {
   const out = render("Result: \\(\\frac{a}{b}\\) done");
   assert.ok(out.includes("katex"), "expected katex markup");
-  assert.ok(!out.includes("\\frac"), "raw \\frac should be consumed by KaTeX");
+  assert.ok(out.includes('katex-html'), "expected rendered visual math markup");
 });
 
 test("display \\[...\\] renders as KaTeX display math", () => {

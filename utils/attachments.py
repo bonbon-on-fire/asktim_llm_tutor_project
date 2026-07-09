@@ -59,8 +59,11 @@ def _kind_for(filename: str) -> str | None:
 
 def _extract_delimited(data: bytes, delimiter: str) -> str:
     text = data.decode("utf-8", errors="replace")
-    reader = csv.reader(io.StringIO(text), delimiter=delimiter)
-    return "\n".join(", ".join(cell for cell in row) for row in reader)
+    try:
+        reader = csv.reader(io.StringIO(text), delimiter=delimiter)
+        return "\n".join(", ".join(row) for row in reader)
+    except Exception as exc:
+        raise AttachmentExtractionError(f"Could not read delimited file: {exc}") from exc
 
 
 def _extract_txt(data: bytes) -> str:
@@ -149,7 +152,7 @@ def validate_files(items: list[tuple[str, bytes]]) -> list[ValidatedAttachment]:
     out: list[ValidatedAttachment] = []
     for att in atts:
         if budget <= 0:
-            text = f"[…truncated {len(att.extracted_text)} chars for length…]"
+            text = f"\n[…truncated {len(att.extracted_text)} chars for length…]"
         elif len(att.extracted_text) > budget:
             dropped = len(att.extracted_text) - budget
             text = att.extracted_text[:budget] + f"\n[…truncated {dropped} chars for length…]"

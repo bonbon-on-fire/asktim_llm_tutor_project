@@ -80,3 +80,9 @@ def test_text_block_format():
     atts = A.validate_files([("t.csv", b"a,b\n1,2\n")])
     block = A.attachments_to_text_block(atts)
     assert block.startswith("\n\n[Attachment: t.csv]\n")
+
+
+def test_corrupt_csv_raises_extraction_error():
+    bad = bytes(range(256)) * 100  # binary junk with a .csv name
+    with pytest.raises(A.AttachmentExtractionError):
+        A.validate_file("corrupt.csv", bad)

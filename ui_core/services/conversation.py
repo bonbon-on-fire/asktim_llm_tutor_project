@@ -195,7 +195,10 @@ def get_history_for_tutor(db: Session, conversation: Any, *, models: Models) -> 
     Shape matches what `tutor_bridge.get_tutor_reply` expects, so callers can
     pass the result straight through. Student-turn ``uploaded_files`` extracted
     text is re-injected into ``content`` here (not stored/displayed) so
-    attachments stay visible to the tutor on later turns.
+    attachments stay visible to the tutor on later turns. Files are batch
+    loaded via `_files_by_message` (one query for the whole conversation)
+    rather than lazily per message, mirroring how `_images_by_message` avoids
+    N+1 lookups in `get_messages_for_conversation`.
     """
     stmt = (
         select(models.Message)
@@ -203,13 +206,37 @@ def get_history_for_tutor(db: Session, conversation: Any, *, models: Models) -> 
         .order_by(models.Message.turn, models.Message.id)
     )
     msgs = db.execute(stmt).scalars().all()
+    files_by_message = _files_by_message(db, conversation, models=models)
     out: list[dict] = []
     for m in msgs:
         content = m.content
-        if m.role == "student" and getattr(models, "UploadedFile", None) is not None:
-            atts = list(getattr(m, "uploaded_files", []) or [])
+        if m.role == "student":
+            atts = files_by_message.get(m.id, [])
             content = _content_with_attachments(content, atts)
         out.append({"role": m.role, "content": content})
+    return out
+
+
+def _files_by_message(
+    db: Session, conversation: Any, *, models: Models
+) -> dict[int, list[Any]]:
+    """Map message_id -> [UploadedFile, ...] for this conversation's messages.
+
+    Mirrors `_images_by_message`'s batched-query pattern: a single query over
+    `models.UploadedFile` for the whole conversation instead of a lazy load
+    per message. No-op (returns `{}`) when the app doesn't bind `UploadedFile`.
+    """
+    if getattr(models, "UploadedFile", None) is None:
+        return {}
+    stmt = (
+        select(models.UploadedFile)
+        .join(models.Message, models.UploadedFile.message_id == models.Message.id)
+        .where(models.Message.conversation_id == conversation.id)
+        .order_by(models.UploadedFile.id)
+    )
+    out: dict[int, list[Any]] = {}
+    for f in db.execute(stmt).scalars().all():
+        out.setdefault(f.message_id, []).append(f)
     return out
 
 

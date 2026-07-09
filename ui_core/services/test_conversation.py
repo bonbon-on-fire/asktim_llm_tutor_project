@@ -279,6 +279,95 @@ def test_turn_numbering_and_history() -> None:
         tmp.cleanup()
 
 
+def test_get_history_for_tutor_with_attachments() -> None:
+    """Check `get_history_for_tutor` re-injects uploaded_files text into student
+    turns only (via the batched `_files_by_message` helper, not a lazy per-message
+    load), leaves the stored row untouched, and leaves file-less turns unaffected.
+    """
+    models_with_files = Models(
+        Conversation=Conversation,
+        Message=Message,
+        UploadedImage=UploadedImage,
+        UploadedFile=UploadedFile,
+    )
+    tmp, eng = _new_session()
+    try:
+        with Session(eng) as s:
+            convo = svc.find_or_create_conversation(
+                s,
+                models=models_with_files,
+                session_id="sessH",
+                conversation_id=None,
+                course="cs101",
+                exercise_number="ex1",
+                tutor_prompt="be nice",
+            )
+            s.flush()
+
+            student1, tutor1 = svc.append_exchange(
+                s,
+                models=models_with_files,
+                conversation=convo,
+                student_text="What does this show?",
+                tutor_text="Looks like sales data.",
+                pedagogical_reasoning=None,
+            )
+            s.add(
+                UploadedFile(
+                    message_id=student1.id,
+                    filename="budget.csv",
+                    kind="text/csv",
+                    extracted_text="a, b\n1, 2",
+                    size_bytes=9,
+                    data=b"a, b\n1, 2",
+                )
+            )
+            s.commit()
+
+            history = svc.get_history_for_tutor(s, convo, models=models_with_files)
+            student_entry = next(h for h in history if h["role"] == "student")
+            _check(
+                "attachment text injected into student content",
+                "[Attachment: budget.csv]" in student_entry["content"]
+                and "1, 2" in student_entry["content"],
+                student_entry["content"],
+            )
+            _check(
+                "tutor content unaffected by attachments",
+                history[1] == {"role": "tutor", "content": "Looks like sales data."},
+                str(history[1]),
+            )
+            _check(
+                "stored row content not mutated",
+                student1.content == "What does this show?",
+                student1.content,
+            )
+
+            # A second, file-less turn in the same conversation stays unaffected.
+            student2 = svc.start_exchange_student_only(
+                s, models=models_with_files, conversation=convo, student_text="q2"
+            )
+            svc.complete_exchange_tutor(
+                s,
+                models=models_with_files,
+                conversation=convo,
+                turn=student2.turn,
+                tutor_text="a2",
+                pedagogical_reasoning=None,
+            )
+            s.commit()
+
+            history2 = svc.get_history_for_tutor(s, convo, models=models_with_files)
+            _check(
+                "text-only turn unaffected",
+                history2[2] == {"role": "student", "content": "q2"},
+                str(history2[2]),
+            )
+        eng.dispose()
+    finally:
+        tmp.cleanup()
+
+
 def test_get_messages_for_conversation_reasoning_toggle() -> None:
     """Check ``include_reasoning`` gates the pedagogical-reasoning field and images key is always present."""
     tmp, eng = _new_session()
@@ -506,6 +595,7 @@ def main() -> int:
         test_find_or_create_conversation,
         test_find_or_create_with_extra_fields,
         test_turn_numbering_and_history,
+        test_get_history_for_tutor_with_attachments,
         test_get_messages_for_conversation_reasoning_toggle,
         test_summarize_and_list_conversations,
         test_get_conversation_for_viewer_ownership,

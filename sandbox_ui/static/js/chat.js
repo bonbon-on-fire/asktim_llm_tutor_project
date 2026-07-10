@@ -516,6 +516,96 @@
     composerInput.focus();
   }
 
+  // ---- Mid-conversation feedback nudge (1-5 stars, once per conversation) ----
+  let feedbackWired = false;
+  function feedbackDoneKey() {
+    return "feedbackDone:" + (conversationId || "");
+  }
+  function hideFeedbackToast() {
+    const t = document.getElementById("feedback-toast");
+    if (t) t.hidden = true;
+  }
+  function markFeedbackDone() {
+    try {
+      sessionStorage.setItem(feedbackDoneKey(), "1");
+    } catch (e) {
+      /* sessionStorage unavailable — the toast just won't persist its state */
+    }
+  }
+  async function submitFeedback(rating) {
+    markFeedbackDone();
+    const toast = document.getElementById("feedback-toast");
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          turn: studentMessageCount,
+          rating: rating,
+        }),
+      });
+    } catch (e) {
+      /* best-effort — a failed rating should never disrupt the chat */
+    }
+    if (toast) {
+      toast.innerHTML =
+        '<span class="feedback-toast-thanks">Thanks for the feedback!</span>';
+      setTimeout(hideFeedbackToast, 1500);
+    }
+  }
+  function wireFeedbackToast() {
+    if (feedbackWired) return;
+    const stars = document.getElementById("feedback-stars");
+    const closeBtn = document.getElementById("feedback-toast-close");
+    if (!stars) return;
+    const buttons = Array.prototype.slice.call(
+      stars.querySelectorAll(".feedback-star"),
+    );
+    function paint(upto) {
+      buttons.forEach(function (b) {
+        b.classList.toggle("is-filled", Number(b.dataset.value) <= upto);
+      });
+    }
+    buttons.forEach(function (b) {
+      b.addEventListener("mouseenter", function () {
+        paint(Number(b.dataset.value));
+      });
+      b.addEventListener("click", function () {
+        submitFeedback(Number(b.dataset.value));
+      });
+    });
+    stars.addEventListener("mouseleave", function () {
+      paint(0);
+    });
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function () {
+        markFeedbackDone();
+        hideFeedbackToast();
+      });
+    }
+    feedbackWired = true;
+  }
+  function maybeShowFeedback(count) {
+    if (count < 3) return;
+    if (!conversationId) return;
+    let done = false;
+    try {
+      done = sessionStorage.getItem(feedbackDoneKey()) === "1";
+    } catch (e) {
+      /* ignore */
+    }
+    if (done) return;
+    // Don't stack on top of the persistent email/login modal — defer to a later
+    // turn when it isn't showing.
+    const emailModal = document.getElementById("email-modal");
+    if (emailModal && !emailModal.hidden) return;
+    const toast = document.getElementById("feedback-toast");
+    if (!toast) return;
+    wireFeedbackToast();
+    toast.hidden = false;
+  }
+
   function maybeShowEmailModal(count) {
     // Nudge after every message until the student signs up — intentionally
     // persistent: dismissing it (Skip) doesn't suppress it, so it reappears
@@ -1609,6 +1699,7 @@
       }
 
       maybeShowEmailModal(studentMessageCount);
+      maybeShowFeedback(studentMessageCount);
       // If the sidebar is open, silently re-fetch so the conversation
       // that just got a new message floats to the top of the list.
       if (sidebarOpen) {

@@ -16,6 +16,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from ui_core.db.models_common import (
     _utcnow,
+    FeedbackMixin,
     MessageMixin,
     StudentMixin,
     UploadedFileMixin,
@@ -70,4 +71,8 @@ class UploadedImage(UploadedImageMixin, Base):
 
 
 class UploadedFile(UploadedFileMixin, Base):
+    pass
+
+
+class Feedback(FeedbackMixin, Base):
     pass

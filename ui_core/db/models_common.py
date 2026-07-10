@@ -180,3 +180,36 @@ class UploadedFileMixin:
     def __table_args__(cls):
         """Table-level args: an index on ``message_id``."""
         return (Index("idx_uploaded_files_message", "message_id"),)
+
+
+class FeedbackMixin:
+    """Columns for the ``feedback`` table — one row per submitted tutor rating.
+
+    A student can rate the conversation mid-session (a 1–5 star notification
+    fires once, a few turns in). ``turn`` records where in the conversation the
+    rating was given. Scoped to the conversation, not a single message.
+    """
+
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(_BigIntPk, primary_key=True, autoincrement=True)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    # Student-message count when the rating was given (nullable: a client may
+    # omit it). Locates the rating within the conversation.
+    turn: Mapped[int | None] = mapped_column(nullable=True)
+    rating: Mapped[int] = mapped_column(nullable=False)  # 1..5
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+
+    @declared_attr.directive
+    def __table_args__(cls):
+        """Table-level args: a 1..5 rating check and an index on ``conversation_id``."""
+        return (
+            CheckConstraint("rating >= 1 AND rating <= 5", name="ck_feedback_rating"),
+            Index("idx_feedback_conversation", "conversation_id"),
+        )

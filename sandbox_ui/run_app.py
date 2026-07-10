@@ -10,6 +10,7 @@ from sandbox_ui.db.models import Base
 from sandbox_ui.db.session import engine
 from sandbox_ui.routes.chat import chat_bp
 from sandbox_ui.routes.embed import embed_bp
+from sandbox_ui.routes.feedback import feedback_bp
 from sandbox_ui.routes.history import history_bp
 from sandbox_ui.routes.identity import identity_bp
 from ui_core.app_factory import create_app
@@ -122,7 +123,7 @@ app = create_app(
     config=load_config(),
     service_name="sandbox_ui",
     session_local=SessionLocal,
-    blueprints=[embed_bp, identity_bp, chat_bp, history_bp],
+    blueprints=[embed_bp, identity_bp, chat_bp, history_bp, feedback_bp],
     # sandbox_ui owns a separate, throwaway database and skips Alembic — the
     # schema is created directly from the models on boot. create_all makes
     # missing tables; _reconcile_columns backfills columns added to tables

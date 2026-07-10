@@ -586,24 +586,46 @@
     }
     feedbackWired = true;
   }
-  function maybeShowFeedback(count) {
-    if (count < 3) return;
-    if (!conversationId) return;
-    let done = false;
+  let feedbackPending = false;
+  let feedbackObserverSet = false;
+  function isFeedbackDone() {
     try {
-      done = sessionStorage.getItem(feedbackDoneKey()) === "1";
+      return sessionStorage.getItem(feedbackDoneKey()) === "1";
     } catch (e) {
-      /* ignore */
+      return false;
     }
-    if (done) return;
-    // Don't stack on top of the persistent email/login modal — defer to a later
-    // turn when it isn't showing.
+  }
+  function tryShowFeedback() {
+    if (!feedbackPending) return;
+    if (isFeedbackDone()) {
+      feedbackPending = false;
+      return;
+    }
+    // Don't overlap the persistent email/login modal — stay armed until it's
+    // dismissed; the observer below re-runs this the moment it closes.
     const emailModal = document.getElementById("email-modal");
     if (emailModal && !emailModal.hidden) return;
     const toast = document.getElementById("feedback-toast");
     if (!toast) return;
     wireFeedbackToast();
     toast.hidden = false;
+    feedbackPending = false;
+  }
+  function maybeShowFeedback(count) {
+    if (count < 3) return;
+    if (!conversationId) return;
+    if (isFeedbackDone()) return;
+    feedbackPending = true;
+    // Surface the toast as soon as the email modal closes (it reopens every turn
+    // until the student signs up, so a plain "is it open now?" check never fires).
+    const emailModal = document.getElementById("email-modal");
+    if (emailModal && !feedbackObserverSet) {
+      feedbackObserverSet = true;
+      new MutationObserver(function () {
+        if (emailModal.hidden) tryShowFeedback();
+      }).observe(emailModal, { attributes: true, attributeFilter: ["hidden"] });
+    }
+    tryShowFeedback();
   }
 
   function maybeShowEmailModal(count) {

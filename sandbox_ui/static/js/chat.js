@@ -167,12 +167,25 @@
     if (imageLightbox) imageLightbox.hidden = true;
   }
 
-  // A "📎 <name>" pill — used both for a staged (not-yet-sent) file and for a
+  // A "📄 <name>" pill — used both for a staged (not-yet-sent) file and for a
   // file attached to an already-sent/past message.
   function renderFileChip(name) {
     const chip = document.createElement("span");
     chip.className = "attachment-chip";
-    chip.textContent = "📎 " + name;
+    const icon = document.createElement("span");
+    icon.className = "attachment-chip-icon";
+    icon.setAttribute("aria-hidden", "true");
+    // Static markup only (no user input); the filename is a separate text node below.
+    icon.innerHTML =
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+      '<polyline points="14 2 14 8 20 8"/></svg>';
+    const label = document.createElement("span");
+    label.className = "attachment-chip-name";
+    label.textContent = name; // user-controlled — keep as a text node (no innerHTML)
+    chip.appendChild(icon);
+    chip.appendChild(label);
     return chip;
   }
 
@@ -757,7 +770,7 @@
       : CREATE_STEPS;
   }
   const CUSTOM = "__custom__";
-  const LOCKED_TUTOR = "tutor_05"; // the tutor prompt is locked to this in the wizard
+  const LOCKED_TUTOR = "tutor_06"; // the tutor prompt is locked to this in the wizard
   const LOCK_ICON_SVG =
     '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
 
@@ -822,7 +835,7 @@
     const stepLabelText =
       `Step ${createStep + 1} of ${steps.length}: ${STEP_LABELS[step]}`;
     if (step === "tutor") {
-      // Tutor prompt is locked to tutor_05 — show a small lock icon by the label.
+      // Tutor prompt is locked to tutor_06 — show a small lock icon by the label.
       createStepLabel.innerHTML = `${stepLabelText} ${LOCK_ICON_SVG}`;
     } else {
       createStepLabel.textContent = stepLabelText;
@@ -931,7 +944,7 @@
     }
 
     const sel = buildSelect(options, currentValue);
-    if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_05
+    if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_06
     createStepBody.appendChild(sel);
 
     const ta = document.createElement("textarea");

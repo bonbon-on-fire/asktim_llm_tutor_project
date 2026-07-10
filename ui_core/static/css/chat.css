@@ -395,8 +395,8 @@ body {
     background: var(--border);
 }
 
-/* Non-image file attachment chip — "📎 <name>", staged in the composer preview
-   strip (with a remove button) or shown read-only on a sent/past message. */
+/* Non-image file attachment chip — a file icon + "<name>", staged in the composer
+   preview strip (with a remove button) or shown read-only on a sent/past message. */
 .attachment-chip {
     display: inline-flex;
     align-items: center;
@@ -411,7 +411,24 @@ body {
     white-space: nowrap;
     max-width: 220px;
     overflow: hidden;
+}
+
+/* Document/file glyph before the name. Inherits the chip's text color via
+   currentColor (neutral — never the red of a file-type badge). */
+.attachment-chip-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    opacity: 0.75;
+}
+
+/* The filename — truncates with an ellipsis while the icon and remove button
+   stay visible (min-width:0 lets the flex item shrink below its content). */
+.attachment-chip-name {
+    min-width: 0;
+    overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .attachment-chip-remove {

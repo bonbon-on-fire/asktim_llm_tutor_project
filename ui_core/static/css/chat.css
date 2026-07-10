@@ -247,6 +247,7 @@ body {
 }
 
 .composer {
+    position: relative;
     padding: 0.6rem 1rem 1rem;
     border-top: 1px solid var(--border);
     background: #ffffff;
@@ -953,25 +954,26 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
     }
 }
 
-/* Mid-conversation feedback nudge — small, bottom-centered, non-blocking toast
-   asking for a 1-5 star rating. Slides up once, a few turns in. */
+/* Mid-conversation feedback nudge — a small, non-blocking pill that pops just
+   above the composer once a few turns in, asking for a 1-5 star rating. */
 .feedback-toast {
-    position: fixed;
+    position: absolute;
     left: 50%;
-    bottom: 18px;
+    bottom: 100%;
     transform: translateX(-50%);
+    margin-bottom: 8px;
     z-index: 60;
     display: flex;
     align-items: center;
     gap: 0.65rem;
     padding: 0.5rem 0.7rem 0.5rem 0.85rem;
     border-radius: 999px;
-    background: var(--bg);
+    background: #ffffff;
     border: 1px solid var(--border);
     box-shadow: 0 6px 22px rgba(0, 0, 0, 0.14);
     color: var(--text);
     font-size: 0.9rem;
-    max-width: calc(100vw - 24px);
+    max-width: calc(100% - 24px);
     animation: feedback-slide-in 0.22s ease-out;
 }
 
@@ -980,7 +982,7 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
 }
 
 @keyframes feedback-slide-in {
-    from { opacity: 0; transform: translate(-50%, 12px); }
+    from { opacity: 0; transform: translate(-50%, 10px); }
     to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
@@ -1007,7 +1009,7 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
 
 .feedback-star:hover,
 .feedback-star.is-filled {
-    color: #f5a623;
+    color: var(--send-bg);   /* per-app accent: sandbox blue, main crimson */
 }
 
 .feedback-toast-close {

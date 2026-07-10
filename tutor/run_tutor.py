@@ -244,33 +244,50 @@ def parse_tutor_response(content: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-def _repair_latex_json(s: str) -> str:
-    """Double stray LaTeX backslashes so an otherwise-invalid tutor JSON parses.
+def _is_hex4(s: str, j: int) -> bool:
+    """True if s[j:j+4] is exactly four hex digits (a JSON ``\\uXXXX`` escape)."""
+    return len(s) >= j + 4 and all(c in "0123456789abcdefABCDEF" for c in s[j : j + 4])
 
-    The tutor writes math as ``\\(...\\)`` / ``\\frac{}{}`` and is supposed to
-    double each backslash so the JSON stays valid, but often emits a single one
-    (an invalid JSON escape). This doubles every backslash except an already
-    escaped ``\\\\`` pair or an escaped quote ``\\"`` — the only two escapes the
-    tutor reliably emits — so LaTeX survives for KaTeX. Used only as a fallback
-    after a strict parse fails; well-formed replies never pass through it.
+
+def _repair_latex_json(s: str) -> str:
+    r"""Double stray LaTeX backslashes so an otherwise-invalid tutor JSON parses.
+
+    The tutor writes math as ``\(...\)`` / ``\frac{}{}`` and is *supposed* to
+    double each backslash so the JSON stays valid, but often emits a single one —
+    an invalid JSON escape that makes ``json.loads`` reject the whole reply.
+
+    This doubles every backslash EXCEPT the escapes the tutor actually intends,
+    which are left intact: ``\\`` (literal backslash), ``\"`` (quote), ``\uXXXX``
+    (unicode), and ``\n`` when it's a real newline — i.e. not followed by a
+    lowercase letter, which would make it a LaTeX command like ``\nu`` / ``\ne``.
+    So ``\(``, ``\sum``, ``\le``, ``\frac``, ``\times``, ``\theta`` all survive as
+    LaTeX while newlines (markdown tables, paragraphs) stay newlines. ``\t``/``\r``
+    are treated as LaTeX (``\times``/``\rho``) — a literal tab/CR in tutor prose is
+    vanishingly rare. Used only as a fallback after a strict parse fails, so
+    well-formed replies are never passed through it.
     """
     out: list[str] = []
     i = 0
     n = len(s)
     while i < n:
         ch = s[i]
-        if ch == "\\" and i + 1 < n:
-            nxt = s[i + 1]
-            if nxt in ('"', "\\"):
-                out.append(ch)
-                out.append(nxt)
-                i += 2
-                continue
-            out.append("\\\\")
+        if ch != "\\" or i + 1 >= n:
+            out.append(ch)
             i += 1
             continue
-        out.append(ch)
-        i += 1
+        nxt = s[i + 1]
+        keep = (
+            nxt in ('"', "\\")
+            or (nxt == "n" and not (i + 2 < n and s[i + 2].islower()))
+            or (nxt == "u" and _is_hex4(s, i + 2))
+        )
+        if keep:
+            out.append(ch)
+            out.append(nxt)
+            i += 2
+        else:
+            out.append("\\\\")
+            i += 1
     return "".join(out)
 
 

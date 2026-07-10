@@ -40,3 +40,25 @@ def test_stream_extractor_preserves_latex_backslash():
     visible = ex.feed(BAD)
     # the streamed visible answer keeps the LaTeX delimiters
     assert "\\(i\\)" in visible
+
+
+# Reconstructs the observed markdown-table failure: the model uses \n newline
+# ESCAPES for the table rows AND single-backslash LaTeX. The repair must keep the
+# newlines real while fixing the LaTeX — not turn "\n" into literal backslash-n.
+TABLE = (
+    '{"pedagogical-reasoning":"r","Student-facing-answer":'
+    '"Use \\(P1\\).\\n\\nTable 1\\n| a | b |\\n|---|---|\\n'
+    '| \\(x_{ij}\\) | \\(\\sum_j x_{ij} \\le S_i\\) |\\n\\nNow what is \\(i\\)?"}'
+)
+
+
+def test_newline_escapes_stay_newlines_and_latex_survives():
+    _, answer = parse_tutor_response(TABLE)
+    assert answer is not None
+    assert "\n" in answer, "the \\n escapes must become real newlines"
+    assert "\\n" not in answer, "no literal backslash-n should leak"
+    # table markdown intact across real line breaks
+    assert "|---|---|" in answer
+    # LaTeX preserved for KaTeX
+    assert "\\(x_{ij}\\)" in answer
+    assert "\\sum_j x_{ij} \\le S_i" in answer

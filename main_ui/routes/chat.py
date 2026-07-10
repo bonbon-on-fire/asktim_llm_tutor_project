@@ -6,7 +6,7 @@ JSON request:
       "text": "...",                    required, non-empty
       "course": "...",                  required
       "exercise": "N",                  required, non-padded integer
-      "tutor": "tutor_05",              optional, defaults to tutor_05
+      "tutor": "tutor_06",              optional, defaults to tutor_06
       "conversation_id": "<uuid>"       optional; absent = create new
     }
 

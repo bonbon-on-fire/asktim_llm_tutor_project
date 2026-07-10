@@ -219,7 +219,7 @@
     for (const file of files) {
       if (stagedImages.length + stagedFiles.length >= MAX_ATTACHMENTS_PER_MESSAGE) {
         showError(
-          "Up to " + MAX_ATTACHMENTS_PER_MESSAGE + " attachments per message.",
+          "You can upload up to " + MAX_ATTACHMENTS_PER_MESSAGE + " files at a time.",
         );
         break;
       }

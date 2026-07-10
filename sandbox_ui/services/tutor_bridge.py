@@ -227,17 +227,34 @@ def _has_custom(
     )
 
 
-def _retrieved_context(course: str, mode: str, query: str) -> RetrievedContext:
+def _week_for_exercise(exercise) -> int | None:
+    """The course week (module) for the current problem, or None if not numeric.
+
+    exercise / practice numbers share the lecture week number, so a problem
+    numbered ``4`` caps retrieval at week 4. Custom / non-numeric exercises have
+    no week, so retrieval is left unscoped.
+    """
+    try:
+        return int(str(exercise).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _retrieved_context(
+    course: str, mode: str, query: str, max_week: int | None = None
+) -> RetrievedContext:
     """Retrieve course-material chunks for this turn (RAG mode only).
 
     Returns the formatted prompt block *and* the per-chunk records
     (``{source, score, chars, text}``) so the caller can both prepend the block
     and persist what was retrieved. Retrieval runs once (one embedding + search).
+    When *max_week* is set, lecture/practice material from a later week is dropped
+    so the tutor never surfaces content the student hasn't reached.
     """
     if mode != "rag":
         return RetrievedContext()
     try:
-        scored = retrieve_scored(course, query)
+        scored = retrieve_scored(course, query, max_week=max_week)
         chunks = [c for c, _ in scored]
         return RetrievedContext(text=format_context(chunks), records=to_records(scored))
     except Exception:
@@ -307,7 +324,12 @@ class SandboxTutorBridge(TutorBridge):
 
     def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
         """Retrieve RAG context for the query when context_mode is "rag", else return empty context."""
-        return _retrieved_context(course, ctx.get("context_mode", "full_context"), query)
+        return _retrieved_context(
+            course,
+            ctx.get("context_mode", "full_context"),
+            query,
+            _week_for_exercise(ctx.get("exercise")),
+        )
 
     def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):
         """Curriculum figures + uploads, with figures gated off for custom exercises.

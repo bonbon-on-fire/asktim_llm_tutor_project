@@ -161,10 +161,14 @@ def _student_assignment_text(config: RunConfig) -> str:
 # Conversation loop
 # --------------------------------------------------------------------------- #
 
-def _retrieved_context(course: str, query: str) -> RetrievedContext:
-    """Relevant chunks for this turn (prompt text + records); empty on any failure."""
+def _retrieved_context(course: str, query: str, max_week: int | None = None) -> RetrievedContext:
+    """Relevant chunks for this turn (prompt text + records); empty on any failure.
+
+    *max_week* scopes retrieval to weeks the student has reached (drops later
+    lectures/practices) so simulated transcripts match the live tutor's scope.
+    """
     try:
-        scored = retrieve_scored(course, query)
+        scored = retrieve_scored(course, query, max_week=max_week)
         return RetrievedContext(
             text=format_context([c for c, _ in scored]), records=to_records(scored)
         )
@@ -204,6 +208,12 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
     # Figures only apply to graded exercises (naming is exercise_<NN>_*); practice
     # problems have none, and reusing a matching number would wrongly attach them.
     figures = discover_figures(config.course, config.number) if config.kind == "exercise" else []
+    # Scope retrieval to weeks the student has reached: the problem number is the
+    # week number, so cap lecture/practice retrieval at it (drop later weeks).
+    try:
+        max_week = int(str(config.number).strip())
+    except (TypeError, ValueError):
+        max_week = None
 
     def _build_graph():
         """Construct a fresh tutor graph for this config's provider and figures."""
@@ -234,7 +244,7 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
         # RAG: retrieve relevant chunks for this student turn and prepend them as
         # a reference block ahead of the student's actual message. ``rc.records``
         # captures what was retrieved (source/score/text) for the transcript.
-        rc = _retrieved_context(config.course, student_text)
+        rc = _retrieved_context(config.course, student_text, max_week)
         tutor_input = (
             f"{rc.text}\n\n---\n\nStudent message:\n{student_text}"
             if rc.text

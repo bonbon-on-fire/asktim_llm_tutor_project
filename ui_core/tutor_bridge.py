@@ -273,7 +273,7 @@ class TutorBridge:
         ctx = self.prepare_ctx(course, **ctx)
         graph = self._get_or_build_graph(tutor, course, exercise, **ctx)
         messages = self._history_to_langchain(history)
-        rc = self.retrieved_context(course, new_student_message, **ctx)
+        rc = self.retrieved_context(course, new_student_message, exercise=exercise, **ctx)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
         messages.append(
             self._new_student_message(new_student_message, attachments, rc.text)
@@ -317,7 +317,7 @@ class TutorBridge:
             tutor, course, exercise, **ctx
         )
         messages = self._history_to_langchain(history)
-        rc = self.retrieved_context(course, new_student_message, **ctx)
+        rc = self.retrieved_context(course, new_student_message, exercise=exercise, **ctx)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
         messages.append(
             self._new_student_message(new_student_message, attachments, rc.text)

@@ -51,9 +51,20 @@ python -m rag.ingest --course <course>                  --source both
 from rag import retrieve, format_context, has_index
 
 if has_index(course):
-    chunks = retrieve(course, student_message, k=6)
+    chunks = retrieve(course, student_message, k=6, max_week=4)
     block = format_context(chunks)   # injected on the latest student turn
 ```
+
+### Week-scoped retrieval (`max_week`)
+
+Lecture and practice sources encode the course **week** as their first number
+(`lecture_2_3_...` → week 2, `practice_4` → week 4). Passing `max_week=N` drops
+any lecture/practice material from a **later** week than `N` before the top-k is
+taken, so the tutor never surfaces content the student hasn't reached. The tutor
+bridge passes the current problem's number as `max_week` (exercise/practice
+numbers share the lecture week number). Week-agnostic docs — course description,
+syllabus, key concepts, OCW content — carry no week and are always in scope.
+Omit `max_week` (the default) to retrieve across all weeks.
 
 ## Layout
 

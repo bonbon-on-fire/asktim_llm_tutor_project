@@ -3,11 +3,12 @@
 Shared web layer the three Flask chat/review apps are built on:
 `main_ui` and `sandbox_ui` (the two student-facing chat UIs) and, partially,
 `database_ui` (the read-only TA review app). Cookie policy, DB engine/session
-plumbing, the SQLAlchemy column mixins for `Message`/`Student`/`UploadedImage`,
-the conversation/image/student persistence logic, the tutor-bridge control
-flow, and the Flask app-assembly boilerplate all used to be duplicated across
-`main_ui` and `sandbox_ui`; this package is the single copy. Each app still
-declares its own model classes and thin service wrappers where schemas
+plumbing, the SQLAlchemy column mixins for `Message`/`Student`/`UploadedImage`/
+`UploadedFile`/`Feedback`, the conversation/image/file/student/feedback
+persistence logic, the tutor-bridge control flow, client-side KaTeX math
+rendering, and the Flask app-assembly boilerplate all used to be duplicated
+across `main_ui` and `sandbox_ui`; this package is the single copy. Each app
+still declares its own model classes and thin service wrappers where schemas
 diverge (see per-module notes below) — `ui_core` never imports an app
 package, only the reverse.
 
@@ -50,8 +51,8 @@ guards a long-lived remote Postgres connection and never writes.
 
 ### `db/models_common.py`
 
-Shared declarative mixins so `Message`, `Student`, `UploadedImage`, and
-`UploadedFile` aren't redefined per app. Each app still declares the concrete
+Shared declarative mixins so `Message`, `Student`, `UploadedImage`,
+`UploadedFile`, and `Feedback` aren't redefined per app. Each app still declares the concrete
 class on its own `Base` (keeps the table in that app's own `metadata` for
 Alembic/`create_all`):
 
@@ -77,6 +78,11 @@ class Message(MessageMixin, Base):
   into history every turn), `size_bytes`, `data` (raw bytes, stored in-DB same
   as `UploadedImage`), `created_at`; declares the `message` relationship and an
   index on `message_id`. Non-image attachments (csv/xlsx/pdf/etc.).
+- `FeedbackMixin` — `feedback` table: `id`, `conversation_id` (FK →
+  `conversations.id`, cascade delete), `turn` (nullable int — student-message
+  count when the rating was given), `rating` (int, checked `1 <= rating <= 5`),
+  `created_at`; index on `conversation_id`. One row per submitted 1–5 star
+  tutor rating; not linked to `Message`, only to the conversation as a whole.
 - `_utcnow()` — tz-aware UTC `datetime` default; `_BigIntPk` — `BigInteger`
   that falls back to `Integer` on SQLite (so autoincrement works locally).
 
@@ -85,13 +91,25 @@ class Message(MessageMixin, Base):
 and `_BigIntPk` are exported from here because every app's own `Conversation`
 uses them too.
 
-### `services/images.py`, `services/conversation.py`, `services/students.py`
+### `services/images.py`, `services/files.py`, `services/conversation.py`, `services/students.py`, `services/feedback.py`
 
 App-agnostic persistence logic, parameterized by the caller's own ORM
 classes rather than importing them (each app binds its own via a thin
 wrapper at `<app>/services/<module>.py`, e.g. `main_ui/services/conversation.py`
 binds a `Models(Conversation=..., Message=..., UploadedImage=...)` bundle and
 re-exposes the same function names without the `models=` argument).
+
+**`services/files.py`** — mirrors `services/images.py` for non-image
+attachments (csv/tsv/xlsx/pdf/docx/txt):
+- `read_and_validate(files)` — Flask `FileStorage` list → validated
+  attachments via `utils.attachments.validate_files` (reads each upload's
+  bytes, then delegates type/size/extraction validation)
+- `persist_files(db, *, message, files, uploaded_file_cls)` — insert one
+  `UploadedFile` row per validated attachment (filename, `kind`,
+  `extracted_text`, bytes), linked to `message`
+- `files_to_text(files)` — render validated attachments as labeled text
+  blocks (via `utils.attachments.attachments_to_text_block`) for folding into
+  the current turn's tutor message
 
 **`services/images.py`**
 - `read_and_validate(files)` — Flask `FileStorage` list → validated images via
@@ -115,7 +133,12 @@ re-exposes the same function names without the `models=` argument).
   `append_exchange` used by the SSE streaming chat path (student row persisted
   before streaming begins; tutor row added once the stream completes)
 - `get_history_for_tutor(db, conversation, *, models)` — prior messages as
-  `[{role, content}, ...]`, shaped for `tutor_bridge`
+  `[{role, content}, ...]`, shaped for `tutor_bridge`. Each past student turn's
+  `uploaded_files` extracted text is re-injected into `content` as
+  `\n\n[Attachment: <name>]\n<text>` (model-facing only — the stored/displayed
+  message stays plain text), batch-loaded per conversation via
+  `_files_by_message` to avoid N+1 lookups (mirrors `_images_by_message`); a
+  no-op when the app doesn't bind `UploadedFile`
 - `count_student_messages(db, conversation, *, models)` — used to trigger the
   username modal at 3 student messages
 - `list_conversations_for_username(db, username, *, models, summarize_extra=None)`
@@ -136,6 +159,11 @@ re-exposes the same function names without the `models=` argument).
   password; raises `WeakPasswordError` if too short
 - `verify_password(student, password)` — bcrypt check, `False` (not a raise)
   on malformed stored hash
+
+**`services/feedback.py`**
+- `record_feedback(db, *, conversation_id, turn, rating, feedback_cls)` —
+  insert one `Feedback` row (rating 1..5, `turn` nullable) linked to a
+  conversation
 
 ### `tutor_bridge.py`
 
@@ -181,18 +209,37 @@ Public API:
 ### `web/static_blueprint.py`
 
 `static_bp` — a Flask `Blueprint` named `"ui_core"` serving `ui_core/static/`
-(currently just `css/chat.css`) at `/ui-core`. `database_ui` (which doesn't use
+at `/ui-core`: `css/chat.css`, vendored **KaTeX 0.16.11** (`css/katex.min.css`
++ `css/fonts/*` + `js/katex.min.js`), and `js/katex-marked.js` (see
+`templates/base_chat.html` below). `database_ui` (which doesn't use
 `app_factory`) registers this blueprint directly so its login-gate allowlist
 can carve out `ui_core.static` as a public endpoint (the login page itself
 needs `chat.css`).
 
-### `web/blueprints/identity.py`, `web/blueprints/history.py`
+### `static/js/katex-marked.js`
+
+Client-side math rendering, shared by all three chat UIs (main_ui, sandbox_ui,
+database_ui). Exposes a browser global (and CommonJS export for
+`test_katex_marked.js`):
+
+- `renderTutorMarkdown(content)` — parses `content` with `marked`, using a
+  `marked` extension (`makeMathExtension`) that recognizes `\(...\)` (inline)
+  and `\[...\]` (display) as KaTeX math and renders them with
+  `katex.renderToString`; `$...$` is deliberately **not** treated as math
+  (it's currency in this course). Falls back to plain `marked.parse` if KaTeX
+  isn't loaded, and to `null` (caller renders as plain text) if `marked` or
+  `DOMPurify` isn't loaded. The resulting HTML is always run through
+  `DOMPurify.sanitize` before use. Each app's `chat.js` calls this from
+  `setMessageContent` instead of a bare `marked.parse`/`textContent` render.
+
+### `web/blueprints/identity.py`, `web/blueprints/history.py`, `web/blueprints/feedback.py`
 
 Blueprint factories, byte-identical in body across `main_ui`/`sandbox_ui`
 apart from import paths — each app injects its own `cookies` /
-`services.conversation` / `services.students` / `services.images` modules
-(passed as plain modules, not classes) so the shared route bodies stay
-app-agnostic. Blueprint names are preserved as `identity` and `history`.
+`services.conversation` / `services.students` / `services.images` /
+`services.feedback` modules (passed as plain modules, not classes) so the
+shared route bodies stay app-agnostic. Blueprint names are preserved as
+`identity`, `history`, and `feedback`.
 
 **`make_identity_bp(*, cookies, conversation, students)`** → blueprint named
 `identity`:
@@ -211,13 +258,23 @@ app-agnostic. Blueprint names are preserved as `identity` and `history`.
 - `GET /api/image/<int:image_id>` — serve one uploaded image's bytes (same
   ownership check)
 
+**`make_feedback_bp(*, cookies, conversation, feedback)`** → blueprint named
+`feedback`:
+- `POST /api/feedback` — record a 1..5 star rating for a conversation owned
+  by the current session (`session_id` or matching `username`). Body:
+  `{conversation_id, rating, turn?}`. 400 on a missing/malformed
+  `conversation_id` or an out-of-range/non-integer `rating`; 403
+  (`wrong_session`) if the conversation isn't found or isn't owned by the
+  caller.
+
 ### `templates/base_chat.html`
 
 The shared page shell (head, sidebar, message list, composer, image-attach
-modal, username/password modal, markdown-rendering script tags) that each
-app's own `embed.html` extends: `{% extends "base_chat.html" %}`. Exposes
-override blocks (`title`, `head_extra`, `banner`, `beta_tag`,
-`sidebar_cta_extra`, `modals_extra`, `chat_js_src`) for per-app customization.
+modal, username/password modal, a mid-conversation star-rating feedback
+toast, and the KaTeX + `katex-marked.js` script/link tags) that each app's
+own `embed.html` extends: `{% extends "base_chat.html" %}`. Exposes override
+blocks (`title`, `head_extra`, `banner`, `beta_tag`, `sidebar_cta_extra`,
+`modals_extra`, `chat_js_src`) for per-app customization.
 
 ### `app_factory.py`
 
@@ -268,17 +325,31 @@ exception that imports an app module (`sandbox_ui.services.tutor_bridge`) so
 it can exercise the base/subclass split side by side; it stubs out every
 upstream LLM/graph call, so it stays fully offline.
 
+A few smaller, newer tests at the package root deviate from the
+`_check`/`main()` convention above and use plain pytest-style `assert`
+functions instead: `test_files_service.py` (`services/files.py`'s
+`read_and_validate`/`files_to_text`), `test_history_injection.py`
+(`services/conversation.py`'s `_content_with_attachments` helper behind
+`get_history_for_tutor`'s attachment re-injection), and
+`test_uploaded_file_model.py` (imports `sandbox_ui.db.models.UploadedFile` —
+another exception to the "no app imports" rule — to assert the
+`UploadedFileMixin` columns are present). Run with `pytest` rather than `python -m`.
+KaTeX rendering (`static/js/katex-marked.js`) has its own Node test,
+`static/js/test_katex_marked.js` (`node --test`), covering inline/display
+math rendering and that `$...$` currency stays literal.
+
 ## How the apps consume it
 
 - `main_ui` and `sandbox_ui` call `ui_core.app_factory.create_app(...)` from
-  their `run_app.py` to build the Flask app, register `identity`/`history`
-  blueprints built via `make_identity_bp`/`make_history_bp`, extend
-  `base_chat.html` in their own `embed.html`, declare their own `Conversation`
-  class (`Message`/`Student`/`UploadedImage` via the shared mixins), build
-  their engine with `build_engine(url, sqlite_fk=True)`, and keep thin
-  `services/{conversation,images,students,tutor_bridge}.py` wrappers that bind
-  their model classes into the shared, model-agnostic functions above.
-  `sandbox_ui`'s `tutor_bridge.py` subclasses `TutorBridge`
+  their `run_app.py` to build the Flask app, register `identity`/`history`/
+  `feedback` blueprints built via `make_identity_bp`/`make_history_bp`/
+  `make_feedback_bp`, extend `base_chat.html` in their own `embed.html`,
+  declare their own `Conversation` class (`Message`/`Student`/`UploadedImage`/
+  `UploadedFile`/`Feedback` via the shared mixins), build their engine with
+  `build_engine(url, sqlite_fk=True)`, and keep thin
+  `services/{conversation,images,files,students,feedback,tutor_bridge}.py`
+  wrappers that bind their model classes into the shared, model-agnostic
+  functions above. `sandbox_ui`'s `tutor_bridge.py` subclasses `TutorBridge`
   (`SandboxTutorBridge`) to add RAG/context-mode/reasoning-toggle behavior.
 - `database_ui` only partially depends on `ui_core`: it uses
   `build_engine`/`make_session_factory`/`session_scope` directly (with

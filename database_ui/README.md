@@ -16,7 +16,10 @@ checklist in [`PLANNING.md`](PLANNING.md).
 
 - `db/models.py` maps only the columns shared by `main_ui` and `sandbox_ui`
   (all-nullable, `viewonly=True` relationships), so the same code reads either
-  DB unchanged and never crashes on sandbox-only columns.
+  DB unchanged and never crashes on sandbox-only columns. It currently maps
+  `conversations`, `messages`, and `uploaded_images` only — the shared DB also
+  now has `uploaded_files` (non-image attachments: CSV/XLSX/PDF/DOCX/TXT) and
+  `feedback` (1-5 star ratings) tables, but this viewer doesn't browse them yet.
 - No `create_all`, no migrations. The per-request session (`run_app.py`) always
   rolls back, never commits.
 - Every route is behind a shared-password gate (`auth.py`'s `init_auth`
@@ -35,7 +38,11 @@ share some of `ui_core`:
 - It registers the shared `ui_core.web.static_blueprint` to serve `chat.css` at
   `/ui-core/css/chat.css` (so the review shell matches `main_ui`'s styling); that
   blueprint's endpoint (`ui_core.static`) is allowlisted in `auth.py`'s
-  `_PUBLIC_ENDPOINTS` so the login page can load it before authing.
+  `_PUBLIC_ENDPOINTS` so the login page can load it before authing. The same
+  blueprint also serves the vendored KaTeX assets and `katex-marked.js`; tutor
+  messages are rendered via the shared `renderTutorMarkdown` helper, so
+  markdown + `\(...\)`/`\[...\]` LaTeX math shows up exactly as students saw it
+  in `main_ui`/`sandbox_ui` (`$...$` stays plain text — reserved for currency).
 
 Routes live in `routes/database.py`; the read-only queries backing them (list
 all conversations, one conversation's full transcript including
@@ -63,7 +70,7 @@ inside Railway).
 | `DATABASE_UI_DATABASE_URL` | Yes (prod) | DB to read. Falls back to `DATABASE_URL`, then local SQLite. |
 | `DATABASE_UI_PASSWORD` | Yes (deploy) | Shared password for the login gate. Unset ⇒ open (local dev only); the deploy entrypoint refuses to start without it. |
 | `DATABASE_UI_SECRET_KEY` | Recommended | Flask session signing key. Has an insecure dev default. |
-| `DATABASE_UI_TITLE` | No | Header + tab title. Default `AskTIM · Database Beta`. |
+| `DATABASE_UI_TITLE` | No | Header + tab title. Default `AskTIM Database`. |
 | `DATABASE_UI_ACCENT` | No | Accent color. Default `#8c1a1b` (MIT crimson, = main_ui). |
 | `DATABASE_UI_COOKIE_MAX_AGE` | No | Login-session cookie lifetime, in seconds. Default 30 days. |
 | `PORT` | No | Default `5003`. |

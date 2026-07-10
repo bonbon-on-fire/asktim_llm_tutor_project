@@ -11,9 +11,13 @@ top level:
 from utils import read_exercise, discover_figures, build_multimodal_content
 ```
 
-All modules are standard-library only (no third-party deps). Path-based helpers
-accept an optional `curriculum_root` override (defaulting to `<repo>/curriculum`)
-so they can be pointed at fixtures in tests.
+Most modules are standard-library only (no third-party deps); the exception is
+`attachments.py`, which pulls in `openpyxl` and `python-docx` (plus the
+already-used `pypdf`) to extract text from spreadsheet/document uploads — its
+public API is imported directly (`from utils.attachments import ...`) rather
+than re-exported from the package top level. Path-based helpers accept an
+optional `curriculum_root` override (defaulting to `<repo>/curriculum`) so
+they can be pointed at fixtures in tests.
 
 ## Modules
 
@@ -24,6 +28,7 @@ so they can be pointed at fixtures in tests.
 | [`figures.py`](figures.py) | Discover exercise figures and build multimodal content. |
 | [`lectures.py`](lectures.py) | Load a course's lecture transcripts. |
 | [`uploads.py`](uploads.py) | Validate student-uploaded images. |
+| [`attachments.py`](attachments.py) | Validate + extract text from student-uploaded non-image files. |
 | [`pricing.py`](pricing.py) | Best-effort USD cost estimation from model token usage. |
 
 ### `parsing.py`
@@ -90,6 +95,38 @@ can't drift. Pure functions over `(filename, mime, bytes)` — no Flask, no DB.
 - `validate_images(items)` — enforces the count cap and validates each
 - `images_to_tuples(images)` — `ValidatedImage` → `(bytes, mime)` tuples for
   `build_multimodal_content`
+- `MAX_ATTACHMENTS_PER_MESSAGE` (3) — images + non-image files combined, per
+  message
+- `enforce_combined_cap(n_images, n_files)` — raises `UploadValidationError`
+  when the combined count exceeds the cap
+
+### `attachments.py`
+
+Validation + text **extraction** for student-uploaded non-image files (CSV,
+TSV, XLSX, PDF, DOCX, TXT). Sibling to `uploads.py`: pure functions over
+`(filename, bytes)` — no Flask, no DB. Every supported type is extracted to
+plain text so the tutor consumes it uniformly and a per-message character
+budget can be enforced. Adds two third-party deps: `openpyxl` (xlsx) and
+`python-docx` (docx); csv/tsv/txt use the standard library and pdf uses the
+existing `pypdf` dependency.
+
+- `ALLOWED_FILE_EXTS` — extension → kind (`csv`, `tsv`, `xlsx`, `pdf`, `docx`,
+  `txt`); `MAX_FILE_BYTES` (5 MB, per file); `MAX_EXTRACTED_CHARS` (15000, per
+  message across all attached files)
+- `AttachmentValidationError` — bad type or oversize file
+- `AttachmentExtractionError` — recognized type that failed to parse (corrupt
+  file or missing optional parser dependency)
+- `EmptyExtractionError` — parsed successfully but yielded no usable text
+  (e.g. a scanned, image-only PDF)
+- `ValidatedAttachment` — frozen dataclass (`filename`, `kind`,
+  `extracted_text`, `data`)
+- `validate_file(filename, data)` — validates and extracts one upload; raises
+  on bad type, oversize, or empty extracted text
+- `validate_files(items)` — validates each `(filename, data)` pair, then
+  truncates the combined extracted text to `MAX_EXTRACTED_CHARS` (appending a
+  `[…truncated N chars for length…]` marker)
+- `attachments_to_text_block(atts)` — renders validated attachments as
+  `\n\n[Attachment: <filename>]\n<text>` blocks appended to a student message
 
 ### `pricing.py`
 
@@ -128,5 +165,10 @@ python -m utils.test_uploads
 
 Fixtures use `tempfile` directories via the `curriculum_root` override;
 `test_figures.py` additionally exercises the real checked-in curriculum figures.
+
+`test_attachments.py` (covers `attachments.py`) and `test_uploads_cap.py`
+(covers the `enforce_combined_cap` addition to `uploads.py`) are written
+against **pytest** instead of the no-pytest harness; run them with
+`pytest utils/test_attachments.py utils/test_uploads_cap.py`.
 
 > Note: `parsing.py` currently has no test file.

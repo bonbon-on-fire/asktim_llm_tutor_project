@@ -13,11 +13,12 @@ tutor/
     tutor_02.txt            — revised system prompt variant
     tutor_03.txt            — concise-response variant used in bundle runs
     tutor_04.txt            — updated Socratic guidance variant
-    tutor_05.txt            — latest variant (active for prompt iteration)
+    tutor_05.txt            — refined Socratic guidance variant (superseded by tutor_06)
+    tutor_06.txt            — latest/recommended: tutor_05 + a Math formatting rule
 ```
 
 - `run_tutor.py` builds the LangGraph, invokes the LLM, and parses structured JSON response fields (pedagogical reasoning + student-facing answer).
-- Prompt versions are selected by name (for example `tutor_03`, `tutor_05`) and loaded from `tutor/prompts/`.
+- Prompt versions are selected by name (for example `tutor_03`, `tutor_06`) and loaded from `tutor/prompts/`. `tutor_06` is the default/recommended prompt (`DEFAULT_TUTOR` in `main_ui`/`sandbox_ui`) — it adds a **Math formatting** rule on top of `tutor_05`: write math as `\(...\)` (inline) / `\[...\]` (display) LaTeX, never `$`/`$$` (those stay literal currency), and double every backslash (`\\(`, `\\frac{}{}`) so the JSON response stays valid. `sandbox_ui`'s wizard locks the tutor to `tutor_06`.
 - `stream_tutor_reply()` exposes a token-streaming entry point used by [`main_ui/`](../main_ui/README.md). It yields visible answer characters as they arrive, hiding the JSON envelope and the `pedagogical-reasoning` field server-side via the `StudentAnswerExtractor` state machine.
 
 ### Multimodal figures (non-streaming path)
@@ -29,7 +30,7 @@ from tutor import create_tutor_graph, load_system_prompt
 from utils.figures import discover_figures
 
 figures = discover_figures("cities_and_climate_change", "08")   # [Path(...spider_diagram.png)]
-prompt = load_system_prompt("tutor_05", assignment_override="...")
+prompt = load_system_prompt("tutor_06", assignment_override="...")
 graph = create_tutor_graph(prompt, figures=figures)             # figures bound to the graph
 ```
 
@@ -98,7 +99,17 @@ underscore) but documented here for maintainers.
 - **`parse_tutor_response(content)`** — extract `(reasoning, answer)` from the
   tutor's JSON. Tries raw JSON → fenced code block → balanced-brace extraction, and
   parses with `strict=False` so literal newlines inside string values (multi-line
-  markdown tables) don't break it. Either field may be `None` on failure.
+  markdown tables) don't break it. If all three candidates fail to parse, each is
+  retried through `_repair_latex_json()` before giving up — a fallback for when the
+  tutor emits LaTeX with a single (rather than doubled) backslash, e.g. `\(x^2\)`,
+  which is an invalid JSON escape that would otherwise make the whole reply fail to
+  parse and leak raw JSON to the student. Either field may be `None` on failure.
+- **`_repair_latex_json(s)`** — doubles stray LaTeX backslashes (`\(`, `\frac`,
+  `\sum`, `\theta`, …) so an otherwise-invalid tutor reply becomes valid JSON, while
+  leaving the tutor's intentional escapes untouched: `\\`, `\"`, `\uXXXX`, and real
+  `\n` newlines (distinguished from LaTeX commands like `\nu`/`\ne` by checking the
+  next character isn't a lowercase letter). Used only as a fallback after a strict
+  parse fails, so well-formed replies are never altered.
 - **`_normalize_tutor_ai_message(msg)`** — force any model output into the strict
   two-field JSON shape, filling fallback text when a field is missing, so
   downstream consumers always see `pedagogical-reasoning` + `Student-facing-answer`.
@@ -145,9 +156,13 @@ minimum cacheable length, so both are always safe.
   (`find_field → find_colon → find_open_quote → in_value → done`) that walks the
   accumulating token buffer and emits **only** the chars inside the
   `Student-facing-answer` string value, with full JSON escape handling (including
-  `\uXXXX`, waiting for split escape sequences across chunks). `feed(chunk)` returns
-  newly-visible chars; `.found_answer` and `.buffer` expose progress and the full
-  raw text for the final parse.
+  `\uXXXX`, waiting for split escape sequences across chunks). Only the escapes the
+  tutor actually intends (`\n`, `\t`, `\r`, `\"`, `\\`, `\/`, `\uXXXX`) are resolved;
+  a lone `\b` or `\f` is deliberately left as a literal backslash since it's almost
+  always LaTeX (`\beta`, `\frac`) rather than a backspace/formfeed — so LaTeX
+  backslashes survive intact while streaming. `feed(chunk)` returns newly-visible
+  chars; `.found_answer` and `.buffer` expose progress and the full raw text for the
+  final parse.
 - **`stream_tutor_reply(messages, *, model, system_prompt)`** — generator that
   yields visible answer chunks, then a final `("__done__", full_raw_json)` tuple so
   the caller can recover the hidden reasoning via `parse_tutor_response`. Bypasses
@@ -179,7 +194,7 @@ from tutor.run_tutor import build_tutor_model, load_system_prompt, stream_tutor_
 from langchain_core.messages import HumanMessage
 
 model = build_tutor_model()                              # provider="gpt" (default) or "claude"
-system_prompt = load_system_prompt("tutor_05", assignment_override="...")
+system_prompt = load_system_prompt("tutor_06", assignment_override="...")
 messages = [HumanMessage(content="explain urban heat islands")]
 
 for chunk in stream_tutor_reply(messages, model=model, system_prompt=system_prompt):

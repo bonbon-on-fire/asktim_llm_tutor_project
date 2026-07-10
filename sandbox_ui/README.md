@@ -11,7 +11,7 @@ and runs against its **own separate database** so test chats never touch
 production data.
 
 Branding is deliberately distinct from production: the accent is teal-blue
-(`#126f9a`) instead of MIT crimson, and the header reads **AskTIM · Sandbox Beta**.
+(`#126f9a`) instead of MIT crimson, and the header reads **AskTIM · Sandbox Beta+**.
 
 ## What it shares with main_ui
 
@@ -24,6 +24,8 @@ Branding is deliberately distinct from production: the accent is teal-blue
 - **Curriculum figures** auto-attached to the tutor — figures matching the exercise (`curriculum/<course>/figures/exercise_<NN>_*`) are sent as multimodal input on every turn via [`utils.figures.discover_figures`](../utils/figures.py). Skipped when the tester typed a one-off custom course/exercise in the Create-context wizard (no figures folder on disk)
 - **Per-course lecture transcripts** — a course's `lectures/*.txt` fold into the tutor context via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py). In the Sandbox this is a dedicated **Lectures** wizard step, toggleable per conversation (and skipped in RAG mode, where lecture material is retrieved instead)
 - **Student image uploads** — PNG/JPEG attachments (paperclip, drag-and-drop, or clipboard paste, up to 5 × 10 MB) sent to the tutor as multimodal input, stored in `uploaded_images.data` (BYTEA) and re-served via `GET /api/image/<id>`. Same shared validation ([`utils/uploads.py`](../utils/uploads.py)) and frontend as `main_ui`, including the click-to-enlarge image lightbox (staged or sent; backdrop / × / Esc to close)
+- **Student document uploads** — CSV, TSV, XLSX, PDF, DOCX, and TXT attachments (same paperclip/drag-and-drop composer, shown as a file-icon chip rather than a thumbnail) are validated and text-extracted server-side ([`utils/attachments.py`](../utils/attachments.py); per-file cap 5 MB, per-message extracted-text budget 15,000 chars) and stored in the `uploaded_files` table. Images and documents share one combined cap of 3 attachments per message. The extracted text is re-injected into the tutor's history on every later turn so attachments stay "readable" across the conversation, even though the student-facing bubble just shows the filename
+- **Mid-conversation feedback** — a small non-blocking star-rating toast (1-5 stars) pops above the composer once per conversation, after the student's 3rd turn (and after the email modal closes), and posts to `POST /api/feedback`
 
 ## Architecture: a thin shell over `ui_core`
 
@@ -37,23 +39,26 @@ package, plus its own sandbox-specific additions on top:
   `ALTER TABLE ... ADD COLUMN`s any model column missing from an
   already-existing table on the long-lived Sandbox DB (see
   [Database](#database) below).
-- `services/conversation.py`, `services/students.py`, and `services/images.py`
-  are thin wrappers that bind sandbox_ui's own model classes to the shared,
-  app-agnostic logic in `ui_core.services.*`. `services/tutor_bridge.py`
-  defines `SandboxTutorBridge`, a subclass of `ui_core.tutor_bridge.TutorBridge`
-  that overrides its hooks (`prepare_ctx`, `cache_key`, `build_assignment_text`,
-  `build_system_prompt`, `retrieved_context`, `turn_attachments`) to add
-  sandbox_ui's RAG / custom-context / include-toggle behavior.
+- `services/conversation.py`, `services/students.py`, `services/images.py`,
+  `services/files.py`, and `services/feedback.py` are thin wrappers that bind
+  sandbox_ui's own model classes to the shared, app-agnostic logic in
+  `ui_core.services.*`. `services/tutor_bridge.py` defines `SandboxTutorBridge`,
+  a subclass of `ui_core.tutor_bridge.TutorBridge` that overrides its hooks
+  (`prepare_ctx`, `cache_key`, `build_assignment_text`, `build_system_prompt`,
+  `retrieved_context`, `turn_attachments`) to add sandbox_ui's RAG /
+  custom-context / include-toggle behavior.
 - `db/models.py` defines sandbox_ui's own `Conversation` (carrying its 10
   sandbox-only columns — `exercise_kind`, the `*_enabled` toggles, `context_mode`,
-  and the `custom_*` snapshots) but pulls `Message`, `Student`, and
-  `UploadedImage` from the shared mixins in `ui_core.db.models_common`, since
-  those tables are schema-identical across the web apps.
-- `routes/identity.py` and `routes/history.py` are just wiring around the
-  shared blueprint factories `ui_core.web.blueprints.identity.make_identity_bp`
-  and `...history.make_history_bp`. `routes/chat.py`, `routes/embed.py`, and
-  `routes/_validation.py` stay sandbox-specific — the wizard/context/RAG
-  endpoints have no main_ui equivalent.
+  and the `custom_*` snapshots) but pulls `Message`, `Student`, `UploadedImage`,
+  `UploadedFile`, and `Feedback` from the shared mixins in
+  `ui_core.db.models_common`, since those tables are schema-identical across
+  the web apps.
+- `routes/identity.py`, `routes/history.py`, and `routes/feedback.py` are just
+  wiring around the shared blueprint factories `ui_core.web.blueprints.identity.make_identity_bp`,
+  `...history.make_history_bp`, and `...feedback.make_feedback_bp`.
+  `routes/chat.py`, `routes/embed.py`, and `routes/_validation.py` stay
+  sandbox-specific — the wizard/context/RAG endpoints have no main_ui
+  equivalent.
 - `templates/embed.html` extends the shared `ui_core/templates/base_chat.html`.
   CSS is layered the same way: the shared `ui_core/static/css/chat.css` (served
   at `/ui-core/css/chat.css` by `ui_core.web.static_blueprint`) plus sandbox_ui's
@@ -69,7 +74,7 @@ package, plus its own sandbox-specific additions on top:
 | Syllabus | Always included if present | **Toggleable** per conversation |
 | Database | Postgres `asktim` (`DATABASE_URL`) | **Separate Postgres** `asktim_test`, also via `DATABASE_URL` (each Railway service has its own env, so the same var name resolves to a different DB per service) |
 | Schema mgmt | Alembic migrations | `Base.metadata.create_all` on boot (throwaway DB) |
-| Accent / header | Crimson · Beta | `#126f9a` · **Sandbox Beta** |
+| Accent / header | Crimson · Beta+ | `#126f9a` · **Sandbox Beta+** |
 | Port | `5001` | `5000` |
 
 Both apps can run side by side.
@@ -94,7 +99,9 @@ you either pick an existing built-in or paste your own custom text:
   separate "Exercises" and "Practice problems" groups, or custom exercise text.
   The chosen kind is stored per conversation in `exercise_kind` (defaults to
   `exercise`)
-- **Tutor prompt** — any `tutor_*` prompt, or custom prompt text
+- **Tutor prompt** — shown for visibility but **locked to `tutor_06`** (the
+  dropdown is disabled and shows a lock icon); testers can't pick another
+  built-in prompt or paste custom prompt text at this step
 - **Syllabus** — the course's `syllabus.txt`, none, or custom syllabus text
 - **Lectures** — the course's `lectures/*.txt` transcripts (concatenated), none,
   or custom lecture text. Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)
@@ -107,9 +114,10 @@ course/syllabus/lectures flags in
 replays it with the same context.
 
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
-> wizard. It was removed in June 2026 because the Create-context wizard does
-> everything it did — and also lets you change the tutor prompt and supply custom
-> text — so the two buttons were redundant.
+> wizard. It was removed in June 2026 because the Create-context wizard did
+> everything it did — and also let you change the tutor prompt and supply custom
+> text — so the two buttons were redundant. (The Tutor prompt step is now
+> locked to `tutor_06`; see above.)
 
 ## Quick start
 
@@ -120,7 +128,7 @@ python -m sandbox_ui
 Binds to `127.0.0.1:5000` by default. Override with the `PORT` env var.
 
 ```text
-http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_05
+http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_06
 ```
 
 Health check:
@@ -158,6 +166,10 @@ schema matches `main_ui` plus the sandbox-only `conversations` columns —
 `context_mode`, and the `custom_*` columns that store one-off custom contexts,
 plus the sandbox-only `messages.retrieved_context` column (a JSON string of the
 RAG chunks retrieved for a tutor turn, `NULL` for non-RAG turns and legacy rows).
+It also includes the shared `uploaded_files` table (student CSV/TSV/XLSX/PDF/
+DOCX/TXT attachments — bytes, `kind`, and extracted text) and `feedback` table
+(`conversation_id`, `turn`, `rating` 1-5, `created_at`); both are brand-new
+tables so `create_all` picks them up on boot with no reconcile step needed.
 
 The database must already exist (`CREATE DATABASE asktim_test;`); `create_all`
 then builds the tables. To reset the sandbox data, drop and recreate that
@@ -171,7 +183,9 @@ database.
 > new column like `uploaded_images.data` (BYTEA), `lectures_enabled`, or
 > `messages.retrieved_context` is picked up automatically without a manual reset. For the specific case of the
 > `uploaded_images.data` column on a very old DB, `python -m
-> sandbox_ui.db.reset_uploaded_images` also rebuilds just that table.
+> sandbox_ui.db.reset_uploaded_images` also rebuilds just that table; the
+> analogous `python -m sandbox_ui.db.reset_uploaded_files` does the same for
+> `uploaded_files`.
 
 > **Design decision (2026-06-04) — DB env-var resolution order.**
 > sandbox_ui resolves its database as: **`SANDBOX_UI_DATABASE_URL` → `DATABASE_URL` →
@@ -203,7 +217,7 @@ database.
 
 Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
 `/api/identity[/check]`, `/api/history`, `/api/conversation/<uuid>`,
-`/api/image/<id>`), plus:
+`/api/image/<id>`, `/api/feedback`), plus:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
@@ -211,14 +225,24 @@ Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
 | GET | `/api/context/preview` | Raw text of a built-in `course`/`exercise`/`practice`/`tutor`/`syllabus`/`lectures` (via `?kind=...`), so the wizard can show it read-only when an existing option is picked |
 
 `POST /api/chat` accepts JSON (text only) or `multipart/form-data` (text +
-`images` files, alongside the same context fields). It additionally accepts
-optional fields for a new conversation:
+`images` files under the `images` field and non-image attachments — CSV, TSV,
+XLSX, PDF, DOCX, TXT — under the new `files` field, alongside the same context
+fields). Images and files share a combined cap of 3 attachments per message;
+a bad/oversized/unextractable file 400s with `bad_file` / `empty_extraction` /
+`extraction_failed` / `too_many_attachments`. It additionally accepts optional
+fields for a new conversation:
 - `"syllabus": true|false` (defaults to `true`) — gates the syllabus block
 - `"lectures": true|false` (defaults to `true`) — gates the lecture-transcripts block
 - `"course_enabled": true|false` (defaults to `true`) — gates the course-description block
 - `"exercise_kind": "exercise"|"practice"` (defaults to `"exercise"`) — selects exercise or practice-problem variant
 - `"context_mode": "rag"|"full_context"` (optional) — per-conversation RAG toggle; omit to let the server resolve by default
+- `"tutor"` (optional) — defaults to the locked-in `tutor_06`; the Create-context wizard doesn't expose changing this, but the field is still accepted at the API level
 - `"course_custom"`, `"exercise_custom"`, `"tutor_custom"`, `"syllabus_custom"`, `"lectures_custom"` (optional) — one-off custom context used verbatim in place of the on-disk file
+
+`POST /api/feedback` records a 1-5 star rating against a `conversation_id`
+(and optional `turn` number), for the mid-conversation feedback toast; 400 if
+`rating`/`conversation_id` are missing or malformed, 403 if the conversation
+isn't owned by the current session.
 
 Since the Sandbox is a dev/TA tool, the terminal `done` SSE event also carries
 the tutor's otherwise-hidden `pedagogical_reasoning` so it can be inspected per
@@ -250,23 +274,27 @@ sandbox_ui/
   run_app.py              # ui_core.app_factory.create_app(...) wiring; create_all + _reconcile_columns on boot; blueprints
   cookies.py              # session/username cookie names + kwargs (thin wrapper over ui_core.cookies)
   db/
-    models.py             # sandbox-only Conversation (course/syllabus/lectures flags, custom_*, context_mode) + Message (+ sandbox-only retrieved_context col) / Student / UploadedImage from ui_core.db.models_common
+    models.py             # sandbox-only Conversation (course/syllabus/lectures flags, custom_*, context_mode) + Message (+ sandbox-only retrieved_context col) / Student / UploadedImage / UploadedFile / Feedback from ui_core.db.models_common
     session.py            # engine + SessionLocal
     reset_uploaded_images.py # one-off: rebuild uploaded_images table (python -m sandbox_ui.db.reset_uploaded_images)
+    reset_uploaded_files.py  # one-off: rebuild uploaded_files table (python -m sandbox_ui.db.reset_uploaded_files)
   routes/
     embed.py              # GET /embed, GET / , GET /api/context/options, GET /api/context/preview (sandbox-specific)
-    chat.py               # POST /api/chat (SSE; syllabus/lectures/course/RAG passthrough, images) (sandbox-specific)
+    chat.py               # POST /api/chat (SSE; syllabus/lectures/course/RAG passthrough, images, files) (sandbox-specific)
     history.py            # GET /api/history, /api/conversation/<uuid> (wraps ui_core.web.blueprints.history)
     identity.py           # GET /api/whoami, POST /api/identity[/check] (wraps ui_core.web.blueprints.identity)
+    feedback.py           # POST /api/feedback (wraps ui_core.web.blueprints.feedback)
     _validation.py        # validators + context-option/preview listing helpers
   services/
     conversation.py       # thin wrapper over ui_core.services.conversation (adds the sandbox context flags + custom_*)
     students.py           # thin wrapper over ui_core.services.students (bcrypt identity)
     images.py             # thin wrapper over ui_core.services.images (validate/persist/serve uploaded images)
+    files.py              # thin wrapper over ui_core.services.files (validate/extract/persist non-image attachments)
+    feedback.py           # thin wrapper over ui_core.services.feedback (record a 1-5 star rating)
     tutor_bridge.py       # SandboxTutorBridge(ui_core.tutor_bridge.TutorBridge) — adds RAG/custom-context/include-toggle hooks
   static/css/sandbox-extra.css # #126f9a accent + create-context wizard styles, layered on top of ui_core's shared chat.css
   static/js/chat.js       # streaming + sidebar + Create-context wizard
   static/js/marked.min.js # vendored markdown parser (GFM tables)
   static/js/dompurify.min.js # vendored HTML sanitizer (XSS-safe tutor markdown)
-  templates/embed.html    # extends ui_core/templates/base_chat.html (Sandbox Beta, Create context wizard)
+  templates/embed.html    # extends ui_core/templates/base_chat.html (Sandbox Beta+, Create context wizard)
 ```

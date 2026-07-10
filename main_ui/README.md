@@ -19,11 +19,14 @@ What works today:
 - Two-stage username + password identity (`/api/identity/check` → `/api/identity`) with bcrypt hashing
 - Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats
 - "Log in" sidebar entry point (button text + tooltip) so students who skipped the modal can come back later
-- MIT crimson branding, AskTIM Beta header, "MIT 11.270x Cities and Climate Change" course banner
+- MIT crimson branding, AskTIM Beta+ header, "MIT 11.270x Cities and Climate Change" course banner
 - Per-course lecture transcripts (`curriculum/<course>/lectures/*.txt`) auto-folded into tutor context when present (text-only, no-op until a course adds them) — via [`utils.lectures`](../utils/lectures.py)
 - **Paired solution as tutor-only reference** — when the exercise has a matching solution file, its "correct answer & worked solution" is injected right after the exercise for the tutor only (via [`utils.curriculum.read_solution`](../utils/curriculum.py)); it's deterministic (keyed by problem number), never revealed to the student, and no-op for exercises with no solution file
 - **Curriculum figures** auto-attached to the tutor: any `curriculum/<course>/figures/exercise_<NN>_*.{png,jpg,jpeg}` matching the conversation's exercise is sent to the tutor as multimodal input on every turn (re-attached each call since per-call history is text-only) — via [`utils.figures.discover_figures`](../utils/figures.py) in [`services/tutor_bridge.py`](services/tutor_bridge.py); no-op for exercises with no figure
 - **Student image uploads** (Step 10): the composer accepts PNG/JPEG attachments (paperclip, drag-and-drop, or clipboard paste, up to 5 × 10 MB), streamed to the tutor as multimodal input on that turn. Bytes are stored in-DB (`uploaded_images.data`, BYTEA) so they survive Railway redeploys, re-rendered in history via `GET /api/image/<id>`. Validation is shared with `sandbox_ui` in [`utils/uploads.py`](../utils/uploads.py); images attach only to the turn they're sent on (prior turns stay text-only). Clicking any chat image — a staged composer thumbnail or one already sent — opens it enlarged and centered in a lightbox (backdrop / × / Esc to close)
+- **Non-image file attachments**: the composer also accepts CSV, TSV, XLSX, PDF, DOCX, and TXT (paperclip, drag-and-drop, or clipboard paste), shown as a file-icon chip. Files and images share one combined cap of 3 attachments per message ([`utils/uploads.py`](../utils/uploads.py) `enforce_combined_cap`). Each file is validated and text-extracted server-side by [`utils/attachments.py`](../utils/attachments.py) (5 MB per-file cap, 15000-char combined extracted-text budget, truncated with a marker past that) via [`services/files.py`](services/files.py); bytes + extracted text are stored in-DB (`uploaded_files`, added by the `eb96d85f90cf` migration) and the extracted text is re-injected into the tutor's history on every later turn, so file context persists across the conversation (the student-facing message stays the plain filename/text)
+- **Mid-conversation feedback**: after 3 student turns, a small non-blocking star-rating toast (1-5) pops above the composer once per conversation. Submits to `POST /api/feedback`, recorded via [`services/feedback.py`](services/feedback.py) into the `feedback` table (added by the `a7f3c1e9b204` migration)
+- **KaTeX math rendering**: tutor replies render `\(...\)` / `\[...\]` LaTeX with a vendored KaTeX 0.16.11 (`$...$` is deliberately left alone as currency), via the shared `renderTutorMarkdown` helper in [`ui_core/static/js/katex-marked.js`](../ui_core/static/js/katex-marked.js)
 
 ## Architecture
 
@@ -45,7 +48,7 @@ Binds to `127.0.0.1:5001` by default. Override with the `PORT` env var.
 Open the chat in a browser:
 
 ```text
-http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_05
+http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_06
 ```
 
 Verify the server is up:
@@ -78,12 +81,14 @@ Schema is managed with Alembic. Migrations live in [db/migrations/versions/](db/
 python -m alembic -c main_ui\db\migrations\alembic.ini upgrade head
 ```
 
-Five tables in `public`:
+Seven tables in `public`:
 
 - `conversations` — one per chat thread (UUID PK, session_id, username, course, exercise_number, tutor_prompt)
 - `messages` — student/tutor turns (BigInt PK, FK to conversations, role, content, `pedagogical_reasoning`)
 - `students` — username + bcrypt password hash for cross-browser identity (one row per username)
 - `uploaded_images` — student-uploaded images: `filename`, `mime_type`, `size_bytes`, and `data` (BYTEA bytes), FK to the student `messages` row
+- `uploaded_files` — student-uploaded non-image attachments: `filename`, `kind`, `extracted_text`, `size_bytes`, and `data` (raw bytes), FK to the student `messages` row
+- `feedback` — 1-5 star ratings: `conversation_id` (FK, cascade), nullable `turn`, `rating` (CHECK 1..5), `created_at`
 - `alembic_version` — Alembic bookkeeping
 
 Inspect data with psql or pgAdmin:
@@ -100,12 +105,13 @@ psql -U postgres -h localhost -d asktim -c "SELECT turn, role, LEFT(content, 60)
 | GET | `/embed` | Render the chat page (params: `course`, `exercise`, `tutor`) |
 | GET | `/health` | Liveness probe |
 | GET | `/api/whoami` | Current session/username state |
-| POST | `/api/chat` | Stream a tutor reply as Server-Sent Events. JSON (text only) or `multipart/form-data` (text + `images` files) |
+| POST | `/api/chat` | Stream a tutor reply as Server-Sent Events. JSON (text only) or `multipart/form-data` (text + `images` files + `files` non-image attachments) |
 | POST | `/api/identity/check` | Probe whether a username already has a password registered |
 | POST | `/api/identity` | Link the current session to a username by password (signup or verify) |
 | GET | `/api/history` | List conversations for the current username cookie |
-| GET | `/api/conversation/<uuid>` | Read-only message log for one conversation (each message includes any `images` metadata) |
+| GET | `/api/conversation/<uuid>` | Read-only message log for one conversation (each message includes any `images`/`files` metadata) |
 | GET | `/api/image/<id>` | Serve an uploaded image's bytes (ownership-checked by session/username; 404 otherwise) |
+| POST | `/api/feedback` | Record a 1-5 star rating for a conversation (JSON: `conversation_id`, `rating`, optional `turn`) |
 
 ### Streaming chat shape
 
@@ -147,12 +153,15 @@ main_ui/
     embed.py              # GET /embed (renders the chat template) — main_ui-specific
     history.py            # GET /api/history, /api/conversation/<uuid> — built from ui_core.web.blueprints.history
     identity.py           # GET /api/whoami, POST /api/identity[/check] — built from ui_core.web.blueprints.identity
+    feedback.py           # POST /api/feedback — built from ui_core.web.blueprints.feedback
     _validation.py        # shared course/exercise/tutor validators — main_ui-specific
 
   services/
     conversation.py       # thin wrapper binding Conversation/Message to ui_core.services.conversation
     students.py           # thin wrapper binding Student to ui_core.services.students
     images.py             # thin wrapper binding UploadedImage to ui_core.services.images
+    files.py              # thin wrapper binding UploadedFile to ui_core.services.files (non-image attachments)
+    feedback.py           # thin wrapper binding Feedback to ui_core.services.feedback
     tutor_bridge.py       # thin wrapper around one shared ui_core.tutor_bridge.TutorBridge()
 
   static/
@@ -207,3 +216,8 @@ bridge, and the base chat template/stylesheet actually live.
 > stored in `uploaded_images.data` (BYTEA), and re-served via `GET /api/image/<id>`.
 > Apply the migration on deploy: `alembic upgrade head` (revision
 > `b7c4e1a9d2f0`) — the entrypoint runs this automatically on Railway boot.
+
+> **Non-image file attachments and star-rating feedback are done.** Two more
+> migrations ship with these: `eb96d85f90cf` (`uploaded_files` table) and
+> `a7f3c1e9b204` (`feedback` table) — both applied automatically by
+> `alembic upgrade head` on Railway boot, same as above.

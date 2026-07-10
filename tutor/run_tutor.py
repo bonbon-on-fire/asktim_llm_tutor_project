@@ -221,11 +221,16 @@ def parse_tutor_response(content: str) -> tuple[str | None, str | None]:
     the student-facing text.
     """
     text = content.strip()
-    for candidate in (
-        text,
-        _fenced_json(text),
-        extract_json_object(text),
-    ):
+    raw_candidates = [text, _fenced_json(text), extract_json_object(text)]
+    # Fallback: the tutor is told to double LaTeX backslashes so the JSON stays
+    # valid, but it's inconsistent — a single-backslash "\(" is an invalid JSON
+    # escape that makes json.loads reject the whole reply (leaking raw JSON to the
+    # student). Repair stray backslashes ONLY after the pristine candidates fail,
+    # so well-formed replies are never altered.
+    candidates = raw_candidates + [
+        _repair_latex_json(c) for c in raw_candidates if c is not None
+    ]
+    for candidate in candidates:
         if candidate is None:
             continue
         try:
@@ -237,6 +242,36 @@ def parse_tutor_response(content: str) -> tuple[str | None, str | None]:
         except (json.JSONDecodeError, TypeError):
             continue
     return None, None
+
+
+def _repair_latex_json(s: str) -> str:
+    """Double stray LaTeX backslashes so an otherwise-invalid tutor JSON parses.
+
+    The tutor writes math as ``\\(...\\)`` / ``\\frac{}{}`` and is supposed to
+    double each backslash so the JSON stays valid, but often emits a single one
+    (an invalid JSON escape). This doubles every backslash except an already
+    escaped ``\\\\`` pair or an escaped quote ``\\"`` — the only two escapes the
+    tutor reliably emits — so LaTeX survives for KaTeX. Used only as a fallback
+    after a strict parse fails; well-formed replies never pass through it.
+    """
+    out: list[str] = []
+    i = 0
+    n = len(s)
+    while i < n:
+        ch = s[i]
+        if ch == "\\" and i + 1 < n:
+            nxt = s[i + 1]
+            if nxt in ('"', "\\"):
+                out.append(ch)
+                out.append(nxt)
+                i += 2
+                continue
+            out.append("\\\\")
+            i += 1
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
 
 
 def _normalize_tutor_ai_message(msg: BaseMessage) -> AIMessage:
@@ -477,6 +512,9 @@ class StudentAnswerExtractor:
     """
 
     _FIELD = '"Student-facing-answer"'
+    # Only the escapes the tutor actually intends. "b"/"f" are deliberately
+    # omitted: a lone "\b"/"\f" is almost always LaTeX (\beta, \frac), not a
+    # backspace/formfeed, so they fall through to the "preserve backslash" branch.
     _ESCAPE_MAP = {
         "n": "\n",
         "t": "\t",
@@ -484,8 +522,6 @@ class StudentAnswerExtractor:
         '"': '"',
         "\\": "\\",
         "/": "/",
-        "b": "\b",
-        "f": "\f",
     }
 
     def __init__(self) -> None:
@@ -578,6 +614,10 @@ class StudentAnswerExtractor:
                         self._pos += 5
                         self._escape = False
                         continue
+                    # Unmapped escape (e.g. "\(", "\f" in \frac): the tutor meant a
+                    # literal LaTeX backslash, not a JSON escape — keep both chars
+                    # so KaTeX still sees "\(", "\frac", etc.
+                    out.append("\\")
                     out.append(ch)
                     self._pos += 1
                     self._escape = False

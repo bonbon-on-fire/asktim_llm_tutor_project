@@ -33,6 +33,54 @@ def _source_week(source: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
+# Human-readable citation labels. ``local:lecture_1_1_the_transportation_problem``
+# -> ``Lecture 1.1 The Transportation Problem`` (week.seq + title-cased topic), so
+# the tutor can cite what it retrieved (see the tutor prompt's citation rule).
+_LECTURE_RE = re.compile(r"^local:lecture_(\d+)_(\d+)_(.+)$")
+_NUMBERED_RE = re.compile(r"^local:(practice|exercise)_(\d+)$")
+_NAMED_LABELS = {
+    "local:course": "Course overview",
+    "local:syllabus": "Syllabus",
+    "local:key_concepts": "Key concepts",
+}
+# Slug tokens that should stay uppercase rather than title-cased (Roic, Milp, ...).
+_ACRONYMS = {
+    "roic", "roi", "milp", "mrp", "drp", "fph", "atp", "bom", "dc", "dcs",
+    "sc1x", "sc2x", "ocw", "kpi", "cogs", "sku", "eoq", "lp", "mip",
+}
+
+
+def _titleize(slug: str) -> str:
+    """Turn a ``the_transportation_problem`` slug into ``The Transportation Problem``.
+
+    Each ``_``-separated word is capitalized, except known acronyms which are
+    uppercased. Not a full title-caser (small words like "of" get capitalized) —
+    the lecture *number* is what matters; the title is a readable hint.
+    """
+    words = slug.split("_")
+    return " ".join(w.upper() if w in _ACRONYMS else w.capitalize() for w in words if w)
+
+
+def _source_label(source: str) -> str:
+    """Render a raw chunk source as a human-readable, citeable label.
+
+    ``local:lecture_1_1_the_transportation_problem`` -> ``Lecture 1.1 The
+    Transportation Problem``; ``local:practice_4`` -> ``Practice 4``;
+    ``local:course``/``syllabus``/``key_concepts`` -> friendly names; OCW and
+    anything unrecognized keep their label (minus a ``local:`` prefix).
+    """
+    s = source or ""
+    m = _LECTURE_RE.match(s)
+    if m:
+        return f"Lecture {m.group(1)}.{m.group(2)} {_titleize(m.group(3))}"
+    m = _NUMBERED_RE.match(s)
+    if m:
+        return f"{m.group(1).capitalize()} {m.group(2)}"
+    if s in _NAMED_LABELS:
+        return _NAMED_LABELS[s]
+    return s.split("local:", 1)[1] if s.startswith("local:") else s
+
+
 def _get_store(course: str) -> NumpyVectorStore | None:
     """Return the cached vector store for *course*, loading it from disk once."""
     if course not in _STORE_CACHE:
@@ -112,5 +160,5 @@ def format_context(chunks: list[Chunk]) -> str:
     """Render retrieved chunks into a labeled 'Relevant course material' block."""
     if not chunks:
         return ""
-    blocks = [f"[{c.source}]\n{c.text}" for c in chunks]
+    blocks = [f"[{_source_label(c.source)}]\n{c.text}" for c in chunks]
     return "Relevant course material (retrieved):\n\n" + "\n\n".join(blocks)

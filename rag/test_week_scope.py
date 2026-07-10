@@ -2,7 +2,7 @@
 
 import sys
 
-from rag.retrieve import _source_week, retrieve_scored
+from rag.retrieve import _source_label, _source_week, format_context, retrieve_scored
 
 # rag/__init__.py re-exports the `retrieve` function, which shadows the submodule
 # name — so patch on the real module object from sys.modules, not `rag.retrieve`.
@@ -54,6 +54,30 @@ def test_lecture_week_parsed():
 def test_practice_and_exercise_week_parsed():
     assert _source_week("local:practice_4") == 4
     assert _source_week("local:exercise_7") == 7
+
+
+def test_source_label_lecture_number_and_title():
+    assert (
+        _source_label("local:lecture_1_1_the_transportation_problem")
+        == "Lecture 1.1 The Transportation Problem"
+    )
+    # acronyms stay uppercase, not "Roic"
+    assert _source_label("local:lecture_10_7_roic") == "Lecture 10.7 ROIC"
+
+
+def test_source_label_practice_named_and_ocw():
+    assert _source_label("local:practice_4") == "Practice 4"
+    assert _source_label("local:course") == "Course overview"
+    assert _source_label("local:syllabus") == "Syllabus"
+    assert _source_label("local:key_concepts") == "Key concepts"
+    # OCW / unrecognized labels are left intact
+    assert _source_label("ocw:https://ocw.mit.edu/x") == "ocw:https://ocw.mit.edu/x"
+
+
+def test_format_context_shows_labels_not_raw_stems():
+    out = format_context([_FakeChunk("local:lecture_1_1_the_transportation_problem", "flow text")])
+    assert "[Lecture 1.1 The Transportation Problem]" in out
+    assert "local:lecture" not in out  # the raw stem is never shown to the tutor
 
 
 def test_week_agnostic_sources_return_none():

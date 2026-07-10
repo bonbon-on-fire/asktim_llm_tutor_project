@@ -1017,13 +1017,15 @@ rag/
 
 ---
 
-### Phase 13: Grounded lecture citations & "where is X" answers ✦ PLANNED
+### Phase 13: Grounded lecture citations & "where is X" answers ✦ IMPLEMENTED (07/10/2026)
 
 **Problem:** Two CTL.SC2x-staff-meeting items (07/08 notes) are really one root cause. (1) The tutor should **cite specific lecture numbers** when it leans on course material, but it can't: the RAG block it sees labels each chunk with the raw file stem — `format_context` renders `[local:lecture_1_1_the_transportation_problem]` — which is not something the model will surface to a student as a clean citation. (2) When asked **"where is X" / "which lecture covers X"**, the tutor **hallucinates** a location, because it has no grounded map of the course and the retrieved chunks give it no readable lecture identity to point at. Fixing the retrieval label fixes both: give the model a real, human-readable citation string and it can cite it accurately *and* stop inventing locations.
 
 **Decision:** Two changes, no new prompt version.
 1. **Retrieval label (the high-leverage edit):** in `rag/retrieve.py`, render each retrieved chunk with a human-readable, citeable label instead of the raw stem. Citation format is **`Lecture <week>.<seq> <Title>`**, e.g. `local:lecture_1_1_the_transportation_problem` → **`Lecture 1.1 The Transportation Problem`**. Only the *tutor-facing* `format_context` block changes; the raw `source` stays untouched in `to_records()` / the transcript schema (the `rag_judge` ground truth keys off source coordinates — see `eval/rag_judge/` — so it must not shift).
 2. **Prompt (edit `tutor_06.txt` in place — do NOT fork a new version):** add two rules. (a) *Citation:* when the reply draws on retrieved course material, attribute it by the lecture label shown in the retrieved block, e.g. "see Lecture 1.1 The Transportation Problem." (b) *No location hallucination:* never guess where a topic is covered — only name a lecture that actually appears in the retrieved block, otherwise say you're not certain and point to the syllabus.
+
+**Citation policy — what deserves a citation (07/10 decision):** NOT every turn should cite; forcing citations would be noisy and invite hallucination. A citation is warranted only when **both** gates hold: (1) **Purpose** — the tutor is pointing the student to *specific* course content (a concept, method, definition, or where a topic is covered), not asking a Socratic question, giving a hint, encouraging, or reasoning generally (those are the majority of turns and get no citation); and (2) **Grounding** — the cited lecture actually appears in *this turn's* retrieved block. The grounding gate is the crux: it makes "don't over-cite" and "don't hallucinate a location" the same rule — no retrieved lecture ⇒ no citation ⇒ "not sure, check the syllabus." Both gates live in the prompt's `## Citing course material:` section; the retrieval label just makes an accurate citation *possible*.
 
 **Citation label mapping (`_source_label` in `rag/retrieve.py`):**
 

@@ -5,12 +5,15 @@ Returns the course-level text that should be *retrievable*, as labeled
 
 - top-level ``course.txt``, ``syllabus.txt``, ``key_concepts.txt``
 - every ``lectures/*.txt`` (transcripts)
-- every ``exercises/*.txt`` and ``practices/*.txt`` (problem prompts)
+- every ``practices/*.txt`` (practice-problem prompts)
 
-Deliberately excluded: the ``*_solutions/`` folders (the current problem's
-solution is paired into context directly — see ``utils.curriculum.read_solution``
-— never surfaced by similarity), ``figures/`` (images, not text), the numpy
-``rag_index/``, and metadata files (``course_name.txt``, ``online_link.txt``).
+Deliberately excluded: the ``exercises/*.txt`` graded-problem prompts (the
+exercise the student is working on is paired into context directly, so retrieval
+must not surface it or any *other* graded exercise), the ``*_solutions/`` folders
+(the current problem's solution is paired in the same way — see
+``utils.curriculum.read_solution`` — never surfaced by similarity), ``figures/``
+(images, not text), the numpy ``rag_index/``, and metadata files
+(``course_name.txt``, ``online_link.txt``).
 """
 
 from __future__ import annotations
@@ -36,10 +39,10 @@ def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> l
             if text:
                 docs.append((f"local:{path.stem}", text))
 
-    # Retrievable per-item folders: lecture transcripts + exercise & practice
-    # prompts. Solutions live in *_solutions/ and are paired directly (not here);
-    # figures/ are images; rag_index/ is the built index.
-    for subdir in ("lectures", "exercises", "practices"):
+    # Retrievable per-item folders: lecture transcripts + practice-problem
+    # prompts. exercises/ (graded prompts) and *_solutions/ are paired directly
+    # into context, not retrieved; figures/ are images; rag_index/ is the index.
+    for subdir in ("lectures", "practices"):
         folder = course_dir / subdir
         if folder.is_dir():
             for path in sorted(folder.glob("*.txt")):

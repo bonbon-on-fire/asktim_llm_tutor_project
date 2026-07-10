@@ -1017,6 +1017,45 @@ rag/
 
 ---
 
+### Phase 13: Grounded lecture citations & "where is X" answers ✦ PLANNED
+
+**Problem:** Two CTL.SC2x-staff-meeting items (07/08 notes) are really one root cause. (1) The tutor should **cite specific lecture numbers** when it leans on course material, but it can't: the RAG block it sees labels each chunk with the raw file stem — `format_context` renders `[local:lecture_1_1_the_transportation_problem]` — which is not something the model will surface to a student as a clean citation. (2) When asked **"where is X" / "which lecture covers X"**, the tutor **hallucinates** a location, because it has no grounded map of the course and the retrieved chunks give it no readable lecture identity to point at. Fixing the retrieval label fixes both: give the model a real, human-readable citation string and it can cite it accurately *and* stop inventing locations.
+
+**Decision:** Two changes, no new prompt version.
+1. **Retrieval label (the high-leverage edit):** in `rag/retrieve.py`, render each retrieved chunk with a human-readable, citeable label instead of the raw stem. Citation format is **`Lecture <week>.<seq> <Title>`**, e.g. `local:lecture_1_1_the_transportation_problem` → **`Lecture 1.1 The Transportation Problem`**. Only the *tutor-facing* `format_context` block changes; the raw `source` stays untouched in `to_records()` / the transcript schema (the `rag_judge` ground truth keys off source coordinates — see `eval/rag_judge/` — so it must not shift).
+2. **Prompt (edit `tutor_06.txt` in place — do NOT fork a new version):** add two rules. (a) *Citation:* when the reply draws on retrieved course material, attribute it by the lecture label shown in the retrieved block, e.g. "see Lecture 1.1 The Transportation Problem." (b) *No location hallucination:* never guess where a topic is covered — only name a lecture that actually appears in the retrieved block, otherwise say you're not certain and point to the syllabus.
+
+**Citation label mapping (`_source_label` in `rag/retrieve.py`):**
+
+| Raw `source` | Rendered label |
+| --- | --- |
+| `local:lecture_1_1_the_transportation_problem` | `Lecture 1.1 The Transportation Problem` |
+| `local:lecture_10_7_roic` | `Lecture 10.7 ROIC` (acronym-aware) |
+| `local:practice_4` | `Practice 4` |
+| `local:course` / `local:syllabus` / `local:key_concepts` | `Course overview` / `Syllabus` / `Key concepts` |
+| `ocw:<page/url>` | unchanged (OCW page title/URL) |
+
+- Reuse/extend the existing `_WEEK_RE` (added in the Phase-11 week-scoping work) to also capture `<seq>` and the trailing `<topic>` slug; `<topic>` is title-cased with `_` → space.
+- **Acronym edge case:** naive title-casing mangles `roic`→`Roic`, `milp`→`Milp`, `sc1x`→`Sc1X`. Keep a small uppercase set (`ROIC MRP DRP MILP FPH ATP BOM DC SC1X SC2X OCW …`) applied after title-casing. Minor cosmetic misses are acceptable; the lecture *number* is the load-bearing part of the citation.
+
+**Where it plugs in:**
+- `rag/retrieve.py` — add `_source_label(source) -> str`; `format_context` renders `[{_source_label(c.source)}]\n{c.text}`. (Sibling to the existing `_source_week`.)
+- `tutor/prompts/tutor_06.txt` — append the citation + no-guessing rules to the existing `## Math formatting:` / rules area. This is an **in-place edit** of tutor_06; `DEFAULT_TUTOR` and the sandbox `LOCKED_TUTOR` already point at tutor_06, so no wiring change.
+
+**Implementation order:**
+1. `_source_label()` + unit tests in `rag/test_week_scope.py` (or a new `rag/test_labels.py`): lecture → `Lecture W.S Title`, acronym uppercasing, practice/course/syllabus/OCW cases.
+2. Switch `format_context` to the label; confirm `to_records()` still emits the raw `source` (transcript/eval provenance unchanged).
+3. Edit `tutor_06.txt`: add the citation rule and the "never invent a location; cite only a retrieved lecture or defer to the syllabus" rule.
+4. Verify live (sandbox, RAG mode): (a) ask a question whose answer sits in a known lecture → tutor cites `Lecture X.Y <Title>` matching the retrieved block; (b) ask "which lecture covers <topic not retrieved>" → tutor declines to invent a location and points to the syllabus. Restart sandbox to load the new `rag/retrieve.py` + prompt.
+
+**Explicit non-goals:**
+- No new `tutor_07` — tutor_06 is edited in place (per 07/10 decision).
+- Not changing the stored `source` labels in transcripts / RAG records (only the tutor-facing `format_context` string), so `rag_judge` ground-truth coordinates stay valid.
+- Not building a separate course-outline/index for "where" questions — the syllabus (already retrievable) plus the labeled retrieved chunks are the grounding; a dedicated course map is out of scope unless hallucinations persist.
+- Pulling the lecture title from anywhere but the filename slug (no re-scrape for canonical titles).
+
+---
+
 ## 9. Work log updates
 
 ### 03/20/2026 — Visualization input migration (completed)

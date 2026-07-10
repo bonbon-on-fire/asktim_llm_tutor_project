@@ -39,7 +39,7 @@ def load_config() -> Config:
         or "sqlite:///./database_ui.db"
     )
     # Title shown in the header and the browser tab.
-    title = os.environ.get("DATABASE_UI_TITLE", "AskTIM · Database Beta")
+    title = os.environ.get("DATABASE_UI_TITLE", "AskTIM · Database Beta+")
     # Match main_ui's look: MIT crimson. Override with DATABASE_UI_ACCENT if needed.
     accent = os.environ.get("DATABASE_UI_ACCENT", "#8c1a1b")
     # Shared-password gate. None = no gate (local dev only); deployments MUST set

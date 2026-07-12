@@ -256,7 +256,7 @@ def _retrieved_context(
     try:
         scored = retrieve_scored(course, query, max_week=max_week)
         chunks = [c for c, _ in scored]
-        return RetrievedContext(text=format_context(chunks), records=to_records(scored))
+        return RetrievedContext(text=format_context(chunks, course), records=to_records(scored))
     except Exception:
         # Retrieval failing (e.g. embedding API hiccup) must not break the chat;
         # degrade to no retrieved context for this turn.

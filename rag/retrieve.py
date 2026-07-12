@@ -7,7 +7,9 @@ renders them into the block that tutor_bridge injects on the latest student turn
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 
 from rag.chunking import Chunk
 from rag.embeddings import embed_query
@@ -15,6 +17,25 @@ from rag.store import NumpyVectorStore
 
 # Per-course store cache so we load each index from disk only once per process.
 _STORE_CACHE: dict[str, NumpyVectorStore | None] = {}
+
+_CURRICULUM_DIR = Path(__file__).resolve().parents[1] / "curriculum"
+
+# Per-course map: RAG source label -> {week, lesson, video, video_title, citation}.
+# Built from the live course structure (see curriculum/<course>/lecture_index.json);
+# lets citations use the real "Week 10, Lesson 1 · Video 7: DuPont Analysis" labels a
+# student can actually find, instead of the synthetic "Lecture 10.6" flat index.
+_LECTURE_INDEX_CACHE: dict[str, dict[str, dict]] = {}
+
+
+def _lecture_index(course: str) -> dict[str, dict]:
+    """Return the cached lecture index for *course* ({} if the course has none)."""
+    if course not in _LECTURE_INDEX_CACHE:
+        path = _CURRICULUM_DIR / course / "lecture_index.json"
+        try:
+            _LECTURE_INDEX_CACHE[course] = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _LECTURE_INDEX_CACHE[course] = {}
+    return _LECTURE_INDEX_CACHE[course]
 
 # ``local:lecture_<week>_<seq>_...`` and ``local:practice_<week>`` encode the
 # course week (module) as their first number; exercise_<N> shares it too. Used to
@@ -61,15 +82,22 @@ def _titleize(slug: str) -> str:
     return " ".join(w.upper() if w in _ACRONYMS else w.capitalize() for w in words if w)
 
 
-def _source_label(source: str) -> str:
+def _source_label(source: str, course: str | None = None) -> str:
     """Render a raw chunk source as a human-readable, citeable label.
 
+    When *course* has a ``lecture_index.json`` entry for this source, its
+    ``citation`` (the real "Week 10, Lesson 1 · Video 7: DuPont Analysis"
+    coordinate) is used. Otherwise falls back to a label derived from the stem:
     ``local:lecture_1_1_the_transportation_problem`` -> ``Lecture 1.1 The
     Transportation Problem``; ``local:practice_4`` -> ``Practice 4``;
     ``local:course``/``syllabus``/``key_concepts`` -> friendly names; OCW and
     anything unrecognized keep their label (minus a ``local:`` prefix).
     """
     s = source or ""
+    if course:
+        entry = _lecture_index(course).get(s)
+        if entry and entry.get("citation"):
+            return entry["citation"]
     m = _LECTURE_RE.match(s)
     if m:
         return f"Lecture {m.group(1)}.{m.group(2)} {_titleize(m.group(3))}"
@@ -156,9 +184,13 @@ def to_records(scored: list[tuple[Chunk, float]]) -> list[dict]:
     ]
 
 
-def format_context(chunks: list[Chunk]) -> str:
-    """Render retrieved chunks into a labeled 'Relevant course material' block."""
+def format_context(chunks: list[Chunk], course: str | None = None) -> str:
+    """Render retrieved chunks into a labeled 'Relevant course material' block.
+
+    When *course* is given, lecture entries are labeled with their real
+    Week/Lesson/Video citation from ``lecture_index.json``.
+    """
     if not chunks:
         return ""
-    blocks = [f"[{_source_label(c.source)}]\n{c.text}" for c in chunks]
-    return "Relevant course material (retrieved):\n\n" + "\n\n".join(blocks)
+    blocks = [f"[{_source_label(c.source, course)}]\n{c.text}" for c in chunks]
+    return "Relevant course material:\n\n" + "\n\n".join(blocks)

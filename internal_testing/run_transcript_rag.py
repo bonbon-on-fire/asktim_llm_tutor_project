@@ -170,7 +170,7 @@ def _retrieved_context(course: str, query: str, max_week: int | None = None) -> 
     try:
         scored = retrieve_scored(course, query, max_week=max_week)
         return RetrievedContext(
-            text=format_context([c for c, _ in scored]), records=to_records(scored)
+            text=format_context([c for c, _ in scored], course), records=to_records(scored)
         )
     except Exception:
         return RetrievedContext()

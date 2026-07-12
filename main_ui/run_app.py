@@ -9,6 +9,7 @@ from main_ui.routes.embed import embed_bp
 from main_ui.routes.feedback import feedback_bp
 from main_ui.routes.history import history_bp
 from main_ui.routes.identity import identity_bp
+from main_ui.routes.message_rating import message_rating_bp
 from ui_core.app_factory import create_app
 
 app = create_app(
@@ -16,5 +17,5 @@ app = create_app(
     config=load_config(),
     service_name="main_ui",
     session_local=SessionLocal,
-    blueprints=[embed_bp, identity_bp, chat_bp, history_bp, feedback_bp],
+    blueprints=[embed_bp, identity_bp, chat_bp, history_bp, feedback_bp, message_rating_bp],
 )

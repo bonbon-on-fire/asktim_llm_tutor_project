@@ -300,6 +300,36 @@ def get_conversation_for_viewer(
     return None
 
 
+def get_message_for_viewer(
+    db: Session,
+    message_id: int,
+    session_id: str,
+    username: str | None,
+    *,
+    models: Models,
+) -> Any | None:
+    """Return a Message if the viewer owns its conversation, else None.
+
+    Reuses the same ownership rule as :func:`get_conversation_for_viewer`
+    (session_id match, or username match) so callers can map a miss to 403
+    without leaking whether the message exists.
+    """
+    msg = db.get(models.Message, message_id)
+    if msg is None:
+        return None
+    convo = get_conversation_for_viewer(
+        db, msg.conversation_id, session_id, username, models=models
+    )
+    return msg if convo is not None else None
+
+
+def set_message_rating(db: Session, message: Any, rating: int) -> Any:
+    """Set a message's thumb rating (-1/0/1) and flush. Caller commits."""
+    message.rating = rating
+    db.flush()
+    return message
+
+
 def get_messages_for_conversation(
     db: Session,
     conversation: Any,
@@ -334,9 +364,13 @@ def get_messages_for_conversation(
     result = []
     for m in messages:
         entry = {
+            "id": m.id,
             "turn": m.turn,
             "role": m.role,
             "content": m.content,
+            # Per-message thumb rating (-1/0/1); lets history replay restore the
+            # thumbs state. Legacy rows predating the column read back NULL -> 0.
+            "rating": getattr(m, "rating", 0) or 0,
         }
         if include_reasoning:
             entry["pedagogical_reasoning"] = m.pedagogical_reasoning

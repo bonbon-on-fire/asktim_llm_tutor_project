@@ -79,6 +79,10 @@ class MessageMixin:
     role: Mapped[str] = mapped_column(String(16), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     pedagogical_reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Per-message thumb rating from the student: -1 (down), 0 (none), 1 (up).
+    # Only ever set on tutor rows; student rows stay 0. server_default keeps it
+    # backfilling cleanly when the column is added to an existing table.
+    rating: Mapped[int] = mapped_column(nullable=False, server_default="0", default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
@@ -111,6 +115,7 @@ class MessageMixin:
         """Table-level constraints: a role check and an index on ``conversation_id``."""
         return (
             CheckConstraint("role IN ('student', 'tutor')", name="ck_messages_role"),
+            CheckConstraint("rating IN (-1, 0, 1)", name="ck_messages_rating"),
             Index("idx_messages_conversation", "conversation_id"),
         )
 

@@ -589,6 +589,77 @@ def test_backfill_username_for_session() -> None:
         tmp.cleanup()
 
 
+def test_message_rating_and_message_payload_ids() -> None:
+    """Check per-message rating: default 0, set_message_rating, ownership, and
+    that get_messages_for_conversation exposes each message's id + rating."""
+    tmp, eng = _new_session()
+    try:
+        with Session(eng) as s:
+            convo = svc.find_or_create_conversation(
+                s,
+                models=_MODELS,
+                session_id="sessR",
+                conversation_id=None,
+                course="cs101",
+                exercise_number="ex1",
+                tutor_prompt="be nice",
+                username="rita",
+            )
+            s.flush()
+            _student, tutor = svc.append_exchange(
+                s,
+                models=_MODELS,
+                conversation=convo,
+                student_text="hi",
+                tutor_text="hello",
+                pedagogical_reasoning=None,
+            )
+            s.commit()
+
+            _check("tutor rating defaults to 0", tutor.rating == 0, str(tutor.rating))
+
+            # payload exposes id + rating for every message
+            msgs = svc.get_messages_for_conversation(s, convo, models=_MODELS)
+            _check(
+                "payload has id + rating on every message",
+                all("id" in m and "rating" in m for m in msgs),
+                str(msgs),
+            )
+
+            # ownership: owner (by session or username) can fetch; stranger cannot
+            got = svc.get_message_for_viewer(s, tutor.id, "sessR", None, models=_MODELS)
+            _check("owner-by-session gets the message", got is not None and got.id == tutor.id)
+            _check(
+                "owner-by-username gets the message",
+                svc.get_message_for_viewer(s, tutor.id, "other", "rita", models=_MODELS)
+                is not None,
+            )
+            _check(
+                "stranger denied the message",
+                svc.get_message_for_viewer(s, tutor.id, "other", "eve", models=_MODELS)
+                is None,
+            )
+            _check(
+                "missing message id -> None",
+                svc.get_message_for_viewer(s, 999999, "sessR", "rita", models=_MODELS)
+                is None,
+            )
+
+            # set the rating and confirm it round-trips through the payload
+            svc.set_message_rating(s, tutor, 1)
+            s.commit()
+            reloaded = svc.get_messages_for_conversation(s, convo, models=_MODELS)
+            tutor_entry = next(m for m in reloaded if m["role"] == "tutor")
+            _check("rating persisted to 1", tutor_entry["rating"] == 1, str(tutor_entry))
+
+            svc.set_message_rating(s, tutor, -1)
+            s.commit()
+            _check("rating updates to -1", tutor.rating == -1, str(tutor.rating))
+        eng.dispose()
+    finally:
+        tmp.cleanup()
+
+
 def main() -> int:
     """Run all tests in this module and return an exit code (1 if any failed)."""
     tests = (
@@ -600,6 +671,7 @@ def main() -> int:
         test_summarize_and_list_conversations,
         test_get_conversation_for_viewer_ownership,
         test_backfill_username_for_session,
+        test_message_rating_and_message_payload_ids,
     )
     for t in tests:
         print(t.__name__)

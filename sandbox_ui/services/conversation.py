@@ -179,6 +179,20 @@ def get_conversation_for_viewer(
     )
 
 
+def get_message_for_viewer(
+    db: Session, message_id: int, session_id: str, username: str | None
+) -> Message | None:
+    """Return a Message if the viewer owns its conversation, else None."""
+    return _shared.get_message_for_viewer(
+        db, message_id, session_id, username, models=_MODELS
+    )
+
+
+def set_message_rating(db: Session, message: Message, rating: int) -> Message:
+    """Set a tutor message's thumb rating (-1/0/1) and flush. Caller commits."""
+    return _shared.set_message_rating(db, message, rating)
+
+
 def get_messages_for_conversation(
     db: Session, conversation: Conversation
 ) -> list[dict]:

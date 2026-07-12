@@ -411,7 +411,7 @@ def chat():
 
             try:
                 convo_obj = db.get(type(convo), convo.id)
-                complete_exchange_tutor(
+                tutor_msg = complete_exchange_tutor(
                     db,
                     conversation=convo_obj,
                     turn=student_turn,
@@ -421,6 +421,9 @@ def chat():
                         json.dumps(retrieved, ensure_ascii=False) if retrieved else None
                     ),
                 )
+                # Capture the tutor row's id before commit expires the attribute,
+                # so the client can rate this message via POST /api/message/<id>/rating.
+                tutor_message_id = tutor_msg.id
                 student_count = count_student_messages(db, convo_obj)
                 db.commit()
             except Exception as exc:
@@ -437,6 +440,8 @@ def chat():
                     "conversation_id": convo_id_str,
                     "reply": full_reply,
                     "student_message_count": student_count,
+                    # Message id of this tutor turn, so the client can thumb it.
+                    "tutor_message_id": tutor_message_id,
                     # Sandbox is a dev/TA tool — surface the tutor's hidden
                     # reasoning so it can be inspected per message as we chat.
                     "pedagogical_reasoning": reasoning,

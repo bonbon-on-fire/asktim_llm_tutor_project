@@ -293,7 +293,7 @@
     li.appendChild(wrap);
   }
 
-  function renderMessage(role, content, imageSrcs, attachmentNames) {
+  function renderMessage(role, content, imageSrcs, attachmentNames, messageId, rating) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
     if (imageSrcs && imageSrcs.length) {
@@ -312,6 +312,10 @@
     }
     appendFileChips(li, attachmentNames);
     messageList.appendChild(li);
+    if (role === "tutor") {
+      // After the bubble is in the DOM, drop the thumbs in as the next sibling.
+      appendRating(li, messageId, rating);
+    }
     // Always auto-scroll to bottom. Known papercut: fights user scrolling.
     messageList.scrollTop = messageList.scrollHeight;
     return li;
@@ -428,116 +432,65 @@
     composerInput.focus();
   }
 
-  // ---- Mid-conversation feedback nudge (1-5 stars, once per conversation) ----
-  let feedbackWired = false;
-  function feedbackDoneKey() {
-    return "feedbackDone:" + (conversationId || "");
-  }
-  function hideFeedbackToast() {
-    const t = document.getElementById("feedback-toast");
-    if (t) t.hidden = true;
-  }
-  function markFeedbackDone() {
+  // ---- Per-message thumbs up/down (stored as -1/0/1 on the tutor message) ----
+  const THUMB_UP_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v11"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a2.5 2.5 0 0 1 3 3.88Z"/></svg>';
+  const THUMB_DOWN_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 14V3"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a2.5 2.5 0 0 1-3-3.88Z"/></svg>';
+
+  async function postRating(messageId, rating) {
     try {
-      sessionStorage.setItem(feedbackDoneKey(), "1");
-    } catch (e) {
-      /* sessionStorage unavailable — the toast just won't persist its state */
-    }
-  }
-  async function submitFeedback(rating) {
-    markFeedbackDone();
-    const toast = document.getElementById("feedback-toast");
-    try {
-      await fetch("/api/feedback", {
+      await fetch(`/api/message/${messageId}/rating`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversation_id: conversationId,
-          turn: studentMessageCount,
-          rating: rating,
-        }),
+        body: JSON.stringify({ rating: rating }),
       });
     } catch (e) {
       /* best-effort — a failed rating should never disrupt the chat */
     }
-    if (toast) {
-      toast.innerHTML =
-        '<span class="feedback-toast-thanks">Thanks for the feedback!</span>';
-      setTimeout(hideFeedbackToast, 1500);
-    }
   }
-  function wireFeedbackToast() {
-    if (feedbackWired) return;
-    const stars = document.getElementById("feedback-stars");
-    const closeBtn = document.getElementById("feedback-toast-close");
-    if (!stars) return;
-    const buttons = Array.prototype.slice.call(
-      stars.querySelectorAll(".feedback-star"),
-    );
-    function paint(upto) {
-      buttons.forEach(function (b) {
-        b.classList.toggle("is-filled", Number(b.dataset.value) <= upto);
-      });
+
+  // Append a thumbs up/down control under a tutor message. `rating` is the
+  // stored value (-1/0/1); clicking a thumb sets it, clicking the active thumb
+  // again clears it back to 0. Persists via POST /api/message/<id>/rating.
+  function appendRating(li, messageId, rating) {
+    if (!messageId) return;
+    let current = rating === 1 || rating === -1 ? rating : 0;
+    // A sibling list item placed AFTER the bubble, so the thumbs sit under the
+    // message but outside the bubble background. `li` must already be in the DOM.
+    const bar = document.createElement("li");
+    bar.className = "msg-rating";
+
+    const up = document.createElement("button");
+    up.type = "button";
+    up.className = "rating-btn rating-up";
+    up.setAttribute("aria-label", "Thumbs up");
+    up.innerHTML = THUMB_UP_SVG;
+
+    const down = document.createElement("button");
+    down.type = "button";
+    down.className = "rating-btn rating-down";
+    down.setAttribute("aria-label", "Thumbs down");
+    down.innerHTML = THUMB_DOWN_SVG;
+
+    function paint() {
+      up.classList.toggle("is-active", current === 1);
+      down.classList.toggle("is-active", current === -1);
+      up.setAttribute("aria-pressed", current === 1 ? "true" : "false");
+      down.setAttribute("aria-pressed", current === -1 ? "true" : "false");
     }
-    buttons.forEach(function (b) {
-      b.addEventListener("mouseenter", function () {
-        paint(Number(b.dataset.value));
-      });
-      b.addEventListener("click", function () {
-        submitFeedback(Number(b.dataset.value));
-      });
-    });
-    stars.addEventListener("mouseleave", function () {
-      paint(0);
-    });
-    if (closeBtn) {
-      closeBtn.addEventListener("click", function () {
-        markFeedbackDone();
-        hideFeedbackToast();
-      });
+    function choose(value) {
+      const next = current === value ? 0 : value; // toggle off if re-clicked
+      current = next;
+      paint();
+      postRating(messageId, next);
     }
-    feedbackWired = true;
-  }
-  let feedbackPending = false;
-  let feedbackObserverSet = false;
-  function isFeedbackDone() {
-    try {
-      return sessionStorage.getItem(feedbackDoneKey()) === "1";
-    } catch (e) {
-      return false;
-    }
-  }
-  function tryShowFeedback() {
-    if (!feedbackPending) return;
-    if (isFeedbackDone()) {
-      feedbackPending = false;
-      return;
-    }
-    // Don't overlap the persistent email/login modal — stay armed until it's
-    // dismissed; the observer below re-runs this the moment it closes.
-    const emailModal = document.getElementById("email-modal");
-    if (emailModal && !emailModal.hidden) return;
-    const toast = document.getElementById("feedback-toast");
-    if (!toast) return;
-    wireFeedbackToast();
-    toast.hidden = false;
-    feedbackPending = false;
-  }
-  function maybeShowFeedback(count) {
-    if (count < 3) return;
-    if (!conversationId) return;
-    if (isFeedbackDone()) return;
-    feedbackPending = true;
-    // Surface the toast as soon as the email modal closes (it reopens every turn
-    // until the student signs up, so a plain "is it open now?" check never fires).
-    const emailModal = document.getElementById("email-modal");
-    if (emailModal && !feedbackObserverSet) {
-      feedbackObserverSet = true;
-      new MutationObserver(function () {
-        if (emailModal.hidden) tryShowFeedback();
-      }).observe(emailModal, { attributes: true, attributeFilter: ["hidden"] });
-    }
-    tryShowFeedback();
+    up.addEventListener("click", () => choose(1));
+    down.addEventListener("click", () => choose(-1));
+    paint();
+    bar.appendChild(up);
+    bar.appendChild(down);
+    li.insertAdjacentElement("afterend", bar);
   }
 
   function maybeShowEmailModal(count) {
@@ -707,7 +660,7 @@
       for (const m of data.messages || []) {
         const srcs = (m.images || []).map((img) => `/api/image/${img.id}`);
         const attachmentNames = (m.attachments || []).map((a) => a.filename);
-        renderMessage(m.role, m.content, srcs, attachmentNames);
+        renderMessage(m.role, m.content, srcs, attachmentNames, m.id, m.rating);
       }
       highlightActiveEntry();
     } catch (err) {
@@ -1006,6 +959,11 @@
               // any tokens we'd accumulated in case they drifted. Render
               // markdown now that the full (table-complete) reply is in hand.
               setMessageContent(tutorBubble, "tutor", finalReply);
+              appendRating(
+                tutorBubble,
+                parsed.data && parsed.data.tutor_message_id,
+                0,
+              );
               messageList.scrollTop = messageList.scrollHeight;
             }
             if (parsed.data && parsed.data.conversation_id) {
@@ -1044,7 +1002,6 @@
       }
 
       maybeShowEmailModal(studentMessageCount);
-      maybeShowFeedback(studentMessageCount);
       // If the sidebar is open, silently re-fetch so the conversation
       // that just got a new message floats to the top of the list.
       if (sidebarOpen) {

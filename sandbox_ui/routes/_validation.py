@@ -22,7 +22,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
 _TUTOR_PROMPTS_DIR = _REPO_ROOT / "tutor" / "prompts"
 
-DEFAULT_TUTOR = "tutor_06"
+DEFAULT_TUTOR = "tutor_07"
 DEFAULT_COURSE = "supply_chain_design"
 DEFAULT_EXERCISE = "01"
 
@@ -192,11 +192,16 @@ def course_has_rag(course) -> bool:
     return _rag_has_index(course)
 
 
+# Only these tutor prompts are offered in the sandbox wizard (in this order),
+# so testers can compare recent versions without exposing every experiment.
+_SELECTABLE_TUTORS = ("tutor_05", "tutor_06", "tutor_07")
+
+
 def list_tutors() -> list[str]:
-    """Sorted tutor prompt stems available under tutor/prompts/."""
+    """Selectable tutor prompt stems for the wizard (whitelist ∩ what's on disk)."""
     if not _TUTOR_PROMPTS_DIR.is_dir():
         return []
-    return sorted(p.stem for p in _TUTOR_PROMPTS_DIR.glob("*.txt"))
+    return [t for t in _SELECTABLE_TUTORS if (_TUTOR_PROMPTS_DIR / f"{t}.txt").is_file()]
 
 
 def list_context_options() -> dict:

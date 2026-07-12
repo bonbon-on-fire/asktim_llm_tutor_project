@@ -107,11 +107,11 @@ you either pick an existing built-in or paste your own custom text:
   separate "Exercises" and "Practice problems" groups, or custom exercise text.
   The chosen kind is stored per conversation in `exercise_kind` (defaults to
   `exercise`)
-- **Tutor prompt** — shown for visibility but **locked to `tutor_06`** (the
-  dropdown is disabled and shows a lock icon); testers can't pick another
-  built-in prompt or paste custom prompt text at this step. The Sandbox runs
-  `tutor_06` (lecture citations, anti-leak) so testers can exercise it, while
-  production `main_ui` stays on the stable `tutor_05`
+- **Tutor prompt** — a selectable dropdown restricted to the recent built-ins
+  **`tutor_05`, `tutor_06`, `tutor_07`** (defaults to `tutor_07`), so testers can
+  compare prompt versions. No custom-prompt option here. The allow-list lives in
+  `routes/_validation.py` (`_SELECTABLE_TUTORS`); production `main_ui` stays on the
+  stable `tutor_05`
 - **Syllabus** — the course's `syllabus.txt`, none, or custom syllabus text
 - **Lectures** — the course's `lectures/*.txt` transcripts (concatenated), none,
   or custom lecture text. Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)
@@ -126,8 +126,8 @@ replays it with the same context.
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
 > wizard. It was removed in June 2026 because the Create-context wizard did
 > everything it did — and also let you change the tutor prompt and supply custom
-> text — so the two buttons were redundant. (The Tutor prompt step is now
-> locked to `tutor_06`; see above.)
+> text — so the two buttons were redundant. (The Tutor prompt step is selectable
+> among `tutor_05`/`tutor_06`/`tutor_07`; see above.)
 
 ## Quick start
 

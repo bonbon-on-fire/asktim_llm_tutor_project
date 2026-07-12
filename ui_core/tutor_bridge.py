@@ -16,8 +16,9 @@ as overridable hooks:
 - :meth:`build_assignment_text` — assemble the assignment/system-prompt body.
 - :meth:`build_system_prompt` — wrap the assignment text into a full system
   prompt.
-- :meth:`retrieved_context` — per-turn RAG context to prepend to the student
-  message (empty by default; sandbox's RAG mode fills this in).
+- :meth:`retrieved_context` — per-turn RAG context, appended as its own
+  reference message before the student turn (empty by default; sandbox's RAG
+  mode fills this in).
 - :meth:`turn_attachments` — curriculum figures + uploaded images to attach to
   the latest student turn.
 
@@ -53,13 +54,20 @@ from utils.lectures import load_lecture_transcripts
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
 
+# Header on the standalone per-turn RAG grounding message. Frames the block as
+# background course material the tutor knows — not as the student speaking.
+RETRIEVED_CONTEXT_HEADER = (
+    "Course reference for this turn (background for you, not written by the student):"
+)
+
 
 @dataclass
 class RetrievedContext:
     """Result of one turn's RAG retrieval.
 
-    ``text`` is the formatted block prepended to the student message; ``records``
-    is the JSON-friendly ``[{source, score, chars, text}]`` list persisted into
+    ``text`` is the formatted block sent as its own reference message ahead of
+    the student turn; ``records`` is the JSON-friendly
+    ``[{source, score, chars, text}]`` list persisted into
     transcripts and the DB so callers can see what RAG pulled. Retrieval runs
     once and populates both, so nothing is embedded twice.
     """
@@ -185,9 +193,7 @@ class TutorBridge:
                 raise ValueError(f"Unknown role: {role!r} (expected 'student' or 'tutor')")
         return messages
 
-    def _new_student_message(
-        self, text: str, images: list | None, retrieved_context: str = ""
-    ) -> HumanMessage:
+    def _new_student_message(self, text: str, images: list | None) -> HumanMessage:
         """Build the new student turn, multimodal when *images* are attached.
 
         *images* is a list of ``(bytes, mime)`` tuples (or anything
@@ -196,15 +202,26 @@ class TutorBridge:
         Images are attached only to this (current) turn; prior turns stay
         text-only.
 
-        When ``retrieved_context`` is non-empty (RAG mode), it is prepended as
-        a clearly-delimited reference block ahead of the student's actual
-        message, so the tutor treats it as background material rather than as
-        the student speaking. Only the LLM message is augmented — the
-        stored/displayed student message (handled by the route) is unchanged.
+        The student's text is used verbatim: any per-turn RAG grounding rides on
+        its own message ahead of this one (see :meth:`_retrieved_context_message`),
+        never glued onto the student's words, so the student turn the model sees
+        stays pristine.
         """
-        if retrieved_context:
-            text = f"{retrieved_context}\n\n---\n\nStudent message:\n{text}"
         return HumanMessage(content=build_multimodal_content(text, images))
+
+    def _retrieved_context_message(self, retrieved_context: str) -> HumanMessage:
+        """Wrap this turn's RAG grounding as its own reference message.
+
+        Placed immediately before the student turn (RAG mode only) so the tutor
+        reads it as background course material rather than as the student
+        speaking. Kept standalone rather than prepended to the student turn so
+        the student's words stay clean in the model input. Only the LLM sees
+        this — the stored/displayed student message (handled by the route) is
+        unchanged.
+        """
+        return HumanMessage(
+            content=f"{RETRIEVED_CONTEXT_HEADER}\n\n{retrieved_context}"
+        )
 
     def _get_or_build_graph(self, tutor: str, course: str, exercise: str, **ctx):
         """Return the cached compiled tutor graph for this call, building it on a miss.
@@ -275,9 +292,9 @@ class TutorBridge:
         messages = self._history_to_langchain(history)
         rc = self.retrieved_context(course, new_student_message, exercise=exercise, **ctx)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
-        messages.append(
-            self._new_student_message(new_student_message, attachments, rc.text)
-        )
+        if rc.text:
+            messages.append(self._retrieved_context_message(rc.text))
+        messages.append(self._new_student_message(new_student_message, attachments))
 
         out_messages, reply_text = _upstream_get_tutor_reply(messages, graph=graph)
 
@@ -319,9 +336,9 @@ class TutorBridge:
         messages = self._history_to_langchain(history)
         rc = self.retrieved_context(course, new_student_message, exercise=exercise, **ctx)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
-        messages.append(
-            self._new_student_message(new_student_message, attachments, rc.text)
-        )
+        if rc.text:
+            messages.append(self._retrieved_context_message(rc.text))
+        messages.append(self._new_student_message(new_student_message, attachments))
 
         full_raw: str | None = None
         for item in _upstream_stream_tutor_reply(

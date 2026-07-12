@@ -4,8 +4,8 @@ Unlike ``internal_testing.run_transcript`` — which bakes the full course.txt +
 *entire* lecture transcripts into the tutor's system prompt — this runner drives
 the tutor in **RAG mode**: the tutor's base prompt carries only the exercise, and
 the relevant lecture chunks are retrieved per student turn (``rag.retrieve``) and
-prepended to that turn, mirroring the deployed ``sandbox_ui`` behaviour
-(``services/tutor_bridge.py`` with ``context_mode="rag"``).
+sent as their own reference message ahead of that turn, mirroring the deployed
+``sandbox_ui`` behaviour (``services/tutor_bridge.py`` with ``context_mode="rag"``).
 
 It also supports **practice problems** (``practices/practice_<NN>.txt``) as a
 first-class problem kind alongside graded exercises.
@@ -46,7 +46,7 @@ from langchain_core.messages import AIMessage, HumanMessage  # noqa: E402
 
 from internal_testing.run_transcript import _next_transcript_number  # noqa: E402
 from rag.retrieve import format_context, has_index, retrieve_scored, to_records  # noqa: E402
-from ui_core.tutor_bridge import RetrievedContext  # noqa: E402
+from ui_core.tutor_bridge import RETRIEVED_CONTEXT_HEADER, RetrievedContext  # noqa: E402
 from students.run_student import build_graph as build_student_graph  # noqa: E402
 from students.run_student import get_next_student_message, list_personas  # noqa: E402
 from tutor.run_tutor import (  # noqa: E402
@@ -241,16 +241,17 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
             else str(student_message.content)
         )
 
-        # RAG: retrieve relevant chunks for this student turn and prepend them as
-        # a reference block ahead of the student's actual message. ``rc.records``
-        # captures what was retrieved (source/score/text) for the transcript.
+        # RAG: retrieve relevant chunks for this student turn. They ride on their
+        # own reference message ahead of the student's actual message (matching the
+        # deployed ui_core.tutor_bridge separation), so the student's words stay
+        # clean. ``rc.records`` captures what was retrieved (source/score/text) for
+        # the transcript.
         rc = _retrieved_context(config.course, student_text, max_week)
-        tutor_input = (
-            f"{rc.text}\n\n---\n\nStudent message:\n{student_text}"
-            if rc.text
-            else student_text
-        )
-        tutor_messages.append(HumanMessage(content=tutor_input))
+        if rc.text:
+            tutor_messages.append(
+                HumanMessage(content=f"{RETRIEVED_CONTEXT_HEADER}\n\n{rc.text}")
+            )
+        tutor_messages.append(HumanMessage(content=student_text))
         tutor_messages, tutor_text = _tutor_reply_with_retry(
             tutor_messages, tutor_graph, _build_graph
         )

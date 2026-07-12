@@ -13,12 +13,16 @@ tutor/
     tutor_02.txt            — revised system prompt variant
     tutor_03.txt            — concise-response variant used in bundle runs
     tutor_04.txt            — updated Socratic guidance variant
-    tutor_05.txt            — refined Socratic guidance variant (superseded by tutor_06)
-    tutor_06.txt            — latest/recommended: tutor_05 + a Math formatting rule
+    tutor_05.txt            — deployed default: refined Socratic guidance (main_ui + sandbox_ui locked to this)
+    tutor_06.txt            — experimental: tutor_05 + math formatting + grounded lecture citations + anti-leakage
 ```
 
 - `run_tutor.py` builds the LangGraph, invokes the LLM, and parses structured JSON response fields (pedagogical reasoning + student-facing answer).
-- Prompt versions are selected by name (for example `tutor_03`, `tutor_06`) and loaded from `tutor/prompts/`. `tutor_06` is the default/recommended prompt (`DEFAULT_TUTOR` in `main_ui`/`sandbox_ui`) — it adds a **Math formatting** rule on top of `tutor_05`: write math as `\(...\)` (inline) / `\[...\]` (display) LaTeX, never `$`/`$$` (those stay literal currency), and double every backslash (`\\(`, `\\frac{}{}`) so the JSON response stays valid. `sandbox_ui`'s wizard locks the tutor to `tutor_06`.
+- Prompt versions are selected by name (for example `tutor_03`, `tutor_06`) and loaded from `tutor/prompts/`. **`tutor_05` is the deployed default** (`DEFAULT_TUTOR` in both `main_ui` and `sandbox_ui`, and both apps are **locked** to it — the client can't override it).
+- **`tutor_06`** is the experimental variant layered on `tutor_05`, present in the codebase but not yet promoted. It adds:
+  - **Math formatting** — write math as `\(...\)` (inline) / `\[...\]` (display) LaTeX, never `$`/`$$` (those stay literal currency), doubling every backslash (`\\(`, `\\frac{}{}`) so the JSON response stays valid.
+  - **Grounded lecture citations** — when pointing a student to course material, cite the real **Week / Lesson / Video** coordinate (e.g. *"…in **Week 10, Lesson 1**, in the **DuPont Analysis** video"*), woven into a sentence. Labels come from `curriculum/<course>/lecture_index.json` via [`rag/retrieve.py`](../rag/README.md); the tutor may only cite a label present in the retrieved block, so it can't invent a lecture.
+  - **Anti-leakage** — never expose the retrieval plumbing or its own citation rules to the student (no "retrieved material", "the lectures shown here", "I can't verify", etc.).
 - `stream_tutor_reply()` exposes a token-streaming entry point used by [`main_ui/`](../main_ui/README.md). It yields visible answer characters as they arrive, hiding the JSON envelope and the `pedagogical-reasoning` field server-side via the `StudentAnswerExtractor` state machine.
 
 ### Multimodal figures (non-streaming path)

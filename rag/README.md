@@ -52,8 +52,21 @@ from rag import retrieve, format_context, has_index
 
 if has_index(course):
     chunks = retrieve(course, student_message, k=6, max_week=4)
-    block = format_context(chunks)   # injected on the latest student turn
+    block = format_context(chunks, course)   # injected on the latest student turn
 ```
+
+### Citation labels (`lecture_index.json`)
+
+Each retrieved chunk is labeled in the injected block so the tutor can cite it.
+`format_context(chunks, course)` resolves a chunk's source to a human label via
+`_source_label`: if the course ships `curriculum/<course>/lecture_index.json`
+and the source is in it, the label is the chunk's **real Week / Lesson / Video
+coordinate** (e.g. `[Week 10, Lesson 1 · Video 7: DuPont Analysis]`) — a location
+a student can actually find on the course site. Without an index (or for
+non-lecture sources), it falls back to a stem-derived label (`Lecture 10.6 …`,
+`Practice 4`, `Syllabus`). The index is built by scraping the live course
+structure; see the `curriculum/` README. Passing `course` is what activates the
+real labels — omit it (older callers) and you get the fallback.
 
 ### Week-scoped retrieval (`max_week`)
 
@@ -76,7 +89,7 @@ Omit `max_week` (the default) to retrieve across all weeks.
 | `sources.py` | local reader: `course.txt` / `syllabus.txt` / `key_concepts.txt` / `lectures/*.txt` / `practices/*.txt` (excludes `exercises/*.txt` and `*_solutions/`) |
 | `ocw.py` | OCW crawler (reads `online_link.txt`; HTML via `beautifulsoup4`, linked PDFs via `pypdf`) |
 | `ingest.py` | CLI: gather → chunk → embed → save |
-| `retrieve.py` | query-time `retrieve()` / `retrieve_scored()` / `to_records()` + `format_context()` |
+| `retrieve.py` | query-time `retrieve()` / `retrieve_scored()` / `to_records()` + `format_context()`; `_source_label()` renders citeable labels from `lecture_index.json` |
 
 ## Config (env)
 

@@ -58,8 +58,13 @@ Edit the JSONL, never the `.md` (it's overwritten on every render).
 ## Generating candidates
 
 ```
+# Sample N passages across distinct lectures (pilot)
 python eval/rag_judge/generate_ground_truth.py --course supply_chain_design \
     --num-passages 25 --questions-per-passage 2
+
+# Full coverage: ~2 questions for EVERY lecture, preserving existing rows
+python eval/rag_judge/generate_ground_truth.py --course supply_chain_design \
+    --append --cover-all --per-lecture 2 --min-lecture-chars 1000
 ```
 
 The generator (`generate_ground_truth.py`) works **passage → question** so gold
@@ -69,6 +74,21 @@ locates the quote's span in the source, and records retrieval signals against th
 current index. Model defaults to `$ANTHROPIC_MODEL` (or `claude-sonnet-4-6`);
 override with `--model`. It's cheap (a Claude call per passage + one embedding
 per question) and reproducible via `--seed`.
+
+### Coverage / top-up flags
+
+- `--cover-all` — cover **every** lecture (one passage each), not just
+  `--num-passages` of them. Use for full `*_*`-depth coverage.
+- `--per-lecture N` — target N questions per lecture (default:
+  `--questions-per-passage`). The generator only asks for the *deficit*, so it
+  never overshoots the target.
+- `--append` — **merge** into the existing JSONL instead of overwriting: keeps
+  all existing rows (including human-reviewed ones), tops up only lectures below
+  the target, and continues the id sequence. This makes re-runs idempotent —
+  running the full-coverage command twice fills any lecture that came up short
+  (a generated quote that wasn't verbatim is dropped, so some lectures need a
+  second pass to reach the target). Re-run until every lecture hits N; a handful
+  of very short lectures may only yield 1 good verbatim-pinned question.
 
 ## Review workflow
 
@@ -81,9 +101,12 @@ Generated rows are **candidates** (`needs_review: true`). Human pass:
 3. Drop generic questions answerable from many passages.
 4. Set `needs_review: false`, then re-render the `.md` (see above).
 
-Aim for a ~40-question pilot to validate the pipeline, then scale to ~150–250
-spread across lectures (weighted toward exam-relevant topics), including some
-multi-passage and some deliberately hard items.
+The `supply_chain_design` set has been scaled past the pilot to **full
+`*_*`-depth coverage** — ~2 questions for every lecture (~315 rows across ~159
+lectures) via `--append --cover-all --per-lecture 2`. The original 42 rows are
+human-reviewed (`needs_review: false`); the rest are candidates awaiting the
+review pass above. Weight review toward exam-relevant topics, and keep some
+multi-passage and deliberately hard items.
 
 ## Harness (planned)
 

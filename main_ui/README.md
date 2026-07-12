@@ -48,8 +48,12 @@ Binds to `127.0.0.1:5001` by default. Override with the `PORT` env var.
 Open the chat in a browser:
 
 ```text
-http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_06
+http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=01
 ```
+
+Production is **locked to `tutor_05`** — `DEFAULT_TUTOR` in
+[`routes/_validation.py`](routes/_validation.py) is forced at both the embed and
+chat entry points, so a `?tutor=` query param is ignored.
 
 Verify the server is up:
 

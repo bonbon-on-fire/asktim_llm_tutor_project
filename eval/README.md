@@ -28,8 +28,10 @@ the noise of the subjective transcript grade.
 ## Status
 
 - `tutor_judge` — in use. Latest/recommended: `judge_08` + `rubric_08`.
-- `rag_judge` — ground-truth dataset built for `supply_chain_design` (42 validated
-  rows at `rag_judge/ground_truth/supply_chain_design.jsonl`); the scoring harness
+- `rag_judge` — ground-truth dataset built for `supply_chain_design`, scaled to
+  full per-lecture coverage (~2 questions per lecture, ~315 rows at
+  `rag_judge/ground_truth/supply_chain_design.jsonl`; the original 42 are
+  human-validated, the rest are candidates awaiting review). The scoring harness
   is the next major step (see the 2026-07-08 meeting notes).
 
 ## Related

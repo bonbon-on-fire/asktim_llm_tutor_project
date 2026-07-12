@@ -32,6 +32,7 @@ curriculum/
     lectures/                        # optional — per-course lecture transcripts
       lecture_1_0_intro.txt          # plain text; all included in tutor context
       ...
+    lecture_index.json               # optional — maps each lecture stem to its real Week/Lesson/Video citation
     rag_index/                       # optional — built RAG index (vectors.npy + chunks.jsonl + manifest.json)
 ```
 
@@ -46,6 +47,7 @@ curriculum/
 - `lectures/` (optional) holds **per-course** lecture transcripts as plain `.txt` files. Every file in the folder is read (sorted by filename, labeled by stem) and folded into the tutor's context for **all** exercises in the course — mirroring how `syllabus.txt` is treated. Loaded by [`utils/lectures.py`](../utils/lectures.py); absent folder = no transcripts.
 - `key_concepts.txt` (optional) holds a condensed distillation of the course's key concepts. Like `course.txt`/`syllabus.txt`/`lectures/`, it is **retrievable via RAG** (chunked + embedded by [`rag/`](../rag/)) rather than a per-exercise attachment.
 - `exercises_solutions/` and `practices_solutions/` (optional) hold **reference solutions**, one file per exercise/practice (same non-padded numbering). They are **paired directly into the tutor's context** for the current problem (a tutor-only correct-answer input) and are deliberately **excluded from the RAG index** so a solution is never surfaced by similarity. Resolved via `read_solution()` in [`utils/curriculum.py`](../utils/curriculum.py).
+- `lecture_index.json` (optional) maps each `lectures/*.txt` stem to its **true course coordinates** — `week`, `lesson`, `video`, `video_title`, and a ready-to-render `citation` string (e.g. `"Week 10, Lesson 1 · Video 7: DuPont Analysis"`). Built by scraping the live course structure (edX blocks API), it lets the tutor cite a lecture by a location a student can actually find, instead of the synthetic `lecture_<week>_<seq>` file stem. Consumed by `_source_label()` in [`rag/retrieve.py`](../rag/README.md); a validation test asserts every entry resolves to a real lecture file.
 - `rag_index/` (optional) holds the **built RAG index** for the course (`vectors.npy` + `chunks.jsonl` + `manifest.json`), produced by `python -m rag.ingest` and committed so deploys don't re-embed. See [`rag/README.md`](../rag/README.md).
 
 ## Available courses
@@ -57,7 +59,7 @@ curriculum/
 | `mathematics_for_cs/` | Mathematics for Computer Science (MIT 6.1200J) | 10 — discrete-math problem sets |
 | `physics_iii_vibrations_and_waves/` | Physics III: Vibrations and Waves (MIT 8.03SC) | 10 — vibrations/waves problem sets |
 | `meaning_of_life/` | The Meaning of Life (MIT 21A.157) | 3 — vignette + investigation + final reflection papers |
-| `supply_chain_design/` | MIT CTL.SC2x Supply Chain Design | 3 graded exercises — network/facility-location and production-planning assignments; also ships 8 ungraded `practices/` and 156 `lectures/` transcripts |
+| `supply_chain_design/` | MIT CTL.SC2x Supply Chain Design | 8 graded exercises (weeks 1–10, non-consecutive) — network/facility-location, production-planning, and supply-chain-finance assignments; also ships 8 ungraded `practices/`, 160 `lectures/` transcripts, and a `lecture_index.json` of real Week/Lesson/Video citations |
 
 The four courses beyond Cities and Climate Change (Development Planning, Mathematics for CS, Physics III, and Meaning of Life) were added in June 2026 as **cross-course test contexts** (two STEM, two humanities) to check how the tutor behaves across subjects. `supply_chain_design/` (MIT CTL.SC2x) was added later as a lecture-heavy course. Only `cities_and_climate_change/` is deployed to real students.
 

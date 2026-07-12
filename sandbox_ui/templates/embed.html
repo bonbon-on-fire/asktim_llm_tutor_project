@@ -19,7 +19,33 @@
                 <span>Edit context</span>
             </button>
 {% endblock %}
-{% block modals_extra %}    <div class="modal-overlay" id="create-modal" role="dialog" aria-modal="true"
+{% block modals_extra %}    <!-- Tester notice: a centered modal (dark backdrop) shown on load telling
+         testers a new tutor prompt is live, so odd tutor behavior reads as
+         expected. Sandbox-only; shown once per session. -->
+    <div class="modal-overlay" id="testing-modal" role="dialog" aria-modal="true"
+         aria-labelledby="testing-modal-title" hidden>
+        <div class="modal-card">
+            <button type="button" id="testing-modal-close" class="testing-modal-close" aria-label="Dismiss">&times;</button>
+            <h2 id="testing-modal-title" class="modal-title">Testing AskTIM Beta+</h2>
+            <p class="modal-body">We're testing a new AskTIM version. If AskTIM acts a little weird, that's expected. Thanks for helping test, we really appreciate it!</p>
+        </div>
+    </div>
+    <script>
+      (function () {
+        var m = document.getElementById("testing-modal");
+        if (!m) return;
+        var dismissed = false;
+        try { dismissed = sessionStorage.getItem("testingNoticeDismissed") === "1"; } catch (e) {}
+        if (!dismissed) m.hidden = false;
+        var x = document.getElementById("testing-modal-close");
+        if (x) x.addEventListener("click", function () {
+          m.hidden = true;
+          try { sessionStorage.setItem("testingNoticeDismissed", "1"); } catch (e) {}
+        });
+      })();
+    </script>
+
+    <div class="modal-overlay" id="create-modal" role="dialog" aria-modal="true"
          aria-labelledby="create-modal-title" hidden>
         <div class="modal-card">
             <h2 id="create-modal-title" class="modal-title">Configure the context settings</h2>

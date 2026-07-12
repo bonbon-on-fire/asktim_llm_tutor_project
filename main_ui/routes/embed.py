@@ -68,7 +68,8 @@ def embed():
     # rejected below, since validation runs on the resolved value either way.
     course = request.args.get("course") or DEFAULT_COURSE
     exercise = request.args.get("exercise") or DEFAULT_EXERCISE
-    tutor = request.args.get("tutor") or DEFAULT_TUTOR
+    # Production is locked to a single tutor prompt: ignore any ?tutor= override.
+    tutor = DEFAULT_TUTOR
 
     err = validate_course(course)
     if err:

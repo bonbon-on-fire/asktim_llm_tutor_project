@@ -141,7 +141,9 @@ def chat():
 
     course = src.get("course")
     exercise = src.get("exercise")
-    tutor = src.get("tutor") or DEFAULT_TUTOR
+    # Production is locked to a single tutor prompt: ignore any client-supplied
+    # tutor and always use DEFAULT_TUTOR.
+    tutor = DEFAULT_TUTOR
 
     err = validate_course(course)
     if err:

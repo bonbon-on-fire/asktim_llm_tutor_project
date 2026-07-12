@@ -163,31 +163,49 @@ def generate(
     min_passage_chars: int,
     min_lecture_chars: int,
     seed: int,
+    have_counts: dict[str, int] | None = None,
+    per_lecture: int | None = None,
+    id_offset: int = 0,
+    cover_all: bool = False,
 ) -> list[dict]:
-    """Generate candidate ground-truth rows; see module docstring for the flow."""
+    """Generate candidate ground-truth rows; see module docstring for the flow.
+
+    *have_counts* maps a lecture stem to how many questions it already has; each
+    lecture is topped up only to *per_lecture* (default *questions_per_passage*),
+    so ``--append`` re-runs fill deficits without clobbering reviewed rows or
+    overshooting the target. New row ids continue from *id_offset*. When
+    *cover_all* is set, every still-short lecture is covered and *num_passages*
+    is ignored.
+    """
     rng = random.Random(seed)
+    have_counts = have_counts or {}
+    target = per_lecture if per_lecture is not None else questions_per_passage
     lectures = _lecture_files(course, min_lecture_chars)
     if not lectures:
         raise SystemExit(f"No lectures >= {min_lecture_chars} chars for {course}")
 
-    # Spread across distinct lectures first (one passage per file) for topic coverage.
+    # One passage per still-short lecture; ask only for the deficit so we hit the
+    # target exactly and never overshoot.
     rng.shuffle(lectures)
-    picks: list[tuple[Path, tuple[int, int, str]]] = []
+    picks: list[tuple[Path, tuple[int, int, str], int]] = []
     for path in lectures:
+        needed = target - have_counts.get(path.stem, 0)
+        if needed <= 0:
+            continue  # already at/over target — leave it (protects reviewed rows)
         passages = _segment(path.read_text(encoding="utf-8"), target_chars, min_passage_chars)
         if passages:
-            picks.append((path, rng.choice(passages)))
-        if len(picks) >= num_passages:
+            picks.append((path, rng.choice(passages), needed))
+        if not cover_all and len(picks) >= num_passages:
             break
 
     model = ChatAnthropic(model=model_name, temperature=0.7, max_tokens=1024)
     rows: list[dict] = []
     seen_questions: set[str] = set()
     n = 0
-    for path, (start, end, slice_text) in picks:
+    for path, (start, end, slice_text), needed in picks:
         prompt = (
             f"Passage from lecture `{path.stem}` (produce up to "
-            f"{questions_per_passage} questions):\n\n{slice_text.strip()}"
+            f"{needed} questions):\n\n{slice_text.strip()}"
         )
         try:
             resp = model.invoke([SystemMessage(content=_SYSTEM), HumanMessage(content=prompt)])
@@ -195,7 +213,7 @@ def generate(
             print(f"  [skip] {path.stem}: {exc}")
             continue
         content = resp.content if isinstance(resp.content, str) else str(resp.content)
-        for item in _parse_json_array(content)[:questions_per_passage]:
+        for item in _parse_json_array(content)[:needed]:
             question = str(item.get("question", "")).strip()
             quote = str(item.get("quote", "")).strip()
             if not question or not quote:
@@ -212,7 +230,7 @@ def generate(
                 continue
             n += 1
             row = {
-                "id": f"{course[:4]}-{n:04d}",
+                "id": f"{course[:4]}-{id_offset + n:04d}",
                 "course": course,
                 "question": question,
                 "gold": [
@@ -246,9 +264,48 @@ def main() -> int:
     p.add_argument("--min-lecture-chars", type=int, default=1500)
     p.add_argument("--seed", type=int, default=13)
     p.add_argument("--out", default=None, help="Output JSONL (default: eval/rag_judge/ground_truth/<course>.jsonl)")
+    p.add_argument(
+        "--append",
+        action="store_true",
+        help="Merge into the existing JSONL: keep its rows, top up lectures below the "
+        "target, and continue the id sequence (preserves reviewed rows).",
+    )
+    p.add_argument(
+        "--per-lecture",
+        type=int,
+        default=None,
+        help="Target questions per lecture (default: --questions-per-passage). In "
+        "--append mode, lectures below this are topped up; those at/above are left.",
+    )
+    p.add_argument(
+        "--cover-all",
+        action="store_true",
+        help="Cover every still-short lecture, one passage each; ignores --num-passages.",
+    )
     args = p.parse_args()
 
-    rows = generate(
+    out_path = Path(args.out) if args.out else _REPO_ROOT / "eval" / "rag_judge" / "ground_truth" / f"{args.course}.jsonl"
+
+    from collections import Counter
+
+    existing: list[dict] = []
+    have_counts: dict[str, int] = {}
+    id_offset = 0
+    if args.append and out_path.exists():
+        existing = [json.loads(l) for l in out_path.open(encoding="utf-8") if l.strip()]
+        have_counts = dict(Counter(r["topic"] for r in existing))
+        # Continue ids after the highest existing numeric suffix (ids like "supp-0042").
+        id_offset = max(
+            (int(r["id"].rsplit("-", 1)[-1]) for r in existing if r.get("id")), default=0
+        )
+        target = args.per_lecture if args.per_lecture is not None else args.questions_per_passage
+        short = sum(1 for _, c in have_counts.items() if c < target)
+        print(
+            f"Append mode: {len(existing)} existing rows across {len(have_counts)} lectures; "
+            f"{short} below target {target}."
+        )
+
+    new_rows = generate(
         course=args.course,
         num_passages=args.num_passages,
         questions_per_passage=args.questions_per_passage,
@@ -257,9 +314,13 @@ def main() -> int:
         min_passage_chars=args.min_passage_chars,
         min_lecture_chars=args.min_lecture_chars,
         seed=args.seed,
+        have_counts=have_counts,
+        per_lecture=args.per_lecture,
+        id_offset=id_offset,
+        cover_all=args.cover_all,
     )
 
-    out_path = Path(args.out) if args.out else _REPO_ROOT / "eval" / "rag_judge" / "ground_truth" / f"{args.course}.jsonl"
+    rows = existing + new_rows
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8") as f:
         for row in rows:
@@ -268,13 +329,13 @@ def main() -> int:
     # Keep the human-readable Markdown companion in sync with the JSONL.
     md_path = render_file(out_path, args.course)
 
-    hits = [r for r in rows if r["flags"].get("gold_hit")]
+    hits = [r for r in new_rows if r["flags"].get("gold_hit")]
     topics = {r["topic"] for r in rows}
     print(
-        f"\nWrote {len(rows)} questions -> {out_path}\n"
+        f"\nWrote {len(new_rows)} new questions ({len(rows)} total) -> {out_path}\n"
         f"  rendered companion -> {md_path}\n"
-        f"  gold in top-k (baseline retrieval): {len(hits)}/{len(rows)}\n"
-        f"  distinct lectures covered: {len(topics)}"
+        f"  new-row gold in top-k (baseline retrieval): {len(hits)}/{len(new_rows)}\n"
+        f"  distinct lectures covered (total): {len(topics)}"
     )
     return 0
 

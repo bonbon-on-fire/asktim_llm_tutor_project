@@ -235,13 +235,42 @@ def parse_tutor_response(content: str) -> tuple[str | None, str | None]:
             continue
         try:
             data = json.loads(candidate, strict=False)
-            return (
-                data.get("pedagogical-reasoning"),
-                data.get("Student-facing-answer"),
-            )
+            answer = data.get("Student-facing-answer")
+            if isinstance(answer, str):
+                answer = _collapse_over_escaped_newlines(answer)
+            return (data.get("pedagogical-reasoning"), answer)
         except (json.JSONDecodeError, TypeError):
             continue
     return None, None
+
+
+def _collapse_over_escaped_newlines(s: str) -> str:
+    r"""Turn a literal backslash-n (from an over-escaped ``\\n``) back into a newline.
+
+    The tutor is told to double LaTeX backslashes so its JSON stays valid, and
+    sometimes over-applies that to newlines — emitting ``\\n`` where it means a
+    line break. That is valid JSON for a literal backslash-n, so ``json.loads``
+    yields the two visible chars ``\n`` instead of a newline and the student sees
+    a literal ``\n``. Collapse a backslash-n to a real newline UNLESS the ``n``
+    begins a LaTeX command (followed by a lowercase letter, e.g. ``\nu``, ``\ne``,
+    ``\nabla``) — the mirror of the heuristic in :func:`_repair_latex_json`.
+    """
+    out: list[str] = []
+    i = 0
+    n = len(s)
+    while i < n:
+        if (
+            s[i] == "\\"
+            and i + 1 < n
+            and s[i + 1] == "n"
+            and not (i + 2 < n and s[i + 2].islower())
+        ):
+            out.append("\n")
+            i += 2
+        else:
+            out.append(s[i])
+            i += 1
+    return "".join(out)
 
 
 def _is_hex4(s: str, j: int) -> bool:
@@ -613,6 +642,27 @@ class StudentAnswerExtractor:
             while self._pos < len(self._buffer):
                 ch = self._buffer[self._pos]
                 if self._escape:
+                    # Over-escaped newline: a decoded literal backslash ("\\")
+                    # immediately followed by "n" (not a LaTeX \n-command) means
+                    # the tutor doubled a newline escape. Emit a real newline so
+                    # the student doesn't see a literal "\n". Wait for the char
+                    # after "n" before deciding, so a chunk boundary can't force a
+                    # premature literal backslash.
+                    if ch == "\\":
+                        if self._pos + 1 >= len(self._buffer):
+                            return False  # might be "\\n"; wait for the next char
+                        if self._buffer[self._pos + 1] == "n":
+                            if self._pos + 2 >= len(self._buffer):
+                                return False  # need the char after "n" to decide
+                            if not self._buffer[self._pos + 2].islower():
+                                out.append("\n")
+                                self._pos += 2
+                                self._escape = False
+                                continue
+                        out.append("\\")
+                        self._pos += 1
+                        self._escape = False
+                        continue
                     mapped = self._ESCAPE_MAP.get(ch)
                     if mapped is not None:
                         out.append(mapped)

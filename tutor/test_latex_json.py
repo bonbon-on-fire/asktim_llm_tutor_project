@@ -62,3 +62,41 @@ def test_newline_escapes_stay_newlines_and_latex_survives():
     # LaTeX preserved for KaTeX
     assert "\\(x_{ij}\\)" in answer
     assert "\\sum_j x_{ij} \\le S_i" in answer
+
+
+# Over-escape bug: the model is told to double LaTeX backslashes for JSON validity
+# and over-applies it to newlines, emitting a doubled "\\n" where it means a line
+# break. That is valid JSON for a literal backslash-n, so json.loads yields the two
+# visible chars "\n" instead of a newline — and the student sees literal "\n\n".
+# In these Python sources, "\\\\n" is a doubled-backslash + n at runtime (the form
+# the model actually emits).
+
+
+def test_over_escaped_newlines_become_real_newlines():
+    raw = '{"pedagogical-reasoning":"r","Student-facing-answer":"A\\\\n\\\\nB"}'
+    _, answer = parse_tutor_response(raw)
+    assert answer == "A\n\nB"
+
+
+def test_collapse_leaves_latex_n_commands_intact():
+    # \\(\\nu\\) is doubled LaTeX — \nu must survive, not collapse to a newline.
+    raw = '{"pedagogical-reasoning":"r","Student-facing-answer":"rate \\\\(\\\\nu\\\\)"}'
+    _, answer = parse_tutor_response(raw)
+    assert answer == "rate \\(\\nu\\)"
+
+
+def test_stream_extractor_collapses_over_escaped_newlines():
+    ex = StudentAnswerExtractor()
+    visible = ex.feed(
+        '{"pedagogical-reasoning":"r","Student-facing-answer":"A\\\\n\\\\nB"}'
+    )
+    assert visible == "A\n\nB"
+
+
+def test_stream_extractor_collapses_newline_across_chunk_boundary():
+    # The char after the doubled "\\n" arrives only in the second chunk, so the
+    # extractor must wait to decide rather than emit a literal backslash.
+    ex = StudentAnswerExtractor()
+    first = ex.feed('{"pedagogical-reasoning":"r","Student-facing-answer":"A\\\\n')
+    second = ex.feed('B"}')
+    assert first + second == "A\nB"

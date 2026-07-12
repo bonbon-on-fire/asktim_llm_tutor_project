@@ -837,7 +837,7 @@
       : CREATE_STEPS;
   }
   const CUSTOM = "__custom__";
-  const DEFAULT_TUTOR = "tutor_07"; // preselected tutor prompt in the wizard
+  const DEFAULT_TUTOR = "tutor_06"; // preselected tutor prompt in the wizard
 
   async function fetchPreviewText(stepKey, value) {
     let url;

@@ -108,7 +108,7 @@ you either pick an existing built-in or paste your own custom text:
   The chosen kind is stored per conversation in `exercise_kind` (defaults to
   `exercise`)
 - **Tutor prompt** — a selectable dropdown restricted to the recent built-ins
-  **`tutor_05`, `tutor_06`, `tutor_07`** (defaults to `tutor_07`), so testers can
+  **`tutor_05`, `tutor_06`, `tutor_07`** (defaults to `tutor_06`), so testers can
   compare prompt versions. No custom-prompt option here. The allow-list lives in
   `routes/_validation.py` (`_SELECTABLE_TUTORS`); production `main_ui` stays on the
   stable `tutor_05`

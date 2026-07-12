@@ -340,6 +340,10 @@ def get_messages_for_conversation(
 ) -> list[dict]:
     """Return chronologically ordered messages as JSON-friendly dicts.
 
+    Each entry carries ``id`` and ``rating`` (the per-message thumb, -1/0/1) so
+    the client can restore thumb state and target ``POST /api/message/<id>/rating``
+    when replaying history.
+
     ``pedagogical_reasoning`` (the tutor's hidden reasoning) is included only
     when ``include_reasoning`` is set — sandbox_ui is a dev/TA tool where
     reviewers may inspect it (same policy as the database_ui review

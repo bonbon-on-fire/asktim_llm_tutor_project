@@ -15,7 +15,8 @@ Success response: ``text/event-stream`` with these events, in order:
     data: {"text": "..."}\n\n
     ...
     event: done\n
-    data: {"conversation_id": "...", "reply": "...", "student_message_count": N}\n\n
+    data: {"conversation_id": "...", "reply": "...", "student_message_count": N,
+           "tutor_message_id": <int>}\n\n
 
 Mid-stream failure:
     event: error\n

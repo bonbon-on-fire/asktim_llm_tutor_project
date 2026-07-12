@@ -19,7 +19,12 @@ checklist in [`PLANNING.md`](PLANNING.md).
   DB unchanged and never crashes on sandbox-only columns. It currently maps
   `conversations`, `messages`, and `uploaded_images` only — the shared DB also
   now has `uploaded_files` (non-image attachments: CSV/XLSX/PDF/DOCX/TXT) and
-  `feedback` (1-5 star ratings) tables, but this viewer doesn't browse them yet.
+  `feedback` (conversation-level 1-5 star ratings, now dormant) tables, but this
+  viewer doesn't browse them yet.
+- `messages` now also carries a per-message `rating` column (int `-1`/`0`/`1`,
+  default `0`) — the student's thumbs up / down / none on each tutor reply, which
+  replaces the old conversation-level star feedback. The viewer doesn't surface it
+  yet.
 - No `create_all`, no migrations. The per-request session (`run_app.py`) always
   rolls back, never commits.
 - Every route is behind a shared-password gate (`auth.py`'s `init_auth`

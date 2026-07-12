@@ -65,10 +65,12 @@ class Message(MessageMixin, Base):
   `created_at`. Soft-identity proof-of-ownership, not real auth.
 - `MessageMixin` — `messages` table: `id` (bigint/int PK), `conversation_id`
   (FK → `conversations.id`, cascade delete), `turn`, `role` (checked
-  `student`/`tutor`), `content`, `pedagogical_reasoning` (nullable),
-  `created_at`; declares the `conversation`, `uploaded_images`, and
-  `uploaded_files` relationships plus the role check-constraint and an index
-  on `conversation_id`.
+  `student`/`tutor`), `content`, `pedagogical_reasoning` (nullable), `rating`
+  (int, default `0`, checked `rating IN (-1, 0, 1)` — per-message thumbs
+  down/none/up; legacy rows stored as NULL are treated as `0`), `created_at`;
+  declares the `conversation`, `uploaded_images`, and `uploaded_files`
+  relationships plus the role and rating check-constraints and an index on
+  `conversation_id`.
 - `UploadedImageMixin` — `uploaded_images` table: `id`, `message_id` (FK,
   cascade delete), `filename`, `mime_type`, `size_bytes`, `data` (raw bytes,
   stored in-DB since Railway's filesystem is ephemeral), `created_at`; declares
@@ -83,6 +85,9 @@ class Message(MessageMixin, Base):
   count when the rating was given), `rating` (int, checked `1 <= rating <= 5`),
   `created_at`; index on `conversation_id`. One row per submitted 1–5 star
   tutor rating; not linked to `Message`, only to the conversation as a whole.
+  **Now dormant** — per-message thumbs up/down (the `messages.rating` column
+  above) replaced the 1–5 star toast; the table/mixin is kept but no longer
+  written to by the UIs.
 - `_utcnow()` — tz-aware UTC `datetime` default; `_BigIntPk` — `BigInteger`
   that falls back to `Integer` on SQLite (so autoincrement works locally).
 
@@ -147,7 +152,15 @@ attachments (csv/tsv/xlsx/pdf/docx/txt):
   summary keys
 - `get_messages_for_conversation(db, conversation, *, models, include_reasoning=False)`
   — `sandbox_ui` passes `include_reasoning=True` (dev/TA tool), `main_ui`
-  excludes the tutor's hidden reasoning (student-facing policy)
+  excludes the tutor's hidden reasoning (student-facing policy). Each message
+  dict now also carries `id` and `rating` (so the client can render and toggle
+  the thumbs control)
+- `get_message_for_viewer(db, message_id, session_id, username, *, models)` —
+  return a `Message` only if the viewer owns its parent conversation (by
+  `session_id` or matching `username`), else `None`; mirrors
+  `get_conversation_for_viewer` so rating routes 404 without leaking existence
+- `set_message_rating(db, message, rating)` — set a message's `rating` to
+  `-1`/`0`/`1` (used by the message-rating blueprint)
 - `backfill_username_for_session(db, session_id, username, *, models)` —
   retroactively links a session's anonymous conversations to a username
 - internal: `_images_by_message`, `_summarize_conversation`, `_next_turn_number`
@@ -160,10 +173,10 @@ attachments (csv/tsv/xlsx/pdf/docx/txt):
 - `verify_password(student, password)` — bcrypt check, `False` (not a raise)
   on malformed stored hash
 
-**`services/feedback.py`**
+**`services/feedback.py`** (dormant — superseded by per-message ratings)
 - `record_feedback(db, *, conversation_id, turn, rating, feedback_cls)` —
   insert one `Feedback` row (rating 1..5, `turn` nullable) linked to a
-  conversation
+  conversation. Kept but no longer called now that the star toast UI is gone.
 
 ### `tutor_bridge.py`
 
@@ -205,6 +218,29 @@ Public API:
   `{"type": "delta", "text": ...}` events, then one terminal
   `{"type": "done", "reply": ..., "reasoning": ..., "retrieved": ...}`
 
+**System-message assembly** — `_build_system_message(system_prompt, model, retrieved_context)`
+folds the turn's retrieved RAG material (the `RetrievedContext.text`) into the
+tutor's system message, appended **after** the static cacheable prompt so the
+static prefix still auto-caches. The retrieved block is introduced by the
+module constant `RETRIEVED_CONTEXT_HEADER`. Provider-specific shape: for
+Anthropic it's a second, **uncached** text block placed after the
+`cache_control` breakpoint; for OpenAI it's appended to the system string (the
+static prefix still auto-caches). It rides in the **system** message — not a
+"developer" message — because LangChain has no developer role, and never on the
+student's turn (which stays clean).
+
+### What the tutor receives each turn
+
+Each turn the tutor gets a **system** message (the tutor prompt with the
+assignment context baked in — the exercise, the tutor-only answer key, and, in
+RAG mode, the retrieved course-material block appended after the cacheable
+prompt), then the **conversation history** (prior student messages and the
+tutor's student-facing answers, with the hidden pedagogical-reasoning
+stripped), then the **current student turn** (their text plus any attached
+figures/uploaded files). It never sees its own past pedagogical-reasoning, and
+retrieved material arrives as background in the system channel rather than as
+the student's words.
+
 `main_ui` uses `TutorBridge` directly; `sandbox_ui` subclasses it.
 
 ### `web/static_blueprint.py`
@@ -233,14 +269,14 @@ database_ui). Exposes a browser global (and CommonJS export for
   `DOMPurify.sanitize` before use. Each app's `chat.js` calls this from
   `setMessageContent` instead of a bare `marked.parse`/`textContent` render.
 
-### `web/blueprints/identity.py`, `web/blueprints/history.py`, `web/blueprints/feedback.py`
+### `web/blueprints/identity.py`, `web/blueprints/history.py`, `web/blueprints/feedback.py`, `web/blueprints/message_rating.py`
 
 Blueprint factories, byte-identical in body across `main_ui`/`sandbox_ui`
 apart from import paths — each app injects its own `cookies` /
 `services.conversation` / `services.students` / `services.images` /
 `services.feedback` modules (passed as plain modules, not classes) so the
 shared route bodies stay app-agnostic. Blueprint names are preserved as
-`identity`, `history`, and `feedback`.
+`identity`, `history`, `feedback`, and `message_rating`.
 
 **`make_identity_bp(*, cookies, conversation, students)`** → blueprint named
 `identity`:
@@ -260,7 +296,8 @@ shared route bodies stay app-agnostic. Blueprint names are preserved as
   ownership check)
 
 **`make_feedback_bp(*, cookies, conversation, feedback)`** → blueprint named
-`feedback`:
+`feedback` (**dormant** — kept registered but the star toast UI that drove it
+was removed; superseded by `make_message_rating_bp`):
 - `POST /api/feedback` — record a 1..5 star rating for a conversation owned
   by the current session (`session_id` or matching `username`). Body:
   `{conversation_id, rating, turn?}`. 400 on a missing/malformed
@@ -268,12 +305,21 @@ shared route bodies stay app-agnostic. Blueprint names are preserved as
   (`wrong_session`) if the conversation isn't found or isn't owned by the
   caller.
 
+**`make_message_rating_bp(*, cookies, conversation)`** → blueprint named
+`message_rating`:
+- `POST /api/message/<id>/rating` — set the thumbs rating on a single message.
+  Body: `{"rating": -1|0|1}`. Owner-only (via `get_message_for_viewer`, so a
+  message the caller doesn't own 404s) and **tutor-only** (only the tutor's
+  messages are rateable). Persists via `set_message_rating`.
+
 ### `templates/base_chat.html`
 
 The shared page shell (head, sidebar, message list, composer, image-attach
-modal, username/password modal, a mid-conversation star-rating feedback
-toast, and the KaTeX + `katex-marked.js` script/link tags) that each app's
-own `embed.html` extends: `{% extends "base_chat.html" %}`. Exposes override
+modal, username/password modal, and the KaTeX + `katex-marked.js` script/link
+tags) that each app's own `embed.html` extends: `{% extends "base_chat.html" %}`.
+The old star `feedback-toast` markup has been removed; per-message thumbs
+up/down controls take its place, and `chat.css` swaps the old star styles for
+`.msg-rating`/`.rating-btn`. Exposes override
 blocks (`title`, `head_extra`, `banner`, `beta_tag`, `sidebar_cta_extra`,
 `modals_extra`, `chat_js_src`) for per-app customization.
 
@@ -343,8 +389,9 @@ math rendering and that `$...$` currency stays literal.
 
 - `main_ui` and `sandbox_ui` call `ui_core.app_factory.create_app(...)` from
   their `run_app.py` to build the Flask app, register `identity`/`history`/
-  `feedback` blueprints built via `make_identity_bp`/`make_history_bp`/
-  `make_feedback_bp`, extend `base_chat.html` in their own `embed.html`,
+  `feedback`/`message_rating` blueprints built via `make_identity_bp`/
+  `make_history_bp`/`make_feedback_bp`/`make_message_rating_bp` (the
+  `feedback` one now dormant), extend `base_chat.html` in their own `embed.html`,
   declare their own `Conversation` class (`Message`/`Student`/`UploadedImage`/
   `UploadedFile`/`Feedback` via the shared mixins), build their engine with
   `build_engine(url, sqlite_fk=True)`, and keep thin

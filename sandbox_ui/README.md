@@ -25,7 +25,7 @@ Branding is deliberately distinct from production: the accent is teal-blue
 - **Per-course lecture transcripts** — a course's `lectures/*.txt` fold into the tutor context via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py). In the Sandbox this is a dedicated **Lectures** wizard step, toggleable per conversation (and skipped in RAG mode, where lecture material is retrieved instead)
 - **Student image uploads** — PNG/JPEG attachments (paperclip, drag-and-drop, or clipboard paste, up to 5 × 10 MB) sent to the tutor as multimodal input, stored in `uploaded_images.data` (BYTEA) and re-served via `GET /api/image/<id>`. Same shared validation ([`utils/uploads.py`](../utils/uploads.py)) and frontend as `main_ui`, including the click-to-enlarge image lightbox (staged or sent; backdrop / × / Esc to close)
 - **Student document uploads** — CSV, TSV, XLSX, PDF, DOCX, and TXT attachments (same paperclip/drag-and-drop composer, shown as a file-icon chip rather than a thumbnail) are validated and text-extracted server-side ([`utils/attachments.py`](../utils/attachments.py); per-file cap 5 MB, per-message extracted-text budget 15,000 chars) and stored in the `uploaded_files` table. Images and documents share one combined cap of 3 attachments per message. The extracted text is re-injected into the tutor's history on every later turn so attachments stay "readable" across the conversation, even though the student-facing bubble just shows the filename
-- **Mid-conversation feedback** — a small non-blocking star-rating toast (1-5 stars) pops above the composer once per conversation, after the student's 3rd turn (and after the email modal closes), and posts to `POST /api/feedback`
+- **Per-message feedback** — a thumbs up / thumbs down control renders below each tutor message (outside the bubble); clicking sets the message's rating to +1 or -1, and clicking the active thumb again clears it back to 0. Each thumb posts to `POST /api/message/<id>/rating` and the state is persisted on the `messages.rating` column so it replays with history. (This replaces the older non-blocking 1-5 star toast, which has been removed; the dormant `POST /api/feedback` route remains but is no longer used)
 
 ## Architecture: a thin shell over `ui_core`
 
@@ -93,7 +93,15 @@ you either pick an existing built-in or paste your own custom text:
   toggle (shown only for courses with a built RAG index); turning it on retrieves
   course/syllabus/lecture material per turn and **skips the Syllabus and Lectures
   steps**. The choice is stored per conversation in `context_mode`
-  (`rag`/`full_context`; `NULL` = resolve by default)
+  (`rag`/`full_context`; `NULL` = resolve by default). The retrieved material is
+  delivered to the tutor in its **system message** — appended after the static,
+  cacheable prompt rather than riding on the student's chat turn. LangChain
+  (langchain-core 1.4.0) has no "developer" message role, so the system message
+  is the fallback; caching still holds because the static prompt keeps its
+  `cache_control` breakpoint (Anthropic) / stays the auto-cached prefix (OpenAI)
+  and the per-turn RAG block sits after it (uncached, re-read each turn). The
+  shared assembly lives in `ui_core.tutor_bridge` (`_build_system_message()` /
+  `RETRIEVED_CONTEXT_HEADER`)
 - **Exercise** — an exercise (`exercises/exercise_<NN>.txt`) or a **practice
   problem** (`practices/practice_<NN>.txt`) for the chosen course, shown as
   separate "Exercises" and "Practice problems" groups, or custom exercise text.
@@ -167,7 +175,10 @@ schema matches `main_ui` plus the sandbox-only `conversations` columns —
 `course_enabled`, `syllabus_enabled`, `lectures_enabled`, `exercise_kind`,
 `context_mode`, and the `custom_*` columns that store one-off custom contexts,
 plus the sandbox-only `messages.retrieved_context` column (a JSON string of the
-RAG chunks retrieved for a tutor turn, `NULL` for non-RAG turns and legacy rows).
+RAG chunks retrieved for a tutor turn, `NULL` for non-RAG turns and legacy rows)
+and the `messages.rating` column (integer thumbs vote: `-1` down / `0` none /
+`1` up, default `0`, `CHECK (rating IN (-1,0,1))`; only tutor rows go non-zero,
+and legacy rows read back `NULL` and are treated as `0`).
 It also includes the shared `uploaded_files` table (student CSV/TSV/XLSX/PDF/
 DOCX/TXT attachments — bytes, `kind`, and extracted text) and `feedback` table
 (`conversation_id`, `turn`, `rating` 1-5, `created_at`); both are brand-new
@@ -182,8 +193,9 @@ database.
 > across model changes, `_reconcile_columns()` runs right after `create_all` on
 > boot and `ALTER TABLE ... ADD COLUMN`s any model column the existing table
 > lacks (nullable, idempotent, race-safe across gunicorn workers) — so a
-> new column like `uploaded_images.data` (BYTEA), `lectures_enabled`, or
-> `messages.retrieved_context` is picked up automatically without a manual reset. For the specific case of the
+> new column like `uploaded_images.data` (BYTEA), `lectures_enabled`,
+> `messages.retrieved_context`, or `messages.rating` is picked up automatically
+> without a manual reset. For the specific case of the
 > `uploaded_images.data` column on a very old DB, `python -m
 > sandbox_ui.db.reset_uploaded_images` also rebuilds just that table; the
 > analogous `python -m sandbox_ui.db.reset_uploaded_files` does the same for
@@ -219,12 +231,13 @@ database.
 
 Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
 `/api/identity[/check]`, `/api/history`, `/api/conversation/<uuid>`,
-`/api/image/<id>`, `/api/feedback`), plus:
+`/api/image/<id>`, `/api/feedback` — now dormant, see below), plus:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/context/options` | Courses (with their exercises, practice problems, and syllabus / lectures / RAG availability) and tutor prompts, for the Create-context wizard |
 | GET | `/api/context/preview` | Raw text of a built-in `course`/`exercise`/`practice`/`tutor`/`syllabus`/`lectures` (via `?kind=...`), so the wizard can show it read-only when an existing option is picked |
+| POST | `/api/message/<id>/rating` | Sets the thumbs vote on a tutor message. JSON body `{"rating": -1\|0\|1}`; verifies the message's conversation is owned by the current session and that the message role is `tutor`; returns `{"ok": true, "rating": N}`, or `400` (bad rating) / `403` (not owned or not a tutor row). Wired from the shared `ui_core.web.blueprints.message_rating.make_message_rating_bp` |
 
 `POST /api/chat` accepts JSON (text only) or `multipart/form-data` (text +
 `images` files under the `images` field and non-image attachments — CSV, TSV,
@@ -242,16 +255,25 @@ fields for a new conversation:
 - `"course_custom"`, `"exercise_custom"`, `"tutor_custom"`, `"syllabus_custom"`, `"lectures_custom"` (optional) — one-off custom context used verbatim in place of the on-disk file
 
 `POST /api/feedback` records a 1-5 star rating against a `conversation_id`
-(and optional `turn` number), for the mid-conversation feedback toast; 400 if
-`rating`/`conversation_id` are missing or malformed, 403 if the conversation
-isn't owned by the current session.
+(and optional `turn` number); 400 if `rating`/`conversation_id` are missing or
+malformed, 403 if the conversation isn't owned by the current session. This
+route (and the `feedback` table behind it) is now **dormant** — it backed the
+old mid-conversation star toast, which was replaced by the per-message thumbs
+(`POST /api/message/<id>/rating`); the route and table are kept but no longer
+exercised by the UI.
 
-Since the Sandbox is a dev/TA tool, the terminal `done` SSE event also carries
-the tutor's otherwise-hidden `pedagogical_reasoning` so it can be inspected per
-message, plus `retrieved` — the RAG chunks pulled for that turn
-(`[{source, score, chars, text}]`, or `null` outside RAG mode). The same
-`retrieved` records are persisted on the tutor message row (see
-[Database](#database)).
+`GET /api/conversation/<uuid>` now includes `id` and `rating` on each message in
+its payload, so replaying a past conversation restores the thumbs-up/down state
+of each tutor message.
+
+The terminal `done` SSE event from `POST /api/chat` also carries
+`"tutor_message_id": <int>` — the row id of the just-streamed tutor message — so
+the client can immediately rate it via `POST /api/message/<id>/rating`. Since the
+Sandbox is a dev/TA tool, `done` additionally carries the tutor's otherwise-hidden
+`pedagogical_reasoning` so it can be inspected per message, plus `retrieved` — the
+RAG chunks pulled for that turn (`[{source, score, chars, text}]`, or `null`
+outside RAG mode). The same `retrieved` records are persisted on the tutor
+message row (see [Database](#database)).
 
 ## Deployment
 

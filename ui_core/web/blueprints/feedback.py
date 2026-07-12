@@ -4,6 +4,12 @@ A student can rate the conversation from a small mid-session notification. The
 rating is scoped to the conversation (not a single message); ``turn`` records
 where in the conversation it was given.
 
+**Dormant** — the mid-session 1..5 star toast was replaced by per-message
+thumbs up/down (``POST /api/message/<id>/rating``; see
+:mod:`ui_core.web.blueprints.message_rating`). This route is still registered
+and functional but is no longer called by any UI; kept for now rather than
+removed.
+
 Shared body for ``main_ui`` and ``sandbox_ui`` (byte-identical apart from import
 paths) — built as a factory so each app injects its own ``cookies`` /
 ``services.conversation`` / ``services.feedback`` modules (mirrors

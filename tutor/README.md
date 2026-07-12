@@ -59,6 +59,10 @@ If a course ships `curriculum/<course>/lectures/*.txt`, those transcripts are fo
    ```
 4. `parse_tutor_response()` extracts both fields. The student-facing answer is returned; reasoning is available for debugging.
 
+### What the tutor receives each turn
+
+Every turn the tutor is sent three things: a **SYSTEM message** (the tutor prompt plus assignment context — the exercise, the tutor-only answer key, and, in RAG mode, the per-turn retrieved course material appended **after** the static cacheable prompt); the **conversation history** (prior student turns plus the tutor's student-facing answers, with the hidden `pedagogical-reasoning` field stripped); and the **current student turn** (its text plus any figures / uploaded files). The tutor never re-receives its own past reasoning. Retrieved RAG material rides in the system message (not prepended to the student turn) so the constant prefix stays cache-eligible; LangChain has no "developer" role, so the system message is used.
+
 ## Function reference (`run_tutor.py`)
 
 Everything in `__init__.py`'s `__all__` is public; the rest is internal (leading
@@ -81,17 +85,19 @@ underscore) but documented here for maintainers.
 ### Graph & tutor turn
 
 - **`TutorState`** — the LangGraph state: a `TypedDict` with `messages` accumulated
-  via `operator.add`.
+  via `operator.add`, plus an optional `retrieved_context` string carried through
+  the graph path so per-turn RAG material can be folded into the system message.
 - **`create_tutor_graph(system_prompt, *, provider="gpt", figures=None)`** — build
   and compile the single-node graph. Its `tutor_node` sanitizes messages, runs the
   non-student-like guard, optionally attaches `figures` to the latest student turn,
   caches the conversation prefix (Anthropic only), invokes the model, and
   normalizes the reply. `figures` is bound at build time
   (constant per conversation), so each turn re-sends exactly one copy.
-- **`get_tutor_reply(messages, assignment_override=None, *, graph=None, prompt_name="tutor_01", figures=None)`**
+- **`get_tutor_reply(messages, assignment_override=None, *, graph=None, prompt_name="tutor_01", figures=None, retrieved_context="")`**
   — main non-streaming entry point. Builds its own graph when none is passed;
   returns `(updated_messages, student_facing_answer_text)`. `figures` applies only
-  when it builds its own graph.
+  when it builds its own graph. `retrieved_context`, when given, is appended to the
+  system message after the cacheable prompt (RAG mode).
 - **`_looks_non_student_like(text)`** — heuristic that flags empty input or
   tutor/system artifacts (e.g. `pedagogical-reasoning`, `<assignment>`, ` ```json `)
   — i.e. prompt-injection or malformed input.
@@ -142,10 +148,15 @@ there (and for any other provider). Caching is billing/latency-only and never
 changes the model's output; Anthropic silently ignores a marker below its
 minimum cacheable length, so both are always safe.
 
-- **`_build_system_message(system_prompt, model)`** — build the tutor
-  `SystemMessage`. On `ChatAnthropic` the prompt is wrapped in a text block marked
-  `cache_control: {"type": "ephemeral"}` so the large, constant assignment-context
-  prefix is served from cache on later turns; otherwise it stays a plain string.
+- **`_build_system_message(system_prompt, model, retrieved_context="")`** — build
+  the tutor `SystemMessage`. On `ChatAnthropic` the prompt is wrapped in a text block
+  marked `cache_control: {"type": "ephemeral"}` so the large, constant
+  assignment-context prefix is served from cache on later turns; otherwise it stays a
+  plain string. When `retrieved_context` is given (RAG mode), it is appended **after**
+  the cacheable prompt block as its own segment, so the per-turn retrieved material
+  reaches the tutor via the system message without disturbing the cache prefix.
+  (LangChain has no "developer" role, so the system message carries it.) Shared with
+  the UI path via `ui_core.tutor_bridge._build_system_message`.
 - **`_cache_last_message(messages, model)`** — mark the newest turn's last content
   block with an ephemeral cache breakpoint. Prompt caching is a prefix match, so
   caching the latest turn writes the whole conversation-so-far to cache and the
@@ -167,9 +178,11 @@ minimum cacheable length, so both are always safe.
   backslashes survive intact while streaming. `feed(chunk)` returns newly-visible
   chars; `.found_answer` and `.buffer` expose progress and the full raw text for the
   final parse.
-- **`stream_tutor_reply(messages, *, model, system_prompt)`** — generator that
-  yields visible answer chunks, then a final `("__done__", full_raw_json)` tuple so
-  the caller can recover the hidden reasoning via `parse_tutor_response`. Bypasses
+- **`stream_tutor_reply(messages, *, model, system_prompt, retrieved_context="")`**
+  — generator that yields visible answer chunks, then a final
+  `("__done__", full_raw_json)` tuple so the caller can recover the hidden reasoning
+  via `parse_tutor_response`. `retrieved_context`, when given, is folded into the
+  system message after the cacheable prompt (RAG mode). Bypasses
   the graph to use `model.stream(...)`; mirrors the non-student-like guard; falls
   back to emitting the parsed answer if the incremental extractor never locates the
   field.

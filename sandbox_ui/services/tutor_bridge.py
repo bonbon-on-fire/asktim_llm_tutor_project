@@ -374,7 +374,7 @@ def get_tutor_reply(
     Args:
         course: course slug under ``curriculum/`` (e.g. ``cities_and_climate_change``)
         exercise: exercise number, non-padded (e.g. ``"4"``)
-        tutor: tutor prompt stem (e.g. ``"tutor_05"``)
+        tutor: tutor prompt stem (e.g. ``"tutor_06"``)
         history: prior conversation as ``[{"role": "student"|"tutor", "content": str}, ...]``
         new_student_message: the latest student turn to respond to
         include_syllabus: whether to fold the course syllabus into context

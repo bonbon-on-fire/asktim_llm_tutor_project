@@ -189,9 +189,10 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   text into a full system prompt via `tutor.run_tutor.load_system_prompt`
 - `retrieved_context(course, query, **ctx)` — per-turn RAG retrieval, returned as
   a `RetrievedContext(text, records)` dataclass: `.text` is the formatted block
-  prepended to the student message, `.records` is `[{source, score, chars, text}]`
-  (what RAG pulled, for persistence/inspection). Empty by default (sandbox's RAG
-  mode fills it in)
+  folded into the tutor's **system message** (after the cacheable prompt, so
+  caching still hits), never onto the student's turn; `.records` is
+  `[{source, score, chars, text}]` (what RAG pulled, for persistence/inspection).
+  Empty by default (sandbox's RAG mode fills it in)
 - `turn_attachments(course, exercise, images, **ctx)` — curriculum figures (via
   `utils.figures.discover_figures`) + uploaded images to attach to the latest
   student turn; `None` when there's nothing to attach

@@ -94,10 +94,15 @@ def load_system_prompt(
 # LangGraph state and graph
 # ---------------------------------------------------------------------------
 
-class TutorState(TypedDict):
-    """LangGraph state carrying the accumulated conversation message list."""
+class TutorState(TypedDict, total=False):
+    """LangGraph state: the accumulated message list plus this turn's RAG context.
+
+    ``retrieved_context`` (optional) is the per-turn RAG grounding folded into the
+    system message by ``tutor_node``; absent/empty outside RAG mode.
+    """
 
     messages: Annotated[list, operator.add]
+    retrieved_context: str
 
 
 def _looks_non_student_like(text: str) -> bool:
@@ -178,7 +183,9 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt", figures: li
     def tutor_node(state: TutorState) -> dict:
         """Generate one tutor turn from current conversation state."""
 
-        messages = [_build_system_message(system_prompt, model)]
+        messages = [
+            _build_system_message(system_prompt, model, state.get("retrieved_context", ""))
+        ]
         state_messages = state.get("messages") or []
         for msg in state_messages:
             messages.append(_sanitize_message_content(msg))
@@ -450,7 +457,9 @@ def _sanitize_message_content(msg: BaseMessage) -> BaseMessage:
     return HumanMessage(content=safe)
 
 
-def _build_system_message(system_prompt: str, model) -> SystemMessage:
+def _build_system_message(
+    system_prompt: str, model, retrieved_context: str = ""
+) -> SystemMessage:
     """Build the tutor system message, prompt-cached on Anthropic.
 
     The system prompt (assignment context: about + course/syllabus/lectures +
@@ -463,12 +472,26 @@ def _build_system_message(system_prompt: str, model) -> SystemMessage:
     as-is there (and for any other provider). Marking is billing/latency-only —
     it never changes the model's output. Anthropic silently ignores the marker
     when the prompt is under its minimum cacheable length, so this is always safe.
+
+    ``retrieved_context`` is this turn's RAG grounding (empty outside RAG mode).
+    It's delivered here, in the tutor's instruction channel, rather than glued
+    onto the student's turn — but it MUST land AFTER the static, cacheable prompt
+    so caching still hits on the unchanging prefix and only the fresh RAG is
+    re-read each turn. On Anthropic that means a SECOND, uncached block after the
+    cache_control breakpoint; on OpenAI it's appended to the string, keeping the
+    static part as the (auto-cached) prefix.
     """
     text = _sanitize_text_for_transport(system_prompt)
+    rag = _sanitize_text_for_transport(retrieved_context) if retrieved_context else ""
     if isinstance(model, ChatAnthropic):
-        return SystemMessage(
-            content=[{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
-        )
+        blocks: list = [
+            {"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}
+        ]
+        if rag:
+            blocks.append({"type": "text", "text": rag})
+        return SystemMessage(content=blocks)
+    if rag:
+        text = f"{text}\n\n{rag}"
     return SystemMessage(content=text)
 
 
@@ -509,6 +532,7 @@ def get_tutor_reply(
     graph=None,
     prompt_name: str = "tutor_01",
     figures: list | None = None,
+    retrieved_context: str = "",
 ) -> tuple[list, str]:
     """
     Invoke the tutor with the given conversation history.
@@ -517,11 +541,14 @@ def get_tutor_reply(
 
     *figures* is only used when this function builds its own graph; when a
     pre-built *graph* is supplied, bind figures via :func:`create_tutor_graph`.
+
+    *retrieved_context* is this turn's RAG grounding; it rides in the graph state
+    and ``tutor_node`` folds it into the system message (empty outside RAG mode).
     """
     if graph is None:
         system_prompt = load_system_prompt(prompt_name, assignment_override)
         graph = create_tutor_graph(system_prompt, figures=figures)
-    result = graph.invoke({"messages": messages})
+    result = graph.invoke({"messages": messages, "retrieved_context": retrieved_context})
     out_messages = result["messages"]
     last = out_messages[-1] if out_messages else None
     if isinstance(last, AIMessage):
@@ -713,6 +740,7 @@ def stream_tutor_reply(
     *,
     model,
     system_prompt: str,
+    retrieved_context: str = "",
 ):
     """Yield visible answer chunks, then a final ``("__done__", full_json)`` tuple.
 
@@ -720,12 +748,15 @@ def stream_tutor_reply(
     Mirrors the non-student-like guard from ``tutor_node`` so a malformed
     incoming message gets the canned reply (delivered as a single delta).
 
+    *retrieved_context* is this turn's RAG grounding, folded into the system
+    message (after the cacheable prompt) rather than onto the student's turn.
+
     Yields:
         ``str`` for each batch of visible chars to emit to the client.
         Finally ``("__done__", full_raw_json)`` so callers can run
         :func:`parse_tutor_response` to recover the hidden reasoning.
     """
-    safe_messages = [_build_system_message(system_prompt, model)]
+    safe_messages = [_build_system_message(system_prompt, model, retrieved_context)]
     for msg in messages:
         safe_messages.append(_sanitize_message_content(msg))
 

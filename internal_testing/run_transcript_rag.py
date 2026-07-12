@@ -4,8 +4,8 @@ Unlike ``internal_testing.run_transcript`` — which bakes the full course.txt +
 *entire* lecture transcripts into the tutor's system prompt — this runner drives
 the tutor in **RAG mode**: the tutor's base prompt carries only the exercise, and
 the relevant lecture chunks are retrieved per student turn (``rag.retrieve``) and
-sent as their own reference message ahead of that turn, mirroring the deployed
-``sandbox_ui`` behaviour (``services/tutor_bridge.py`` with ``context_mode="rag"``).
+folded into the tutor's system message (after the cacheable prompt), mirroring the
+deployed ``sandbox_ui`` behaviour (``services/tutor_bridge.py`` with ``context_mode="rag"``).
 
 It also supports **practice problems** (``practices/practice_<NN>.txt``) as a
 first-class problem kind alongside graded exercises.
@@ -176,14 +176,17 @@ def _retrieved_context(course: str, query: str, max_week: int | None = None) -> 
         return RetrievedContext()
 
 
-def _tutor_reply_with_retry(tutor_messages: list, tutor_graph, rebuild):
+def _tutor_reply_with_retry(tutor_messages: list, tutor_graph, rebuild, retrieved_context=""):
     """Call the tutor, retrying transient failures (rate limits, payload parse)
     with linear backoff. Rebuilds the graph between attempts in case client
-    state is corrupted."""
+    state is corrupted. *retrieved_context* is this turn's RAG grounding, folded
+    into the system message by the tutor graph."""
     last_error: Exception | None = None
     for attempt in range(1, _TUTOR_CALL_MAX_RETRIES + 1):
         try:
-            return upstream_get_tutor_reply(tutor_messages, graph=tutor_graph)
+            return upstream_get_tutor_reply(
+                tutor_messages, graph=tutor_graph, retrieved_context=retrieved_context
+            )
         except Exception as error:  # noqa: BLE001
             last_error = error
             if attempt < _TUTOR_CALL_MAX_RETRIES:
@@ -241,19 +244,16 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
             else str(student_message.content)
         )
 
-        # RAG: retrieve relevant chunks for this student turn. They ride on their
-        # own reference message ahead of the student's actual message (matching the
-        # deployed ui_core.tutor_bridge separation), so the student's words stay
-        # clean. ``rc.records`` captures what was retrieved (source/score/text) for
-        # the transcript.
+        # RAG: retrieve relevant chunks for this student turn. They're folded into
+        # the tutor's system message (matching the deployed ui_core.tutor_bridge),
+        # not onto the student's turn — so the student's words stay clean and stale
+        # RAG doesn't accumulate in the growing history. ``rc.records`` captures what
+        # was retrieved (source/score/text) for the transcript.
         rc = _retrieved_context(config.course, student_text, max_week)
-        if rc.text:
-            tutor_messages.append(
-                HumanMessage(content=f"{RETRIEVED_CONTEXT_HEADER}\n\n{rc.text}")
-            )
+        rag_block = f"{RETRIEVED_CONTEXT_HEADER}\n\n{rc.text}" if rc.text else ""
         tutor_messages.append(HumanMessage(content=student_text))
         tutor_messages, tutor_text = _tutor_reply_with_retry(
-            tutor_messages, tutor_graph, _build_graph
+            tutor_messages, tutor_graph, _build_graph, retrieved_context=rag_block
         )
 
         tutor_reasoning = ""

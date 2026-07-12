@@ -55,6 +55,9 @@ class _Recorder:
         """Initialize empty capture lists for the get and stream upstream calls."""
         self.get_calls: list[list] = []
         self.stream_calls: list[list] = []
+        # Per-call retrieved_context (RAG grounding) passed alongside the messages.
+        self.get_rag: list[str] = []
+        self.stream_rag: list[str] = []
 
 
 def _install_stubs(module, recorder: _Recorder, canned_raw: str) -> dict:
@@ -82,16 +85,20 @@ def _install_stubs(module, recorder: _Recorder, canned_raw: str) -> dict:
         """Return a synthetic system prompt echoing *tutor* and *assignment_override*."""
         return f"SYSTEM[{tutor}]::{assignment_override}"
 
-    def fake_upstream_get_tutor_reply(messages, graph=None):
-        """Record *messages* and return the canned AIMessage plus its parsed answer."""
+    def fake_upstream_get_tutor_reply(messages, graph=None, retrieved_context=""):
+        """Record *messages* + *retrieved_context* and return the canned reply."""
         recorder.get_calls.append(list(messages))
+        recorder.get_rag.append(retrieved_context)
         out = [AIMessage(content=canned_raw)]
         _, answer = tb.parse_tutor_response(canned_raw)
         return out, (answer or "")
 
-    def fake_upstream_stream_tutor_reply(messages, model=None, system_prompt=None):
-        """Record *messages* and yield two text deltas then the canned ``__done__`` tuple."""
+    def fake_upstream_stream_tutor_reply(
+        messages, model=None, system_prompt=None, retrieved_context=""
+    ):
+        """Record *messages* + *retrieved_context*, then yield deltas + ``__done__``."""
         recorder.stream_calls.append(list(messages))
+        recorder.stream_rag.append(retrieved_context)
         yield "Hello "
         yield "world"
         yield ("__done__", canned_raw)
@@ -196,8 +203,8 @@ def main() -> int:
         )
 
         # ---------------------------------------------------------------
-        # SandboxTutorBridge: in "rag" mode the retrieved context is its OWN
-        # message before a clean student turn (not glued onto it).
+        # SandboxTutorBridge: in "rag" mode the retrieved context is routed to
+        # the SYSTEM channel (retrieved_context arg), never onto a user turn.
         # ---------------------------------------------------------------
         sbx = SandboxTutorBridge()
         # Stub retrieved_context so no real RAG/embedding call happens.
@@ -216,25 +223,19 @@ def main() -> int:
             context_mode="rag",
         )
         rag_messages = recorder.get_calls[-1]
+        rag_ctx = recorder.get_rag[-1]
         _check(
-            "sandbox rag mode: separate context message + student turn (2 total)",
-            len(rag_messages) == 2,
-            len(rag_messages),
+            "sandbox rag mode: single clean student message (RAG not on a user turn)",
+            len(rag_messages) == 1 and _text_of(rag_messages[-1].content) == "Explain X",
+            rag_messages,
         )
         _check(
-            "sandbox rag mode: context is its own message, framed as reference",
-            bool(rag_messages)
-            and _text_of(rag_messages[0].content).startswith("Course reference for this turn")
-            and "RAG_BLOCK" in _text_of(rag_messages[0].content),
-            rag_messages[0].content if rag_messages else None,
-        )
-        _check(
-            "sandbox rag mode: student turn is clean (no RAG block, no wrapper)",
-            _text_of(rag_messages[-1].content) == "Explain X",
-            rag_messages[-1].content,
+            "sandbox rag mode: retrieved context routed to the system channel",
+            isinstance(rag_ctx, str) and "RAG_BLOCK" in rag_ctx,
+            rag_ctx,
         )
 
-        # Streaming path mirrors the same separation.
+        # Streaming path mirrors the same routing.
         list(
             sbx.stream_tutor_reply(
                 course="cities_and_climate_change",
@@ -246,11 +247,13 @@ def main() -> int:
             )
         )
         rag_stream_messages = recorder.stream_calls[-1]
+        rag_stream_ctx = recorder.stream_rag[-1]
         _check(
-            "sandbox rag stream: separate context message + clean student turn",
-            len(rag_stream_messages) == 2
-            and _text_of(rag_stream_messages[-1].content) == "Explain X",
-            rag_stream_messages,
+            "sandbox rag stream: clean student turn + RAG in the system channel",
+            len(rag_stream_messages) == 1
+            and _text_of(rag_stream_messages[-1].content) == "Explain X"
+            and "RAG_BLOCK" in rag_stream_ctx,
+            (rag_stream_messages, rag_stream_ctx),
         )
 
         sbx.get_tutor_reply(
@@ -262,11 +265,13 @@ def main() -> int:
             context_mode="exercise_only",
         )
         non_rag_messages = recorder.get_calls[-1]
+        non_rag_ctx = recorder.get_rag[-1]
         _check(
-            "sandbox non-rag mode: single clean student message, no context message",
+            "sandbox non-rag mode: single clean student message, no retrieved context",
             len(non_rag_messages) == 1
-            and _text_of(non_rag_messages[-1].content) == "Explain X",
-            non_rag_messages,
+            and _text_of(non_rag_messages[-1].content) == "Explain X"
+            and not non_rag_ctx,
+            (non_rag_messages, non_rag_ctx),
         )
     finally:
         _restore_stubs(tb, originals)

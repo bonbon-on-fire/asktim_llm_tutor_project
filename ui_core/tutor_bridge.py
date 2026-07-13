@@ -324,6 +324,18 @@ class TutorBridge:
             self._stream_cache[key] = (model, system_prompt)
         return model, system_prompt
 
+    def _enforce_rag_available(self, ctx: dict, rc: RetrievedContext) -> None:
+        """Fail closed: in rag mode, refuse the turn when retrieval produced nothing.
+
+        Covers no-index, zero-chunks, and retrieval-threw (all collapse to empty
+        records). Raised before any model call so no tutor reply is produced,
+        streamed, or persisted; the chat route turns it into an ``event: error`` frame.
+        """
+        if ctx.get("context_mode") == "rag" and not rc.records:
+            raise RagUnavailableError(
+                "RAG is unavailable for this turn (no retrievable course material)."
+            )
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -359,6 +371,7 @@ class TutorBridge:
         graph = self._get_or_build_graph(tutor, course, exercise, **ctx)
         messages = self._history_to_langchain(history)
         rc = self.retrieved_context(course, new_student_message, exercise=exercise, **ctx)
+        self._enforce_rag_available(ctx, rc)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
         messages.append(self._new_student_message(new_student_message, attachments))
 
@@ -403,6 +416,7 @@ class TutorBridge:
         )
         messages = self._history_to_langchain(history)
         rc = self.retrieved_context(course, new_student_message, exercise=exercise, **ctx)
+        self._enforce_rag_available(ctx, rc)
         attachments = self.turn_attachments(course, exercise, images, **ctx)
         messages.append(self._new_student_message(new_student_message, attachments))
 

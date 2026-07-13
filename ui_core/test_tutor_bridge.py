@@ -218,6 +218,63 @@ def main() -> int:
             recorder.get_rag[-1],
         )
 
+        # Fail closed: rag mode with empty retrieval must raise BEFORE any model call.
+        bridge.retrieved_context = lambda course, query, **ctx: tb.RetrievedContext()
+        before_get = len(recorder.get_calls)
+        raised = False
+        try:
+            bridge.get_tutor_reply(
+                course="cities_and_climate_change",
+                exercise="04",
+                tutor="tutor_05",
+                history=[],
+                new_student_message="What now?",
+            )
+        except tb.RagUnavailableError:
+            raised = True
+        _check("rag + empty retrieval raises RagUnavailableError (non-streaming)", raised)
+        _check(
+            "no upstream model call was made on refusal (non-streaming)",
+            len(recorder.get_calls) == before_get,
+            (before_get, len(recorder.get_calls)),
+        )
+
+        before_stream = len(recorder.stream_calls)
+        raised_stream = False
+        try:
+            list(
+                bridge.stream_tutor_reply(
+                    course="cities_and_climate_change",
+                    exercise="04",
+                    tutor="tutor_05",
+                    history=[],
+                    new_student_message="What now?",
+                )
+            )
+        except tb.RagUnavailableError:
+            raised_stream = True
+        _check("rag + empty retrieval raises RagUnavailableError (streaming)", raised_stream)
+        _check(
+            "no upstream model call was made on refusal (streaming)",
+            len(recorder.stream_calls) == before_stream,
+            (before_stream, len(recorder.stream_calls)),
+        )
+
+        # Non-rag mode with empty retrieval must NOT raise.
+        ok_mode = True
+        try:
+            bridge.get_tutor_reply(
+                course="cities_and_climate_change",
+                exercise="04",
+                tutor="tutor_05",
+                history=[],
+                new_student_message="What now?",
+                context_mode="exercise_only",
+            )
+        except tb.RagUnavailableError:
+            ok_mode = False
+        _check("exercise_only mode with empty retrieval does NOT raise", ok_mode)
+
         # ---------------------------------------------------------------
         # SandboxTutorBridge: in "rag" mode the retrieved context is routed to
         # the SYSTEM channel (retrieved_context arg), never onto a user turn.
@@ -225,7 +282,9 @@ def main() -> int:
         sbx = SandboxTutorBridge()
         # Stub retrieved_context so no real RAG/embedding call happens.
         sbx.retrieved_context = (
-            lambda course, query, **ctx: tb.RetrievedContext(text="RAG_BLOCK")
+            lambda course, query, **ctx: tb.RetrievedContext(
+                text="RAG_BLOCK", records=[{"source": "local:course", "score": 1.0, "chars": 3, "text": "abc"}]
+            )
             if ctx.get("context_mode") == "rag"
             else tb.RetrievedContext()
         )

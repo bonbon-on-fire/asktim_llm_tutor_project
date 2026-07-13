@@ -19,15 +19,11 @@ call signatures `sandbox_ui/routes/*` import.
 
 from __future__ import annotations
 
-import os
 import re
 from pathlib import Path
 
-from rag.retrieve import format_context
-from rag.retrieve import has_index as rag_has_index
-from rag.retrieve import retrieve_scored, to_records
 from tutor.run_tutor import load_system_prompt
-from ui_core.tutor_bridge import RetrievedContext, TutorBridge
+from ui_core.tutor_bridge import TutorBridge, _resolve_context_mode
 from utils.curriculum import (
     SOLUTION_CONTEXT_LABEL,
     exercise_path,
@@ -41,39 +37,6 @@ from utils.lectures import load_lecture_transcripts
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
-
-# Context modes (Phase 11). Override per-deploy with the TUTOR_CONTEXT_MODE env
-# var; otherwise default to "rag" when a course has a built index, else fall
-# back to the historical "full_context" behavior.
-_VALID_CONTEXT_MODES = {"rag", "full_context", "exercise_only"}
-
-
-def _resolve_context_mode(
-    course: str, has_custom: bool, requested: str | None = None
-) -> str:
-    """Decide how much course material to put in the prompt for this call.
-
-    Precedence:
-    - ``requested`` (the per-conversation choice from the Sandbox RAG toggle)
-      wins when valid — it's the most specific signal.
-    - else ``TUTOR_CONTEXT_MODE`` env (deploy-wide override).
-    - else default to ``rag`` when the course has a built index and there's no
-      one-off custom context, else ``full_context`` (historical behavior).
-
-    ``rag`` degrades to ``full_context`` if there's no index or custom context is
-    in play (a tester's typed-in course/exercise can't be retrieved).
-    """
-    requested = (requested or "").strip().lower()
-    env = os.environ.get("TUTOR_CONTEXT_MODE", "").strip().lower()
-    if requested in _VALID_CONTEXT_MODES:
-        mode = requested
-    elif env in _VALID_CONTEXT_MODES:
-        mode = env
-    else:
-        mode = "rag" if (not has_custom and course and rag_has_index(course)) else "full_context"
-    if mode == "rag" and (has_custom or not (course and rag_has_index(course))):
-        mode = "full_context"
-    return mode
 
 
 def build_assignment_text(
@@ -227,42 +190,6 @@ def _has_custom(
     )
 
 
-def _week_for_exercise(exercise) -> int | None:
-    """The course week (module) for the current problem, or None if not numeric.
-
-    exercise / practice numbers share the lecture week number, so a problem
-    numbered ``4`` caps retrieval at week 4. Custom / non-numeric exercises have
-    no week, so retrieval is left unscoped.
-    """
-    try:
-        return int(str(exercise).strip())
-    except (TypeError, ValueError):
-        return None
-
-
-def _retrieved_context(
-    course: str, mode: str, query: str, max_week: int | None = None
-) -> RetrievedContext:
-    """Retrieve course-material chunks for this turn (RAG mode only).
-
-    Returns the formatted prompt block *and* the per-chunk records
-    (``{source, score, chars, text}``) so the caller can both prepend the block
-    and persist what was retrieved. Retrieval runs once (one embedding + search).
-    When *max_week* is set, lecture/practice material from a later week is dropped
-    so the tutor never surfaces content the student hasn't reached.
-    """
-    if mode != "rag":
-        return RetrievedContext()
-    try:
-        scored = retrieve_scored(course, query, max_week=max_week)
-        chunks = [c for c, _ in scored]
-        return RetrievedContext(text=format_context(chunks, course), records=to_records(scored))
-    except Exception:
-        # Retrieval failing (e.g. embedding API hiccup) must not break the chat;
-        # degrade to no retrieved context for this turn.
-        return RetrievedContext()
-
-
 class SandboxTutorBridge(TutorBridge):
     """Adds sandbox_ui's RAG / custom-context / include-toggle behavior."""
 
@@ -321,15 +248,6 @@ class SandboxTutorBridge(TutorBridge):
         if custom_tutor_prompt is not None:
             return _render_custom_tutor_prompt(custom_tutor_prompt, assignment_text)
         return load_system_prompt(tutor, assignment_override=assignment_text)
-
-    def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
-        """Retrieve RAG context for the query when context_mode is "rag", else return empty context."""
-        return _retrieved_context(
-            course,
-            ctx.get("context_mode", "full_context"),
-            query,
-            _week_for_exercise(ctx.get("exercise")),
-        )
 
     def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):
         """Curriculum figures + uploads, with figures gated off for custom exercises.

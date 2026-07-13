@@ -167,10 +167,16 @@ def build_tutor_model(provider: str = "gpt"):
             api_key=_require_anthropic_api_key(),
             max_tokens=8192,
             thinking={"type": "disabled"},
+            # Emit token-usage metadata while streaming so the streaming chat path
+            # can be cost-accounted (default True on Anthropic; explicit for parity).
+            stream_usage=True,
         )
     return ChatOpenAI(
         model=os.environ.get("OPENAI_MODEL", "gpt-5.4"),
         api_key=_require_openai_api_key(),
+        # OpenAI omits usage from streams unless asked; on so streaming turns are
+        # cost-accounted like the non-streaming path.
+        stream_usage=True,
     )
 
 
@@ -783,8 +789,12 @@ def stream_tutor_reply(
 
     _cache_last_message(safe_messages, model)
     extractor = StudentAnswerExtractor()
+    # Accumulate the streamed chunks so we recover the turn's token-usage /
+    # provider metadata for cost accounting (AIMessageChunk supports +).
+    full_chunk = None
     try:
         for chunk in model.stream(safe_messages):
+            full_chunk = chunk if full_chunk is None else full_chunk + chunk
             piece = chunk.content if hasattr(chunk, "content") else str(chunk)
             if not isinstance(piece, str):
                 piece = str(piece)
@@ -795,14 +805,20 @@ def stream_tutor_reply(
         # If the stream blows up partway, the caller decides what to do; we
         # surface what we've accumulated so persistence isn't a total loss.
         raise
-    finally:
-        pass
 
     raw = extractor.buffer
-    # Normalize through _normalize_tutor_ai_message so downstream consumers
-    # always see the strict two-field JSON shape — same guarantee as the
-    # non-streaming path.
-    normalized = _normalize_tutor_ai_message(AIMessage(content=raw))
+    # Normalize through _normalize_tutor_ai_message so downstream consumers always
+    # see the strict two-field JSON shape — same guarantee as the non-streaming
+    # path. The reply text comes from the extractor buffer (authoritative); the
+    # token-usage / response metadata is carried over from the aggregated stream
+    # chunk so streaming turns are cost-accounted like non-streaming ones.
+    normalized = _normalize_tutor_ai_message(
+        AIMessage(
+            content=raw,
+            usage_metadata=getattr(full_chunk, "usage_metadata", None),
+            response_metadata=getattr(full_chunk, "response_metadata", None) or {},
+        )
+    )
     normalized_text = normalized.content if isinstance(normalized.content, str) else str(normalized.content)
 
     # Fallback: if our incremental extractor never found the answer field

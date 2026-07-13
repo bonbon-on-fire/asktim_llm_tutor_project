@@ -24,12 +24,22 @@ import os
 import re
 
 # $ / 1,000,000 tokens. Verified 2026-07 against published pricing:
+#   claude-sonnet-5   — Anthropic ($3 in / $15 out; cache read 0.1x, write 1.25x).
+#                       Intro pricing is $2/$10 through 2026-08-31 — set
+#                       PRICE_CLAUDE_SONNET_5_INPUT / _OUTPUT to use it. Sticker
+#                       rates here so estimates don't under-count after the intro.
 #   claude-sonnet-4-6 — Anthropic ($3 in / $15 out; cache read 0.1x, write 1.25x)
 #   gpt-5.4           — OpenAI ($2.50 in / $15 out; cached input $0.25)
 #   text-embedding-3-small — OpenAI ($0.02)
 _DEFAULT_RATES: dict[str, dict[str, float]] = {
     "text-embedding-3-small": {"input": 0.02, "output": 0.0},
     "gpt-5.4": {"input": 2.50, "output": 15.0, "cache_read": 0.25},
+    "claude-sonnet-5": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_read": 0.30,   # 0.1x input
+        "cache_write": 3.75,  # 1.25x input (5-minute ephemeral, the default)
+    },
     "claude-sonnet-4-6": {
         "input": 3.0,
         "output": 15.0,

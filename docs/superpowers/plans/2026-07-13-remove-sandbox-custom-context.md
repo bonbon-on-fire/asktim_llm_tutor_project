@@ -40,11 +40,11 @@ In `chat.js` `renderCreateStep()` (~896-1194):
 - Delete the `create-custom` textarea creation block (lines ~1008-1012: `const ta = document.createElement("textarea"); ta.className = "create-custom"; … createStepBody.appendChild(ta);`) and any code that shows/hides it or writes `customValue`/preview text into it. Remove the `customValue`/`placeholder` locals if they become unused.
 - Keep the built-in `<select>` (`buildSelect`), the course-description toggle (`create-course-desc-toggle`, ~1017-1035), and the RAG toggle (~1014-1038).
 
-- [ ] **Step 2: Remove the tutor step and the `CUSTOM` sentinel + preview fetch**
+- [ ] **Step 2: Keep the (locked) tutor step; remove the `CUSTOM` sentinel + preview fetch**
 
-- In the step list (`CREATE_STEPS`/`activeSteps()`, ~822-838), remove `"tutor"` so the wizard has no tutor step (tutor is locked to `tutor_06`). Remove the `else if (step === "tutor")` branch (~954-962) in `renderCreateStep()`.
-- Delete `fetchPreviewText` (~842-869) and every call to it (it only ever populated the custom textarea).
-- Delete the `CUSTOM` sentinel constant (~839) once no longer referenced.
+- **KEEP the tutor step.** It was just reworked into a disabled dropdown locked to `tutor_06` with a lock icon (`LOCKED_TUTOR`, `LOCK_ICON_SVG`, `sel.disabled = true`, `currentValue = LOCKED_TUTOR`). Leave all of that intact — the tutor step lists all prompts display-only and has no custom-prompt option to strip. Do NOT touch `LOCKED_TUTOR`/`LOCK_ICON_SVG` or the `step === "tutor"` rendering.
+- Delete `fetchPreviewText` (~844-871) and every call to it (it only ever populated the custom textarea; the tutor step does not use it).
+- Delete the `CUSTOM` sentinel constant (~839) once it is no longer referenced by the course/exercise/syllabus/lectures steps (from Step 1).
 
 - [ ] **Step 3: Remove custom mapping from `finishCreate()` and the send payload + config defaults**
 
@@ -54,7 +54,7 @@ In `chat.js` `renderCreateStep()` (~896-1194):
 
 - [ ] **Step 4: Remove dead CSS**
 
-In `sandbox_ui/static/css/sandbox-extra.css`, delete the now-unused `.create-custom` (and its `:focus`, `:read-only`) rules, plus the already-dead `.context-field`/`.context-label`/`.context-checkbox` (+children)/`.lock-icon`/`.context-checkbox input:disabled + span` rules. KEEP `.create-step-body`, `.create-actions`(+`-right`), `.context-select`(+`:focus`/`:disabled`), `.rag-toggle`, and everything outside the wizard.
+In `sandbox_ui/static/css/sandbox-extra.css`, delete the now-unused `.create-custom` (and its `:focus`, `:read-only`) rules, plus the already-dead `.context-field`/`.context-label`/`.context-checkbox` (+children)/`.context-checkbox input:disabled + span` rules. **KEEP `.lock-icon`** — it is now live (the locked tutor step's lock icon uses it). Also KEEP `.create-step-body`, `.create-actions`(+`-right`), `.context-select`(+`:focus`/`:disabled`), `.rag-toggle`, and everything outside the wizard. Grep `chat.js`/`embed.html` for each class before deleting it to confirm it is unreferenced.
 
 - [ ] **Step 5: Check the template**
 
@@ -70,7 +70,7 @@ Expected: no matches for `CUSTOM` sentinel usage, `create-custom`, `fetchPreview
 
 - [ ] **Step 7: Bump the chat.js cache-bust version**
 
-In `sandbox_ui/templates/embed.html`, the chat.js `<script>` uses `v='13'` (`{% block chat_js_src %}...v='13'...`). Increment it to `v='14'` so browsers fetch the new file.
+In `sandbox_ui/templates/embed.html`, the chat.js `<script>` now uses `v='14'` (bumped when the tutor lock landed). Since this task further changes chat.js, increment it to `v='15'` so browsers fetch the new file.
 
 - [ ] **Step 8: Commit**
 

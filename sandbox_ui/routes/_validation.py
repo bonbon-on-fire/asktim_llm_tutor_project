@@ -192,9 +192,10 @@ def course_has_rag(course) -> bool:
     return _rag_has_index(course)
 
 
-# Only these tutor prompts are offered in the sandbox wizard (in this order),
-# so testers can compare recent versions without exposing every experiment.
-_SELECTABLE_TUTORS = ("tutor_05", "tutor_06", "tutor_07")
+# Sandbox is locked to a single tutor prompt (tutor_06) — the wizard offers no
+# alternative and the routes ignore any client-supplied tutor. Kept as a tuple so
+# the picker/list plumbing is unchanged; widen this list to re-enable comparison.
+_SELECTABLE_TUTORS = ("tutor_06",)
 
 
 def list_tutors() -> list[str]:

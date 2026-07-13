@@ -107,11 +107,10 @@ you either pick an existing built-in or paste your own custom text:
   separate "Exercises" and "Practice problems" groups, or custom exercise text.
   The chosen kind is stored per conversation in `exercise_kind` (defaults to
   `exercise`)
-- **Tutor prompt** — a selectable dropdown restricted to the recent built-ins
-  **`tutor_05`, `tutor_06`, `tutor_07`** (defaults to `tutor_06`), so testers can
-  compare prompt versions. No custom-prompt option here. The allow-list lives in
-  `routes/_validation.py` (`_SELECTABLE_TUTORS`); production `main_ui` stays on the
-  stable `tutor_05`
+- **Tutor prompt** — **locked to `tutor_06`**. The wizard step offers no
+  alternative and the routes ignore any client-supplied `tutor` (mirrors
+  `main_ui`'s single-prompt lock). The lock lives in `routes/_validation.py`
+  (`_SELECTABLE_TUTORS = ("tutor_06",)`); widen that list to re-enable comparison
 - **Syllabus** — the course's `syllabus.txt`, none, or custom syllabus text
 - **Lectures** — the course's `lectures/*.txt` transcripts (concatenated), none,
   or custom lecture text. Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)
@@ -125,9 +124,8 @@ replays it with the same context.
 
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
 > wizard. It was removed in June 2026 because the Create-context wizard did
-> everything it did — and also let you change the tutor prompt and supply custom
-> text — so the two buttons were redundant. (The Tutor prompt step is selectable
-> among `tutor_05`/`tutor_06`/`tutor_07`; see above.)
+> everything it did — and also let you supply custom text — so the two buttons
+> were redundant. (The Tutor prompt step is now locked to `tutor_06`; see above.)
 
 ## Quick start
 
@@ -251,7 +249,7 @@ fields for a new conversation:
 - `"course_enabled": true|false` (defaults to `true`) — gates the course-description block
 - `"exercise_kind": "exercise"|"practice"` (defaults to `"exercise"`) — selects exercise or practice-problem variant
 - `"context_mode": "rag"|"full_context"` (optional) — per-conversation RAG toggle; omit to let the server resolve by default
-- `"tutor"` (optional) — defaults to the locked-in `tutor_06`; the Create-context wizard doesn't expose changing this, but the field is still accepted at the API level
+- `"tutor"` — **ignored**; the sandbox is locked to `tutor_06` server-side, so any supplied value is discarded
 - `"course_custom"`, `"exercise_custom"`, `"tutor_custom"`, `"syllabus_custom"`, `"lectures_custom"` (optional) — one-off custom context used verbatim in place of the on-disk file
 
 `POST /api/feedback` records a 1-5 star rating against a `conversation_id`

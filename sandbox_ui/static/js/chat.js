@@ -952,8 +952,8 @@
       customValue = d.custom;
       placeholder = "Paste or write the exercise…";
     } else if (step === "tutor") {
-      // Selectable, restricted to the built-ins the backend allows (tutor_05/06/07);
-      // no custom-prompt option here.
+      // Locked to the single tutor the backend allows (tutor_06); the backend
+      // returns just that one, so this step has no real choice. No custom-prompt option.
       options = contextOptions.tutors
         .map((t) => ({ value: t, label: tutorLabel(t) }))
         .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));

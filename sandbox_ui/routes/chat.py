@@ -143,7 +143,9 @@ def chat():
     exercise = src.get("exercise")
     raw_kind = src.get("exercise_kind")
     exercise_kind = "practice" if str(raw_kind).strip().lower() == "practice" else "exercise"
-    tutor = src.get("tutor") or DEFAULT_TUTOR
+    # Sandbox is locked to a single tutor prompt: ignore any client-supplied
+    # tutor and always use DEFAULT_TUTOR (mirrors main_ui).
+    tutor = DEFAULT_TUTOR
     # sandbox_ui context switch: syllabus defaults ON (matches main_ui) unless the
     # request explicitly turns it off. Only applies when creating a new convo;
     # existing conversations keep their stored flag. Multipart sends the flag as

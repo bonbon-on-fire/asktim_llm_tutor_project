@@ -3,19 +3,20 @@ set -e
 
 echo "[startup] Validating environment..."
 
-# Check required API keys.
-# TEMPORARY: accept OPENAI_KEY as an alias for OPENAI_API_KEY (Railway var is
-# currently named OPENAI_KEY). Export the canonical name so libraries that read
-# OPENAI_API_KEY directly (e.g. langchain's default env lookup) still work.
-if [ -z "${OPENAI_API_KEY:-}" ] && [ -n "${OPENAI_KEY:-}" ]; then
-    export OPENAI_API_KEY="$OPENAI_KEY"
-    echo "[startup] Using OPENAI_KEY as OPENAI_API_KEY (temporary alias)"
-fi
+# Check required API keys. Both providers are required: RAG query-embeddings
+# always use OpenAI (text-embedding-3-small) and the tutor may run on GPT, while
+# the Claude tutor (main_ui's default) needs Anthropic. This is an internal
+# project, so Railway sets the plain standard names per service.
 if [ -z "${OPENAI_API_KEY:-}" ]; then
-    echo "[error] OPENAI_API_KEY (or OPENAI_KEY) not set" >&2
+    echo "[error] OPENAI_API_KEY not set" >&2
     exit 1
 fi
 echo "[startup] ✓ OPENAI_API_KEY is set"
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+    echo "[error] ANTHROPIC_API_KEY not set" >&2
+    exit 1
+fi
+echo "[startup] ✓ ANTHROPIC_API_KEY is set"
 
 # Normalize Railway/Heroku-style Postgres URLs to the psycopg3 driver.
 # SQLAlchemy's bare postgresql:// scheme defaults to psycopg2, which is NOT

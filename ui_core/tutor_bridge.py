@@ -28,11 +28,13 @@ exercise, tutor, history, new_student_message)`` to a tutor reply.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from rag.retrieve import format_context, retrieve_scored, to_records
 from tutor.run_tutor import (
     build_tutor_model,
     create_tutor_graph,
@@ -75,6 +77,60 @@ class RetrievedContext:
 
     text: str = ""
     records: list[dict] = field(default_factory=list)
+
+
+class RagUnavailableError(RuntimeError):
+    """Raised when the turn is in ``rag`` mode but retrieval produced no records.
+
+    Covers all three no-RAG triggers uniformly (no index, zero chunks after
+    week-scoping, or retrieval raised and was swallowed by ``retrieved_context``).
+    The bridge raises this BEFORE any model call; the chat routes convert it to an
+    ``event: error`` SSE frame, which the frontend renders as the standard error
+    banner with optimistic-bubble rollback. No tutor reply is produced or persisted.
+    """
+
+
+# Context modes (Phase 11). ``rag`` is the default whenever a course has no custom
+# context; ``full_context`` bakes course-level material into the prompt; and
+# ``exercise_only`` omits it entirely. Override per-deploy with TUTOR_CONTEXT_MODE.
+_VALID_CONTEXT_MODES = {"rag", "full_context", "exercise_only"}
+
+
+def _resolve_context_mode(course: str, has_custom: bool, requested: str | None = None) -> str:
+    """Decide how much course material to put in the prompt for this call.
+
+    Precedence: explicit ``requested`` (valid) -> ``TUTOR_CONTEXT_MODE`` env ->
+    default ``rag`` whenever there's a course and no custom context, else
+    ``full_context``.
+
+    Degrade rule: ``rag`` degrades to ``full_context`` ONLY when ``has_custom`` (a
+    tester's pasted context can't be retrieved). A missing index does NOT degrade
+    here — the mode stays ``rag`` and the caller fails closed at retrieval time.
+    """
+    requested = (requested or "").strip().lower()
+    env = os.environ.get("TUTOR_CONTEXT_MODE", "").strip().lower()
+    if requested in _VALID_CONTEXT_MODES:
+        mode = requested
+    elif env in _VALID_CONTEXT_MODES:
+        mode = env
+    else:
+        mode = "rag" if (not has_custom and course) else "full_context"
+    if mode == "rag" and has_custom:
+        mode = "full_context"
+    return mode
+
+
+def _week_for_exercise(exercise) -> int | None:
+    """The course week for the current problem, or None if not numeric.
+
+    Exercise / practice numbers share the lecture week number, so a problem
+    numbered ``4`` caps retrieval at week 4. Custom / non-numeric exercises have no
+    week, so retrieval is left unscoped.
+    """
+    try:
+        return int(str(exercise).strip())
+    except (TypeError, ValueError):
+        return None
 
 
 class TutorBridge:

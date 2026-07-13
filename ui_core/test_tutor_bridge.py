@@ -11,6 +11,7 @@ Run with:
 from __future__ import annotations
 
 import json
+import os
 
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -30,6 +31,48 @@ def _check(name, cond, detail=""):
     else:
         _FAILED += 1
         print(f"  FAIL  {name}  {detail}")
+
+
+def _test_mode_resolution():
+    """Unit-test the lifted mode resolver and week helper (no I/O)."""
+    from ui_core.tutor_bridge import _resolve_context_mode, _week_for_exercise
+
+    prev = os.environ.pop("TUTOR_CONTEXT_MODE", None)
+    try:
+        _check(
+            "default is rag when course present and no custom",
+            _resolve_context_mode("some_course", has_custom=False) == "rag",
+        )
+        _check(
+            "no course -> full_context",
+            _resolve_context_mode("", has_custom=False) == "full_context",
+        )
+        _check(
+            "has_custom degrades rag -> full_context",
+            _resolve_context_mode("some_course", has_custom=True) == "full_context",
+        )
+        _check(
+            "explicit exercise_only wins",
+            _resolve_context_mode("some_course", has_custom=False, requested="exercise_only")
+            == "exercise_only",
+        )
+        os.environ["TUTOR_CONTEXT_MODE"] = "full_context"
+        _check(
+            "env override applies when no explicit request",
+            _resolve_context_mode("some_course", has_custom=False) == "full_context",
+        )
+        _check(
+            "explicit request beats env",
+            _resolve_context_mode("some_course", has_custom=False, requested="rag") == "rag",
+        )
+    finally:
+        os.environ.pop("TUTOR_CONTEXT_MODE", None)
+        if prev is not None:
+            os.environ["TUTOR_CONTEXT_MODE"] = prev
+
+    _check("numeric exercise -> week int", _week_for_exercise("4") == 4)
+    _check("non-numeric exercise -> None", _week_for_exercise("custom") is None)
+    _check("None exercise -> None", _week_for_exercise(None) is None)
 
 
 def _text_of(content):
@@ -119,6 +162,8 @@ def _restore_stubs(module, originals: dict) -> None:
 
 def main() -> int:
     """Run the offline bridge control-flow checks and return an exit code (1 if any failed)."""
+    _test_mode_resolution()
+
     canned_raw = json.dumps(
         {
             "pedagogical-reasoning": "because X",

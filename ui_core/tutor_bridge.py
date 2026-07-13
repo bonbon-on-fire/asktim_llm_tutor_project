@@ -155,29 +155,28 @@ class TutorBridge:
     # ------------------------------------------------------------------
 
     def prepare_ctx(self, course: str, **ctx) -> dict:
-        """Resolve/normalize the extra per-app kwargs before they're used.
+        """Resolve the per-call context mode and store it in ctx.
 
-        Called once at the top of :meth:`get_tutor_reply` /
-        :meth:`stream_tutor_reply`; the returned dict is threaded through
-        every other hook for this call. The base implementation has no extra
-        context to resolve.
+        The base bridge has no custom-context feature, so ``has_custom`` is always
+        False here; subclasses that add custom context override this.
         """
+        ctx["context_mode"] = _resolve_context_mode(
+            course, has_custom=False, requested=ctx.get("context_mode")
+        )
         return ctx
 
     def cache_key(self, tutor: str, course: str, exercise: str, **ctx):
         """Key for the graph/stream caches, or ``None`` to skip caching."""
-        return (tutor, course, exercise)
+        return (tutor, course, exercise, ctx.get("context_mode", "full_context"))
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
-        """Concatenate about_asktim.txt + course.txt + optional syllabus.txt + optional lecture transcripts + exercise_<NN>.txt.
+        """Concatenate about + (course/syllabus/lectures in full_context only) + exercise + solution key.
 
-        Mirrors `internal_testing/run_transcript.py:_build_assignment_text` but omits
-        the `Run configuration` block — chats are open-ended, no planned turn
-        count. The leading block describes the AskTIM deployment so the tutor
-        can coherently answer "what are you?" / "where am I?" questions; it
-        lives at `curriculum/about_asktim.txt` and is only read here so
-        `tutor/` and the bulk-transcript runners stay unaware of it.
+        In ``rag`` / ``exercise_only`` the course description, syllabus, and lecture
+        transcripts are dropped — reached via retrieval (``rag``) or omitted
+        (``exercise_only``). The exercise and tutor-only solution key are always kept.
         """
+        mode = ctx.get("context_mode", "full_context")
         course_dir = _CURRICULUM_DIR / course
         exercise_text = exercise_path(course, exercise).read_text(encoding="utf-8").strip()
 
@@ -187,17 +186,18 @@ class TutorBridge:
         if about_text:
             parts.append("About yourself:\n" + about_text)
 
-        course_path = course_dir / "course.txt"
-        if course_path.is_file():
-            parts.append("Course context:\n" + course_path.read_text(encoding="utf-8").strip())
+        if mode == "full_context":
+            course_path = course_dir / "course.txt"
+            if course_path.is_file():
+                parts.append("Course context:\n" + course_path.read_text(encoding="utf-8").strip())
 
-        syllabus_path = course_dir / "syllabus.txt"
-        if syllabus_path.is_file():
-            parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
+            syllabus_path = course_dir / "syllabus.txt"
+            if syllabus_path.is_file():
+                parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
 
-        lectures = load_lecture_transcripts(course)
-        if lectures:
-            parts.append("Lecture transcripts:\n" + lectures)
+            lectures = load_lecture_transcripts(course)
+            if lectures:
+                parts.append("Lecture transcripts:\n" + lectures)
 
         parts.append("Exercise:\n" + exercise_text)
 
@@ -214,8 +214,20 @@ class TutorBridge:
         return load_system_prompt(tutor, assignment_override=assignment_text)
 
     def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
-        """Per-turn RAG retrieval (prompt text + records). Empty by default."""
-        return RetrievedContext()
+        """Per-turn RAG retrieval (prompt text + records); empty outside rag mode.
+
+        In ``rag`` mode, embeds the raw student turn, runs a week-scoped search, and
+        returns the formatted block + records. Retrieval failing (e.g. no index or an
+        embedding hiccup) returns empty records — the caller fails closed on that.
+        """
+        if ctx.get("context_mode", "full_context") != "rag":
+            return RetrievedContext()
+        try:
+            scored = retrieve_scored(course, query, max_week=_week_for_exercise(ctx.get("exercise")))
+            chunks = [c for c, _ in scored]
+            return RetrievedContext(text=format_context(chunks, course), records=to_records(scored))
+        except Exception:
+            return RetrievedContext()
 
     def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):
         """Attachments for the latest student turn: curriculum figures + uploads.

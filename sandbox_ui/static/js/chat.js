@@ -837,7 +837,9 @@
       : CREATE_STEPS;
   }
   const CUSTOM = "__custom__";
-  const DEFAULT_TUTOR = "tutor_06"; // preselected tutor prompt in the wizard
+  const LOCKED_TUTOR = "tutor_06"; // the tutor prompt is locked to this in the wizard
+  const LOCK_ICON_SVG =
+    '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
 
   async function fetchPreviewText(stepKey, value) {
     let url;
@@ -899,7 +901,12 @@
     const step = steps[createStep];
     const stepLabelText =
       `Step ${createStep + 1} of ${steps.length}: ${STEP_LABELS[step]}`;
-    createStepLabel.textContent = stepLabelText;
+    if (step === "tutor") {
+      // Tutor prompt is locked to tutor_06 — show a small lock icon by the label.
+      createStepLabel.innerHTML = `${stepLabelText} ${LOCK_ICON_SVG}`;
+    } else {
+      createStepLabel.textContent = stepLabelText;
+    }
     createStepBody.innerHTML = "";
 
     let options = [];
@@ -952,12 +959,13 @@
       customValue = d.custom;
       placeholder = "Paste or write the exercise…";
     } else if (step === "tutor") {
-      // Locked to the single tutor the backend allows (tutor_06); the backend
-      // returns just that one, so this step has no real choice. No custom-prompt option.
+      // All tutor built-ins are listed for visibility, but the step is locked to
+      // tutor_06 (disabled dropdown + lock icon); testers can't pick another. No
+      // custom-prompt option here. The backend also ignores any client tutor.
       options = contextOptions.tutors
         .map((t) => ({ value: t, label: tutorLabel(t) }))
         .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
-      currentValue = createDraft.tutor.existing || DEFAULT_TUTOR;
+      currentValue = LOCKED_TUTOR; // locked — testers can't change the tutor prompt here
       customValue = "";
       placeholder = "";
     } else if (step === "lectures") {
@@ -1003,6 +1011,7 @@
     }
 
     const sel = buildSelect(options, currentValue);
+    if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_06
     createStepBody.appendChild(sel);
 
     const ta = document.createElement("textarea");
@@ -1217,7 +1226,7 @@
     createDraft = {
       course: { mode: "existing", existing: "supply_chain_design", custom: "", enabled: true },
       exercise: { mode: "existing", existing: "", custom: "", kind: "exercise" },
-      tutor: { mode: "existing", existing: DEFAULT_TUTOR, custom: "" },
+      tutor: { mode: "existing", existing: LOCKED_TUTOR, custom: "" },
       syllabus: { mode: "builtin", value: "", custom: "" },
       lectures: { mode: "builtin", value: "", custom: "" },
       // Always use RAG for course context (no user-facing toggle); auto-disabled

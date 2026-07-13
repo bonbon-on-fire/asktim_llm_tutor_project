@@ -107,10 +107,12 @@ you either pick an existing built-in or paste your own custom text:
   separate "Exercises" and "Practice problems" groups, or custom exercise text.
   The chosen kind is stored per conversation in `exercise_kind` (defaults to
   `exercise`)
-- **Tutor prompt** — **locked to `tutor_06`**. The wizard step offers no
-  alternative and the routes ignore any client-supplied `tutor` (mirrors
-  `main_ui`'s single-prompt lock). The lock lives in `routes/_validation.py`
-  (`_SELECTABLE_TUTORS = ("tutor_06",)`); widen that list to re-enable comparison
+- **Tutor prompt** — every built-in prompt is **listed for visibility**, but the
+  step is **locked to `tutor_06`** (the dropdown is disabled and shows a lock
+  icon) and the routes ignore any client-supplied `tutor` (mirrors `main_ui`'s
+  single-prompt lock). The dropdown is populated from `list_tutors()` in
+  `routes/_validation.py`; the locked value lives in `static/js/chat.js`
+  (`LOCKED_TUTOR`) and `DEFAULT_TUTOR` — change both to re-point the lock
 - **Syllabus** — the course's `syllabus.txt`, none, or custom syllabus text
 - **Lectures** — the course's `lectures/*.txt` transcripts (concatenated), none,
   or custom lecture text. Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)
@@ -125,7 +127,8 @@ replays it with the same context.
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
 > wizard. It was removed in June 2026 because the Create-context wizard did
 > everything it did — and also let you supply custom text — so the two buttons
-> were redundant. (The Tutor prompt step is now locked to `tutor_06`; see above.)
+> were redundant. (The Tutor prompt step lists all built-ins but is locked to
+> `tutor_06`; see above.)
 
 ## Quick start
 

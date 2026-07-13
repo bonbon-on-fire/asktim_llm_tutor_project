@@ -192,17 +192,16 @@ def course_has_rag(course) -> bool:
     return _rag_has_index(course)
 
 
-# Sandbox is locked to a single tutor prompt (tutor_06) — the wizard offers no
-# alternative and the routes ignore any client-supplied tutor. Kept as a tuple so
-# the picker/list plumbing is unchanged; widen this list to re-enable comparison.
-_SELECTABLE_TUTORS = ("tutor_06",)
-
-
 def list_tutors() -> list[str]:
-    """Selectable tutor prompt stems for the wizard (whitelist ∩ what's on disk)."""
+    """Sorted tutor prompt stems available under tutor/prompts/.
+
+    The wizard lists every built-in for visibility, but the Tutor prompt step is
+    locked to `tutor_06` (disabled dropdown) and the routes ignore any
+    client-supplied tutor, so the full list is display-only.
+    """
     if not _TUTOR_PROMPTS_DIR.is_dir():
         return []
-    return [t for t in _SELECTABLE_TUTORS if (_TUTOR_PROMPTS_DIR / f"{t}.txt").is_file()]
+    return sorted(p.stem for p in _TUTOR_PROMPTS_DIR.glob("*.txt"))
 
 
 def list_context_options() -> dict:

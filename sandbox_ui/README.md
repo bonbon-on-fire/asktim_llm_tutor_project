@@ -5,9 +5,9 @@
 Developer/TA **testing website** for the tutor. It mirrors the student-facing
 [`main_ui/`](../main_ui/README.md) chat experience — token-streamed replies,
 persistent cross-session history, username + password identity — but adds a
-**Create context** wizard so a tester can switch course, exercise, tutor prompt,
-and syllabus on the fly (picking a built-in or pasting custom text at each step),
-and runs against its **own separate database** so test chats never touch
+**Create context** wizard so a tester can switch course and exercise on the fly
+(picking from built-in options, with toggleable syllabus/lectures and a RAG mode
+selector), and runs against its **own separate database** so test chats never touch
 production data.
 
 Branding is deliberately distinct from production: the accent is teal-blue
@@ -20,8 +20,8 @@ Branding is deliberately distinct from production: the accent is teal-blue
 - Sanitized-markdown rendering of tutor replies (tables/lists/bold) — `marked` → `DOMPurify`, same `setMessageContent()` path as `main_ui`
 - Conversation / Message / Student tables; username + password identity (bcrypt), cross-browser history sidebar
 - The same tutor pipeline via `tutor.run_tutor` (through `services/tutor_bridge.py`)
-- **Paired solution as tutor-only reference** — when the current problem has a matching solution file, `build_assignment_text` injects it (via [`utils.curriculum.read_solution`](../utils/curriculum.py)) right after the exercise as a "correct answer & worked solution" block. It's deterministic (keyed by problem number), given to the tutor but **never** the student, and never retrieved via RAG. Skipped for custom exercise text and problems with no solution file yet
-- **Curriculum figures** auto-attached to the tutor — figures matching the exercise (`curriculum/<course>/figures/exercise_<NN>_*`) are sent as multimodal input on every turn via [`utils.figures.discover_figures`](../utils/figures.py). Skipped when the tester typed a one-off custom course/exercise in the Create-context wizard (no figures folder on disk)
+- **Paired solution as tutor-only reference** — when the current problem has a matching solution file, `build_assignment_text` injects it (via [`utils.curriculum.read_solution`](../utils/curriculum.py)) right after the exercise as a "correct answer & worked solution" block. It's deterministic (keyed by problem number), given to the tutor but **never** the student, and never retrieved via RAG. Skipped only for problems with no solution file yet
+- **Curriculum figures** auto-attached to the tutor — figures matching the exercise (`curriculum/<course>/figures/exercise_<NN>_*`) are sent as multimodal input on every turn via [`utils.figures.discover_figures`](../utils/figures.py)
 - **Per-course lecture transcripts** — a course's `lectures/*.txt` fold into the tutor context via [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py). In the Sandbox this is a dedicated **Lectures** wizard step, toggleable per conversation (and skipped in RAG mode, where lecture material is retrieved instead)
 - **Student image uploads** — PNG/JPEG attachments (paperclip, drag-and-drop, or clipboard paste, up to 5 × 10 MB) sent to the tutor as multimodal input, stored in `uploaded_images.data` (BYTEA) and re-served via `GET /api/image/<id>`. Same shared validation ([`utils/uploads.py`](../utils/uploads.py)) and frontend as `main_ui`, including the click-to-enlarge image lightbox (staged or sent; backdrop / × / Esc to close)
 - **Student document uploads** — CSV, TSV, XLSX, PDF, DOCX, and TXT attachments (same paperclip/drag-and-drop composer, shown as a file-icon chip rather than a thumbnail) are validated and text-extracted server-side ([`utils/attachments.py`](../utils/attachments.py); per-file cap 5 MB, per-message extracted-text budget 15,000 chars) and stored in the `uploaded_files` table. Images and documents share one combined cap of 3 attachments per message. The extracted text is re-injected into the tutor's history on every later turn so attachments stay "readable" across the conversation, even though the student-facing bubble just shows the filename
@@ -44,12 +44,12 @@ package, plus its own sandbox-specific additions on top:
   sandbox_ui's own model classes to the shared, app-agnostic logic in
   `ui_core.services.*`. `services/tutor_bridge.py` defines `SandboxTutorBridge`,
   a subclass of `ui_core.tutor_bridge.TutorBridge` that overrides its hooks
-  (`prepare_ctx`, `cache_key`, `build_assignment_text`, `build_system_prompt`,
-  `turn_attachments`) to add sandbox_ui's custom-context / include-toggle
-  behavior on top of the inherited RAG core. **Per-turn RAG is the default context mode** whenever a course has no custom context; when RAG retrieval yields no results (including a missing index), both apps fail closed with an error banner and `TUTOR_CONTEXT_MODE=full_context` is the escape hatch — see [`rag/README.md`](../rag/README.md#mandatory-rag-fail-closed).
-- `db/models.py` defines sandbox_ui's own `Conversation` (carrying its 10
-  sandbox-only columns — `exercise_kind`, the `*_enabled` toggles, `context_mode`,
-  and the `custom_*` snapshots) but pulls `Message`, `Student`, `UploadedImage`,
+  (`cache_key`, `build_assignment_text`) to inject sandbox_ui's include-toggle
+  and RAG-mode behavior; the other hooks (`prepare_ctx`, `build_system_prompt`,
+  `turn_attachments`) are inherited from the base. **Per-turn RAG is the default context mode** when selected via the wizard; when RAG retrieval yields no results (including a missing index), both apps fail closed with an error banner and `TUTOR_CONTEXT_MODE=full_context` is the escape hatch — see [`rag/README.md`](../rag/README.md#mandatory-rag-fail-closed).
+- `db/models.py` defines sandbox_ui's own `Conversation` (carrying its 5
+  sandbox-only columns — `exercise_kind`, `course_enabled`, `syllabus_enabled`,
+  `lectures_enabled`, and `context_mode`) but pulls `Message`, `Student`, `UploadedImage`,
   `UploadedFile`, and `Feedback` from the shared mixins in
   `ui_core.db.models_common`, since those tables are schema-identical across
   the web apps.
@@ -84,51 +84,46 @@ Both apps can run side by side.
 The solid-blue **Edit context** button (top of the sidebar, above "Log in")
 opens a step-by-step wizard — internally still called the "Create context"
 wizard in code/routes, since it also starts a fresh conversation. The steps
-are **Course → Exercise → Tutor prompt → Syllabus → Lectures**. At each step
-you either pick an existing built-in or paste your own custom text:
+are **Course → Exercise → Tutor prompt → Syllabus → Lectures**, each offering
+built-in options from the curriculum:
 
-- **Course** — any folder under `curriculum/`, **No course description** (keeps
-  the course for exercises/figures/RAG but drops its `course.txt` from context),
-  or custom course text. This step also hosts a **Use RAG for course context**
-  toggle (shown only for courses with a built RAG index); turning it on retrieves
-  course/syllabus/lecture material per turn and **skips the Syllabus and Lectures
-  steps**. The choice is stored per conversation in `context_mode`
-  (`rag`/`full_context`; `NULL` = resolve by default). The retrieved material is
-  delivered to the tutor in its **system message** — appended after the static,
-  cacheable prompt rather than riding on the student's chat turn. LangChain
-  (langchain-core 1.4.0) has no "developer" message role, so the system message
-  is the fallback; caching still holds because the static prompt keeps its
-  `cache_control` breakpoint (Anthropic) / stays the auto-cached prefix (OpenAI)
-  and the per-turn RAG block sits after it (uncached, re-read each turn). The
-  shared assembly lives in `ui_core.tutor_bridge` (`_build_system_message()` /
-  `RETRIEVED_CONTEXT_HEADER`)
+- **Course** — any folder under `curriculum/` or **No course description** (keeps
+  the course for exercises/figures/RAG but drops its `course.txt` from context).
+  This step also hosts a **Use RAG for course context** toggle (shown only for
+  courses with a built RAG index); turning it on retrieves course/syllabus/lecture
+  material per turn and **skips the Syllabus and Lectures steps**. The choice is
+  stored per conversation in `context_mode` (`rag`/`full_context`; `NULL` = resolve
+  by default). The retrieved material is delivered to the tutor in its **system
+  message** — appended after the static, cacheable prompt rather than riding on the
+  student's chat turn. LangChain (langchain-core 1.4.0) has no "developer" message
+  role, so the system message is the fallback; caching still holds because the static
+  prompt keeps its `cache_control` breakpoint (Anthropic) / stays the auto-cached
+  prefix (OpenAI) and the per-turn RAG block sits after it (uncached, re-read each
+  turn). The shared assembly lives in `ui_core.tutor_bridge` (`_build_system_message()`
+  / `RETRIEVED_CONTEXT_HEADER`)
 - **Exercise** — an exercise (`exercises/exercise_<NN>.txt`) or a **practice
   problem** (`practices/practice_<NN>.txt`) for the chosen course, shown as
-  separate "Exercises" and "Practice problems" groups, or custom exercise text.
-  The chosen kind is stored per conversation in `exercise_kind` (defaults to
-  `exercise`)
+  separate "Exercises" and "Practice problems" groups. The chosen kind is stored
+  per conversation in `exercise_kind` (defaults to `exercise`)
 - **Tutor prompt** — every built-in prompt is **listed for visibility**, but the
   step is **locked to `tutor_06`** (the dropdown is disabled and shows a lock
   icon) and the routes ignore any client-supplied `tutor` (mirrors `main_ui`'s
   single-prompt lock). The dropdown is populated from `list_tutors()` in
   `routes/_validation.py`; the locked value lives in `static/js/chat.js`
   (`LOCKED_TUTOR`) and `DEFAULT_TUTOR` — change both to re-point the lock
-- **Syllabus** — the course's `syllabus.txt`, none, or custom syllabus text
-- **Lectures** — the course's `lectures/*.txt` transcripts (concatenated), none,
-  or custom lecture text. Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)
+- **Syllabus** — the course's `syllabus.txt` or none
+- **Lectures** — the course's `lectures/*.txt` transcripts (concatenated) or none.
+  Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)
 
 Finishing the wizard **starts a fresh conversation** under the new settings; the
-previous chat stays in history. Custom values are stored per conversation (in the
-`custom_*` columns, including `custom_lectures_text`) and the
-course/syllabus/lectures flags in
-`course_enabled`/`syllabus_enabled`/`lectures_enabled`, so reopening a past chat
-replays it with the same context.
+previous chat stays in history. The course/syllabus/lectures flags are stored per
+conversation in `course_enabled`/`syllabus_enabled`/`lectures_enabled`, so reopening
+a past chat replays it with the same context.
 
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
-> wizard. It was removed in June 2026 because the Create-context wizard did
-> everything it did — and also let you supply custom text — so the two buttons
-> were redundant. (The Tutor prompt step lists all built-ins but is locked to
-> `tutor_06`; see above.)
+> wizard. It was removed in June 2026 because the Create-context wizard offered a
+> superset of its functionality. (The Tutor prompt step lists all built-ins but is
+> locked to `tutor_06`; see above.)
 
 ## Quick start
 
@@ -174,12 +169,11 @@ already-existing tables. By default that's its **own Postgres database**
 production data (falls back to a local SQLite file if the var is unset). The
 schema matches `main_ui` plus the sandbox-only `conversations` columns —
 `course_enabled`, `syllabus_enabled`, `lectures_enabled`, `exercise_kind`,
-`context_mode`, and the `custom_*` columns that store one-off custom contexts,
-plus the sandbox-only `messages.retrieved_context` column (a JSON string of the
-RAG chunks retrieved for a tutor turn, `NULL` for non-RAG turns and legacy rows)
-and the `messages.rating` column (integer thumbs vote: `-1` down / `0` none /
-`1` up, default `0`, `CHECK (rating IN (-1,0,1))`; only tutor rows go non-zero,
-and legacy rows read back `NULL` and are treated as `0`).
+and `context_mode` — plus the sandbox-only `messages.retrieved_context` column
+(a JSON string of the RAG chunks retrieved for a tutor turn, `NULL` for non-RAG
+turns and legacy rows) and the `messages.rating` column (integer thumbs vote:
+`-1` down / `0` none / `1` up, default `0`, `CHECK (rating IN (-1,0,1))`; only
+tutor rows go non-zero, and legacy rows read back `NULL` and are treated as `0`).
 It also includes the shared `uploaded_files` table (student CSV/TSV/XLSX/PDF/
 DOCX/TXT attachments — bytes, `kind`, and extracted text) and `feedback` table
 (`conversation_id`, `turn`, `rating` 1-5, `created_at`); both are brand-new
@@ -187,7 +181,10 @@ tables so `create_all` picks them up on boot with no reconcile step needed.
 
 The database must already exist (`CREATE DATABASE asktim_test;`); `create_all`
 then builds the tables. To reset the sandbox data, drop and recreate that
-database.
+database. On startup, `_drop_custom_context_columns(engine)` drops any legacy
+`custom_*` columns (from before custom-context was removed) if they exist,
+ensuring the schema matches the current model; the drop is idempotent and
+runs once per boot.
 
 > **Note:** `create_all` only creates *missing tables* — it never adds columns
 > to a table that already exists. To keep the long-lived Sandbox DB usable
@@ -224,9 +221,9 @@ database.
 >
 > **Related reminder:** the Sandbox needs its **own** Postgres. Pointing it at
 > main_ui's shared DB is still a bad idea — the two apps would interleave chats —
-> but the sandbox-only `conversations` columns (`syllabus_enabled`/`custom_*`
-> etc.) no longer *fail* against a main_ui-shaped table: `_reconcile_columns()`
-> adds any missing columns on boot.
+> but the sandbox-only `conversations` columns (`syllabus_enabled`,
+> `lectures_enabled`, `context_mode`, etc.) no longer *fail* against a main_ui-shaped
+> table: `_reconcile_columns()` adds any missing columns on boot.
 
 ## API surface
 
@@ -237,7 +234,6 @@ Same as `main_ui` (`/embed`, `/health`, `/api/whoami`, `/api/chat`,
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/context/options` | Courses (with their exercises, practice problems, and syllabus / lectures / RAG availability) and tutor prompts, for the Create-context wizard |
-| GET | `/api/context/preview` | Raw text of a built-in `course`/`exercise`/`practice`/`tutor`/`syllabus`/`lectures` (via `?kind=...`), so the wizard can show it read-only when an existing option is picked |
 | POST | `/api/message/<id>/rating` | Sets the thumbs vote on a tutor message. JSON body `{"rating": -1\|0\|1}`; verifies the message's conversation is owned by the current session and that the message role is `tutor`; returns `{"ok": true, "rating": N}`, or `400` (bad rating) / `403` (not owned or not a tutor row). Wired from the shared `ui_core.web.blueprints.message_rating.make_message_rating_bp` |
 
 `POST /api/chat` accepts JSON (text only) or `multipart/form-data` (text +
@@ -253,7 +249,6 @@ fields for a new conversation:
 - `"exercise_kind": "exercise"|"practice"` (defaults to `"exercise"`) — selects exercise or practice-problem variant
 - `"context_mode": "rag"|"full_context"` (optional) — per-conversation RAG toggle; omit to let the server resolve by default
 - `"tutor"` — **ignored**; the sandbox is locked to `tutor_06` server-side, so any supplied value is discarded
-- `"course_custom"`, `"exercise_custom"`, `"tutor_custom"`, `"syllabus_custom"`, `"lectures_custom"` (optional) — one-off custom context used verbatim in place of the on-disk file
 
 `POST /api/feedback` records a 1-5 star rating against a `conversation_id`
 (and optional `turn` number); 400 if `rating`/`conversation_id` are missing or
@@ -296,27 +291,27 @@ off the `DATABASE_URL` main_ui uses in the shared `.env`.
 sandbox_ui/
   __main__.py             # python -m sandbox_ui entry point (127.0.0.1, port 5000)
   config.py               # env-driven Config (SANDBOX_UI_* vars, separate DB)
-  run_app.py              # ui_core.app_factory.create_app(...) wiring; create_all + _reconcile_columns on boot; blueprints
+  run_app.py              # ui_core.app_factory.create_app(...) wiring; create_all + _reconcile_columns + _drop_custom_context_columns on boot; blueprints
   cookies.py              # session/username cookie names + kwargs (thin wrapper over ui_core.cookies)
   db/
-    models.py             # sandbox-only Conversation (course/syllabus/lectures flags, custom_*, context_mode) + Message (+ sandbox-only retrieved_context col) / Student / UploadedImage / UploadedFile / Feedback from ui_core.db.models_common
+    models.py             # sandbox-only Conversation (course/syllabus/lectures flags, context_mode) + Message (+ sandbox-only retrieved_context col) / Student / UploadedImage / UploadedFile / Feedback from ui_core.db.models_common
     session.py            # engine + SessionLocal
     reset_uploaded_images.py # one-off: rebuild uploaded_images table (python -m sandbox_ui.db.reset_uploaded_images)
     reset_uploaded_files.py  # one-off: rebuild uploaded_files table (python -m sandbox_ui.db.reset_uploaded_files)
   routes/
-    embed.py              # GET /embed, GET / , GET /api/context/options, GET /api/context/preview (sandbox-specific)
+    embed.py              # GET /embed, GET / , GET /api/context/options (sandbox-specific)
     chat.py               # POST /api/chat (SSE; syllabus/lectures/course/RAG passthrough, images, files) (sandbox-specific)
     history.py            # GET /api/history, /api/conversation/<uuid> (wraps ui_core.web.blueprints.history)
     identity.py           # GET /api/whoami, POST /api/identity[/check] (wraps ui_core.web.blueprints.identity)
     feedback.py           # POST /api/feedback (wraps ui_core.web.blueprints.feedback)
-    _validation.py        # validators + context-option/preview listing helpers
+    _validation.py        # validators + context-option listing helpers
   services/
-    conversation.py       # thin wrapper over ui_core.services.conversation (adds the sandbox context flags + custom_*)
+    conversation.py       # thin wrapper over ui_core.services.conversation (adds the sandbox context flags)
     students.py           # thin wrapper over ui_core.services.students (bcrypt identity)
     images.py             # thin wrapper over ui_core.services.images (validate/persist/serve uploaded images)
     files.py              # thin wrapper over ui_core.services.files (validate/extract/persist non-image attachments)
     feedback.py           # thin wrapper over ui_core.services.feedback (record a 1-5 star rating)
-    tutor_bridge.py       # SandboxTutorBridge(ui_core.tutor_bridge.TutorBridge) — adds RAG/custom-context/include-toggle hooks
+    tutor_bridge.py       # SandboxTutorBridge(ui_core.tutor_bridge.TutorBridge) — overrides cache_key + build_assignment_text for RAG/include-toggle behavior
   static/css/sandbox-extra.css # #126f9a accent + create-context wizard styles, layered on top of ui_core's shared chat.css
   static/js/chat.js       # streaming + sidebar + Create-context wizard
   static/js/marked.min.js # vendored markdown parser (GFM tables)

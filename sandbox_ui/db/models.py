@@ -3,8 +3,8 @@
 ``Message``, ``Student``, and ``UploadedImage`` are schema-identical across the
 web apps and come from the shared mixins in ``ui_core.db.models_common``. Only
 ``Conversation`` is defined here, on sandbox_ui's own ``Base`` — it carries
-sandbox-only columns (exercise_kind, *_enabled toggles, custom_* snapshots,
-context_mode) that main_ui's does not.
+sandbox-only columns (exercise_kind, *_enabled toggles, context_mode) that
+main_ui's does not.
 """
 
 from __future__ import annotations
@@ -65,15 +65,6 @@ class Conversation(Base):
     lectures_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
-    # sandbox_ui-only: one-off custom context typed in the "Create context" wizard.
-    # When set, the corresponding built-in field above is a placeholder and the
-    # tutor reads this text instead of the on-disk curriculum/tutor file. Stored
-    # inline (a snapshot) so reopening a past chat replays the exact context.
-    custom_course_text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    custom_exercise_text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    custom_tutor_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
-    custom_syllabus_text: Mapped[str | None] = mapped_column(Text, nullable=True)
-    custom_lectures_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     # sandbox_ui-only: per-conversation context mode chosen via the Create-context
     # wizard's RAG toggle ("rag" | "full_context"). NULL = resolve by default
     # (rag when the course has an index, else full_context). create_all can't add

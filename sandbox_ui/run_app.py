@@ -119,6 +119,32 @@ def _migrate_email_to_username() -> None:
             pass
 
 
+def _drop_custom_context_columns(engine) -> None:
+    """One-time: drop the removed custom_* Conversation columns if present.
+
+    Sandbox has no Alembic; this mirrors the hand-rolled boot reconciler. Idempotent
+    and safe on a fresh DB (create_all never creates these now) and on both SQLite
+    (local dev) and Postgres (prod). The dropped snapshots are disposable test data.
+    """
+    removed = (
+        "custom_course_text",
+        "custom_exercise_text",
+        "custom_tutor_prompt",
+        "custom_syllabus_text",
+        "custom_lectures_text",
+    )
+    inspector = inspect(engine)
+    if "conversations" not in inspector.get_table_names():
+        return
+    existing = {c["name"] for c in inspector.get_columns("conversations")}
+    to_drop = [name for name in removed if name in existing]
+    if not to_drop:
+        return
+    with engine.begin() as conn:
+        for name in to_drop:
+            conn.execute(text(f'ALTER TABLE conversations DROP COLUMN {name}'))
+
+
 app = create_app(
     import_name=__name__,
     config=load_config(),
@@ -130,10 +156,12 @@ app = create_app(
     # missing tables; _reconcile_columns backfills columns added to tables
     # that already existed (e.g. uploaded_images.data); _migrate_email_to_username
     # finishes the email->username rename (which reconcile can't, since it only
-    # adds columns) so the long-lived Sandbox DB never needs a manual reset.
+    # adds columns) so the long-lived Sandbox DB never needs a manual reset;
+    # _drop_custom_context_columns removes the retired custom_* snapshot columns.
     on_startup=lambda: (
         Base.metadata.create_all(engine),
         _reconcile_columns(),
         _migrate_email_to_username(),
+        _drop_custom_context_columns(engine),
     ),
 )

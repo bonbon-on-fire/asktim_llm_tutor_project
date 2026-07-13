@@ -40,11 +40,6 @@ def find_or_create_conversation(
     course_enabled: bool = True,
     syllabus_enabled: bool = True,
     lectures_enabled: bool = True,
-    custom_course_text: str | None = None,
-    custom_exercise_text: str | None = None,
-    custom_tutor_prompt: str | None = None,
-    custom_syllabus_text: str | None = None,
-    custom_lectures_text: str | None = None,
     context_mode: str | None = None,
 ) -> Conversation:
     """Resolve to an existing conversation or insert a new one.
@@ -67,11 +62,6 @@ def find_or_create_conversation(
             "course_enabled": course_enabled,
             "syllabus_enabled": syllabus_enabled,
             "lectures_enabled": lectures_enabled,
-            "custom_course_text": custom_course_text,
-            "custom_exercise_text": custom_exercise_text,
-            "custom_tutor_prompt": custom_tutor_prompt,
-            "custom_syllabus_text": custom_syllabus_text,
-            "custom_lectures_text": custom_lectures_text,
             "context_mode": context_mode,
         },
     )

@@ -10,13 +10,6 @@
   // Whether the built-in course.txt description is folded into context. Like
   // `syllabus`, defaults on; the wizard's "No course description" turns it off.
   if (typeof config.courseEnabled === "undefined") config.courseEnabled = true;
-  // One-off custom context (from the Create-context wizard). null = use the
-  // built-in field above; a string = send as custom text with each /api/chat.
-  if (typeof config.courseCustom === "undefined") config.courseCustom = null;
-  if (typeof config.exerciseCustom === "undefined") config.exerciseCustom = null;
-  if (typeof config.tutorCustom === "undefined") config.tutorCustom = null;
-  if (typeof config.syllabusCustom === "undefined") config.syllabusCustom = null;
-  if (typeof config.lecturesCustom === "undefined") config.lecturesCustom = null;
   // Per-conversation RAG toggle (Create-context wizard). null = let the server
   // resolve by default; "rag" / "full_context" force the mode.
   if (typeof config.contextMode === "undefined") config.contextMode = null;
@@ -836,39 +829,9 @@
       ? CREATE_STEPS.filter((s) => s !== "syllabus" && s !== "lectures")
       : CREATE_STEPS;
   }
-  const CUSTOM = "__custom__";
   const LOCKED_TUTOR = "tutor_06"; // the tutor prompt is locked to this in the wizard
   const LOCK_ICON_SVG =
     '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-
-  async function fetchPreviewText(stepKey, value) {
-    let url;
-    if (stepKey === "course") {
-      url = `/api/context/preview?kind=course&course=${encodeURIComponent(value)}`;
-    } else if (stepKey === "exercise") {
-      const raw = String(value || "");
-      const isPractice = raw.startsWith("practice:");
-      const num = raw.includes(":") ? raw.split(":")[1] : raw;
-      url =
-        `/api/context/preview?kind=${isPractice ? "practice" : "exercise"}` +
-        `&course=${encodeURIComponent(createDraft.course.existing)}` +
-        `&exercise=${encodeURIComponent(num)}`;
-    } else if (stepKey === "tutor") {
-      url = `/api/context/preview?kind=tutor&tutor=${encodeURIComponent(value)}`;
-    } else if (stepKey === "lectures") {
-      url = `/api/context/preview?kind=lectures&course=${encodeURIComponent(createDraft.course.existing)}`;
-    } else {
-      url = `/api/context/preview?kind=syllabus&course=${encodeURIComponent(createDraft.course.existing)}`;
-    }
-    try {
-      const r = await fetch(url);
-      if (!r.ok) return "(could not load preview)";
-      const d = await r.json();
-      return d.text || "";
-    } catch (_) {
-      return "(could not load preview)";
-    }
-  }
 
   function buildSelect(options, value) {
     const sel = document.createElement("select");
@@ -911,28 +874,20 @@
 
     let options = [];
     let currentValue;
-    let placeholder = "";
-    let customValue = "";
 
     if (step === "course") {
-      options = [
-        ...contextOptions.courses
-          .map((c) => ({ value: c.slug, label: c.name || c.slug }))
-          .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
-        { value: CUSTOM, label: "Create custom course" },
-      ];
-      const d = createDraft.course;
-      currentValue = d.mode === "custom" ? CUSTOM : d.existing;
-      customValue = d.custom;
-      placeholder = "Paste or write the course context…";
+      options = contextOptions.courses
+        .map((c) => ({ value: c.slug, label: c.name || c.slug }))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+      currentValue = createDraft.course.existing;
     } else if (step === "exercise") {
       const cd = createDraft.course;
-      const courseObj = cd.mode === "existing" ? courseBySlug(cd.existing) : null;
+      const courseObj = courseBySlug(cd.existing);
       const exs = (courseObj && courseObj.exercises) || [];
       const pracs = (courseObj && courseObj.practice) || [];
       options = [
-        // Flat list: exercises first, then practice problems, then custom (no
-        // group headers). The value prefix (exercise:/practice:) carries the kind.
+        // Flat list: exercises first, then practice problems (no group
+        // headers). The value prefix (exercise:/practice:) carries the kind.
         ...exs.map((n) => ({
           value: "exercise:" + n,
           label: "Exercise " + (parseInt(n, 10) || n),
@@ -941,69 +896,49 @@
           value: "practice:" + n,
           label: "Practice " + (parseInt(n, 10) || n),
         })),
-        { value: CUSTOM, label: "Create custom exercise" },
       ];
       const d = createDraft.exercise;
-      if (cd.mode === "custom") {
-        currentValue = CUSTOM; // custom course has no built-in exercises
-      } else if (d.mode === "custom") {
-        currentValue = CUSTOM;
-      } else {
-        const firstExisting =
-          (exs[0] && "exercise:" + exs[0]) ||
-          (pracs[0] && "practice:" + pracs[0]) ||
-          CUSTOM;
-        currentValue =
-          d.existing ? d.kind + ":" + d.existing : firstExisting;
-      }
-      customValue = d.custom;
-      placeholder = "Paste or write the exercise…";
+      const firstExisting =
+        (exs[0] && "exercise:" + exs[0]) || (pracs[0] && "practice:" + pracs[0]) || "";
+      currentValue = d.existing ? d.kind + ":" + d.existing : firstExisting;
     } else if (step === "tutor") {
       // All tutor built-ins are listed for visibility, but the step is locked to
-      // tutor_06 (disabled dropdown + lock icon); testers can't pick another. No
-      // custom-prompt option here. The backend also ignores any client tutor.
+      // tutor_06 (disabled dropdown + lock icon); testers can't pick another. The
+      // backend also ignores any client tutor.
       options = contextOptions.tutors
         .map((t) => ({ value: t, label: tutorLabel(t) }))
         .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
       currentValue = LOCKED_TUTOR; // locked — testers can't change the tutor prompt here
-      customValue = "";
-      placeholder = "";
     } else if (step === "lectures") {
       const cd = createDraft.course;
-      const courseObj = cd.mode === "existing" ? courseBySlug(cd.existing) : null;
+      const courseObj = courseBySlug(cd.existing);
       options = [];
       if (courseObj && courseObj.has_lectures) {
         options.push({ value: "default", label: "Course lectures" });
       }
       options.push({ value: "none", label: "No lectures" });
-      options.push({ value: CUSTOM, label: "Create custom lectures" });
       const d = createDraft.lectures;
-      let v = d.mode === "custom" ? CUSTOM : d.value;
+      let v = d.value;
       if (v === "default" && !(courseObj && courseObj.has_lectures)) v = "none";
       currentValue = v;
-      customValue = d.custom;
-      placeholder = "Paste or write the lecture material…";
     } else {
       // syllabus
       const cd = createDraft.course;
-      const courseObj = cd.mode === "existing" ? courseBySlug(cd.existing) : null;
+      const courseObj = courseBySlug(cd.existing);
       options = [];
       if (courseObj && courseObj.has_syllabus) {
         options.push({ value: "default", label: "Course syllabus" });
       }
       options.push({ value: "none", label: "No syllabus" });
-      options.push({ value: CUSTOM, label: "Create custom syllabus" });
       const d = createDraft.syllabus;
-      let v = d.mode === "custom" ? CUSTOM : d.value;
+      let v = d.value;
       if (v === "default" && !(courseObj && courseObj.has_syllabus)) v = "none";
       currentValue = v;
-      customValue = d.custom;
-      placeholder = "Paste or write the syllabus…";
     }
 
     // Default to the first option in the dropdown when the draft has no valid
     // explicit selection yet, so the step opens on the first built-in (e.g. the
-    // first course) rather than the trailing "Create custom …" option.
+    // first course) option.
     const optionMatches = (o, v) =>
       o.value === v || (o.options && o.options.some((i) => i.value === v));
     if (options.length && !options.some((o) => optionMatches(o, currentValue))) {
@@ -1013,12 +948,6 @@
     const sel = buildSelect(options, currentValue);
     if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_06
     createStepBody.appendChild(sel);
-
-    const ta = document.createElement("textarea");
-    ta.className = "create-custom";
-    ta.id = "create-custom-input";
-    ta.placeholder = placeholder;
-    createStepBody.appendChild(ta);
 
     // RAG toggle — course step only, and only for courses with a built index.
     // When on, course/syllabus/lectures are retrieved and the syllabus step is
@@ -1048,7 +977,7 @@
     function updateRagToggleVisibility() {
       if (step !== "course") return;
       const v = sel.value;
-      const courseObj = v && v !== CUSTOM ? courseBySlug(v) : null;
+      const courseObj = v ? courseBySlug(v) : null;
       const hasRag = !!(courseObj && courseObj.has_rag);
       if (createDraft.useRag !== hasRag) {
         createDraft.useRag = hasRag;
@@ -1063,143 +992,45 @@
     function updateCourseDescVisibility() {
       if (!courseDescRow) return;
       const v = sel.value;
-      // Show only for a real (built-in) course with RAG off — a custom course's
-      // text is always included, and RAG retrieves course material instead.
-      courseDescRow.hidden = !(v && v !== CUSTOM && !createDraft.useRag);
+      // Show only when RAG is off — RAG retrieves course material instead.
+      courseDescRow.hidden = !(v && !createDraft.useRag);
     }
 
-    const stepKey = step;
-
-    // Keep the draft's typed text in sync, so toggling to an existing option
-    // and back doesn't lose what the tester wrote.
-    ta.addEventListener("input", () => {
-      if (ta.readOnly) return;
-      if (stepKey === "syllabus") createDraft.syllabus.custom = ta.value;
-      else createDraft[stepKey].custom = ta.value;
-      updateCreateNextEnabled();
-    });
-
-    // Token guards the async preview fetch against a newer selection change.
-    let syncToken = 0;
-    async function syncTextarea() {
-      const val = sel.value;
-      const token = ++syncToken;
-      if ((stepKey === "course" || stepKey === "tutor") && val !== CUSTOM) {
-        // No preview for the course or the (locked) tutor prompt — RAG retrieves
-        // course material and the tutor prompt is fixed. Only a custom entry
-        // needs the textarea.
-        ta.readOnly = true;
-        ta.hidden = true;
-        ta.value = "";
-        updateRagToggleVisibility();
-        updateCourseDescVisibility();
-        updateCreateNextEnabled();
-        return;
-      }
-      if (val === CUSTOM) {
-        // "Create …" — editable, restore the draft's typed text.
-        ta.readOnly = false;
-        ta.hidden = false;
-        ta.placeholder = placeholder;
-        ta.value =
-          (stepKey === "syllabus"
-            ? createDraft.syllabus.custom
-            : createDraft[stepKey].custom) || "";
-      } else if (
-        (stepKey === "syllabus" || stepKey === "lectures") &&
-        val === "none"
-      ) {
-        // No syllabus / no lectures — nothing to preview.
-        ta.readOnly = true;
-        ta.hidden = true;
-        ta.value = "";
-      } else if (stepKey === "lectures" && val === "default") {
-        // A course's lecture material can span many files and run very long,
-        // so skip the full read-only dump and just note that here.
-        ta.readOnly = true;
-        ta.hidden = false;
-        ta.value = "Lecture material too long to preview.";
-      } else {
-        // Existing option — show its text, read-only.
-        ta.readOnly = true;
-        ta.hidden = false;
-        ta.value = "Loading…";
-        const text = await fetchPreviewText(stepKey, val);
-        if (token === syncToken) ta.value = text;
-      }
+    updateRagToggleVisibility();
+    updateCourseDescVisibility();
+    sel.addEventListener("change", () => {
       updateRagToggleVisibility();
       updateCourseDescVisibility();
-      updateCreateNextEnabled();
-    }
-    sel.addEventListener("change", syncTextarea);
-    syncTextarea();
+    });
 
     createBack.hidden = createStep === 0;
     createNext.textContent =
       createStep === steps.length - 1 ? "Create & start chat" : "Continue";
-    updateCreateNextEnabled();
-  }
-
-  function updateCreateNextEnabled() {
-    const sel = document.getElementById("create-select");
-    const ta = document.getElementById("create-custom-input");
-    if (!sel) return;
-    // Grey out Continue while a "Write my own…" field is still empty —
-    // same pattern as the email modal's disabled submit button.
-    const needsText = sel.value === CUSTOM;
-    createNext.disabled = needsText && !(ta && ta.value.trim());
+    createNext.disabled = false;
   }
 
   function saveCreateStep() {
     const sel = document.getElementById("create-select");
-    const ta = document.getElementById("create-custom-input");
     if (!sel) return;
     const step = activeSteps()[createStep];
     if (step === "syllabus" || step === "lectures") {
-      const d = createDraft[step];
-      if (sel.value === CUSTOM) {
-        d.mode = "custom";
-        d.custom = ta.value;
-      } else {
-        d.mode = "builtin";
-        d.value = sel.value;
-      }
+      createDraft[step].value = sel.value;
       return;
     }
     if (step === "course") {
       const cd = createDraft.course;
-      if (sel.value === CUSTOM) {
-        cd.mode = "custom";
-        cd.custom = ta.value;
-        cd.enabled = true;
-      } else {
-        cd.mode = "existing";
-        cd.existing = sel.value;
-        // cd.enabled is set by the "Include course description" toggle.
-      }
+      cd.existing = sel.value;
+      // cd.enabled is set by the "Include course description" toggle.
       return;
     }
     if (step === "exercise") {
       const d = createDraft.exercise;
-      if (sel.value === CUSTOM) {
-        d.mode = "custom";
-        d.custom = ta.value;
-      } else {
-        d.mode = "existing";
-        const [kind, num] = sel.value.split(":");
-        d.kind = kind === "practice" ? "practice" : "exercise";
-        d.existing = num || "";
-      }
+      const [kind, num] = sel.value.split(":");
+      d.kind = kind === "practice" ? "practice" : "exercise";
+      d.existing = num || "";
       return;
     }
-    const d = createDraft[step];
-    if (sel.value === CUSTOM) {
-      d.mode = "custom";
-      d.custom = ta.value;
-    } else {
-      d.mode = "existing";
-      d.existing = sel.value;
-    }
+    // tutor step is locked to LOCKED_TUTOR — nothing else to save.
   }
 
   async function openCreateModal() {
@@ -1220,15 +1051,15 @@
       return;
     }
 
-    // Default each step to the first option in its dropdown. Built-ins now sort
-    // first and "Create custom …" is last, so leaving existing/value empty means
-    // no explicit match and the <select> falls back to its first <option>.
+    // Default each step to the first option in its dropdown. Leaving
+    // existing/value empty means no explicit match and the <select> falls back
+    // to its first <option>.
     createDraft = {
-      course: { mode: "existing", existing: "supply_chain_design", custom: "", enabled: true },
-      exercise: { mode: "existing", existing: "", custom: "", kind: "exercise" },
-      tutor: { mode: "existing", existing: LOCKED_TUTOR, custom: "" },
-      syllabus: { mode: "builtin", value: "", custom: "" },
-      lectures: { mode: "builtin", value: "", custom: "" },
+      course: { existing: "supply_chain_design", enabled: true },
+      exercise: { existing: "", kind: "exercise" },
+      tutor: { existing: LOCKED_TUTOR },
+      syllabus: { value: "" },
+      lectures: { value: "" },
       // Always use RAG for course context (no user-facing toggle); auto-disabled
       // per-course when the selected course has no built index.
       useRag: true,
@@ -1253,11 +1084,6 @@
   function createGoNext(event) {
     event.preventDefault();
     saveCreateStep();
-    // Continue is disabled while a custom field is empty; guard the Enter-key
-    // submit path too, then advance with no error message.
-    const sel = document.getElementById("create-select");
-    const ta = document.getElementById("create-custom-input");
-    if (sel && sel.value === CUSTOM && !(ta && ta.value.trim())) return;
     if (createStep < activeSteps().length - 1) {
       createStep += 1;
       renderCreateStep();
@@ -1273,58 +1099,18 @@
     const s = createDraft.syllabus;
     const l = createDraft.lectures;
 
-    if (c.mode === "custom") {
-      config.course = null;
-      config.courseCustom = c.custom;
-      config.courseEnabled = true;
-    } else {
-      // Keep the real slug even when the description is off — exercises,
-      // figures, and RAG all key off the course identity.
-      config.course = c.existing;
-      config.courseCustom = null;
-      config.courseEnabled = c.enabled !== false;
-    }
+    // Keep the real slug even when the description is off — exercises,
+    // figures, and RAG all key off the course identity.
+    config.course = c.existing;
+    config.courseEnabled = c.enabled !== false;
 
-    // A custom course has no built-in exercises, so its exercise is custom too.
-    if (c.mode === "custom" || e.mode === "custom") {
-      config.exercise = null;
-      config.exerciseCustom = e.custom;
-      config.exerciseKind = "exercise";
-    } else {
-      config.exercise = e.existing;
-      config.exerciseCustom = null;
-      config.exerciseKind = e.kind === "practice" ? "practice" : "exercise";
-    }
+    config.exercise = e.existing;
+    config.exerciseKind = e.kind === "practice" ? "practice" : "exercise";
 
-    if (t.mode === "custom") {
-      config.tutor = null;
-      config.tutorCustom = t.custom;
-    } else {
-      config.tutor = t.existing;
-      config.tutorCustom = null;
-    }
+    config.tutor = t.existing;
 
-    if (s.mode === "custom") {
-      config.syllabusCustom = s.custom;
-      config.syllabus = false;
-    } else if (s.value === "default") {
-      config.syllabusCustom = null;
-      config.syllabus = true;
-    } else {
-      config.syllabusCustom = null;
-      config.syllabus = false;
-    }
-
-    if (l.mode === "custom") {
-      config.lecturesCustom = l.custom;
-      config.lectures = false;
-    } else if (l.value === "default") {
-      config.lecturesCustom = null;
-      config.lectures = true;
-    } else {
-      config.lecturesCustom = null;
-      config.lectures = false;
-    }
+    config.syllabus = s.value === "default";
+    config.lectures = l.value === "default";
 
     // RAG toggle → per-conversation context mode. When on, course/syllabus/
     // lectures are retrieved (the syllabus and lectures steps were skipped), so
@@ -1333,9 +1119,7 @@
     if (createDraft.useRag) {
       config.contextMode = "rag";
       config.syllabus = false;
-      config.syllabusCustom = null;
       config.lectures = false;
-      config.lecturesCustom = null;
     } else {
       config.contextMode = "full_context";
     }
@@ -1539,12 +1323,6 @@
       syllabus: config.syllabus,
       lectures: config.lectures,
     };
-    // One-off custom context (Create-context wizard) — only sent when set.
-    if (config.courseCustom != null) fields.course_custom = config.courseCustom;
-    if (config.exerciseCustom != null) fields.exercise_custom = config.exerciseCustom;
-    if (config.tutorCustom != null) fields.tutor_custom = config.tutorCustom;
-    if (config.syllabusCustom != null) fields.syllabus_custom = config.syllabusCustom;
-    if (config.lecturesCustom != null) fields.lectures_custom = config.lecturesCustom;
     if (config.contextMode != null) fields.context_mode = config.contextMode;
     if (conversationId) fields.conversation_id = conversationId;
 

@@ -37,7 +37,6 @@ def main() -> int:
         _check("validate_practice ok (padded input normalizes)", V.validate_practice(course, "01") is None)
         _check("validate_practice missing", V.validate_practice(course, "99") is not None)
         _check("validate_practice bad format", V.validate_practice(course, "x") is not None)
-        _check("load_practice_text", V.load_practice_text(course, "1") == "PRACTICE BODY")
         opts = V.list_context_options()
         entry = next((c for c in opts["courses"] if c["slug"] == course), None)
         _check("context_options exposes practice", entry is not None and entry.get("practice") == ["1"], entry)

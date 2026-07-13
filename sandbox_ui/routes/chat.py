@@ -179,14 +179,6 @@ def chat():
     else:
         course_enabled = bool(raw_course_enabled)
 
-    # One-off custom context from the "Create context" wizard. A non-None value
-    # means "use this text verbatim instead of the on-disk file" for that field.
-    custom_course_text = src.get("course_custom")
-    custom_exercise_text = src.get("exercise_custom")
-    custom_tutor_prompt = src.get("tutor_custom")
-    custom_syllabus_text = src.get("syllabus_custom")
-    custom_lectures_text = src.get("lectures_custom")
-
     # sandbox_ui RAG toggle: per-conversation context mode ("rag" | "full_context").
     # None = let the bridge resolve by default (rag when the course has an index).
     # Only honored when creating a new conversation; continuations replay it.
@@ -206,34 +198,19 @@ def chat():
 
     # Validate the requested context only when STARTING a new conversation.
     # Continuations replay the conversation's stored (already-validated)
-    # context, so placeholder ids like "custom" must not be re-validated.
-    # Custom fields skip file-based validation; built-in fields still validate.
+    # context, so it must not be re-validated.
     if convo_id is None:
-        if custom_course_text is None:
-            err = validate_course(course)
-            if err:
-                return _bad_param(err)
-        else:
-            course = "custom"
+        err = validate_course(course)
+        if err:
+            return _bad_param(err)
 
-        if custom_exercise_text is None:
-            if custom_course_text is not None:
-                return _bad_request(
-                    "provide exercise_custom when the course is custom",
-                    "exercise_requires_course",
-                )
-            err = validate_selection(course, exercise, exercise_kind)
-            if err:
-                return _bad_param(err)
-        else:
-            exercise = "custom"
+        err = validate_selection(course, exercise, exercise_kind)
+        if err:
+            return _bad_param(err)
 
-        if custom_tutor_prompt is None:
-            err = validate_tutor(tutor)
-            if err:
-                return _bad_param(err)
-        else:
-            tutor = "custom"
+        err = validate_tutor(tutor)
+        if err:
+            return _bad_param(err)
 
     # Take ownership of the request's DB session — teardown_request would
     # otherwise commit + close it the instant this view returns the Response,
@@ -265,11 +242,6 @@ def chat():
             course_enabled=course_enabled,
             syllabus_enabled=syllabus_enabled,
             lectures_enabled=lectures_enabled,
-            custom_course_text=custom_course_text,
-            custom_exercise_text=custom_exercise_text,
-            custom_tutor_prompt=custom_tutor_prompt,
-            custom_syllabus_text=custom_syllabus_text,
-            custom_lectures_text=custom_lectures_text,
             context_mode=context_mode,
         )
     except WrongSessionError:
@@ -339,11 +311,6 @@ def chat():
     stream_syllabus = convo.syllabus_enabled
     # Legacy rows predating this column read back NULL; treat as ON.
     stream_lectures = convo.lectures_enabled is None or bool(convo.lectures_enabled)
-    stream_course_text = convo.custom_course_text
-    stream_exercise_text = convo.custom_exercise_text
-    stream_custom_tutor_prompt = convo.custom_tutor_prompt
-    stream_syllabus_text = convo.custom_syllabus_text
-    stream_lectures_text = convo.custom_lectures_text
     stream_context_mode = convo.context_mode
 
     try:
@@ -369,11 +336,6 @@ def chat():
         include_course=stream_course_enabled,
         include_syllabus=stream_syllabus,
         include_lectures=stream_lectures,
-        course_text=stream_course_text,
-        exercise_text=stream_exercise_text,
-        syllabus_text=stream_syllabus_text,
-        lectures_text=stream_lectures_text,
-        custom_tutor_prompt=stream_custom_tutor_prompt,
         context_mode=stream_context_mode,
     )
 

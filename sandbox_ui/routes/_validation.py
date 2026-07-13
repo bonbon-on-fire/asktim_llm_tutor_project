@@ -12,10 +12,8 @@ from pathlib import Path
 
 from utils.curriculum import discover_exercises as _discover_exercises
 from utils.curriculum import exercise_exists as _exercise_exists
-from utils.curriculum import read_exercise as _read_exercise
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import practice_exists as _practice_exists
-from utils.curriculum import read_practice as _read_practice
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -105,53 +103,6 @@ def load_course_name(course) -> str:
     if not path.is_file():
         return ""
     return path.read_text(encoding="utf-8").strip()
-
-
-def load_course_text(course) -> str:
-    """Raw course.txt for a built-in course (preview for the Create wizard)."""
-    if not course:
-        return ""
-    path = _CURRICULUM_DIR / course / "course.txt"
-    return path.read_text(encoding="utf-8") if path.is_file() else ""
-
-
-def load_exercise_text(course, exercise) -> str:
-    """Raw exercise_<NN>.txt for a built-in course/exercise."""
-    if not course or not exercise:
-        return ""
-    return _read_exercise(course, exercise)
-
-
-def load_practice_text(course, practice) -> str:
-    """Raw practice_<NN>.txt for a built-in course/practice problem."""
-    if not course or not practice:
-        return ""
-    return _read_practice(course, practice)
-
-
-def load_tutor_text(tutor) -> str:
-    """Raw tutor prompt text for a built-in tutor stem."""
-    if not tutor:
-        return ""
-    path = _TUTOR_PROMPTS_DIR / f"{tutor}.txt"
-    return path.read_text(encoding="utf-8") if path.is_file() else ""
-
-
-def load_syllabus_text(course) -> str:
-    """Raw syllabus.txt for a built-in course (empty string if none)."""
-    if not course:
-        return ""
-    path = _CURRICULUM_DIR / course / "syllabus.txt"
-    return path.read_text(encoding="utf-8") if path.is_file() else ""
-
-
-def load_lectures_text(course) -> str:
-    """All lecture transcripts for a built-in course, concatenated (empty if none)."""
-    if not course:
-        return ""
-    from utils.lectures import load_lecture_transcripts  # lazy: avoid import cost at boot
-
-    return load_lecture_transcripts(course)
 
 
 def list_exercises(course) -> list[str]:

@@ -18,15 +18,8 @@ from sandbox_ui.routes._validation import (
     DEFAULT_TUTOR,
     list_context_options,
     load_course_name,
-    load_course_text,
-    load_exercise_text,
-    load_lectures_text,
-    load_practice_text,
-    load_syllabus_text,
-    load_tutor_text,
     validate_course,
     validate_exercise,
-    validate_practice,
     validate_tutor,
 )
 
@@ -64,49 +57,6 @@ def context_options():
     """Courses (+ their exercises and syllabus availability) and tutor prompts,
     used to populate the sandbox_ui Change-context switcher."""
     return jsonify(list_context_options())
-
-
-@embed_bp.get("/api/context/preview")
-def context_preview():
-    """Raw text of a built-in course/exercise/tutor/syllabus, so the
-    Create-context wizard can show it (read-only) when an existing option is
-    selected. Inputs are validated first to prevent path traversal."""
-    kind = request.args.get("kind")
-    course = request.args.get("course")
-    exercise = request.args.get("exercise")
-    tutor = request.args.get("tutor")
-
-    if kind == "course":
-        err = validate_course(course)
-        if err:
-            return _bad_param(err)
-        return jsonify({"text": load_course_text(course)})
-    if kind == "exercise":
-        err = validate_course(course) or validate_exercise(course, exercise)
-        if err:
-            return _bad_param(err)
-        return jsonify({"text": load_exercise_text(course, exercise)})
-    if kind == "practice":
-        err = validate_course(course) or validate_practice(course, exercise)
-        if err:
-            return _bad_param(err)
-        return jsonify({"text": load_practice_text(course, exercise)})
-    if kind == "tutor":
-        err = validate_tutor(tutor)
-        if err:
-            return _bad_param(err)
-        return jsonify({"text": load_tutor_text(tutor)})
-    if kind == "syllabus":
-        err = validate_course(course)
-        if err:
-            return _bad_param(err)
-        return jsonify({"text": load_syllabus_text(course)})
-    if kind == "lectures":
-        err = validate_course(course)
-        if err:
-            return _bad_param(err)
-        return jsonify({"text": load_lectures_text(course)})
-    return jsonify({"error": "bad_kind", "reason": "unknown preview kind"}), 400
 
 
 @embed_bp.get("/")

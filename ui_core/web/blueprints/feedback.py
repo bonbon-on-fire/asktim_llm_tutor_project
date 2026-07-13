@@ -59,7 +59,7 @@ def make_feedback_bp(
             convo_id = UUID(str(convo_id_raw))
         except (ValueError, TypeError):
             return jsonify({"error": "bad_conversation_id", "reason": "conversation_id must be a UUID string"}), 400
-        username = request.cookies.get(cookies.USERNAME_COOKIE_NAME)
+        username = cookies.read_username_cookie(request)
         convo = conversation.get_conversation_for_viewer(g.db, convo_id, g.session_id, username)
         if convo is None:
             return (

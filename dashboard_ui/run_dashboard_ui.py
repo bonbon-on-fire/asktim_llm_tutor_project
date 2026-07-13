@@ -34,12 +34,10 @@ def _resolve_transcripts_dir() -> Path:
 
 TRANSCRIPTS_DIR = _resolve_transcripts_dir()
 
-# Which run variant the dashboard shows. With DASHBOARD_RAG truthy it reads the RAG
-# runs — raw from ``*_raw_rag/`` and graded from ``*_<provider>_rag/`` — instead of
-# the default non-RAG runs (``*_raw/`` and ``*_<provider>/``).
-_RAG = os.environ.get("DASHBOARD_RAG", "").strip().lower() in {"1", "true", "yes", "on"}
-RAW_SUFFIX = "raw_rag" if _RAG else "raw"
-GRADED_SUFFIX = "_rag" if _RAG else ""
+# Two-folder scheme: simulated transcripts always live in ``*_raw/`` and graded
+# transcripts always live in ``*_judge/`` (provider-agnostic — the judge
+# provider/prompt/rubric are recorded inside each graded file's ``grade`` object).
+RAW_SUFFIX = "raw"
 
 
 def _discover_persona_groups() -> list[str]:
@@ -134,12 +132,12 @@ def _json_stems(path: Path) -> set[str]:
 
 def _transcript_path_for(*, group: str, provider: str, stem: str) -> Path:
     """Construct the filesystem path for a transcript JSON file."""
-    return TRANSCRIPTS_DIR / group / f"{group}_{provider}{GRADED_SUFFIX}" / f"{stem}.json"
+    return TRANSCRIPTS_DIR / group / f"{group}_judge" / f"{stem}.json"
 
 
 def _counterpart_candidates(*, group: str, provider: str, raw_stem: str) -> list[Path]:
-    """Find all graded JSON files in the provider folder matching raw_stem (exact or suffixed)."""
-    provider_dir = TRANSCRIPTS_DIR / group / f"{group}_{provider}{GRADED_SUFFIX}"
+    """Find all graded JSON files in the judge folder matching raw_stem (exact or suffixed)."""
+    provider_dir = TRANSCRIPTS_DIR / group / f"{group}_judge"
     if not provider_dir.is_dir():
         return []
 

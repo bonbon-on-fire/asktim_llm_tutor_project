@@ -34,7 +34,7 @@ from uuid import UUID
 
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
-from main_ui.cookies import USERNAME_COOKIE_NAME
+from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
     DEFAULT_TUTOR,
     validate_course,
@@ -171,7 +171,7 @@ def chat():
     # well before the streaming generator runs its INSERTs. We commit
     # explicitly inside the generator instead.
     db = g.pop("db")
-    username = request.cookies.get(USERNAME_COOKIE_NAME)
+    username = read_username_cookie(request)
 
     def _abort_with(json_response):
         """Roll back and close the manually-owned DB session, then return *json_response*."""

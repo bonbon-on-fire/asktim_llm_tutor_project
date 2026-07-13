@@ -6,11 +6,20 @@ from ui_core.cookies import (  # re-exported for existing importers
     SESSION_COOKIE_NAME,
     USERNAME_COOKIE_NAME,
     new_session_id,
+    read_username_cookie,
+    sign_username,
     default_cookie_kwargs as _base_cookie_kwargs,
 )
 from sandbox_ui.config import load_config
 
-__all__ = ["SESSION_COOKIE_NAME", "USERNAME_COOKIE_NAME", "new_session_id", "default_cookie_kwargs"]
+__all__ = [
+    "SESSION_COOKIE_NAME",
+    "USERNAME_COOKIE_NAME",
+    "new_session_id",
+    "sign_username",
+    "read_username_cookie",
+    "default_cookie_kwargs",
+]
 
 
 def default_cookie_kwargs() -> dict:

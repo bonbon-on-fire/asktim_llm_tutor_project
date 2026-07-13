@@ -1,4 +1,4 @@
-"""Fill ``compiled grading`` Claude rows in hand_grade_workbook.xlsx from *_claude transcript grades."""
+"""Fill ``compiled grading`` Claude rows in hand_grade_workbook.xlsx from *_judge transcript grades."""
 
 from __future__ import annotations
 
@@ -136,9 +136,9 @@ def subsection_deductions_from_grade(grade: dict) -> dict[str, int]:
 
 
 def claude_transcript_path(persona: str, transcript_num: str) -> Path:
-    """Path to a persona's Claude-graded transcript for the zero-padded number."""
+    """Path to a persona's judged (Claude-graded) transcript for the zero-padded number."""
     num = str(transcript_num).strip().zfill(4)
-    return REPO / "transcripts" / persona / f"{persona}_claude" / f"transcript_{num}.json"
+    return REPO / "transcripts" / persona / f"{persona}_judge" / f"transcript_{num}.json"
 
 
 def fill_workbook(path: Path = HAND_XLSX) -> int:

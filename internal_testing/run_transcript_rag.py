@@ -21,7 +21,7 @@ Smoke-test a single conversation first:
 
     python -m internal_testing.run_transcript_rag --limit 1 --yes
 
-Output: ``transcripts/<type>/<type>_raw_rag/transcript_NN.json`` (judge-compatible
+Output: ``transcripts/<type>/<type>_raw/transcript_NN.json`` (judge-compatible
 schema, plus ``context_mode``/``exercise_kind`` metadata).
 """
 
@@ -78,7 +78,7 @@ DEFAULT_PROVIDER = "claude"
 DEFAULT_TURN_SIZE = 10
 DEFAULT_TRIALS = 3
 DEFAULT_WORKERS = 15
-DEFAULT_OUTPUT_SUFFIX = "raw_rag"
+DEFAULT_OUTPUT_SUFFIX = "raw"
 # Gen Z-voiced variants only: 01 (scripted), 02 (unscripted), 03 (strategy-sweep)
 # — one per behavior mode, giving diversity without the formal-register duplicates.
 DEFAULT_PERSONAS = [

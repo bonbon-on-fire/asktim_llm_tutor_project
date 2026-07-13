@@ -33,7 +33,7 @@ def make_message_rating_bp(*, cookies: ModuleType, conversation: ModuleType) -> 
         if rating not in (-1, 0, 1):
             return jsonify({"error": "bad_rating", "reason": "rating must be -1, 0, or 1"}), 400
 
-        username = request.cookies.get(cookies.USERNAME_COOKIE_NAME)
+        username = cookies.read_username_cookie(request)
         msg = conversation.get_message_for_viewer(g.db, message_id, g.session_id, username)
         if msg is None:
             return (

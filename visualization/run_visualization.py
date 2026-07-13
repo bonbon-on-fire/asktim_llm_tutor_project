@@ -2,7 +2,7 @@
 Build transcript grading visualizations.
 
 Reads judged transcripts from:
-    transcripts/<persona_type>/<persona_type>_claude/transcript_*.json
+    transcripts/<persona_type>/<persona_type>_judge/transcript_*.json
 
 Each run generates every configured chart (no prompts). Current charts:
     * Persona-type evaluation charts 01-06 (bar/heatmap/boxplot by persona
@@ -244,10 +244,10 @@ def _read_judged_transcript(path: Path) -> GradeRow | None:
     )
 
 
-def _read_provider_rows_variant(transcripts_dir: Path, provider_suffix: str, folder_suffix: str = "") -> list[GradeRow]:
-    """Scan all *_{provider_suffix}{folder_suffix}/transcript_*.json files and return GradeRow list."""
+def _read_judged_rows(transcripts_dir: Path) -> list[GradeRow]:
+    """Scan all *_judge/transcript_*.json files and return GradeRow list."""
     rows: list[GradeRow] = []
-    for path in sorted(transcripts_dir.glob(f"*/*_{provider_suffix}{folder_suffix}/transcript_*.json")):
+    for path in sorted(transcripts_dir.glob("*/*_judge/transcript_*.json")):
         row = _read_judged_transcript(path)
         if row is not None:
             rows.append(row)
@@ -614,31 +614,25 @@ def _render_charts(rows: list[GradeRow], out_dir: Path) -> int:
 # ---------------------------------------------------------------------------
 
 def main() -> int:
-    """Entry point: load Claude-graded transcripts and generate all configured charts."""
+    """Entry point: load judged transcripts and generate all configured charts."""
     import argparse
 
     parser = argparse.ArgumentParser(description="Transcript grading visualizations.")
-    parser.add_argument(
-        "--rag",
-        action="store_true",
-        help="Read RAG grades (*_claude_rag/) and write to visualization/outputs/rag/.",
-    )
-    args = parser.parse_args()
-    folder_suffix = "_rag" if args.rag else ""
+    parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent.parent
     transcripts_dir = repo_root / "transcripts"
-    out_dir = repo_root / "visualization" / "outputs" / ("rag" if args.rag else "")
+    out_dir = repo_root / "visualization" / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    claude_all_rows = _read_provider_rows_variant(transcripts_dir, "claude", folder_suffix)
-    print(f"Loaded Claude{folder_suffix}: {len(claude_all_rows)} transcripts")
+    claude_all_rows = _read_judged_rows(transcripts_dir)
+    print(f"Loaded judged transcripts: {len(claude_all_rows)}")
 
     if not claude_all_rows:
         print(
-            "No Claude judged transcripts found under "
-            f"transcripts/<persona>/<persona>_claude{folder_suffix}/transcript_*.json. "
-            "Run the judge for Claude first."
+            "No judged transcripts found under "
+            "transcripts/<persona>/<persona>_judge/transcript_*.json. "
+            "Run the judge first."
         )
         return 1
 

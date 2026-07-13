@@ -40,7 +40,7 @@ def make_history_bp(
     @history_bp.get("/api/history")
     def history():
         """List past conversations linked to the current ``username`` cookie (empty if none)."""
-        username = request.cookies.get(cookies.USERNAME_COOKIE_NAME)
+        username = cookies.read_username_cookie(request)
         conversations = (
             conversation.list_conversations_for_username(g.db, username)
             if username
@@ -65,7 +65,7 @@ def make_history_bp(
                 400,
             )
 
-        username = request.cookies.get(cookies.USERNAME_COOKIE_NAME)
+        username = cookies.read_username_cookie(request)
         convo = conversation.get_conversation_for_viewer(
             g.db, convo_id, g.session_id, username
         )
@@ -97,7 +97,7 @@ def make_history_bp(
         Ownership is by session_id or username (same rule as conversation detail).
         Unauthorized/unknown ids return 404 so they can't be probed.
         """
-        username = request.cookies.get(cookies.USERNAME_COOKIE_NAME)
+        username = cookies.read_username_cookie(request)
         img = images.get_image_for_viewer(g.db, image_id, g.session_id, username)
         if img is None:
             return jsonify({"error": "not_found"}), 404

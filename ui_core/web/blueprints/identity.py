@@ -66,7 +66,7 @@ def make_identity_bp(
         return jsonify(
             {
                 "session_id": getattr(g, "session_id", None),
-                "username": request.cookies.get(cookies.USERNAME_COOKIE_NAME),
+                "username": cookies.read_username_cookie(request),
                 "conversation_id": None,
             }
         )
@@ -151,7 +151,9 @@ def make_identity_bp(
             {"username": username, "backfilled_conversations": backfilled}
         )
         response.set_cookie(
-            cookies.USERNAME_COOKIE_NAME, username, **cookies.default_cookie_kwargs()
+            cookies.USERNAME_COOKIE_NAME,
+            cookies.sign_username(username),
+            **cookies.default_cookie_kwargs(),
         )
         return response
 

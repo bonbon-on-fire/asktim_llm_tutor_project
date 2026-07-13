@@ -1,8 +1,10 @@
 """
 Interactive runner that grades all raw transcripts using either GPT or Claude judge.
 
-Reads from transcripts/{persona}/{persona}_raw/ and writes graded copies
-to transcripts/{persona}/{persona}_gpt/ or transcripts/{persona}/{persona}_claude/.
+Reads from transcripts/{persona}/{persona}_raw/ and writes graded copies to
+transcripts/{persona}/{persona}_judge/ (provider-agnostic folder; the judge
+provider/prompt/rubric used are recorded inside each graded file's ``grade``
+object, not in the folder name).
 
 Run with interactive CLI:
     python -m internal_testing.run_transcript_judge
@@ -93,27 +95,16 @@ def _discover_judge_rubrics() -> list[str]:
     return sorted(path.stem for path in judge_rubrics_dir.glob("rubric_*.md"))
 
 
-def _provider_target_path(
-    raw_path: Path,
-    provider: str,
-    source_suffix: str = "raw",
-    output_suffix: str | None = None,
-) -> Path:
-    """Map a source transcript path to its graded counterpart folder.
+def _judge_target_path(raw_path: Path) -> Path:
+    """Map a source transcript path to its graded counterpart folder: always ``*_judge/``.
 
-    If *output_suffix* is given, the target folder is ``*_{provider}_{output_suffix}/``.
-    Otherwise falls back to the auto-derived name:
-    ``*_raw/`` → ``*_{provider}/``, ``*_{suffix}/`` → ``*_{provider}_{suffix}/``.
+    The folder name is provider-agnostic — the judge provider/prompt/rubric used
+    to grade a transcript are recorded inside the graded file's ``grade`` object,
+    not in the folder name.
     """
     persona_dir = raw_path.parent.parent
     persona_type = persona_dir.name
-    if output_suffix is not None:
-        target_folder = f"{persona_type}_{provider}_{output_suffix}"
-    elif source_suffix == "raw":
-        target_folder = f"{persona_type}_{provider}"
-    else:
-        target_folder = f"{persona_type}_{provider}_{source_suffix}"
-    target_dir = persona_dir / target_folder
+    target_dir = persona_dir / f"{persona_type}_judge"
     target_dir.mkdir(parents=True, exist_ok=True)
     return target_dir / raw_path.name
 
@@ -228,7 +219,7 @@ def _get_interactive_config() -> tuple[str, str, str]:
 def _parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Grade all raw transcripts with GPT or Claude judge into provider-specific folders",
+        description="Grade all raw transcripts with GPT or Claude judge into the *_judge/ folder",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -255,13 +246,7 @@ Examples:
         "--source-suffix",
         default="raw",
         help="Subfolder suffix to read from: 'raw' (default) or 'mini'. "
-             "Output folder is *_{provider}/ for 'raw', *_{provider}_{suffix}/ otherwise.",
-    )
-    parser.add_argument(
-        "--output-suffix",
-        default=None,
-        help="Override output folder suffix. Target becomes *_{provider}_{suffix}/. "
-             "If omitted, derived from --source-suffix.",
+             "Output always goes to *_judge/, regardless of source.",
     )
     parser.add_argument(
         "--yes", "-y",
@@ -272,7 +257,7 @@ Examples:
     return parser.parse_args()
 
 
-def _run_judging(provider: str, prompt_name: str, rubric_name: str, source_suffix: str = "raw", yes: bool = False, output_suffix: str | None = None) -> int:
+def _run_judging(provider: str, prompt_name: str, rubric_name: str, source_suffix: str = "raw", yes: bool = False) -> int:
     """Run the judging process with the given configuration."""
     # Check API key based on provider
     try:
@@ -289,12 +274,7 @@ def _run_judging(provider: str, prompt_name: str, rubric_name: str, source_suffi
         print(f"No *_{source_suffix}/ transcripts found under {TRANSCRIPTS_DIR}")
         return 1
 
-    if output_suffix is not None:
-        target_label = f"*_{provider}_{output_suffix}/"
-    elif source_suffix == "raw":
-        target_label = f"*_{provider}/"
-    else:
-        target_label = f"*_{provider}_{source_suffix}/"
+    target_label = "*_judge/"
 
     # Show summary and get confirmation
     summary = (
@@ -319,7 +299,7 @@ def _run_judging(provider: str, prompt_name: str, rubric_name: str, source_suffi
 
     tasks: list[tuple[Path, Path]] = []
     for raw_path in source_files:
-        target_path = _provider_target_path(raw_path, provider, source_suffix, output_suffix)
+        target_path = _judge_target_path(raw_path)
         tasks.append((raw_path, target_path))
 
     global _progress_done
@@ -394,7 +374,7 @@ def main(argv: list[str] | None = None) -> int:
                 print("Error: --rubric is required in non-interactive mode")
                 return 1
 
-        return _run_judging(provider, prompt_name, rubric_name, source_suffix=args.source_suffix, yes=args.yes, output_suffix=args.output_suffix)
+        return _run_judging(provider, prompt_name, rubric_name, source_suffix=args.source_suffix, yes=args.yes)
         
     except (RuntimeError, ValueError) as error:
         print(f"Error: {error}")

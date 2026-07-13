@@ -55,6 +55,18 @@ if has_index(course):
     block = format_context(chunks, course)   # injected on the latest student turn
 ```
 
+### Mandatory RAG (fail-closed)
+
+RAG is the **default** context mode in both apps (`ui_core.TutorBridge`): a turn
+uses `rag` whenever the course has no custom context. When the effective mode is
+`rag` and retrieval returns **no records** — no index, zero chunks after
+`max_week` scoping, or an embedding/search error — the bridge raises
+`RagUnavailableError` **before any model call**. The chat route converts that into
+an `event: error` SSE frame, so the student sees the standard "Something went
+wrong" banner and no tutor turn is produced or persisted. A missing index does
+NOT silently fall back to full context. Set `TUTOR_CONTEXT_MODE=full_context` to
+force the historical baked-in behavior deploy-wide.
+
 ### Citation labels (`lecture_index.json`)
 
 Each retrieved chunk is labeled in the injected block so the tutor can cite it.

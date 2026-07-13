@@ -45,8 +45,8 @@ package, plus its own sandbox-specific additions on top:
   `ui_core.services.*`. `services/tutor_bridge.py` defines `SandboxTutorBridge`,
   a subclass of `ui_core.tutor_bridge.TutorBridge` that overrides its hooks
   (`prepare_ctx`, `cache_key`, `build_assignment_text`, `build_system_prompt`,
-  `retrieved_context`, `turn_attachments`) to add sandbox_ui's RAG /
-  custom-context / include-toggle behavior. **Per-turn RAG is the default context mode** for courses with an index; when RAG retrieval yields no results, both apps fail closed with an error banner and `TUTOR_CONTEXT_MODE=full_context` is the escape hatch — see [`rag/README.md`](../rag/README.md#mandatory-rag-fail-closed).
+  `turn_attachments`) to add sandbox_ui's custom-context / include-toggle
+  behavior on top of the inherited RAG core. **Per-turn RAG is the default context mode** whenever a course has no custom context; when RAG retrieval yields no results (including a missing index), both apps fail closed with an error banner and `TUTOR_CONTEXT_MODE=full_context` is the escape hatch — see [`rag/README.md`](../rag/README.md#mandatory-rag-fail-closed).
 - `db/models.py` defines sandbox_ui's own `Conversation` (carrying its 10
   sandbox-only columns — `exercise_kind`, the `*_enabled` toggles, `context_mode`,
   and the `custom_*` snapshots) but pulls `Message`, `Student`, `UploadedImage`,

@@ -116,8 +116,12 @@ def _install_stubs(module, recorder: _Recorder, canned_raw: str) -> dict:
         )
     }
 
-    def fake_create_tutor_graph(system_prompt):
-        """Return a sentinel graph tuple instead of compiling a real LangGraph."""
+    def fake_create_tutor_graph(system_prompt, *, provider="gpt", figures=None):
+        """Return a sentinel graph tuple instead of compiling a real LangGraph.
+
+        Accepts ``provider``/``figures`` to match the real ``create_tutor_graph``
+        signature — the bridge now passes ``provider=`` per conversation.
+        """
         return ("FAKE_GRAPH", system_prompt)
 
     def fake_build_tutor_model(provider="gpt"):

@@ -120,6 +120,18 @@ def _resolve_context_mode(course: str, has_custom: bool, requested: str | None =
     return mode
 
 
+# Tutor LLM providers. main_ui has no selector and always resolves to the default
+# (claude); sandbox_ui lets a tester pick per conversation via the wizard.
+_VALID_PROVIDERS = {"gpt", "claude"}
+_DEFAULT_PROVIDER = "claude"
+
+
+def _resolve_provider(requested: str | None) -> str:
+    """Tutor provider for this call: ``claude`` (default, Sonnet 5) or ``gpt`` (gpt-5.4)."""
+    p = (requested or "").strip().lower()
+    return p if p in _VALID_PROVIDERS else _DEFAULT_PROVIDER
+
+
 def _week_for_exercise(exercise) -> int | None:
     """The course week for the current problem, or None if not numeric.
 
@@ -166,8 +178,18 @@ class TutorBridge:
         return ctx
 
     def cache_key(self, tutor: str, course: str, exercise: str, **ctx):
-        """Key for the graph/stream caches, or ``None`` to skip caching."""
-        return (tutor, course, exercise, ctx.get("context_mode", "full_context"))
+        """Key for the graph/stream caches, or ``None`` to skip caching.
+
+        Includes the provider so a gpt and a claude turn for the same
+        course/exercise get separate cached (model, system_prompt) entries.
+        """
+        return (
+            tutor,
+            course,
+            exercise,
+            ctx.get("context_mode", "full_context"),
+            _resolve_provider(ctx.get("provider")),
+        )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
         """Concatenate about + (course/syllabus/lectures in full_context only) + exercise + solution key.
@@ -303,9 +325,9 @@ class TutorBridge:
                 return cached
         assignment_text = self.build_assignment_text(course, exercise, **ctx)
         system_prompt = self.build_system_prompt(tutor, assignment_text, **ctx)
-        # main_ui and sandbox_ui both serve the tutor on Claude (Sonnet 5); the
-        # model id is ANTHROPIC_MODEL-overridable in build_tutor_model.
-        graph = create_tutor_graph(system_prompt, provider="claude")
+        # Tutor provider is per-call: main_ui never passes one (-> claude/Sonnet 5),
+        # sandbox_ui threads the tester's wizard choice through ctx.
+        graph = create_tutor_graph(system_prompt, provider=_resolve_provider(ctx.get("provider")))
         if key is not None:
             self._graph_cache[key] = graph
         return graph
@@ -321,8 +343,8 @@ class TutorBridge:
                 return cached
         assignment_text = self.build_assignment_text(course, exercise, **ctx)
         system_prompt = self.build_system_prompt(tutor, assignment_text, **ctx)
-        # Claude (Sonnet 5) for the streaming path too — see _get_or_build_graph.
-        model = build_tutor_model(provider="claude")
+        # Per-call provider for the streaming path too — see _get_or_build_graph.
+        model = build_tutor_model(provider=_resolve_provider(ctx.get("provider")))
         if key is not None:
             self._stream_cache[key] = (model, system_prompt)
         return model, system_prompt

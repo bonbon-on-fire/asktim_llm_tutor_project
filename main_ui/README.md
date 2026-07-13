@@ -68,8 +68,8 @@ curl http://127.0.0.1:5001/health
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | — | Required for the tutor LLM call. |
-| `ANTHROPIC_API_KEY` | — | Required only if you point a tutor prompt at Claude. |
+| `ANTHROPIC_API_KEY` | — | Required — the tutor runs on Claude (Sonnet 5) by default. |
+| `OPENAI_API_KEY` | — | Required — RAG embeddings (`text-embedding-3-small`) and the Sandbox's optional `gpt-5.4` tutor. |
 | `DATABASE_URL` | `sqlite:///./main_ui.db` | Postgres URL recommended for real use. Example: `postgresql+psycopg://postgres:PASSWORD@localhost:5432/asktim`. |
 | `MAIN_UI_SECRET_KEY` | `dev-insecure-key` | Flask session signing key. Replace in production. |
 | `MAIN_UI_COOKIE_SECURE` | `true` | Set to `false` for non-HTTPS local testing if cookies aren't sticking. |

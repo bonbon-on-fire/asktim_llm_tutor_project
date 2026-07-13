@@ -12,7 +12,7 @@ Current defaults in code (`eval/tutor_judge/run_judge.py`):
 
 ```text
 judge/
-  run_judge.py                       — unified single-transcript judge core (provider: gpt|claude)
+  run_judge.py                       — unified single-transcript judge core (provider: gpt|claude, default claude)
   hand_grade_workbook.xlsx           — manual grading workbook for judge calibration
   hand_grade_workbook_build.py       — build workbook from stratified sample + run Claude fill
   hand_grade_workbook_claude_fill.py — fill compiled `claude` rows from *_claude transcript grades

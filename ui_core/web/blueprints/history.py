@@ -82,6 +82,10 @@ def make_history_bp(
                 "last_active_at": (
                     convo.last_active_at.isoformat() if convo.last_active_at else None
                 ),
+                # sandbox_ui-only: which LLM the tutor ran on for this conversation.
+                # main_ui's Conversation has no such column, so getattr yields None
+                # there (harmless — main_ui's frontend doesn't read it).
+                "provider": getattr(convo, "provider", None),
                 "messages": conversation.get_messages_for_conversation(g.db, convo),
             }
         )

@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ui_core.tutor_bridge import TutorBridge
+from ui_core.tutor_bridge import TutorBridge, _resolve_provider
 from utils.curriculum import (
     SOLUTION_CONTEXT_LABEL,
     exercise_path,
@@ -135,6 +135,7 @@ class SandboxTutorBridge(TutorBridge):
             ctx.get("include_lectures", True),
             ctx.get("exercise_kind", "exercise"),
             ctx.get("context_mode", "full_context"),
+            _resolve_provider(ctx.get("provider")),
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
@@ -166,6 +167,7 @@ def get_tutor_reply(
     include_syllabus: bool = True,
     include_lectures: bool = True,
     context_mode: str | None = None,
+    provider: str | None = None,
 ) -> dict:
     """Return one tutor reply for the given conversation state.
 
@@ -194,6 +196,7 @@ def get_tutor_reply(
         include_syllabus=include_syllabus,
         include_lectures=include_lectures,
         context_mode=context_mode,
+        provider=provider,
     )
 
 
@@ -210,6 +213,7 @@ def stream_tutor_reply(
     include_syllabus: bool = True,
     include_lectures: bool = True,
     context_mode: str | None = None,
+    provider: str | None = None,
 ):
     """Stream a tutor reply as a sequence of event dicts.
 
@@ -232,4 +236,5 @@ def stream_tutor_reply(
         include_syllabus=include_syllabus,
         include_lectures=include_lectures,
         context_mode=context_mode,
+        provider=provider,
     )

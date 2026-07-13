@@ -41,6 +41,7 @@ def find_or_create_conversation(
     syllabus_enabled: bool = True,
     lectures_enabled: bool = True,
     context_mode: str | None = None,
+    provider: str | None = None,
 ) -> Conversation:
     """Resolve to an existing conversation or insert a new one.
 
@@ -63,6 +64,7 @@ def find_or_create_conversation(
             "syllabus_enabled": syllabus_enabled,
             "lectures_enabled": lectures_enabled,
             "context_mode": context_mode,
+            "provider": provider,
         },
     )
 

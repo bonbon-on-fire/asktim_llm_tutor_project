@@ -186,6 +186,14 @@ def chat():
     if context_mode is not None:
         context_mode = str(context_mode).strip().lower() or None
 
+    # sandbox_ui tutor-model toggle: per-conversation LLM provider ("claude" |
+    # "gpt"). None = server default (claude / Sonnet 5). Only honored when creating
+    # a new conversation; continuations replay the stored value. The bridge's
+    # _resolve_provider coerces anything unrecognized back to the default.
+    provider = src.get("provider")
+    if provider is not None:
+        provider = str(provider).strip().lower() or None
+
     convo_id_raw = src.get("conversation_id")
     convo_id: UUID | None = None
     if convo_id_raw is not None:
@@ -243,6 +251,7 @@ def chat():
             syllabus_enabled=syllabus_enabled,
             lectures_enabled=lectures_enabled,
             context_mode=context_mode,
+            provider=provider,
         )
     except WrongSessionError:
         return _abort_with(_wrong_session())
@@ -312,6 +321,9 @@ def chat():
     # Legacy rows predating this column read back NULL; treat as ON.
     stream_lectures = convo.lectures_enabled is None or bool(convo.lectures_enabled)
     stream_context_mode = convo.context_mode
+    # Legacy rows predating this column read back NULL; the bridge resolves that
+    # to the default provider (claude).
+    stream_provider = convo.provider
 
     try:
         db.commit()
@@ -337,6 +349,7 @@ def chat():
         include_syllabus=stream_syllabus,
         include_lectures=stream_lectures,
         context_mode=stream_context_mode,
+        provider=stream_provider,
     )
 
     def event_stream():

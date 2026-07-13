@@ -72,8 +72,13 @@ underscore) but documented here for maintainers.
 
 - **`build_tutor_model(provider="gpt")`** — construct the LangChain chat model.
   `"gpt"` → `ChatOpenAI` (`OPENAI_MODEL`, default `gpt-5.4`); `"claude"` →
-  `ChatAnthropic` (`ANTHROPIC_MODEL`, default `claude-sonnet-4-6`). Exposed so the
-  streaming path can call `model.stream(...)` directly.
+  `ChatAnthropic` (`ANTHROPIC_MODEL`, default `claude-sonnet-5`, built with
+  `max_tokens=8192` and thinking disabled — the tutor streams a strict two-field
+  JSON via a char-level extractor, so adaptive thinking is turned off and the low
+  unknown-model token fallback is overridden). Exposed so the streaming path can
+  call `model.stream(...)` directly. **Both chat apps now pick the provider per
+  call** (`main_ui` → `claude`/Sonnet 5 by default; `sandbox_ui` → the tester's
+  wizard choice), resolved via `ui_core.tutor_bridge._resolve_provider`.
 - **`load_system_prompt(prompt_name="tutor_01", assignment_override=None)`** — read
   `prompts/<prompt_name>.txt`; when `assignment_override` is given, replace the
   `<Assignment>…</Assignment>` block with it. Uses a regex *replacement function*

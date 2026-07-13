@@ -103,6 +103,10 @@
   const detailMessages = document.getElementById("detail-messages");
 
   let conversationId = null;
+  // The provider of the active/loaded conversation, used to label the tutor
+  // model on each tutor bubble. Tracks config.provider for new conversations and
+  // the loaded conversation's stored provider when replaying history.
+  let activeProvider = config.provider;
   let isSending = false;
   let studentMessageCount = 0;
   let modalOpen = false;
@@ -323,6 +327,22 @@
     li.appendChild(wrap);
   }
 
+  // Which model produced a tutor turn, from the conversation's provider
+  // ("gpt" → gpt-5.4, otherwise claude-sonnet-5). Matches the wizard dropdown.
+  function providerModelLabel(provider) {
+    return provider === "gpt" ? "gpt-5.4" : "claude-sonnet-5";
+  }
+
+  // Small non-collapsible label shown ABOVE the "Pedagogical reasoning" row, in
+  // the same muted font, naming the LLM behind this tutor turn. Sandbox-only
+  // (this whole file is sandbox_ui's chat.js — main_ui has its own).
+  function appendModelLabel(li, provider) {
+    const div = document.createElement("div");
+    div.className = "review-model";
+    div.textContent = providerModelLabel(provider);
+    li.appendChild(div);
+  }
+
   // Collapsible "Pedagogical reasoning" disclosure under a tutor message —
   // same markup/formatting as database_ui's review dashboard. The Sandbox is a
   // dev/TA tool, so surfacing the tutor's hidden reasoning is intentional.
@@ -393,6 +413,7 @@
     }
     appendFileChips(li, attachmentNames);
     if (role === "tutor") {
+      appendModelLabel(li, activeProvider);
       appendReasoning(li, reasoning);
       appendRetrieved(li, retrieved);
     }
@@ -644,8 +665,9 @@
     // "Exercise 3 · May 19 · 8 messages" — strip leading zeros from
     // exercise number; show the most-recent-active date.
     const exNumber = parseInt(c.exercise_number, 10);
+    const kindLabel = c.exercise_kind === "practice" ? "Practice" : "Exercise";
     const parts = [
-      `Exercise ${Number.isFinite(exNumber) ? exNumber : c.exercise_number}`,
+      `${kindLabel} ${Number.isFinite(exNumber) ? exNumber : c.exercise_number}`,
     ];
     if (c.last_active_at) {
       const d = new Date(c.last_active_at);
@@ -739,6 +761,7 @@
       }
       const data = await response.json();
       conversationId = data.id;
+      activeProvider = data.provider || config.provider || "claude";
       studentMessageCount = (data.messages || []).filter(
         (m) => m.role === "student",
       ).length;
@@ -817,11 +840,11 @@
   // ---- Create-context wizard (sandbox_ui only) ---------------------------------
 
   const CREATE_STEPS = ["course", "exercise", "tutor", "syllabus", "lectures"];
-  const CREATE_LABELS = ["Course", "Exercise", "Tutor prompt", "Syllabus", "Lectures"];
+  const CREATE_LABELS = ["Course", "Exercise", "Tutor", "Syllabus", "Lectures"];
   const STEP_LABELS = {
     course: "Course",
     exercise: "Exercise",
-    tutor: "Tutor prompt",
+    tutor: "Tutor",
     syllabus: "Syllabus",
     lectures: "Lectures",
   };
@@ -834,8 +857,6 @@
       : CREATE_STEPS;
   }
   const LOCKED_TUTOR = "tutor_06"; // the tutor prompt is locked to this in the wizard
-  const LOCK_ICON_SVG =
-    '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
 
   function buildSelect(options, value) {
     const sel = document.createElement("select");
@@ -868,12 +889,7 @@
     const step = steps[createStep];
     const stepLabelText =
       `Step ${createStep + 1} of ${steps.length}: ${STEP_LABELS[step]}`;
-    if (step === "tutor") {
-      // Tutor prompt is locked to tutor_06 — show a small lock icon by the label.
-      createStepLabel.innerHTML = `${stepLabelText} ${LOCK_ICON_SVG}`;
-    } else {
-      createStepLabel.textContent = stepLabelText;
-    }
+    createStepLabel.textContent = stepLabelText;
     createStepBody.innerHTML = "";
 
     let options = [];
@@ -955,19 +971,15 @@
 
     // sandbox_ui tutor-model toggle: the tutor *prompt* is locked, but the LLM
     // *provider* is selectable here — Claude Sonnet 5 (default) or OpenAI gpt-5.4.
+    // Rendered as a bare dropdown (no label) beneath the locked prompt select.
     if (step === "tutor") {
-      const provRow = document.createElement("div");
-      provRow.className = "provider-row";
-      const provLabel = document.createElement("label");
-      provLabel.textContent = "Tutor model";
-      provLabel.setAttribute("for", "create-provider-select");
       const provSel = document.createElement("select");
       provSel.className = "context-select";
       provSel.id = "create-provider-select";
       const current = createDraft.provider || "claude";
       for (const o of [
-        { value: "claude", label: "Claude (Sonnet 5)" },
-        { value: "gpt", label: "OpenAI (gpt-5.4)" },
+        { value: "claude", label: "claude-sonnet-5" },
+        { value: "gpt", label: "gpt-5.4" },
       ]) {
         const opt = document.createElement("option");
         opt.value = o.value;
@@ -975,9 +987,7 @@
         if (o.value === current) opt.selected = true;
         provSel.appendChild(opt);
       }
-      provRow.appendChild(provLabel);
-      provRow.appendChild(provSel);
-      createStepBody.appendChild(provRow);
+      createStepBody.appendChild(provSel);
     }
 
     // RAG toggle — course step only, and only for courses with a built index.
@@ -1147,6 +1157,7 @@
 
     config.tutor = t.existing;
     config.provider = createDraft.provider || "claude";
+    activeProvider = config.provider;
 
     config.syllabus = s.value === "default";
     config.lectures = l.value === "default";
@@ -1451,6 +1462,7 @@
               // any tokens we'd accumulated in case they drifted. Render
               // markdown now that the full (table-complete) reply is in hand.
               setMessageContent(tutorBubble, "tutor", finalReply);
+              appendModelLabel(tutorBubble, activeProvider);
               appendReasoning(
                 tutorBubble,
                 parsed.data && parsed.data.pedagogical_reasoning,

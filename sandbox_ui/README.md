@@ -84,7 +84,7 @@ Both apps can run side by side.
 The solid-blue **Edit context** button (top of the sidebar, above "Log in")
 opens a step-by-step wizard — internally still called the "Create context"
 wizard in code/routes, since it also starts a fresh conversation. The steps
-are **Course → Exercise → Tutor prompt → Syllabus → Lectures**, each offering
+are **Course → Exercise → Tutor → Syllabus → Lectures**, each offering
 built-in options from the curriculum:
 
 - **Course** — any folder under `curriculum/` or **No course description** (keeps
@@ -105,12 +105,17 @@ built-in options from the curriculum:
   problem** (`practices/practice_<NN>.txt`) for the chosen course, shown as
   separate "Exercises" and "Practice problems" groups. The chosen kind is stored
   per conversation in `exercise_kind` (defaults to `exercise`)
-- **Tutor prompt** — every built-in prompt is **listed for visibility**, but the
-  step is **locked to `tutor_06`** (the dropdown is disabled and shows a lock
-  icon) and the routes ignore any client-supplied `tutor` (mirrors `main_ui`'s
-  single-prompt lock). The dropdown is populated from `list_tutors()` in
-  `routes/_validation.py`; the locked value lives in `static/js/chat.js`
-  (`LOCKED_TUTOR`) and `DEFAULT_TUTOR` — change both to re-point the lock
+- **Tutor** — two controls. The **prompt** dropdown lists every built-in prompt
+  for visibility but is **locked to `tutor_06`** (disabled; the routes ignore any
+  client-supplied `tutor`, mirroring `main_ui`'s single-prompt lock). Beneath it,
+  a **tutor-model** dropdown selects the LLM the tutor runs on — `claude-sonnet-5`
+  (default) or `gpt-5.4` — stored per conversation in the `provider` column
+  (`claude`/`gpt`; `NULL` = the default, Claude). The prompt dropdown is populated
+  from `list_tutors()` in `routes/_validation.py`; the locked value lives in
+  `static/js/chat.js` (`LOCKED_TUTOR`) and `DEFAULT_TUTOR`. Provider selection
+  (default + coercion of anything unrecognized back to `claude`) is
+  `_resolve_provider()` in `ui_core/tutor_bridge.py`, which threads through
+  `build_tutor_model` / `create_tutor_graph` and is part of the graph/stream cache key
 - **Syllabus** — the course's `syllabus.txt` or none
 - **Lectures** — the course's `lectures/*.txt` transcripts (concatenated) or none.
   Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)

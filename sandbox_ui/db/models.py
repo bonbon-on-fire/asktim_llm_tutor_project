@@ -70,6 +70,11 @@ class Conversation(Base):
     # (rag when the course has an index, else full_context). create_all can't add
     # this to a pre-existing table, but _reconcile_columns() in run_app does.
     context_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # sandbox_ui-only: per-conversation tutor LLM provider chosen via the
+    # Create-context wizard's tutor step ("claude" | "gpt"). NULL = server default
+    # (claude / Sonnet 5). create_all can't add this to a pre-existing table, but
+    # _reconcile_columns() in run_app does.
+    provider: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )

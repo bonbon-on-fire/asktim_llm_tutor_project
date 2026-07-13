@@ -13,9 +13,9 @@
   // Per-conversation RAG toggle (Create-context wizard). null = let the server
   // resolve by default; "rag" / "full_context" force the mode.
   if (typeof config.contextMode === "undefined") config.contextMode = null;
-  // Per-conversation tutor model (Create-context wizard tutor step): "claude"
-  // (Sonnet 5, default) or "gpt" (gpt-5.4).
-  if (typeof config.provider === "undefined") config.provider = "claude";
+  // Per-conversation tutor model (Create-context wizard tutor step): "gpt"
+  // (gpt-5.4, sandbox default) or "claude" (Sonnet 5).
+  if (typeof config.provider === "undefined") config.provider = "gpt";
   // Which content kind the exercise selection refers to: "exercise" (default)
   // or "practice". Carried with each /api/chat send.
   if (typeof config.exerciseKind === "undefined") config.exerciseKind = "exercise";
@@ -970,16 +970,16 @@
     createStepBody.appendChild(sel);
 
     // sandbox_ui tutor-model toggle: the tutor *prompt* is locked, but the LLM
-    // *provider* is selectable here — Claude Sonnet 5 (default) or OpenAI gpt-5.4.
+    // *provider* is selectable here — OpenAI gpt-5.4 (sandbox default) or Claude Sonnet 5.
     // Rendered as a bare dropdown (no label) beneath the locked prompt select.
     if (step === "tutor") {
       const provSel = document.createElement("select");
       provSel.className = "context-select";
       provSel.id = "create-provider-select";
-      const current = createDraft.provider || "claude";
+      const current = createDraft.provider || "gpt";
       for (const o of [
         { value: "claude", label: "claude-sonnet-5" },
-        { value: "gpt", label: "gpt-5.4" },
+        { value: "gpt", label: "gpt-5.4 (default)" },
       ]) {
         const opt = document.createElement("option");
         opt.value = o.value;
@@ -1105,7 +1105,7 @@
       course: { existing: "supply_chain_design", enabled: true },
       exercise: { existing: "", kind: "exercise" },
       tutor: { existing: LOCKED_TUTOR },
-      provider: "claude", // sandbox tutor-model toggle: "claude" | "gpt"
+      provider: "gpt", // sandbox tutor-model toggle: "gpt" (default) | "claude"
       syllabus: { value: "" },
       lectures: { value: "" },
       // Always use RAG for course context (no user-facing toggle); auto-disabled
@@ -1156,7 +1156,7 @@
     config.exerciseKind = e.kind === "practice" ? "practice" : "exercise";
 
     config.tutor = t.existing;
-    config.provider = createDraft.provider || "claude";
+    config.provider = createDraft.provider || "gpt";
     activeProvider = config.provider;
 
     config.syllabus = s.value === "default";

@@ -34,7 +34,7 @@ from uuid import UUID
 
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
-from sandbox_ui.cookies import USERNAME_COOKIE_NAME
+from sandbox_ui.cookies import read_username_cookie
 from sandbox_ui.routes._validation import (
     DEFAULT_TUTOR,
     validate_course,
@@ -186,13 +186,17 @@ def chat():
     if context_mode is not None:
         context_mode = str(context_mode).strip().lower() or None
 
-    # sandbox_ui tutor-model toggle: per-conversation LLM provider ("claude" |
-    # "gpt"). None = server default (claude / Sonnet 5). Only honored when creating
-    # a new conversation; continuations replay the stored value. The bridge's
-    # _resolve_provider coerces anything unrecognized back to the default.
+    # sandbox_ui tutor-model toggle: per-conversation LLM provider ("gpt" |
+    # "claude"). Sandbox defaults to "gpt" (gpt-5.4) when the client sends nothing;
+    # only honored when creating a new conversation, continuations replay the stored
+    # value. (main_ui has no selector and stays on the shared default via
+    # _resolve_provider.) The bridge's _resolve_provider coerces anything
+    # unrecognized back to its default.
     provider = src.get("provider")
     if provider is not None:
         provider = str(provider).strip().lower() or None
+    if provider is None:
+        provider = "gpt"
 
     convo_id_raw = src.get("conversation_id")
     convo_id: UUID | None = None
@@ -225,7 +229,7 @@ def chat():
     # well before the streaming generator runs its INSERTs. We commit
     # explicitly inside the generator instead.
     db = g.pop("db")
-    username = request.cookies.get(USERNAME_COOKIE_NAME)
+    username = read_username_cookie(request)
 
     def _abort_with(json_response):
         """Roll back and close the DB session, then return json_response."""
@@ -321,8 +325,9 @@ def chat():
     # Legacy rows predating this column read back NULL; treat as ON.
     stream_lectures = convo.lectures_enabled is None or bool(convo.lectures_enabled)
     stream_context_mode = convo.context_mode
-    # Legacy rows predating this column read back NULL; the bridge resolves that
-    # to the default provider (claude).
+    # New sandbox rows store "gpt" (the sandbox default) explicitly. Legacy rows
+    # predating this column read back NULL; the bridge's _resolve_provider maps that
+    # to the shared default (claude).
     stream_provider = convo.provider
 
     try:

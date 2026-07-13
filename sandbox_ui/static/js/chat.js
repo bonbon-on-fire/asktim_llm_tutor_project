@@ -13,6 +13,9 @@
   // Per-conversation RAG toggle (Create-context wizard). null = let the server
   // resolve by default; "rag" / "full_context" force the mode.
   if (typeof config.contextMode === "undefined") config.contextMode = null;
+  // Per-conversation tutor model (Create-context wizard tutor step): "claude"
+  // (Sonnet 5, default) or "gpt" (gpt-5.4).
+  if (typeof config.provider === "undefined") config.provider = "claude";
   // Which content kind the exercise selection refers to: "exercise" (default)
   // or "practice". Carried with each /api/chat send.
   if (typeof config.exerciseKind === "undefined") config.exerciseKind = "exercise";
@@ -90,7 +93,8 @@
   const createCancel = document.getElementById("create-cancel");
   let createModalOpen = false;
   let createStep = 0;
-  // Per-step draft: each field is { mode: "existing"|"custom", existing, custom }.
+  // Per-step draft: built-in selection only — e.g. course:{existing,enabled},
+  // exercise:{existing,kind}, syllabus/lectures:{value}, tutor:{existing} (locked).
   let createDraft = null;
 
   const detailView = document.getElementById("detail-view");
@@ -949,6 +953,33 @@
     if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_06
     createStepBody.appendChild(sel);
 
+    // sandbox_ui tutor-model toggle: the tutor *prompt* is locked, but the LLM
+    // *provider* is selectable here — Claude Sonnet 5 (default) or OpenAI gpt-5.4.
+    if (step === "tutor") {
+      const provRow = document.createElement("div");
+      provRow.className = "provider-row";
+      const provLabel = document.createElement("label");
+      provLabel.textContent = "Tutor model";
+      provLabel.setAttribute("for", "create-provider-select");
+      const provSel = document.createElement("select");
+      provSel.className = "context-select";
+      provSel.id = "create-provider-select";
+      const current = createDraft.provider || "claude";
+      for (const o of [
+        { value: "claude", label: "Claude (Sonnet 5)" },
+        { value: "gpt", label: "OpenAI (gpt-5.4)" },
+      ]) {
+        const opt = document.createElement("option");
+        opt.value = o.value;
+        opt.textContent = o.label;
+        if (o.value === current) opt.selected = true;
+        provSel.appendChild(opt);
+      }
+      provRow.appendChild(provLabel);
+      provRow.appendChild(provSel);
+      createStepBody.appendChild(provRow);
+    }
+
     // RAG toggle — course step only, and only for courses with a built index.
     // When on, course/syllabus/lectures are retrieved and the syllabus step is
     // skipped.
@@ -1030,7 +1061,13 @@
       d.existing = num || "";
       return;
     }
-    // tutor step is locked to LOCKED_TUTOR — nothing else to save.
+    if (step === "tutor") {
+      // Tutor prompt is locked, but persist the selected LLM provider.
+      const prov = document.getElementById("create-provider-select");
+      if (prov) createDraft.provider = prov.value;
+      return;
+    }
+    // (no other step needs saving)
   }
 
   async function openCreateModal() {
@@ -1058,6 +1095,7 @@
       course: { existing: "supply_chain_design", enabled: true },
       exercise: { existing: "", kind: "exercise" },
       tutor: { existing: LOCKED_TUTOR },
+      provider: "claude", // sandbox tutor-model toggle: "claude" | "gpt"
       syllabus: { value: "" },
       lectures: { value: "" },
       // Always use RAG for course context (no user-facing toggle); auto-disabled
@@ -1108,6 +1146,7 @@
     config.exerciseKind = e.kind === "practice" ? "practice" : "exercise";
 
     config.tutor = t.existing;
+    config.provider = createDraft.provider || "claude";
 
     config.syllabus = s.value === "default";
     config.lectures = l.value === "default";
@@ -1324,6 +1363,7 @@
       lectures: config.lectures,
     };
     if (config.contextMode != null) fields.context_mode = config.contextMode;
+    if (config.provider) fields.provider = config.provider;
     if (conversationId) fields.conversation_id = conversationId;
 
     let body;

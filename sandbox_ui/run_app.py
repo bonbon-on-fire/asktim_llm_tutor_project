@@ -140,9 +140,18 @@ def _drop_custom_context_columns(engine) -> None:
     to_drop = [name for name in removed if name in existing]
     if not to_drop:
         return
-    with engine.begin() as conn:
-        for name in to_drop:
-            conn.execute(text(f'ALTER TABLE conversations DROP COLUMN {name}'))
+    for name in to_drop:
+        # Each drop in its own transaction, guarded — under multi-worker gunicorn
+        # (no --preload) every worker runs this on boot and races. A worker that
+        # loses the race sees the column already gone and Postgres raises
+        # UndefinedColumn; swallow it (a poisoned transaction can't batch the rest,
+        # so one statement per transaction). Mirrors _reconcile_columns /
+        # _migrate_email_to_username, which guard the same race.
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f'ALTER TABLE conversations DROP COLUMN {name}'))
+        except Exception:
+            pass
 
 
 app = create_app(

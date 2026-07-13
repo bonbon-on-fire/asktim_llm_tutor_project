@@ -303,7 +303,9 @@ class TutorBridge:
                 return cached
         assignment_text = self.build_assignment_text(course, exercise, **ctx)
         system_prompt = self.build_system_prompt(tutor, assignment_text, **ctx)
-        graph = create_tutor_graph(system_prompt)
+        # main_ui and sandbox_ui both serve the tutor on Claude (Sonnet 5); the
+        # model id is ANTHROPIC_MODEL-overridable in build_tutor_model.
+        graph = create_tutor_graph(system_prompt, provider="claude")
         if key is not None:
             self._graph_cache[key] = graph
         return graph
@@ -319,7 +321,8 @@ class TutorBridge:
                 return cached
         assignment_text = self.build_assignment_text(course, exercise, **ctx)
         system_prompt = self.build_system_prompt(tutor, assignment_text, **ctx)
-        model = build_tutor_model()
+        # Claude (Sonnet 5) for the streaming path too — see _get_or_build_graph.
+        model = build_tutor_model(provider="claude")
         if key is not None:
             self._stream_cache[key] = (model, system_prompt)
         return model, system_prompt

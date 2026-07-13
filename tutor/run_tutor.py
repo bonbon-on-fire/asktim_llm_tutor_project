@@ -155,9 +155,18 @@ def build_tutor_model(provider: str = "gpt"):
     bypassing the LangGraph wrapper used by the non-streaming path.
     """
     if provider == "claude":
+        # max_tokens is set explicitly: langchain-anthropic's model profile
+        # doesn't know claude-sonnet-5 yet and falls back to a low 4096, which can
+        # truncate long tutor replies (markdown tables + LaTeX). thinking is
+        # disabled because the tutor streams a strict two-field JSON via a
+        # character-level extractor — adaptive thinking (Sonnet 5's default)
+        # would emit thinking blocks that corrupt the stream and burn the token
+        # budget, and the tutor already reasons in-band via pedagogical-reasoning.
         return ChatAnthropic(
-            model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+            model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5"),
             api_key=_require_anthropic_api_key(),
+            max_tokens=8192,
+            thinking={"type": "disabled"},
         )
     return ChatOpenAI(
         model=os.environ.get("OPENAI_MODEL", "gpt-5.4"),

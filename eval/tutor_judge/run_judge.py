@@ -799,7 +799,7 @@ def judge_transcript_claude(
 def judge_transcript(
     transcript_name: str,
     *,
-    provider: Provider = "gpt",
+    provider: Provider = "claude",
     prompt_name: str = DEFAULT_JUDGE_PROMPT,
     rubric_name: str = DEFAULT_RUBRIC,
     output_name: str | None = None,
@@ -830,7 +830,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Judge one transcript with GPT or Claude.")
     parser.add_argument("transcript_name", help="Transcript stem relative to transcripts/ (no .json)")
-    parser.add_argument("--provider", choices=["gpt", "claude"], default="gpt")
+    parser.add_argument("--provider", choices=["gpt", "claude"], default="claude")
     parser.add_argument("--prompt", default=DEFAULT_JUDGE_PROMPT)
     parser.add_argument("--rubric", default=DEFAULT_RUBRIC)
     args = parser.parse_args()

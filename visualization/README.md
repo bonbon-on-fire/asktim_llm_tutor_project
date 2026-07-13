@@ -9,7 +9,7 @@ outputs (no prompts or modes): the six persona-type evaluation charts
 
 **Claude machine grades** — judged transcript JSON files:
 
-- `transcripts/<persona_type>/<persona_type>_claude/transcript_*.json` — standard Claude grades
+- `transcripts/<persona_type>/<persona_type>_judge/transcript_*.json` — judged (graded) transcripts
 
 Paths follow the current repo layout: one folder per persona family (`chaotic`, `cooperative`, `clueless`) with graded subfolders.
 
@@ -25,20 +25,10 @@ python -m visualization.run_visualization
 This generates all 11 charts, including the persona-type evaluation charts
 (`01`–`06`, bar/heatmap/boxplot by persona and problem).
 
-### RAG grades
-
-Pass `--rag` to chart the RAG-context round (reads `*_claude_rag/` instead of
-`*_claude/`). All RAG charts are written together to `visualization/outputs/rag/`;
-the default (non-RAG) charts stay in `visualization/outputs/`:
-
-```powershell
-python -m visualization.run_visualization --rag
-```
-
 ## Outputs
 
-All 11 charts are written to `visualization/outputs/` (or `.../outputs/rag/` with
-`--rag`), numbered with a zero-padded `##_` prefix:
+All 11 charts are written to `visualization/outputs/`, numbered with a
+zero-padded `##_` prefix:
 
 | File | Description |
 | ---- | ----------- |

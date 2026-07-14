@@ -355,7 +355,11 @@
   function appendModelLabel(li, provider, model, costUsd) {
     const div = document.createElement("div");
     div.className = "review-model";
-    const label = model || providerModelLabel(provider);
+    // Providers report a date-stamped snapshot id (e.g. "gpt-5.4-2026-03-05");
+    // strip a trailing -YYYY-MM-DD / -YYYYMMDD for display. Pricing already
+    // resolves the base rate, and the exact id stays in usage_json for auditing.
+    const rawLabel = model || providerModelLabel(provider);
+    const label = rawLabel.replace(/-(?:\d{4}-\d{2}-\d{2}|\d{8})$/, "");
     div.textContent =
       costUsd == null ? label : label + " (" + formatCostUsd(costUsd) + ")";
     li.appendChild(div);

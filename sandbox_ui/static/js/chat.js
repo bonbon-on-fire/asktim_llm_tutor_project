@@ -865,7 +865,12 @@
   // element still carries id="create-select" and exposes a `.value` get/set, a
   // `.disabled` set, and fires a "change" event on selection — exactly what
   // renderCreateStep/saveCreateStep already read.
-  function buildSelect(options, value) {
+  // Downward chevron used as the dropdown caret — a big, lined (stroke) glyph so
+  // all wizard dropdowns look consistent (matches the SVG lock icon's style).
+  const CHEVRON_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+  function buildSelect(options, value, id = "create-select") {
     const flat = [];
     for (const o of options) {
       if (o.group) {
@@ -877,7 +882,7 @@
 
     const root = document.createElement("div");
     root.className = "context-dropdown";
-    root.id = "create-select";
+    root.id = id;
     let currentValue = value;
     let isOpen = false;
     let isDisabled = false;
@@ -891,7 +896,7 @@
     const caret = document.createElement("span");
     caret.className = "context-dropdown-caret";
     caret.setAttribute("aria-hidden", "true");
-    caret.textContent = "▾";
+    caret.innerHTML = CHEVRON_SVG;
     trigger.appendChild(labelSpan);
     trigger.appendChild(caret);
 
@@ -1081,20 +1086,14 @@
     // *provider* is selectable here — OpenAI gpt-5.4 (sandbox default) or Claude Sonnet 5.
     // Rendered as a bare dropdown (no label) beneath the locked prompt select.
     if (step === "tutor") {
-      const provSel = document.createElement("select");
-      provSel.className = "context-select";
-      provSel.id = "create-provider-select";
-      const current = createDraft.provider || "gpt";
-      for (const o of [
-        { value: "claude", label: "claude-sonnet-5" },
-        { value: "gpt", label: "gpt-5.4 (default)" },
-      ]) {
-        const opt = document.createElement("option");
-        opt.value = o.value;
-        opt.textContent = o.label;
-        if (o.value === current) opt.selected = true;
-        provSel.appendChild(opt);
-      }
+      const provSel = buildSelect(
+        [
+          { value: "claude", label: "claude-sonnet-5" },
+          { value: "gpt", label: "gpt-5.4 (default)" },
+        ],
+        createDraft.provider || "gpt",
+        "create-provider-select",
+      );
       createStepBody.appendChild(provSel);
     }
 

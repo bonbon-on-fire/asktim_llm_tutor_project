@@ -2,33 +2,33 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Interleave each turn's RAG as a system message after its student turn and replay the verbatim full tutor JSON, so the whole conversation history caches turn-to-turn — gated by a per-conversation A/B, default off.
+**Goal:** Interleave each turn's RAG as a system message after its student turn and replay the verbatim full tutor JSON, so the whole conversation history caches turn-to-turn — gated by a single global env flag, default off.
 
-**Architecture:** A provider-neutral builder turns stored history rows into an interleaved message list (`system(static) → student → system(rag) → tutor(rawJSON) → …`). The Claude cached path sends it via the **raw `anthropic` SDK** (langchain rejects multiple non-consecutive system messages); the GPT cached path uses langchain (which accepts it). A per-conversation `history_mode` column, assigned at creation from `TUTOR_CACHED_HISTORY_RATIO`, selects cached vs. today's legacy path. Legacy path is untouched.
+**Architecture:** A provider-neutral builder turns stored history rows into an interleaved message list (`system(static) → student → system(rag) → tutor(rawJSON) → …`). The Claude cached path sends it via the **raw `anthropic` SDK** (langchain rejects multiple non-consecutive system messages); the GPT cached path uses langchain (which accepts it). A single global env flag `TUTOR_CACHED_HISTORY` (truthy = on, default off) selects cached vs. today's legacy path at send time. This is throwaway validation scaffolding: prove caching is cheaper, then either flip it fully on or remove the legacy path. Legacy path is untouched.
 
 **Tech Stack:** Python 3.12, Flask, SQLAlchemy, Alembic (main_ui) / boot `_reconcile_columns` (sandbox), `langchain_openai` / `langchain_anthropic`, raw `anthropic` SDK (0.105.2), `pytest`.
 
 ## Global Constraints
 
 - **Domain roles are student / tutor / system.** API-role mapping: student → `user`, tutor → `assistant`, system → `system`.
-- **Default off:** `TUTOR_CACHED_HISTORY_RATIO` defaults to `0.0` — every new conversation is legacy mode; CI and existing tests stay on the legacy path unchanged.
+- **Default off:** `TUTOR_CACHED_HISTORY` is unset/falsey by default — every turn uses the legacy path; CI and existing tests stay on the legacy path unchanged. Truthy values: `1`, `true`, `yes`, `on` (case-insensitive).
 - **Byte-stability is the whole point:** every replayed `rag_k` and `tutor_k` block MUST be identical across turns of a conversation, or caching misses. Reconstruct from stored data deterministically (fixed JSON key order, `ensure_ascii=False`).
 - **Fail-closed retrieval unchanged:** in `rag` context mode, empty current-turn retrieval still raises `RagUnavailableError` before any model call.
 - **No Claude co-author trailer** in commits (repo convention).
 - **Legacy path must not change behavior** — only add the cached branch alongside it.
+- **No per-conversation mode column.** Gating is a single process-wide env flag; there is no `history_mode` column and no per-conversation A/B assignment. main_ui persists per-turn RAG unconditionally (harmless when the flag is off), so a conversation started while the flag is on has replayable RAG from turn 1.
 
 ---
 
 ## File Structure
 
 - `tutor/cached_history.py` **(new)** — provider-neutral: canonical tutor-JSON reconstruction + interleaved message-list builder (list of `(role, content)` steps). One responsibility: turn history data into the ordered message plan.
-- `tutor/run_tutor.py` **(modify)** — add `stream_anthropic_raw(...)` (raw-SDK streaming sender that drives `StudentAnswerExtractor`), and `build_anthropic_request(...)` (convert the neutral plan → anthropic `system` + `messages` with cache_control breakpoints).
-- `ui_core/tutor_bridge.py` **(modify)** — in `stream_tutor_reply`, branch on `history_mode`: cached → build interleaved plan and dispatch to the raw-Anthropic sender (Claude) or a langchain interleaved sender (GPT); legacy → today's path.
-- `ui_core/services/conversation.py` **(modify)** — `get_cached_history_for_tutor(...)` returning per-turn `{student_content, rag_records, tutor_reasoning, tutor_answer}`; make `complete_exchange_tutor` accept `retrieved_context`.
-- `main_ui/db/models.py` **(modify)** + new Alembic migration — add `retrieved_context`, `history_mode` columns to `Message`/`Conversation`.
-- `sandbox_ui/db/models.py` **(modify)** — add `history_mode` to `Conversation` (auto-added by `_reconcile_columns`).
-- `main_ui/routes/chat.py`, `sandbox_ui/routes/chat.py` **(modify)** — persist `rc.records` (main_ui); assign+thread `history_mode`.
-- `main_ui/services/conversation.py`, `sandbox_ui/services/conversation.py` **(modify)** — thread `history_mode` through `find_or_create_conversation`.
+- `tutor/run_tutor.py` **(modify)** — add `stream_tutor_reply_anthropic_raw(...)` (raw-SDK streaming sender that drives `StudentAnswerExtractor`), and `build_anthropic_request(...)` (convert the neutral plan → anthropic `system` + `messages` with cache_control breakpoints).
+- `ui_core/tutor_bridge.py` **(modify)** — add `cached_history_enabled()` env-gate helper; in `stream_tutor_reply`, branch on `history_mode`: cached → build interleaved plan and dispatch to the raw-Anthropic sender (Claude) or a langchain interleaved sender (GPT); legacy → today's path.
+- `ui_core/services/conversation.py` **(modify)** — `get_cached_history_for_tutor(...)` returning per-turn `{student_content, rag_text, tutor_json}`; make `complete_exchange_tutor` accept `retrieved_context`.
+- `main_ui/db/models.py` **(modify)** + new Alembic migration — add `retrieved_context` column to `Message`.
+- `main_ui/routes/chat.py`, `sandbox_ui/routes/chat.py` **(modify)** — persist `rc.records` (main_ui); read the env flag and thread `history_mode` + cached history into `stream_kwargs`.
+- `main_ui/services/conversation.py`, `sandbox_ui/services/conversation.py` **(modify)** — thin wrappers for `get_cached_history_for_tutor` + `complete_exchange_tutor(retrieved_context=...)` (main_ui).
 - `tutor/test_cached_history.py`, `ui_core/test_cached_history_bridge.py` **(new tests)**.
 
 ---
@@ -168,7 +168,7 @@ git commit -m "feat(tutor): interleaved message-plan builder + canonical tutor J
 
 **Files:**
 - Modify: `tutor/run_tutor.py` (add two functions near `stream_tutor_reply`)
-- Test: `tutor/test_cached_history.py` (add request-shape test; the stream itself is covered by the live smoke in Task 9)
+- Test: `tutor/test_cached_history.py` (add request-shape test; the stream itself is covered by the live smoke in Task 7)
 
 **Interfaces:**
 - Consumes: `build_message_plan` output (Task 1); `StudentAnswerExtractor`, `parse_tutor_response`, `_normalize_tutor_ai_message`, `_sanitize_text_for_transport` (existing in `run_tutor.py`).
@@ -279,43 +279,37 @@ git commit -m "feat(tutor): raw-anthropic interleaved streaming sender for cache
 
 ---
 
-## Task 3: main_ui DB columns (`retrieved_context`, `history_mode`) + migration
+## Task 3: main_ui DB column (`retrieved_context`) + migration
 
 **Files:**
-- Modify: `main_ui/db/models.py` (add two columns)
-- Create: `main_ui/db/migrations/versions/<newrev>_add_cached_history_cols.py`
+- Modify: `main_ui/db/models.py` (add one column)
+- Create: `main_ui/db/migrations/versions/<newrev>_add_retrieved_context.py`
 
 **Interfaces:**
-- Produces: `Message.retrieved_context: str | None`, `Conversation.history_mode: str | None` on main_ui.
+- Produces: `Message.retrieved_context: str | None` on main_ui. (sandbox `Message` already has this column.)
 
 - [ ] **Step 1: Confirm the current Alembic head**
 
-Run: `PYTHONPATH=. python -m alembic -c main_ui/db/migrations/alembic.ini heads` (or read the newest file's `revision`). At authoring time the head is `a1b2c3d4e5f6`; **use whatever the actual head is** as `down_revision`.
+Run: `PYTHONPATH=. python -m alembic -c main_ui/db/migrations/alembic.ini heads` (or read the newest file's `revision`). At authoring time the head is `a1b2c3d4e5f6`; **use whatever the actual head is** as `down_revision` (a concurrent migration may have landed first).
 
-- [ ] **Step 2: Add the columns to the models**
+- [ ] **Step 2: Add the column to the model**
 
 In `main_ui/db/models.py`, in `class Message(MessageMixin, Base)` add:
 ```python
     # Cached-history mode: JSON string of the RAG records retrieved for this
     # (tutor) turn, so past RAG can be replayed as a system message. NULL for
-    # legacy-mode turns and pre-feature rows.
+    # pre-feature rows and turns where no retrieval ran.
     retrieved_context: Mapped[str | None] = mapped_column(Text, nullable=True)
-```
-In `class Conversation(...)` add:
-```python
-    # "cached" | "legacy" (NULL = legacy). Assigned once at creation from
-    # TUTOR_CACHED_HISTORY_RATIO; continuations replay it.
-    history_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
 ```
 (Ensure `Text` is imported — it already is for other columns.)
 
 - [ ] **Step 3: Write the migration**
 
-Create `main_ui/db/migrations/versions/c9f1a2b3d4e5_add_cached_history_cols.py`:
+Create `main_ui/db/migrations/versions/c9f1a2b3d4e5_add_retrieved_context.py`:
 ```python
-"""add retrieved_context (messages) + history_mode (conversations)
+"""add retrieved_context (messages)
 
-Both nullable; legacy-mode and pre-feature rows stay NULL.
+Nullable; pre-feature rows stay NULL.
 
 Revision ID: c9f1a2b3d4e5
 Revises: a1b2c3d4e5f6
@@ -334,13 +328,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.add_column(sa.Column('retrieved_context', sa.Text(), nullable=True))
-    with op.batch_alter_table('conversations', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('history_mode', sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
-    with op.batch_alter_table('conversations', schema=None) as batch_op:
-        batch_op.drop_column('history_mode')
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.drop_column('retrieved_context')
 ```
@@ -356,59 +346,28 @@ Expected: no error; ends at revision `c9f1a2b3d4e5`. Then `rm _scratch_mig.db`.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add main_ui/db/models.py main_ui/db/migrations/versions/c9f1a2b3d4e5_add_cached_history_cols.py
-git commit -m "feat(main_ui): add retrieved_context + history_mode columns (+ migration)"
+git add main_ui/db/models.py main_ui/db/migrations/versions/c9f1a2b3d4e5_add_retrieved_context.py
+git commit -m "feat(main_ui): add retrieved_context column to Message (+ migration)"
 ```
 
 ---
 
-## Task 4: sandbox DB — `history_mode` column
-
-**Files:**
-- Modify: `sandbox_ui/db/models.py` (add one column; `_reconcile_columns` auto-adds on boot)
-
-**Interfaces:**
-- Produces: `Conversation.history_mode: str | None` on sandbox. (`retrieved_context` already exists on sandbox `Message`.)
-
-- [ ] **Step 1: Add the column**
-
-In `sandbox_ui/db/models.py`, in `class Conversation(...)` after the `provider` column, add:
-```python
-    # "cached" | "legacy" (NULL = legacy). Assigned at creation from
-    # TUTOR_CACHED_HISTORY_RATIO. create_all can't add it to a pre-existing
-    # table, but _reconcile_columns() in run_app does.
-    history_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
-```
-
-- [ ] **Step 2: Verify the column reconciles (import + introspect)**
-
-Run: `PYTHONPATH=. python -c "from sandbox_ui.db.models import Conversation as C; print('history_mode' in C.__table__.columns)"`
-Expected: `True`
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add sandbox_ui/db/models.py
-git commit -m "feat(sandbox): add history_mode column to Conversation"
-```
-
----
-
-## Task 5: Persist per-turn RAG on main_ui + shared `complete_exchange_tutor`
+## Task 4: Persist per-turn RAG on main_ui + shared `complete_exchange_tutor`
 
 **Files:**
 - Modify: `ui_core/services/conversation.py` (`complete_exchange_tutor` accepts `retrieved_context`)
 - Modify: `main_ui/services/conversation.py` (wrapper passes it through)
 - Modify: `main_ui/routes/chat.py` (capture `ev.get("retrieved")`, pass to `complete_exchange_tutor`)
+- Test: `ui_core/services/test_conversation.py`
 
 **Interfaces:**
 - Consumes: the SSE `done` event's `retrieved` records (already emitted by the bridge).
-- Produces: `complete_exchange_tutor(..., retrieved_context: str | None = None)` sets `msg.retrieved_context` when the model's `Message` has that attribute (main_ui + sandbox both do after Tasks 3–4).
+- Produces: `complete_exchange_tutor(..., retrieved_context: str | None = None)` sets `msg.retrieved_context` when the model's `Message` has that attribute (main_ui after Task 3; sandbox already does). Persists unconditionally — the flag does not gate storage.
 
 - [ ] **Step 1: Write the failing test**
 
 ```python
-# ui_core/services/test_conversation.py  (add a test using main_ui models via the existing fixtures)
+# ui_core/services/test_conversation.py  (add a test using the existing fixtures)
 def test_complete_exchange_tutor_persists_retrieved_context(session, models, conversation):
     from ui_core.services.conversation import start_exchange_student_only, complete_exchange_tutor
     s = start_exchange_student_only(session, models=models, conversation=conversation, student_text="q")
@@ -419,7 +378,7 @@ def test_complete_exchange_tutor_persists_retrieved_context(session, models, con
     tutor_msg = [m for m in conversation.messages if m.role == "tutor"][-1]
     assert tutor_msg.retrieved_context == '[{"source":"x"}]'
 ```
-(Mirror the fixture style already in `ui_core/services/test_conversation.py`. If that file's fixtures use sandbox models, use those — sandbox `Message` already has `retrieved_context`.)
+(Mirror the fixture style already in `ui_core/services/test_conversation.py`. If those fixtures use sandbox models, that's fine — sandbox `Message` already has `retrieved_context`.)
 
 - [ ] **Step 2: Run to verify it fails**
 
@@ -458,74 +417,7 @@ git commit -m "feat: persist per-turn RAG records on main_ui tutor turns"
 
 ---
 
-## Task 6: A/B assignment of `history_mode` at conversation creation
-
-**Files:**
-- Modify: `ui_core/services/conversation.py` (`_resolve_history_mode` helper + set it in create path via `extra_fields`)
-- Modify: `main_ui/services/conversation.py`, `sandbox_ui/services/conversation.py` (thread `history_mode` default through `find_or_create_conversation`)
-- Test: `ui_core/services/test_conversation.py`
-
-**Interfaces:**
-- Produces: `_resolve_history_mode(requested: str | None) -> str` — returns the stored value verbatim for continuations; for a new conversation with `requested is None`, draws `"cached"` with probability `TUTOR_CACHED_HISTORY_RATIO` (default `0.0`), else `"legacy"`.
-
-- [ ] **Step 1: Write the failing tests**
-
-```python
-# ui_core/services/test_conversation.py
-import os
-from ui_core.services.conversation import _resolve_history_mode
-
-def test_history_mode_defaults_legacy(monkeypatch):
-    monkeypatch.delenv("TUTOR_CACHED_HISTORY_RATIO", raising=False)
-    assert _resolve_history_mode(None) == "legacy"
-
-def test_history_mode_full_ratio_is_cached(monkeypatch):
-    monkeypatch.setenv("TUTOR_CACHED_HISTORY_RATIO", "1.0")
-    assert _resolve_history_mode(None) == "cached"
-
-def test_history_mode_explicit_request_wins(monkeypatch):
-    monkeypatch.setenv("TUTOR_CACHED_HISTORY_RATIO", "0.0")
-    assert _resolve_history_mode("cached") == "cached"
-```
-
-- [ ] **Step 2: Run to verify they fail**
-
-Run: `PYTHONPATH=. python -m pytest ui_core/services/test_conversation.py -k history_mode -v`
-Expected: FAIL (`_resolve_history_mode` undefined)
-
-- [ ] **Step 3: Implement**
-
-In `ui_core/services/conversation.py` (module level; `import os, random` at top if missing):
-```python
-def _resolve_history_mode(requested: str | None) -> str:
-    """Per-conversation cached-history A/B. Continuations pass the stored value
-    (returned verbatim). New conversations (requested is None) draw 'cached' with
-    probability TUTOR_CACHED_HISTORY_RATIO (default 0.0 -> always 'legacy')."""
-    if requested in ("cached", "legacy"):
-        return requested
-    try:
-        ratio = float(os.environ.get("TUTOR_CACHED_HISTORY_RATIO", "0"))
-    except ValueError:
-        ratio = 0.0
-    return "cached" if random.random() < ratio else "legacy"
-```
-Thread it: in each app's `find_or_create_conversation`, add `history_mode: str | None = None` param; in the `extra_fields` dict (sandbox) / create kwargs (main_ui), set `"history_mode": _resolve_history_mode(history_mode)`. **Only assign on create** — the shared `find_or_create` already reuses the stored row for continuations, so continuations keep their value untouched (do not overwrite an existing row's `history_mode`).
-
-- [ ] **Step 4: Run to verify they pass**
-
-Run: `PYTHONPATH=. python -m pytest ui_core/services/test_conversation.py -k history_mode -v`
-Expected: PASS (3 tests)
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add ui_core/services/conversation.py main_ui/services/conversation.py sandbox_ui/services/conversation.py ui_core/services/test_conversation.py
-git commit -m "feat: assign per-conversation history_mode from TUTOR_CACHED_HISTORY_RATIO"
-```
-
----
-
-## Task 7: Cached-mode history builder in the conversation service
+## Task 5: Cached-mode history builder in the conversation service
 
 **Files:**
 - Modify: `ui_core/services/conversation.py` (`get_cached_history_for_tutor`)
@@ -610,7 +502,7 @@ Add thin wrappers in `main_ui/services/conversation.py` and `sandbox_ui/services
 def get_cached_history_for_tutor(db, conversation):
     return _shared.get_cached_history_for_tutor(db, conversation, models=_MODELS)
 ```
-**Note the import cycle risk:** `ui_core.services.conversation` importing `ui_core.tutor_bridge` for `RETRIEVED_CONTEXT_HEADER`. If that cycles, copy the header constant into a small shared module (`rag/retrieve.py` already owns `format_context`; put the header there or in `tutor/cached_history.py`) and import from there in both places.
+**Note the import cycle risk:** `ui_core.services.conversation` importing `ui_core.tutor_bridge` for `RETRIEVED_CONTEXT_HEADER`. If that cycles, copy the header constant into a small shared module (`tutor/cached_history.py`) and import from there in both places.
 
 - [ ] **Step 4: Run to verify it passes**
 
@@ -626,23 +518,35 @@ git commit -m "feat: cached-mode history builder (student + replayed RAG + verba
 
 ---
 
-## Task 8: Bridge wiring — dispatch cached mode
+## Task 6: Bridge wiring — dispatch cached mode, gated by the env flag
 
 **Files:**
-- Modify: `ui_core/tutor_bridge.py` (`stream_tutor_reply`)
-- Modify: `main_ui/routes/chat.py`, `sandbox_ui/routes/chat.py` (thread `history_mode` + cached history into `stream_kwargs`)
+- Modify: `ui_core/tutor_bridge.py` (`cached_history_enabled()` helper + `stream_tutor_reply` branch)
+- Modify: `main_ui/routes/chat.py`, `sandbox_ui/routes/chat.py` (read the env flag; thread `history_mode` + cached history into `stream_kwargs`)
 - Test: `ui_core/test_cached_history_bridge.py`
 
 **Interfaces:**
-- Consumes: `build_message_plan`, `stream_tutor_reply_anthropic_raw`, `build_tutor_model` (Tasks 1–2); `get_cached_history_for_tutor` (Task 7); the existing `retrieved_context`, `_get_or_build_stream_context`, `_enforce_rag_available`, `turn_attachments`.
-- Produces: `stream_tutor_reply(..., history_mode: str = "legacy", cached_history: list[dict] | None = None, **ctx)` — when `history_mode == "cached"`, builds the interleaved plan and streams via the raw-Anthropic sender (Claude) or a langchain interleaved sender (GPT); otherwise the current legacy path (unchanged).
+- Consumes: `build_message_plan`, `stream_tutor_reply_anthropic_raw`, `build_tutor_model` (Tasks 1–2); `get_cached_history_for_tutor` (Task 5); the existing `retrieved_context`, `_get_or_build_stream_context`, `_enforce_rag_available`, `_retrieved_context_block`, `turn_attachments`.
+- Produces:
+  - `cached_history_enabled() -> bool` (module-level) — `True` iff `os.environ["TUTOR_CACHED_HISTORY"]` is truthy (`1`/`true`/`yes`/`on`, case-insensitive). Default off.
+  - `stream_tutor_reply(..., history_mode: str = "legacy", cached_history: list[dict] | None = None, **ctx)` — when `history_mode == "cached"`, builds the interleaved plan and streams via the raw-Anthropic sender (Claude) or a langchain interleaved sender (GPT); otherwise the current legacy path (unchanged).
 
-- [ ] **Step 1: Write the failing test (GPT cached path — no live call, patched model)**
+- [ ] **Step 1: Write the failing tests**
 
 ```python
 # ui_core/test_cached_history_bridge.py
-from unittest.mock import patch, MagicMock
-from ui_core.tutor_bridge import TutorBridge
+from unittest.mock import patch
+from ui_core.tutor_bridge import TutorBridge, cached_history_enabled
+
+
+def test_cached_history_enabled_defaults_off(monkeypatch):
+    monkeypatch.delenv("TUTOR_CACHED_HISTORY", raising=False)
+    assert cached_history_enabled() is False
+    monkeypatch.setenv("TUTOR_CACHED_HISTORY", "on")
+    assert cached_history_enabled() is True
+    monkeypatch.setenv("TUTOR_CACHED_HISTORY", "0")
+    assert cached_history_enabled() is False
+
 
 def test_cached_gpt_builds_interleaved_messages():
     bridge = TutorBridge()
@@ -670,22 +574,35 @@ def test_cached_gpt_builds_interleaved_messages():
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `PYTHONPATH=. python -m pytest ui_core/test_cached_history_bridge.py -v`
-Expected: FAIL (`stream_tutor_reply` has no `history_mode`/`cached_history` params, or builds legacy messages)
+Expected: FAIL (`cached_history_enabled` undefined / `stream_tutor_reply` has no `history_mode`/`cached_history` params)
 
 - [ ] **Step 3: Implement**
 
-In `ui_core/tutor_bridge.py`, import at top:
+In `ui_core/tutor_bridge.py`, imports at top:
 ```python
+import os  # if not already imported
 from tutor.cached_history import build_message_plan
-from tutor.run_tutor import stream_tutor_reply_anthropic_raw, _resolve_provider  # _resolve_provider already imported
+from tutor.run_tutor import (
+    stream_tutor_reply_anthropic_raw, StudentAnswerExtractor,
+    _normalize_tutor_ai_message, parse_tutor_response, _require_anthropic_api_key,
+)
 from langchain_core.messages import SystemMessage
 ```
-Add a helper to convert a plan → langchain messages (GPT cached):
+Module-level env gate:
+```python
+_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def cached_history_enabled() -> bool:
+    """Global on/off for cache-friendly interleaved history. Default off."""
+    return os.environ.get("TUTOR_CACHED_HISTORY", "").strip().lower() in _TRUTHY
+```
+Plan → langchain messages (GPT cached):
 ```python
     def _plan_to_langchain(self, plan):
         out = []
         for role, content in plan:
-            if role == "system_static" or role == "rag":
+            if role in ("system_static", "rag"):
                 out.append(SystemMessage(content=content))
             elif role == "student":
                 out.append(HumanMessage(content=content))
@@ -733,39 +650,47 @@ In `stream_tutor_reply`, add params `history_mode: str = "legacy"` and `cached_h
             yield {"type": "done", "reply": answer or "", "reasoning": reasoning, "retrieved": rc.records}
             return
 ```
-(Imports needed in the bridge for the GPT branch: `StudentAnswerExtractor`, `_normalize_tutor_ai_message`, `parse_tutor_response`, `_require_anthropic_api_key`, `os` — import from `tutor.run_tutor` / stdlib. `HumanMessage`, `AIMessage` are already imported.)
-Then thread it from both routes: read `convo.history_mode` into `stream_history_mode`, build `cached_history = conversation.get_cached_history_for_tutor(db, convo)` **only when** `stream_history_mode == "cached"` (else pass `[]`), and add `history_mode=stream_history_mode, cached_history=cached_history` to `stream_kwargs`. In `find_or_create_conversation` calls, pass `history_mode=history_mode` (from the request, `None` for a fresh conversation so the A/B draws it).
+(`_resolve_provider`, `HumanMessage`, `AIMessage` are already imported in the bridge. Verify `parse_tutor_response` / `_normalize_tutor_ai_message` / `StudentAnswerExtractor` import names match `tutor/run_tutor.py`.)
+Then thread it from both routes: after resolving the conversation, compute
+```python
+    stream_history_mode = "cached" if cached_history_enabled() else "legacy"
+    cached_history = (
+        conversation_service.get_cached_history_for_tutor(db, convo_obj)
+        if stream_history_mode == "cached" else []
+    )
+```
+and add `history_mode=stream_history_mode, cached_history=cached_history` to `stream_kwargs`. (Use each route's existing conversation-service import alias and conversation-object variable name; the two routes differ only in those names.) Do **not** thread anything through `find_or_create_conversation` — there is no per-conversation mode.
 
 - [ ] **Step 4: Run to verify it passes + no legacy regression**
 
 Run: `PYTHONPATH=. python -m pytest ui_core/test_cached_history_bridge.py ui_core/test_tutor_bridge.py tutor/ -v`
-Expected: PASS (new test + existing legacy tests still green)
+Expected: PASS (new tests + existing legacy tests still green)
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add ui_core/tutor_bridge.py main_ui/routes/chat.py sandbox_ui/routes/chat.py ui_core/test_cached_history_bridge.py
-git commit -m "feat: dispatch cached-history interleaved streaming (Claude raw SDK / GPT langchain)"
+git commit -m "feat: dispatch cached-history interleaved streaming, gated by TUTOR_CACHED_HISTORY"
 ```
 
 ---
 
-## Task 9: Live smoke — prove the history caches
+## Task 7: Live smoke — prove the history caches
 
 **Files:**
 - Create: `internal_testing/smoke_cached_history.py` (manual/live, not part of CI)
 
 **Interfaces:**
-- Consumes: the raw-Anthropic sender + the bridge; a real `ANTHROPIC_API_KEY`.
+- Consumes: the raw-Anthropic sender + `build_anthropic_request`; a real `ANTHROPIC_API_KEY`.
 
 - [ ] **Step 1: Write the smoke script**
 
 ```python
 # internal_testing/smoke_cached_history.py
 """Live proof that cached-mode history caches. Run manually with real keys:
-    TUTOR_CACHED_HISTORY_RATIO=1 PYTHONPATH=. python -m internal_testing.smoke_cached_history
-Sends a 2-turn Claude conversation via the raw sender and prints usage; turn 2
-should show cache_read_input_tokens > 0."""
+    TUTOR_CACHED_HISTORY=1 PYTHONPATH=. python -m internal_testing.smoke_cached_history
+Sends a 2-turn Claude conversation via the raw request builder and prints usage;
+turn 2 should show cache_read_input_tokens > 0."""
 import anthropic
 from tutor.run_tutor import _require_anthropic_api_key, load_system_prompt, build_anthropic_request
 from tutor.cached_history import build_message_plan, tutor_output_json
@@ -788,10 +713,11 @@ prior = [{"student_content": "what is a topic sentence?", "rag_text": "Retrieved
 plan2 = build_message_plan(static_system=sysprompt, prior_turns=prior, current_student="give an example", current_rag="Retrieved: e.g. 'Dogs make great pets.'")
 run(plan2, "turn2")
 ```
+(Confirm `load_system_prompt`'s actual signature in `tutor/run_tutor.py` and adjust the `assignment_override` kwarg name if it differs.)
 
 - [ ] **Step 2: Run the smoke (manual, real key)**
 
-Run: `TUTOR_CACHED_HISTORY_RATIO=1 PYTHONPATH=. python -m internal_testing.smoke_cached_history`
+Run: `TUTOR_CACHED_HISTORY=1 PYTHONPATH=. python -m internal_testing.smoke_cached_history`
 Expected: `turn2` prints `cache_read > 0` (the replayed prefix — static system + turn-1 student/rag/tutor — was served from cache), proving the history caches.
 
 - [ ] **Step 3: Commit**
@@ -806,16 +732,18 @@ git commit -m "test(cached-history): live smoke proving the history caches on tu
 ## Self-Review
 
 **Spec coverage:**
-- §1 message structure → Tasks 1, 2, 8. ✅
-- §2 storage (main_ui RAG column; verbatim reconstruction) → Tasks 3, 5, 1. ✅
-- §3 per-conversation A/B (`history_mode`, ratio, assign at creation) → Tasks 3, 4, 6, 8. ✅
-- §4 provider sending (Claude raw SDK; GPT langchain; legacy unchanged) → Tasks 2, 8. ✅
-- §5 history shape + fail-closed → Tasks 7, 8 (fail-closed reuses existing `_enforce_rag_available`, called before the branch). ✅
+- §1 message structure → Tasks 1, 2, 6. ✅
+- §2 storage (main_ui RAG column; verbatim reconstruction) → Tasks 3, 4, 1. ✅
+- §3 gating — **simplified from per-conversation A/B to a single global env flag** (`TUTOR_CACHED_HISTORY`, default off), per user decision that this is throwaway validation scaffolding and cheapness is deterministic once caching works. No `history_mode` column, no assignment logic → Task 6 (`cached_history_enabled` + route gate). ✅
+- §4 provider sending (Claude raw SDK; GPT langchain; legacy unchanged) → Tasks 2, 6. ✅
+- §5 history shape + fail-closed → Tasks 5, 6 (fail-closed reuses existing `_enforce_rag_available`, called before the branch). ✅
 - §6 cache breakpoints → Task 2 (`build_anthropic_request`). ✅
-- §7 testing → Tasks 1,2,5,6,7,8 unit; Task 9 live smoke. ✅
+- §7 testing → Tasks 1,2,4,5,6 unit; Task 7 live smoke. ✅
+
+**Deviation from spec (approved):** The spec (§3, Rollout) describes a per-conversation A/B via a `history_mode` column and `TUTOR_CACHED_HISTORY_RATIO`. The user simplified this to a single global `TUTOR_CACHED_HISTORY` on/off flag: the cost win is deterministic once the prefix caches (Task 7 proves it), so a traffic-split experiment is unnecessary, and the feature is throwaway scaffolding not worth a DB column + migration + assignment plumbing we would later remove. main_ui stores per-turn RAG unconditionally, so any conversation created with the flag on has replayable RAG from turn 1.
 
 **Placeholder scan:** No TBD/TODO; every code step has real code. The one flagged unknown — the Alembic `down_revision` — is explicitly "use the actual current head" with a command to find it (Task 3, Step 1), because a concurrent migration may land first.
 
-**Type consistency:** `build_message_plan` roles (`system_static`/`student`/`rag`/`tutor`) are consumed identically in `build_anthropic_request` (`_ROLE_MAP`) and `_plan_to_langchain`. `get_cached_history_for_tutor` emits `{student_content, rag_text, tutor_json}` — the exact keys `build_message_plan`'s `prior_turns` reads. `tutor_output_json(reasoning, answer)` signature is used consistently in Tasks 1, 7, 9.
+**Type consistency:** `build_message_plan` roles (`system_static`/`student`/`rag`/`tutor`) are consumed identically in `build_anthropic_request` (`_ROLE_MAP`) and `_plan_to_langchain`. `get_cached_history_for_tutor` emits `{student_content, rag_text, tutor_json}` — the exact keys `build_message_plan`'s `prior_turns` reads. `tutor_output_json(reasoning, answer)` signature is used consistently in Tasks 1, 5, 7.
 
-**Known risk called out inline:** import cycle (`ui_core.services.conversation` → `ui_core.tutor_bridge` for the header) — Task 7 gives the fallback (move the header constant).
+**Known risk called out inline:** import cycle (`ui_core.services.conversation` → `ui_core.tutor_bridge` for the header) — Task 5 gives the fallback (move the header constant into `tutor/cached_history.py`).

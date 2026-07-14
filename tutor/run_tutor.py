@@ -7,6 +7,7 @@ Called by the UI and web app; not intended to run standalone.
 
 from __future__ import annotations
 
+import anthropic
 import json
 import os
 import re
@@ -833,3 +834,58 @@ def stream_tutor_reply(
             yield answer
 
     yield ("__done__", normalized_text, normalized)
+
+
+_ROLE_MAP = {"student": "user", "tutor": "assistant", "rag": "system"}
+_CACHE_EVERY = 15  # keep the incremental read within Anthropic's 20-block lookback
+
+
+def build_anthropic_request(plan):
+    """Convert a (role, content) plan into (system_blocks, messages) for the raw
+    anthropic Messages API. Static system is a cache-marked text block; a
+    cache_control breakpoint is placed on the last message block and every
+    _CACHE_EVERY-th message block (<= 4 breakpoints for realistic lengths)."""
+    static = ""
+    steps = []
+    for role, content in plan:
+        if role == "system_static":
+            static = content
+        else:
+            steps.append((_ROLE_MAP[role], _sanitize_text_for_transport(content)))
+    system_blocks = [{"type": "text", "text": _sanitize_text_for_transport(static),
+                      "cache_control": {"type": "ephemeral"}}]
+    n = len(steps)
+    messages = []
+    for i, (role, content) in enumerate(steps):
+        mark = (i == n - 1) or (i % _CACHE_EVERY == _CACHE_EVERY - 1)
+        if mark:
+            messages.append({"role": role,
+                             "content": [{"type": "text", "text": content,
+                                          "cache_control": {"type": "ephemeral"}}]})
+        else:
+            messages.append({"role": role, "content": content})
+    return system_blocks, messages
+
+
+def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key):
+    """Stream a cached-mode tutor reply via the raw anthropic SDK (langchain
+    rejects the interleaved multi-system structure). Same yield contract as
+    stream_tutor_reply: visible str chunks, then ('__done__', normalized_json)."""
+    system_blocks, messages = build_anthropic_request(plan)
+    client = anthropic.Anthropic(api_key=api_key)
+    extractor = StudentAnswerExtractor()
+    with client.messages.stream(
+        model=model_name, max_tokens=8192, system=system_blocks, messages=messages,
+    ) as stream:
+        for text in stream.text_stream:
+            visible = extractor.feed(text)
+            if visible:
+                yield visible
+    raw = extractor.buffer
+    normalized = _normalize_tutor_ai_message(AIMessage(content=raw))
+    normalized_text = normalized.content if isinstance(normalized.content, str) else str(normalized.content)
+    if not extractor.found_answer:
+        _, answer = parse_tutor_response(normalized_text)
+        if answer:
+            yield answer
+    yield ("__done__", normalized_text)

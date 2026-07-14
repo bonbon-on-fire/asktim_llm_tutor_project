@@ -1,4 +1,5 @@
 from tutor.cached_history import tutor_output_json, build_message_plan
+from tutor.run_tutor import build_anthropic_request
 
 
 def test_tutor_output_json_is_canonical_and_stable():
@@ -41,3 +42,20 @@ def test_build_message_plan_omits_empty_prior_rag():
         current_rag="r2",
     )
     assert plan == [("system_static", "SYS"), ("student", "s1"), ("tutor", "t1"), ("student", "s2"), ("rag", "r2")]
+
+
+def test_build_anthropic_request_shapes_roles_and_caches_static():
+    plan = [
+        ("system_static", "SYS"),
+        ("student", "s1"), ("rag", "r1"), ("tutor", "t1"),
+        ("student", "s2"), ("rag", "r2"),
+    ]
+    system_blocks, messages = build_anthropic_request(plan)
+    # static system is one cache-marked block
+    assert system_blocks == [{"type": "text", "text": "SYS", "cache_control": {"type": "ephemeral"}}]
+    # roles map: student->user, tutor->assistant, rag->system
+    assert [m["role"] for m in messages] == ["user", "system", "assistant", "user", "system"]
+    assert messages[0]["content"] == "s1" and messages[1]["content"] == "r1"
+    # last message carries a cache breakpoint (as a content block)
+    last = messages[-1]
+    assert isinstance(last["content"], list) and last["content"][-1]["cache_control"] == {"type": "ephemeral"}

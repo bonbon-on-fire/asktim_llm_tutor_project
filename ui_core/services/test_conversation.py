@@ -90,7 +90,7 @@ class Conversation(_Base):
 
 
 class Message(MessageMixin, _Base):
-    pass
+    retrieved_context: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class Student(StudentMixin, _Base):
@@ -735,6 +735,47 @@ def test_cost_persisted_summarized_and_surfaced() -> None:
         tmp.cleanup()
 
 
+def test_complete_exchange_tutor_persists_retrieved_context() -> None:
+    """Check ``retrieved_context`` round-trips onto the tutor row when the
+    model has the column (main_ui after Task 3; sandbox already does)."""
+    tmp, eng = _new_session()
+    try:
+        with Session(eng) as s:
+            convo = svc.find_or_create_conversation(
+                s,
+                models=_MODELS,
+                session_id="sessI",
+                conversation_id=None,
+                course="cs101",
+                exercise_number="ex1",
+                tutor_prompt="be nice",
+            )
+            s.flush()
+
+            student = svc.start_exchange_student_only(
+                s, models=_MODELS, conversation=convo, student_text="q"
+            )
+            tutor = svc.complete_exchange_tutor(
+                s,
+                models=_MODELS,
+                conversation=convo,
+                turn=student.turn,
+                tutor_text="a",
+                pedagogical_reasoning="why",
+                retrieved_context='[{"source":"x"}]',
+            )
+            s.flush()
+
+            _check(
+                "retrieved_context persisted on tutor row",
+                tutor.retrieved_context == '[{"source":"x"}]',
+                str(tutor.retrieved_context),
+            )
+        eng.dispose()
+    finally:
+        tmp.cleanup()
+
+
 def main() -> int:
     """Run all tests in this module and return an exit code (1 if any failed)."""
     tests = (
@@ -748,6 +789,7 @@ def main() -> int:
         test_backfill_username_for_session,
         test_message_rating_and_message_payload_ids,
         test_cost_persisted_summarized_and_surfaced,
+        test_complete_exchange_tutor_persists_retrieved_context,
     )
     for t in tests:
         print(t.__name__)

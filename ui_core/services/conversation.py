@@ -164,13 +164,16 @@ def complete_exchange_tutor(
     pedagogical_reasoning: str | None,
     cost_usd: float | None = None,
     usage_json: str | None = None,
+    retrieved_context: str | None = None,
 ) -> Any:
     """Insert the tutor reply for a turn previously opened by
     :func:`start_exchange_student_only`.
 
     ``cost_usd`` / ``usage_json`` carry the turn's estimated cost + auditable
     token breakdown (see :mod:`utils.pricing`); both default to ``None`` for
-    callers that don't cost-account.
+    callers that don't cost-account. ``retrieved_context`` carries this turn's
+    RAG records (JSON string) when the model has that column; ignored
+    (silently skipped) for models that don't.
     """
     tutor_msg = models.Message(
         conversation_id=conversation.id,
@@ -183,6 +186,8 @@ def complete_exchange_tutor(
     )
     db.add(tutor_msg)
     conversation.last_active_at = datetime.now(timezone.utc)
+    if retrieved_context is not None and hasattr(tutor_msg, "retrieved_context"):
+        tutor_msg.retrieved_context = retrieved_context
     db.flush()
     return tutor_msg
 

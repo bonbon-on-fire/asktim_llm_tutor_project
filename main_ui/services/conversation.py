@@ -95,12 +95,14 @@ def complete_exchange_tutor(
     pedagogical_reasoning: str | None,
     cost_usd: float | None = None,
     usage_json: str | None = None,
+    retrieved_context: str | None = None,
 ) -> Message:
     """Insert the tutor reply for a turn previously opened by
     :func:`start_exchange_student_only`.
 
     ``cost_usd`` / ``usage_json`` carry the turn's estimated cost + breakdown;
-    persisted here (main_ui stores but does not render it).
+    persisted here (main_ui stores but does not render it). ``retrieved_context``
+    carries this turn's RAG records (JSON string) for cache-friendly-history replay.
     """
     return _shared.complete_exchange_tutor(
         db,
@@ -111,6 +113,7 @@ def complete_exchange_tutor(
         pedagogical_reasoning=pedagogical_reasoning,
         cost_usd=cost_usd,
         usage_json=usage_json,
+        retrieved_context=retrieved_context,
     )
 
 

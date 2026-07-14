@@ -277,6 +277,7 @@ def chat():
         """Generate SSE frames: stream tutor deltas, persist the reply, emit done/error."""
         full_reply = ""
         reasoning = None
+        retrieved = None  # per-turn RAG records: [{source, score, chars, text}]
         cost = None  # {model, usd, ...} — estimated turn cost (persisted, not rendered)
         try:
             try:
@@ -294,6 +295,7 @@ def chat():
                         if ev.get("reply"):
                             full_reply = ev["reply"]
                         reasoning = ev.get("reasoning")
+                        retrieved = ev.get("retrieved") or None
                         cost = ev.get("cost") or None
                         break
             except Exception as exc:
@@ -318,6 +320,7 @@ def chat():
                     turn=student_turn,
                     tutor_text=full_reply,
                     pedagogical_reasoning=reasoning,
+                    retrieved_context=(json.dumps(retrieved, ensure_ascii=False) if retrieved else None),
                     cost_usd=cost_usd,
                     usage_json=usage_json,
                 )

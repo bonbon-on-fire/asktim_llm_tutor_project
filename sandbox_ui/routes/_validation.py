@@ -20,7 +20,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
 _TUTOR_PROMPTS_DIR = _REPO_ROOT / "tutor" / "prompts"
 
-DEFAULT_TUTOR = "tutor_06"
+DEFAULT_TUTOR = "tutor_07"
 DEFAULT_COURSE = "supply_chain_design"
 DEFAULT_EXERCISE = "01"
 
@@ -147,7 +147,7 @@ def list_tutors() -> list[str]:
     """Sorted tutor prompt stems available under tutor/prompts/.
 
     The wizard lists every built-in for visibility, but the Tutor prompt step is
-    locked to `tutor_06` (disabled dropdown) and the routes ignore any
+    locked to `tutor_07` (disabled dropdown) and the routes ignore any
     client-supplied tutor, so the full list is display-only.
     """
     if not _TUTOR_PROMPTS_DIR.is_dir():

@@ -17,7 +17,7 @@ Socratic LLM tutor for MIT OpenCourseWare (OCW) humanities/social-science course
 5. `main_ui/` — production AskTIM: Postgres (`asktim`, Alembic), SSE token streaming, bcrypt email+password identity, cross-browser history, sanitized markdown. **Deployed on Railway** (`Dockerfile_main`, entrypoint normalizes DATABASE_URL to `postgresql+psycopg://`).
 6. `sandbox_ui/` — "AskTIM Sandbox" for devs/TAs: mirrors main_ui + Edit-context switcher + Create-context wizard, own `asktim_test` DB (`create_all`, no Alembic), teal `#126f9a`, port 5000. Railway deploy deferred (local-only).
 
-**Rubric:** latest `judge_08`/`rubric_08` (40 pts: Pedagogy 20 / Dialogue 12 / Communication 8). In-code DEFAULT is still older `rubric_05` (46 pts). Active tutor prompt `tutor_05`. Claude is primary judge; GPT judging paused.
+**Rubric:** latest `judge_08`/`rubric_08` (40 pts: Pedagogy 20 / Dialogue 12 / Communication 8). `judge_08`/`rubric_08` are also the in-code defaults now. Deployed tutor prompt `tutor_07` (tutor_05 guidance + math/citations/anti-leak; both apps locked to it). Claude is primary judge; GPT judging paused.
 
 **Scale:** 3 personas (chaotic, cooperative, clueless — one per type, variety from `temperature=0.7`), **5 courses** (cities_and_climate_change live in AskTIM; plus intro_to_international_development_planning, mathematics_for_cs, physics_iii_vibrations_and_waves, meaning_of_life as June-2026 test contexts). ~927 graded transcripts migrated to canonical criterion format.
 

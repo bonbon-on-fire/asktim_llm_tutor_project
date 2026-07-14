@@ -6,7 +6,7 @@ Current defaults in code (`eval/tutor_judge/run_judge.py`):
 - prompt: `judge_05`
 - rubric: `rubric_05`
 
-**Latest / recommended:** `judge_08` + `rubric_08` (40-point base, see [Rubric summary](#rubric-summary)). This is what recent runs grade with — pass `--prompt judge_08 --rubric rubric_08` (the in-code defaults above haven't been bumped). The Claude judge (`provider="claude"`) is the primary grader; GPT judging was paused (lower self-consistency).
+**Latest / recommended:** `judge_08` + `rubric_08` (40-point base, see [Rubric summary](#rubric-summary)). This is what recent runs grade with, and now the in-code defaults (`DEFAULT_JUDGE_PROMPT` / `DEFAULT_RUBRIC`), so no `--prompt`/`--rubric` override is needed. The Claude judge (`provider="claude"`) is the primary grader; GPT judging was paused (lower self-consistency).
 
 ## Structure
 

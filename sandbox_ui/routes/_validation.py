@@ -14,6 +14,7 @@ from utils.curriculum import discover_exercises as _discover_exercises
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import practice_exists as _practice_exists
+from utils.curriculum import load_course_name as _load_course_name
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -94,15 +95,10 @@ def validate_tutor(tutor) -> dict | None:
 def load_course_name(course) -> str:
     """Display name for a course, read from curriculum/<course>/course_name.txt.
 
-    Returns "" if the course is falsy or the file is missing/empty, so the
-    banner degrades gracefully until each course_name.txt is filled in.
+    Thin wrapper over :func:`utils.curriculum.load_course_name` (the single
+    source of truth) so existing call sites keep their import path.
     """
-    if not course:
-        return ""
-    path = _CURRICULUM_DIR / course / "course_name.txt"
-    if not path.is_file():
-        return ""
-    return path.read_text(encoding="utf-8").strip()
+    return _load_course_name(course)
 
 
 def list_exercises(course) -> list[str]:

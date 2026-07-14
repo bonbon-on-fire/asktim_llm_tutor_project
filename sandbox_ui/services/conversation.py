@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from sandbox_ui.db.models import Conversation, Message, UploadedFile, UploadedImage
 from ui_core.services import conversation as _shared
 from ui_core.services.conversation import Models, WrongSessionError
+from utils.curriculum import load_course_name
 
 _MODELS = Models(
     Conversation=Conversation,
@@ -141,6 +142,7 @@ def count_student_messages(db: Session, conversation: Conversation) -> int:
 def _summarize_extra(c: Conversation) -> dict:
     """Sandbox-only summary keys layered on top of the shared summary dict."""
     return {
+        "course_name": load_course_name(c.course),
         "exercise_kind": c.exercise_kind or "exercise",
         "course_enabled": c.course_enabled is None or bool(c.course_enabled),
         "syllabus_enabled": bool(c.syllabus_enabled),

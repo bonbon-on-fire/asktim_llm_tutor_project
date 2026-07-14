@@ -633,6 +633,17 @@
       li.tabIndex = 0;
       li.setAttribute("role", "button");
 
+      // Course eyebrow: a compact, muted label above the exercise header,
+      // grouping entries by course at a glance. Truncated to one line via CSS;
+      // the full name shows on hover. Omitted when the course has no display name.
+      if (c.course_name) {
+        const course = document.createElement("div");
+        course.className = "sidebar-entry-course";
+        course.textContent = c.course_name;
+        course.title = c.course_name;
+        li.appendChild(course);
+      }
+
       const title = document.createElement("div");
       title.className = "sidebar-entry-title";
       title.textContent = formatEntryHeader(c);

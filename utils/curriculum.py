@@ -205,6 +205,25 @@ def list_courses(curriculum_root: Path | str | None = None) -> list[str]:
     return sorted(p.name for p in root.iterdir() if p.is_dir())
 
 
+def course_name_path(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the path to a course's display-name file (``curriculum/<course>/course_name.txt``)."""
+    return course_dir(course, curriculum_root) / "course_name.txt"
+
+
+def load_course_name(course: str | None, curriculum_root: Path | str | None = None) -> str:
+    """Human-readable course name from ``curriculum/<course>/course_name.txt``.
+
+    Returns ``""`` when the course is falsy or the file is missing/empty, so
+    callers (banners, sidebar eyebrows) degrade gracefully until each
+    ``course_name.txt`` is filled in. The curriculum file is the single source
+    of truth for course display names.
+    """
+    if not course:
+        return ""
+    path = course_name_path(course, curriculum_root)
+    return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+
+
 def about_asktim_path(curriculum_root: Path | str | None = None) -> Path:
     """Return the path to the shared AskTIM self-description (``curriculum/about_asktim.txt``)."""
     return _root(curriculum_root) / "about_asktim.txt"

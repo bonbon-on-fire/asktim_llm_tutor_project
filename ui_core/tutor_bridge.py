@@ -16,9 +16,11 @@ as overridable hooks:
 - :meth:`build_assignment_text` — assemble the assignment/system-prompt body.
 - :meth:`build_system_prompt` — wrap the assignment text into a full system
   prompt.
-- :meth:`retrieved_context` — per-turn RAG context, folded into the tutor's
-  system message (after the cacheable prompt), never onto a user turn (empty by
-  default; sandbox's RAG mode fills this in).
+- :meth:`retrieved_context` — per-turn RAG context, always routed to the tutor's
+  system/instruction channel, never onto a user turn (empty by default; RAG mode
+  fills this in). In the default cache-friendly history mode it rides as its own
+  system message interleaved after the turn's student message; in the legacy
+  fallback it is folded into the single system message after the cacheable prompt.
 - :meth:`turn_attachments` — curriculum figures + uploaded images to attach to
   the latest student turn.
 

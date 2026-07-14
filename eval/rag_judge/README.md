@@ -67,6 +67,11 @@ python eval/rag_judge/generate_ground_truth.py --course supply_chain_design \
     --append --cover-all --per-lecture 2 --min-lecture-chars 1000
 ```
 
+By default this uses the async **Batch API** (Anthropic, ~50% cheaper): one
+batch for all sampled passages, polled to completion (minutes–hours). Pass
+**`--live`** for one synchronous call per passage (faster to start, ~2× the
+cost). Any passage that errors falls back to a live call, so a run never breaks.
+
 The generator (`generate_ground_truth.py`) works **passage → question** so gold
 is automatic: it segments each lecture into sentence-aligned passages with exact
 offsets, asks Claude for student-voiced questions each with a *verbatim* quote,

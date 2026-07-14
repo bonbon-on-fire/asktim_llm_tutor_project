@@ -120,8 +120,16 @@ python -m internal_testing.run_transcript_judge --provider claude --prompt judge
   --source-suffix raw_tutor_05 --output-suffix tutor_05 --yes
 ```
 
-Parallelism is controlled by the `PARALLEL_WORKERS` constant at the top of
-each runner file (default: 6).
+**Batch mode is the default.** Grading is offline and each transcript is
+independent, so requests go through the async **Batch API** (Anthropic /
+OpenAI) — ~50% cheaper. The runner submits one batch and polls to completion
+(minutes–hours). Any transcript carrying figures or whose result fails
+validation falls back to the synchronous judge (which has the repair loop), and
+a batch submission/poll error degrades the *whole* run to sync — so a run never
+breaks, worst case it loses the discount. Pass **`--live`** for the old
+synchronous thread-pool path (faster to start, ~2× the cost) — handy for quick
+spot-checks. Thread-pool parallelism (live mode) is controlled by the
+`PARALLEL_WORKERS` constant at the top of each runner file (default: 6).
 
 ## Rubric summary
 

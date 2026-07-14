@@ -876,13 +876,45 @@ def build_anthropic_request(plan):
     return system_blocks, messages
 
 
+def _anthropic_usage_message(message) -> AIMessage:
+    """Wrap a raw-anthropic final ``Message``'s usage into an ``AIMessage`` shaped
+    like the langchain tutor message, so ``utils.pricing`` can price it.
+
+    Anthropic reports ``input_tokens`` EXCLUDING cache read/write; langchain and
+    the pricing formula expect ``input_tokens`` to INCLUDE them (it subtracts
+    them to recover the full-price remainder), so we add them back here. Missing
+    usage degrades to an empty message → zero cost, never a crash.
+    """
+    usage = getattr(message, "usage", None)
+    if usage is None:
+        return AIMessage(content="")
+    cache_read = int(getattr(usage, "cache_read_input_tokens", 0) or 0)
+    cache_write = int(getattr(usage, "cache_creation_input_tokens", 0) or 0)
+    input_tokens = int(getattr(usage, "input_tokens", 0) or 0) + cache_read + cache_write
+    output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+    return AIMessage(
+        content="",
+        usage_metadata={
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "input_token_details": {"cache_read": cache_read, "cache_creation": cache_write},
+        },
+        response_metadata={"model": getattr(message, "model", None) or model_name},
+    )
+
+
 def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key):
     """Stream a cached-mode tutor reply via the raw anthropic SDK (langchain
-    rejects the interleaved multi-system structure). Same yield contract as
-    stream_tutor_reply: visible str chunks, then ('__done__', normalized_json)."""
+    rejects the interleaved multi-system structure). Same yield contract as the
+    langchain ``stream_tutor_reply``: visible str chunks, then
+    ``('__done__', normalized_json, usage_msg)`` where ``usage_msg`` is an
+    ``AIMessage`` carrying ``usage_metadata`` / ``response_metadata`` for cost
+    accounting (see :func:`_anthropic_usage_message`)."""
     system_blocks, messages = build_anthropic_request(plan)
     client = anthropic.Anthropic(api_key=api_key)
     extractor = StudentAnswerExtractor()
+    final_message = None
     with client.messages.stream(
         model=model_name, max_tokens=8192, system=system_blocks, messages=messages,
     ) as stream:
@@ -890,6 +922,7 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key):
             visible = extractor.feed(text)
             if visible:
                 yield visible
+        final_message = stream.get_final_message()
     raw = extractor.buffer
     normalized = _normalize_tutor_ai_message(AIMessage(content=raw))
     normalized_text = normalized.content if isinstance(normalized.content, str) else str(normalized.content)
@@ -897,4 +930,4 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key):
         _, answer = parse_tutor_response(normalized_text)
         if answer:
             yield answer
-    yield ("__done__", normalized_text)
+    yield ("__done__", normalized_text, _anthropic_usage_message(final_message))

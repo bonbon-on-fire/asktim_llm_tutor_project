@@ -15,13 +15,18 @@ from unittest.mock import patch
 from ui_core.tutor_bridge import TutorBridge, cached_history_enabled
 
 
-def test_cached_history_enabled_defaults_off(monkeypatch):
+def test_cached_history_enabled_defaults_on(monkeypatch):
+    # Cached interleaved history is now the DEFAULT path.
     monkeypatch.delenv("TUTOR_CACHED_HISTORY", raising=False)
-    assert cached_history_enabled() is False
-    monkeypatch.setenv("TUTOR_CACHED_HISTORY", "on")
     assert cached_history_enabled() is True
+    # Explicit falsey values force the legacy fallback.
+    monkeypatch.setenv("TUTOR_CACHED_HISTORY", "off")
+    assert cached_history_enabled() is False
     monkeypatch.setenv("TUTOR_CACHED_HISTORY", "0")
     assert cached_history_enabled() is False
+    # Any other value keeps cached.
+    monkeypatch.setenv("TUTOR_CACHED_HISTORY", "1")
+    assert cached_history_enabled() is True
 
 
 def test_cached_gpt_builds_interleaved_messages():
@@ -42,7 +47,9 @@ def test_cached_gpt_builds_interleaved_messages():
         bridge,
         "retrieved_context",
         return_value=type(
-            "RC", (), {"text": "RAGNOW", "records": [{"source": "x", "text": "t"}]}
+            "RC",
+            (),
+            {"text": "RAGNOW", "records": [{"source": "x", "text": "t"}], "embedding_tokens": 0},
         )(),
     ), patch.object(bridge, "_enforce_rag_available"):
         list(

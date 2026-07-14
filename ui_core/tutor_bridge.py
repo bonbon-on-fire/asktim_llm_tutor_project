@@ -144,12 +144,17 @@ def _resolve_provider(requested: str | None) -> str:
     return p if p in _VALID_PROVIDERS else _DEFAULT_PROVIDER
 
 
-_CACHED_HISTORY_TRUTHY = {"1", "true", "yes", "on"}
+_CACHED_HISTORY_FALSEY = {"0", "false", "no", "off"}
 
 
 def cached_history_enabled() -> bool:
-    """Global on/off for cache-friendly interleaved history. Default off."""
-    return os.environ.get("TUTOR_CACHED_HISTORY", "").strip().lower() in _CACHED_HISTORY_TRUTHY
+    """Cache-friendly interleaved history is the DEFAULT tutor path.
+
+    Set ``TUTOR_CACHED_HISTORY`` to ``0``/``false``/``no``/``off`` to fall back
+    to the legacy single-system path (instant rollback). Any other value — or
+    leaving it unset — keeps the cached path.
+    """
+    return os.environ.get("TUTOR_CACHED_HISTORY", "").strip().lower() not in _CACHED_HISTORY_FALSEY
 
 
 def _fallback_model(provider: str | None) -> str:
@@ -534,6 +539,7 @@ class TutorBridge:
                 current_rag=self._retrieved_context_block(rc.text),
             )
             full_raw = None
+            full_msg = None  # usage-bearing message for cost accounting
             if provider == "claude":
                 for item in stream_tutor_reply_anthropic_raw(
                     plan,
@@ -542,13 +548,16 @@ class TutorBridge:
                 ):
                     if isinstance(item, tuple) and item and item[0] == "__done__":
                         full_raw = item[1]
+                        full_msg = item[2] if len(item) > 2 else None
                         break
                     if isinstance(item, str) and item:
                         yield {"type": "delta", "text": item}
             else:  # gpt via langchain (accepts interleaved system messages)
                 lc_messages = self._plan_to_langchain(plan)
                 extractor = StudentAnswerExtractor()
+                full_chunk = None
                 for chunk in model.stream(lc_messages):
+                    full_chunk = chunk if full_chunk is None else full_chunk + chunk
                     piece = chunk.content if hasattr(chunk, "content") else str(chunk)
                     if not isinstance(piece, str):
                         piece = str(piece)
@@ -556,15 +565,19 @@ class TutorBridge:
                     if visible:
                         yield {"type": "delta", "text": visible}
                 full_raw = _normalize_tutor_ai_message(AIMessage(content=extractor.buffer)).content
+                full_msg = full_chunk  # carries usage_metadata when stream_usage=True
             reasoning, answer = (None, "")
             if full_raw:
                 reasoning, answer = parse_tutor_response(full_raw)
+            cost = _cost_for_turn(
+                full_msg, provider=provider, embedding_tokens=rc.embedding_tokens
+            )
             yield {
                 "type": "done",
                 "reply": answer or "",
                 "reasoning": reasoning,
                 "retrieved": rc.records,
-                "cost": None,
+                "cost": cost,
             }
             return
 

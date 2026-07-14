@@ -153,6 +153,50 @@ def _lecture_files(course: str, min_chars: int) -> list[Path]:
     return [p for p in files if len(p.read_text(encoding="utf-8")) >= min_chars]
 
 
+def _anthropic_batch_texts(
+    reqs: dict[str, str], *, model_name: str, max_tokens: int, temperature: float
+) -> dict[str, str]:
+    """Submit one Anthropic message batch (custom_id -> user prompt) and return
+    {custom_id: response text}. Foreground poll; for offline generation only."""
+    import time
+
+    import anthropic
+
+    client = anthropic.Anthropic()  # ANTHROPIC_API_KEY from env
+    requests = [
+        {
+            "custom_id": cid,
+            "params": {
+                "model": model_name,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "system": _SYSTEM,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+        }
+        for cid, prompt in reqs.items()
+    ]
+    batch = client.messages.batches.create(requests=requests)
+    print(f"  [submitted Anthropic batch {batch.id}: {len(requests)} passages]")
+    waited = 0
+    while True:
+        b = client.messages.batches.retrieve(batch.id)
+        if b.processing_status == "ended":
+            break
+        if waited >= 24 * 3600:
+            raise RuntimeError(f"Anthropic batch {batch.id} did not finish within 24h")
+        time.sleep(20)
+        waited += 20
+    out: dict[str, str] = {}
+    for r in client.messages.batches.results(batch.id):
+        if r.result.type == "succeeded":
+            msg = r.result.message
+            out[r.custom_id] = "".join(
+                x.text for x in msg.content if getattr(x, "type", None) == "text"
+            )
+    return out
+
+
 def generate(
     *,
     course: str,
@@ -167,6 +211,7 @@ def generate(
     per_lecture: int | None = None,
     id_offset: int = 0,
     cover_all: bool = False,
+    batch: bool = True,
 ) -> list[dict]:
     """Generate candidate ground-truth rows; see module docstring for the flow.
 
@@ -198,21 +243,42 @@ def generate(
         if not cover_all and len(picks) >= num_passages:
             break
 
-    model = ChatAnthropic(model=model_name, temperature=0.7, max_tokens=1024)
+    prompts = [
+        f"Passage from lecture `{p.stem}` (produce up to {need} questions):\n\n{sl.strip()}"
+        for p, (_s, _e, sl), need in picks
+    ]
+    batched: dict[str, str] = {}
+    if batch and picks:
+        # Default: one Anthropic batch for all passages (~50% cheaper). On any
+        # failure the whole set falls back to the live per-passage calls below.
+        try:
+            batched = _anthropic_batch_texts(
+                {str(i): pr for i, pr in enumerate(prompts)},
+                model_name=model_name,
+                max_tokens=1024,
+                temperature=0.7,
+            )
+        except Exception as exc:  # noqa: BLE001 — degrade to live rather than fail
+            print(f"  [batch failed: {exc}; falling back to live]")
+            batched = {}
+
+    live_model = None
     rows: list[dict] = []
     seen_questions: set[str] = set()
     n = 0
-    for path, (start, end, slice_text), needed in picks:
-        prompt = (
-            f"Passage from lecture `{path.stem}` (produce up to "
-            f"{needed} questions):\n\n{slice_text.strip()}"
-        )
-        try:
-            resp = model.invoke([SystemMessage(content=_SYSTEM), HumanMessage(content=prompt)])
-        except Exception as exc:  # network/API hiccup — skip this passage, keep going
-            print(f"  [skip] {path.stem}: {exc}")
-            continue
-        content = resp.content if isinstance(resp.content, str) else str(resp.content)
+    for i, (path, (start, end, slice_text), needed) in enumerate(picks):
+        content = batched.get(str(i))
+        if content is None:
+            if live_model is None:
+                live_model = ChatAnthropic(model=model_name, temperature=0.7, max_tokens=1024)
+            try:
+                resp = live_model.invoke(
+                    [SystemMessage(content=_SYSTEM), HumanMessage(content=prompts[i])]
+                )
+            except Exception as exc:  # network/API hiccup — skip this passage, keep going
+                print(f"  [skip] {path.stem}: {exc}")
+                continue
+            content = resp.content if isinstance(resp.content, str) else str(resp.content)
         for item in _parse_json_array(content)[:needed]:
             question = str(item.get("question", "")).strip()
             quote = str(item.get("quote", "")).strip()
@@ -282,6 +348,12 @@ def main() -> int:
         action="store_true",
         help="Cover every still-short lecture, one passage each; ignores --num-passages.",
     )
+    p.add_argument(
+        "--live",
+        action="store_true",
+        help="Generate synchronously (one live call per passage) instead of the "
+             "default Batch API (~2x the cost; use for a quick small run).",
+    )
     args = p.parse_args()
 
     out_path = Path(args.out) if args.out else _REPO_ROOT / "eval" / "rag_judge" / "ground_truth" / f"{args.course}.jsonl"
@@ -318,6 +390,7 @@ def main() -> int:
         per_lecture=args.per_lecture,
         id_offset=id_offset,
         cover_all=args.cover_all,
+        batch=not args.live,
     )
 
     rows = existing + new_rows

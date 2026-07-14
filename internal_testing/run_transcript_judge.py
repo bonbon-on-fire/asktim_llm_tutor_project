@@ -253,11 +253,35 @@ Examples:
         action="store_true",
         help="Skip confirmation prompt (useful for non-interactive / background runs).",
     )
+    parser.add_argument(
+        "--live",
+        action="store_true",
+        help="Grade synchronously via a live thread pool instead of the default "
+             "Batch API. Faster to start but ~2x the cost; use for quick spot-checks.",
+    )
 
     return parser.parse_args()
 
 
-def _run_judging(provider: str, prompt_name: str, rubric_name: str, source_suffix: str = "raw", yes: bool = False) -> int:
+def _info_from_result(raw_path: Path, name: str, result: Any) -> dict[str, Any]:
+    """Build the score-summary dict for a completed grade (reads the written file)."""
+    graded = json.loads(result.output_path.read_text(encoding="utf-8"))
+    grade = graded.get("grade", {})
+    section_scores: list[str] = []
+    for sid, section in grade.get("sections", {}).items():
+        base = section.get("base", {})
+        section_scores.append(f"{sid}={base.get('score', '?')}/{base.get('max', '?')}")
+    return {
+        "raw_path": raw_path,
+        "name": name,
+        "score": result.total_score,
+        "max_score": result.max_score,
+        "output_path": result.output_path,
+        "section_scores": "  ".join(section_scores),
+    }
+
+
+def _run_judging(provider: str, prompt_name: str, rubric_name: str, source_suffix: str = "raw", yes: bool = False, batch: bool = True) -> int:
     """Run the judging process with the given configuration."""
     # Check API key based on provider
     try:
@@ -307,6 +331,66 @@ def _run_judging(provider: str, prompt_name: str, rubric_name: str, source_suffi
     total = len(tasks)
     all_scores: list[dict[str, Any]] = []
     failed = 0
+
+    if batch:
+        # Default: async Batch API (~50% cheaper). Copy raw->target first, then
+        # grade the targets in one batch (with per-transcript sync fallback inside
+        # judge_transcripts_batch). Use --live for the thread-pool path.
+        from eval.tutor_judge.batch_judge import judge_transcripts_batch
+        from eval.tutor_judge.run_judge import (
+            DEFAULT_CLAUDE_MODEL,
+            DEFAULT_OPENAI_MODEL,
+            DEFAULT_REASONING,
+        )
+
+        for raw_path, target_path in tasks:
+            if target_path.exists():
+                print(f"  [WARN] Overwriting existing file: {target_path.relative_to(_REPO_ROOT)}")
+            shutil.copyfile(raw_path, target_path)
+
+        if provider == "gpt":
+            model_name = os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
+            api_key = os.environ.get("OPENAI_API_KEY", "")
+            reasoning = (
+                os.environ.get("JUDGE_OPENAI_REASONING_EFFORT", DEFAULT_REASONING).strip().lower()
+                or DEFAULT_REASONING
+            )
+        else:
+            model_name = os.environ.get("ANTHROPIC_MODEL", DEFAULT_CLAUDE_MODEL)
+            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            reasoning = "off"
+
+        by_stem = {_relative_stem(t): (r, t) for (r, t) in tasks}
+        items = [(_relative_stem(t), t.stem) for (_r, t) in tasks]
+        try:
+            results = judge_transcripts_batch(
+                items,
+                provider=provider,
+                prompt_name=prompt_name,
+                rubric_name=rubric_name,
+                model_name=model_name,
+                api_key=api_key,
+                reasoning=reasoning,
+                log=lambda m: print(f"[{provider_label} Judge] {m}"),
+            )
+        except Exception as error:  # noqa: BLE001 — surface any batch-run failure cleanly
+            print(f"[{provider_label} Judge] Batch run failed: {error}")
+            return 1
+
+        failed = len(tasks) - len(results)
+        for stem, result in results.items():
+            raw_path, _target = by_stem[stem]
+            info = _info_from_result(raw_path, stem, result)
+            all_scores.append(info)
+            _print_result(info, total, provider)
+
+        scores_only = [s["score"] for s in all_scores]
+        mean_score = sum(scores_only) / len(scores_only) if scores_only else 0.0
+        print(
+            f"\n[{provider_label} Judge] Done (batch). "
+            f"graded={len(all_scores)}  failed={failed}  mean={mean_score:.1f}"
+        )
+        return 0
 
     try:
         with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -374,7 +458,10 @@ def main(argv: list[str] | None = None) -> int:
                 print("Error: --rubric is required in non-interactive mode")
                 return 1
 
-        return _run_judging(provider, prompt_name, rubric_name, source_suffix=args.source_suffix, yes=args.yes)
+        return _run_judging(
+            provider, prompt_name, rubric_name,
+            source_suffix=args.source_suffix, yes=args.yes, batch=not args.live,
+        )
         
     except (RuntimeError, ValueError) as error:
         print(f"Error: {error}")

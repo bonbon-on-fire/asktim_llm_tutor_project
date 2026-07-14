@@ -51,7 +51,7 @@ python -m rag.ingest --course <course>                  --source both
 from rag import retrieve, format_context, has_index
 
 if has_index(course):
-    chunks = retrieve(course, student_message, k=6, max_week=4)
+    chunks = retrieve(course, student_message, k=3, max_week=4)
     block = format_context(chunks, course)   # injected on the latest student turn
 ```
 

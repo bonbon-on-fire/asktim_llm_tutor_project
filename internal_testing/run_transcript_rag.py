@@ -12,8 +12,8 @@ first-class problem kind alongside graded exercises.
 
 Run matrix: ``problems x personas x trials`` for one course/tutor/provider.
 
-Example (the 324-conversation SC2x round: 3 exercises + 3 practice x 18 personas
-x 3 trials, Claude tutor, ~15 workers):
+Example (the default 162-conversation SC2x round: 3 exercises + 3 practice x 9
+personas x 3 trials, Claude tutor, ~15 workers):
 
     python -m internal_testing.run_transcript_rag --yes
 

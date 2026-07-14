@@ -24,7 +24,7 @@ Mid-stream failure:
 
 Pre-stream failures still return JSON: 400 bad text or bad conversation_id;
 404 bad course/exercise/tutor; 403 conversation_id not owned by the current
-session; 502 if the tutor never even starts.
+session.
 """
 
 from __future__ import annotations

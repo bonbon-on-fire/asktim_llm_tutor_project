@@ -137,7 +137,7 @@ def load_ocw_docs(
             continue
 
         ctype = resp.headers.get("content-type", "").lower()
-        label_tail = urlparse(url).path.strip("/").split("/courses/")[-1]
+        label_tail = urlparse(url).path.split("/courses/")[-1].strip("/")
         is_pdf = url.lower().endswith(".pdf") or "application/pdf" in ctype
 
         if is_pdf:

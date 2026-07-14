@@ -31,6 +31,8 @@ from uuid import UUID
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from tutor.cached_history import tutor_output_json
+
 
 @dataclass(frozen=True)
 class Models:
@@ -250,6 +252,92 @@ def _files_by_message(
     out: dict[int, list[Any]] = {}
     for f in db.execute(stmt).scalars().all():
         out.setdefault(f.message_id, []).append(f)
+    return out
+
+
+def _rag_text_from_records(records_json: str | None, course: str) -> str:
+    """Re-render a tutor message's stored `retrieved_context` JSON records back
+    into the same "Retrieved course material..." text block the tutor originally
+    saw for that turn (see `ui_core.tutor_bridge.retrieved_context` /
+    `_retrieved_context_block`). Empty in (no records, unparseable JSON, or an
+    empty list) -> empty string out, so cache-friendly-history can skip the RAG
+    step entirely for that turn (`build_message_plan` omits empty `rag_text`).
+
+    Deferred imports: `rag.retrieve.format_context` and
+    `ui_core.tutor_bridge.RETRIEVED_CONTEXT_HEADER` are only needed here, and
+    `tutor_bridge` is a heavy module (pulls in langchain) — importing it lazily
+    keeps this service's module load light and avoids any load-order coupling
+    between the two modules.
+    """
+    import json as _json
+
+    from rag.chunking import Chunk
+    from rag.retrieve import format_context
+    from ui_core.tutor_bridge import RETRIEVED_CONTEXT_HEADER
+
+    if not records_json:
+        return ""
+    try:
+        records = _json.loads(records_json)
+    except (ValueError, TypeError):
+        return ""
+    if not records:
+        return ""
+    chunks = [
+        Chunk(text=r.get("text", ""), source=r.get("source", ""), course=course, index=i)
+        for i, r in enumerate(records)
+    ]
+    block = format_context(chunks, course)
+    return f"{RETRIEVED_CONTEXT_HEADER}\n\n{block}" if block else ""
+
+
+def get_cached_history_for_tutor(
+    db: Session, conversation: Any, *, models: Models
+) -> list[dict]:
+    """Per prior **completed** turn (has both a student and a tutor message):
+    ``{"student_content": str, "rag_text": str, "tutor_json": str}``, chronological.
+
+    Feeds `tutor.cached_history.build_message_plan` for cache-friendly-history
+    mode: each turn is replayed as student -> [rag] -> tutor (verbatim), rather
+    than the legacy flattened `[{role, content}, ...]` shape from
+    `get_history_for_tutor`. ``student_content`` re-injects attachment text the
+    same way `get_history_for_tutor` does; ``rag_text`` re-renders the tutor
+    message's stored `retrieved_context` records (``""`` when there are none);
+    ``tutor_json`` is the canonical `tutor_output_json(reasoning, answer)`.
+
+    A turn missing either half (e.g. the in-flight turn opened by
+    `start_exchange_student_only` with no tutor reply yet) is excluded — only
+    prior, completed turns belong in replayed history.
+    """
+    stmt = (
+        select(models.Message)
+        .where(models.Message.conversation_id == conversation.id)
+        .order_by(models.Message.turn, models.Message.id)
+    )
+    msgs = db.execute(stmt).scalars().all()
+    files_by_message = _files_by_message(db, conversation, models=models)
+    by_turn: dict[int, dict] = {}
+    for m in msgs:
+        slot = by_turn.setdefault(m.turn, {})
+        if m.role == "student":
+            atts = files_by_message.get(m.id, [])
+            slot["student_content"] = _content_with_attachments(m.content, atts)
+        elif m.role == "tutor":
+            slot["tutor_json"] = tutor_output_json(m.pedagogical_reasoning, m.content)
+            slot["rag_text"] = _rag_text_from_records(
+                getattr(m, "retrieved_context", None), conversation.course
+            )
+    out: list[dict] = []
+    for turn in sorted(by_turn):
+        slot = by_turn[turn]
+        if "student_content" in slot and "tutor_json" in slot:
+            out.append(
+                {
+                    "student_content": slot["student_content"],
+                    "rag_text": slot.get("rag_text", ""),
+                    "tutor_json": slot["tutor_json"],
+                }
+            )
     return out
 
 

@@ -776,6 +776,63 @@ def test_complete_exchange_tutor_persists_retrieved_context() -> None:
         tmp.cleanup()
 
 
+def test_cached_history_pairs_student_rag_tutor() -> None:
+    """Check `get_cached_history_for_tutor` pairs each prior completed turn's
+    student content with its re-rendered RAG block and verbatim tutor JSON.
+    """
+    tmp, eng = _new_session()
+    try:
+        with Session(eng) as s:
+            convo = svc.find_or_create_conversation(
+                s,
+                models=_MODELS,
+                session_id="sessJ",
+                conversation_id=None,
+                course="cs101",
+                exercise_number="ex1",
+                tutor_prompt="be nice",
+            )
+            s.flush()
+
+            student = svc.start_exchange_student_only(
+                s, models=_MODELS, conversation=convo, student_text="q1"
+            )
+            svc.complete_exchange_tutor(
+                s,
+                models=_MODELS,
+                conversation=convo,
+                turn=student.turn,
+                tutor_text="a1",
+                pedagogical_reasoning="why1",
+                retrieved_context=(
+                    '[{"source":"local:lecture_1_1_x","score":0.9,'
+                    '"chars":3,"text":"foo"}]'
+                ),
+            )
+            s.flush()
+
+            rows = svc.get_cached_history_for_tutor(s, convo, models=_MODELS)
+            _check("one cached-history row", len(rows) == 1, str(rows))
+            _check(
+                "student_content matches",
+                rows[0]["student_content"] == "q1",
+                str(rows[0]),
+            )
+            _check(
+                "tutor_json carries verbatim reasoning",
+                '"pedagogical-reasoning": "why1"' in rows[0]["tutor_json"],
+                rows[0]["tutor_json"],
+            )
+            _check(
+                "rag_text re-renders the retrieved record",
+                "foo" in rows[0]["rag_text"],
+                rows[0]["rag_text"],
+            )
+        eng.dispose()
+    finally:
+        tmp.cleanup()
+
+
 def main() -> int:
     """Run all tests in this module and return an exit code (1 if any failed)."""
     tests = (
@@ -790,6 +847,7 @@ def main() -> int:
         test_message_rating_and_message_payload_ids,
         test_cost_persisted_summarized_and_surfaced,
         test_complete_exchange_tutor_persists_retrieved_context,
+        test_cached_history_pairs_student_rag_tutor,
     )
     for t in tests:
         print(t.__name__)

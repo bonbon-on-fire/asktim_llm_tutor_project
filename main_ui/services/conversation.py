@@ -122,6 +122,11 @@ def get_history_for_tutor(db: Session, conversation: Conversation) -> list[dict]
     return _shared.get_history_for_tutor(db, conversation, models=_MODELS)
 
 
+def get_cached_history_for_tutor(db: Session, conversation: Conversation) -> list[dict]:
+    """Per prior completed turn: {student_content, rag_text, tutor_json}."""
+    return _shared.get_cached_history_for_tutor(db, conversation, models=_MODELS)
+
+
 def count_student_messages(db: Session, conversation: Conversation) -> int:
     """Number of student-role messages in this conversation."""
     return _shared.count_student_messages(db, conversation, models=_MODELS)

@@ -214,6 +214,8 @@ def stream_tutor_reply(
     include_lectures: bool = True,
     context_mode: str | None = None,
     provider: str | None = None,
+    history_mode: str = "legacy",
+    cached_history: list[dict] | None = None,
 ):
     """Stream a tutor reply as a sequence of event dicts.
 
@@ -223,6 +225,11 @@ def stream_tutor_reply(
         ``{"type": "done", "reply": "...", "reasoning": "..." | None}``.
 
     Routes are responsible for re-shaping these into SSE frames.
+
+    *history_mode* / *cached_history* thread the cache-friendly interleaved
+    history path through to the shared bridge (see
+    ``ui_core.tutor_bridge.cached_history_enabled``); ``"legacy"`` (default)
+    keeps today's behavior byte-for-byte.
     """
     return _bridge.stream_tutor_reply(
         course=course,
@@ -237,4 +244,6 @@ def stream_tutor_reply(
         include_lectures=include_lectures,
         context_mode=context_mode,
         provider=provider,
+        history_mode=history_mode,
+        cached_history=cached_history,
     )

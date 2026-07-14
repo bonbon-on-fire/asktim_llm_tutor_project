@@ -49,9 +49,11 @@ from sandbox_ui.services.conversation import (
     complete_exchange_tutor,
     count_student_messages,
     find_or_create_conversation,
+    get_cached_history_for_tutor,
     get_history_for_tutor,
     start_exchange_student_only,
 )
+from ui_core.tutor_bridge import cached_history_enabled
 from utils.attachments import (
     AttachmentExtractionError,
     AttachmentValidationError,
@@ -263,6 +265,12 @@ def chat():
     # Snapshot the prior turns BEFORE we insert this turn's student message,
     # so the tutor gets the same shape of history it always has.
     history = get_history_for_tutor(db, convo)
+    stream_history_mode = "cached" if cached_history_enabled() else "legacy"
+    cached_history = (
+        get_cached_history_for_tutor(db, convo)
+        if stream_history_mode == "cached"
+        else []
+    )
 
     # Insert the student row up front and commit it. That way the student's
     # message survives even if the tutor stream errors out partway through.
@@ -355,6 +363,8 @@ def chat():
         include_lectures=stream_lectures,
         context_mode=stream_context_mode,
         provider=stream_provider,
+        history_mode=stream_history_mode,
+        cached_history=cached_history,
     )
 
     def event_stream():

@@ -67,6 +67,8 @@ def stream_tutor_reply(
     history: list[dict],
     new_student_message: str,
     images: list | None = None,
+    history_mode: str = "legacy",
+    cached_history: list[dict] | None = None,
 ):
     """Stream a tutor reply as a sequence of event dicts.
 
@@ -78,6 +80,11 @@ def stream_tutor_reply(
     *images* (``(bytes, mime)`` tuples) attach to this student turn as
     multimodal content. Routes are responsible for re-shaping these into SSE
     frames.
+
+    *history_mode* / *cached_history* thread the cache-friendly interleaved
+    history path through to the shared bridge (see
+    ``ui_core.tutor_bridge.cached_history_enabled``); ``"legacy"`` (default)
+    keeps today's behavior byte-for-byte.
     """
     return _bridge.stream_tutor_reply(
         course=course,
@@ -86,4 +93,6 @@ def stream_tutor_reply(
         history=history,
         new_student_message=new_student_message,
         images=images,
+        history_mode=history_mode,
+        cached_history=cached_history,
     )

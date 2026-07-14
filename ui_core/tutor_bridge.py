@@ -32,15 +32,20 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from rag.embeddings import EMBEDDING_MODEL
 from rag.retrieve import format_context, retrieve_scored_with_usage, to_records
+from tutor.cached_history import build_message_plan
 from tutor.run_tutor import (
+    StudentAnswerExtractor,
+    _normalize_tutor_ai_message,
+    _require_anthropic_api_key,
     build_tutor_model,
     create_tutor_graph,
     load_system_prompt,
     parse_tutor_response,
+    stream_tutor_reply_anthropic_raw,
 )
 from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
@@ -137,6 +142,14 @@ def _resolve_provider(requested: str | None) -> str:
     """Tutor provider for this call: ``claude`` (default, Sonnet 5) or ``gpt`` (gpt-5.4)."""
     p = (requested or "").strip().lower()
     return p if p in _VALID_PROVIDERS else _DEFAULT_PROVIDER
+
+
+_CACHED_HISTORY_TRUTHY = {"1", "true", "yes", "on"}
+
+
+def cached_history_enabled() -> bool:
+    """Global on/off for cache-friendly interleaved history. Default off."""
+    return os.environ.get("TUTOR_CACHED_HISTORY", "").strip().lower() in _CACHED_HISTORY_TRUTHY
 
 
 def _fallback_model(provider: str | None) -> str:
@@ -360,6 +373,19 @@ class TutorBridge:
             return ""
         return f"{RETRIEVED_CONTEXT_HEADER}\n\n{retrieved_context}"
 
+    def _plan_to_langchain(self, plan):
+        """Convert a (role, content) message plan into langchain messages
+        (GPT cached path — langchain accepts interleaved system messages)."""
+        out = []
+        for role, content in plan:
+            if role in ("system_static", "rag"):
+                out.append(SystemMessage(content=content))
+            elif role == "student":
+                out.append(HumanMessage(content=content))
+            else:  # tutor
+                out.append(AIMessage(content=content))
+        return out
+
     def _get_or_build_graph(self, tutor: str, course: str, exercise: str, **ctx):
         """Return the cached compiled tutor graph for this call, building it on a miss.
 
@@ -476,6 +502,8 @@ class TutorBridge:
         history: list[dict],
         new_student_message: str,
         images: list | None = None,
+        history_mode: str = "legacy",
+        cached_history: list[dict] | None = None,
         **ctx,
     ):
         """Stream a tutor reply as a sequence of event dicts.
@@ -496,6 +524,50 @@ class TutorBridge:
         messages = self._history_to_langchain(history)
         rc = self.retrieved_context(course, new_student_message, exercise=exercise, **ctx)
         self._enforce_rag_available(ctx, rc)
+
+        if history_mode == "cached":
+            provider = _resolve_provider(ctx.get("provider"))
+            plan = build_message_plan(
+                static_system=system_prompt,
+                prior_turns=cached_history or [],
+                current_student=new_student_message,
+                current_rag=self._retrieved_context_block(rc.text),
+            )
+            full_raw = None
+            if provider == "claude":
+                for item in stream_tutor_reply_anthropic_raw(
+                    plan,
+                    model_name=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5"),
+                    api_key=_require_anthropic_api_key(),
+                ):
+                    if isinstance(item, tuple) and item and item[0] == "__done__":
+                        full_raw = item[1]
+                        break
+                    if isinstance(item, str) and item:
+                        yield {"type": "delta", "text": item}
+            else:  # gpt via langchain (accepts interleaved system messages)
+                lc_messages = self._plan_to_langchain(plan)
+                extractor = StudentAnswerExtractor()
+                for chunk in model.stream(lc_messages):
+                    piece = chunk.content if hasattr(chunk, "content") else str(chunk)
+                    if not isinstance(piece, str):
+                        piece = str(piece)
+                    visible = extractor.feed(piece)
+                    if visible:
+                        yield {"type": "delta", "text": visible}
+                full_raw = _normalize_tutor_ai_message(AIMessage(content=extractor.buffer)).content
+            reasoning, answer = (None, "")
+            if full_raw:
+                reasoning, answer = parse_tutor_response(full_raw)
+            yield {
+                "type": "done",
+                "reply": answer or "",
+                "reasoning": reasoning,
+                "retrieved": rc.records,
+                "cost": None,
+            }
+            return
+
         attachments = self.turn_attachments(course, exercise, images, **ctx)
         messages.append(self._new_student_message(new_student_message, attachments))
 

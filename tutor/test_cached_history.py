@@ -1,5 +1,5 @@
 from tutor.cached_history import tutor_output_json, build_message_plan
-from tutor.run_tutor import build_anthropic_request
+from tutor.run_tutor import build_anthropic_request, _MAX_MSG_BREAKPOINTS
 
 
 def test_tutor_output_json_is_canonical_and_stable():
@@ -59,3 +59,33 @@ def test_build_anthropic_request_shapes_roles_and_caches_static():
     # last message carries a cache breakpoint (as a content block)
     last = messages[-1]
     assert isinstance(last["content"], list) and last["content"][-1]["cache_control"] == {"type": "ephemeral"}
+
+
+def test_build_anthropic_request_caps_breakpoints_on_long_conversations():
+    # ~20 prior turns, each yielding 3 message blocks (student, rag, tutor),
+    # plus a current student + current rag block -> well past the old scheme's
+    # unbounded 15/30/45/... breakpoint accumulation.
+    prior_turns = [
+        {"student_content": f"s{i}", "rag_text": f"r{i}", "tutor_json": f"t{i}"}
+        for i in range(20)
+    ]
+    plan = build_message_plan(
+        static_system="SYS",
+        prior_turns=prior_turns,
+        current_student="s_current",
+        current_rag="r_current",
+    )
+    system_blocks, messages = build_anthropic_request(plan)
+
+    def has_cache_control(msg):
+        content = msg["content"]
+        return isinstance(content, list) and any("cache_control" in block for block in content)
+
+    marked_count = sum(1 for m in messages if has_cache_control(m))
+    assert marked_count <= _MAX_MSG_BREAKPOINTS
+    assert marked_count <= 3
+    total_breakpoints = len(system_blocks) + marked_count
+    assert total_breakpoints <= 4
+
+    # rolling write breakpoint: the last message is still marked
+    assert has_cache_control(messages[-1])

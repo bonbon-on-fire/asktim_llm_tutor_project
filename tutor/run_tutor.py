@@ -838,13 +838,13 @@ def stream_tutor_reply(
 
 _ROLE_MAP = {"student": "user", "tutor": "assistant", "rag": "system"}
 _CACHE_EVERY = 15  # keep the incremental read within Anthropic's 20-block lookback
+_MAX_MSG_BREAKPOINTS = 3  # Anthropic allows 4 cache_control blocks/request; the static system block uses 1
 
 
 def build_anthropic_request(plan):
     """Convert a (role, content) plan into (system_blocks, messages) for the raw
-    anthropic Messages API. Static system is a cache-marked text block; a
-    cache_control breakpoint is placed on the last message block and every
-    _CACHE_EVERY-th message block (<= 4 breakpoints for realistic lengths)."""
+    anthropic Messages API. Static system is a cache-marked text block; message-level
+    cache_control breakpoints are tail-anchored and bounded (<= _MAX_MSG_BREAKPOINTS)."""
     static = ""
     steps = []
     for role, content in plan:
@@ -855,10 +855,19 @@ def build_anthropic_request(plan):
     system_blocks = [{"type": "text", "text": _sanitize_text_for_transport(static),
                       "cache_control": {"type": "ephemeral"}}]
     n = len(steps)
+    # Tail-anchored rolling breakpoints: the last block plus up to
+    # _MAX_MSG_BREAKPOINTS-1 earlier blocks spaced _CACHE_EVERY back from the
+    # tail. Bounded at _MAX_MSG_BREAKPOINTS so the total with the static system
+    # block never exceeds Anthropic's 4-breakpoint cap, and they roll forward as
+    # the conversation grows (staying within the 20-block cache lookback).
+    marks = set()
+    for k in range(_MAX_MSG_BREAKPOINTS):
+        idx = n - 1 - k * _CACHE_EVERY
+        if idx >= 0:
+            marks.add(idx)
     messages = []
     for i, (role, content) in enumerate(steps):
-        mark = (i == n - 1) or (i % _CACHE_EVERY == _CACHE_EVERY - 1)
-        if mark:
+        if i in marks:
             messages.append({"role": role,
                              "content": [{"type": "text", "text": content,
                                           "cache_control": {"type": "ephemeral"}}]})

@@ -62,7 +62,38 @@ If a course ships `curriculum/<course>/lectures/*.txt`, those transcripts are fo
 
 ### What the tutor receives each turn
 
-Every turn the tutor is sent three things: a **SYSTEM message** (the tutor prompt plus assignment context — the exercise, the tutor-only answer key, and, in RAG mode, the per-turn retrieved course material appended **after** the static cacheable prompt); the **conversation history** (prior student turns plus the tutor's student-facing answers, with the hidden `pedagogical-reasoning` field stripped); and the **current student turn** (its text plus any figures / uploaded files). The tutor never re-receives its own past reasoning. Retrieved RAG material rides in the system message (not prepended to the student turn) so the constant prefix stays cache-eligible; LangChain has no "developer" role, so the system message is used. RAG is now the **shared default** context mode whenever a course has no custom context; when RAG retrieval yields no results, the bridge raises `RagUnavailableError` before the model is called, surfacing an error to the student rather than degrading to full context — see [`rag/README.md`](../rag/README.md#mandatory-rag-fail-closed).
+**By default** (cache-friendly interleaved history, gated by `TUTOR_CACHED_HISTORY` —
+see [Prompt caching](#prompt-caching) below), each turn is laid out as an
+interleaved sequence rather than three flat blocks: a leading **SYSTEM message**
+carries the static tutor prompt plus assignment context (the exercise, the
+tutor-only answer key); then, for each prior turn, the student's message, that
+turn's retrieved RAG as its **own** system message (when there was any), and the
+tutor's **verbatim past reply** — the full `{"pedagogical-reasoning": ...,
+"Student-facing-answer": ...}` JSON, not just the student-facing text; then the
+**current student turn** (its text plus any figures / uploaded files), followed
+by the current turn's retrieved RAG as the last message. Because every replayed
+rag/tutor block is byte-identical turn to turn, the tutor's own past reasoning
+**is** replayed back to it — intentional: it keeps the conversation prefix
+byte-stable for prompt caching and few-shots the JSON output format — and the
+whole growing history becomes a stable, cacheable prefix rather than just the
+static prompt.
+
+Set `TUTOR_CACHED_HISTORY=0`/`false`/`no`/`off` to fall back to the legacy path
+(also always used by the non-streaming graph path, e.g. the batch runners in
+`internal_testing/`): one **SYSTEM message** (the tutor prompt plus assignment
+context, with any per-turn RAG appended **after** the static cacheable prompt),
+the **conversation history** (prior student turns plus the tutor's
+student-facing answers only, with the hidden `pedagogical-reasoning` field
+**stripped**), and the **current student turn**. The tutor never re-receives
+its own past reasoning in this legacy mode.
+
+Either way, retrieved RAG material always rides in a system message — never
+prepended to the student's turn — so the student's words stay clean; LangChain
+has no "developer" role, so the system message is used. RAG is the **shared
+default** context mode whenever a course has no custom context; when RAG
+retrieval yields no results, the bridge raises `RagUnavailableError` before the
+model is called, surfacing an error to the student rather than degrading to
+full context — see [`rag/README.md`](../rag/README.md#mandatory-rag-fail-closed).
 
 ## Function reference (`run_tutor.py`)
 
@@ -149,10 +180,32 @@ underscore) but documented here for maintainers.
 
 ### Prompt caching
 
-Anthropic only — OpenAI auto-caches long prefixes, so both helpers are no-ops
-there (and for any other provider). Caching is billing/latency-only and never
-changes the model's output; Anthropic silently ignores a marker below its
-minimum cacheable length, so both are always safe.
+Anthropic only — OpenAI auto-caches long prefixes, so the mechanisms below are
+no-ops there (and for any other provider). Caching is billing/latency-only and
+never changes the model's output; Anthropic silently ignores a marker below its
+minimum cacheable length, so all of the below is always safe.
+
+**Cache-friendly interleaved history (default, streaming path).** Gated by
+`TUTOR_CACHED_HISTORY` (default ON — `0`/`false`/`no`/`off` falls back to
+legacy; see [`ui_core.tutor_bridge.cached_history_enabled()`](../ui_core/README.md)).
+`tutor/cached_history.py`'s `build_message_plan()` lays out each prior turn as
+student → system(rag, if any) → tutor(verbatim JSON), then the current student
+turn → system(current rag) as the last message; `tutor_output_json()` produces
+the canonical, byte-stable `{"pedagogical-reasoning": ..., "Student-facing-answer":
+...}` string replayed for each past turn. `stream_tutor_reply_anthropic_raw()`
+sends that plan through the raw `anthropic` SDK, since `langchain_anthropic`
+rejects multiple non-consecutive system messages; the GPT path stays on
+langchain, which accepts the interleaved `SystemMessage`s. Because every
+replayed rag/tutor block is identical turn to turn, the whole growing history
+becomes a stable cacheable prefix — only the newest student turn and its RAG
+are billed at full input price, and the rest is served from cache reads at a
+fraction of that cost; the saving grows with conversation length. Cache
+breakpoints are tail-anchored and capped so a request never exceeds
+Anthropic's 4-`cache_control`-per-request limit.
+
+**Legacy path** — used when `TUTOR_CACHED_HISTORY` is falsy, and always for the
+non-streaming graph path (`get_tutor_reply`, used by the batch runners in
+`internal_testing/`):
 
 - **`_build_system_message(system_prompt, model, retrieved_context="")`** — build
   the tutor `SystemMessage`. On `ChatAnthropic` the prompt is wrapped in a text block
@@ -167,9 +220,11 @@ minimum cacheable length, so both are always safe.
   block with an ephemeral cache breakpoint. Prompt caching is a prefix match, so
   caching the latest turn writes the whole conversation-so-far to cache and the
   *next* turn re-reads that prefix at ~0.1x input cost instead of full price.
-  Applied in both the graph path (`tutor_node`) and the streaming path
-  (`stream_tutor_reply`); pairs with the cached system prefix (2 breakpoints, under
-  Anthropic's limit of 4). Measured ~60% per-conversation tutor cost reduction.
+  Applied in the graph path (`tutor_node`) always, and in the streaming path
+  (`stream_tutor_reply`) only under this legacy fallback; pairs with the cached
+  system prefix (2 breakpoints, under Anthropic's limit of 4). Because only the
+  static prompt caches here, the growing conversation history itself is re-billed
+  at full price each turn — the gap the cache-friendly default above closes.
 
 ### Streaming
 

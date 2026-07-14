@@ -144,6 +144,16 @@ attachments (csv/tsv/xlsx/pdf/docx/txt):
   message stays plain text), batch-loaded per conversation via
   `_files_by_message` to avoid N+1 lookups (mirrors `_images_by_message`); a
   no-op when the app doesn't bind `UploadedFile`
+- `get_cached_history_for_tutor(db, conversation, *, models)` — the cache-friendly
+  counterpart to `get_history_for_tutor`, used when `cached_history_enabled()`
+  (the default). Returns one `{student_content, rag_text, tutor_json}` dict per
+  prior **completed** turn (student + tutor message both present): `rag_text`
+  re-renders that turn's persisted `Message.retrieved_context` records back into
+  the same formatted block via `rag.retrieve.format_context` (empty when there
+  was none), and `tutor_json` is the canonical verbatim
+  `{"pedagogical-reasoning": ..., "Student-facing-answer": ...}` string
+  (`tutor.cached_history.tutor_output_json`) — so replay is byte-stable across
+  turns. Feeds `tutor.cached_history.build_message_plan()` via `tutor_bridge`
 - `count_student_messages(db, conversation, *, models)` — used to trigger the
   username modal at 3 student messages
 - `list_conversations_for_username(db, username, *, models, summarize_extra=None)`
@@ -202,10 +212,15 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   text into a full system prompt via `tutor.run_tutor.load_system_prompt`
 - `retrieved_context(course, query, **ctx)` — per-turn RAG retrieval, returned as
   a `RetrievedContext(text, records)` dataclass: `.text` is the formatted block
-  folded into the tutor's **system message** (after the cacheable prompt, so
-  caching still hits), never onto the student's turn; `.records` is
-  `[{source, score, chars, text}]` (what RAG pulled, for persistence/inspection).
-  Empty by default (sandbox's RAG mode fills it in)
+  that always rides in the tutor's **system** channel, never onto the student's
+  turn. By default (cache-friendly history) it becomes its own interleaved
+  system message right after that turn's student message; under the legacy
+  `TUTOR_CACHED_HISTORY=0` fallback it's appended after the static cacheable
+  prompt instead (see [What the tutor receives each turn](#what-the-tutor-receives-each-turn)
+  below). `.records` is `[{source, score, chars, text}]` (what RAG pulled, for
+  persistence/inspection, and — for cache-friendly history — replayed to
+  re-render this turn's RAG block on later turns). Empty by default (sandbox's
+  RAG mode fills it in)
 - `turn_attachments(course, exercise, images, **ctx)` — curriculum figures (via
   `utils.figures.discover_figures`) + uploaded images to attach to the latest
   student turn; `None` when there's nothing to attach
@@ -214,32 +229,66 @@ Public API:
 - `get_tutor_reply(*, course, exercise, tutor, history, new_student_message, images=None, **ctx)`
   → `{"reply": str, "reasoning": str | None, "retrieved": list}` (`retrieved` is
   the `RetrievedContext.records` for the turn — `[]` outside RAG mode)
-- `stream_tutor_reply(...)` (same signature) — generator yielding
-  `{"type": "delta", "text": ...}` events, then one terminal
-  `{"type": "done", "reply": ..., "reasoning": ..., "retrieved": ...}`
+- `stream_tutor_reply(..., history_mode="legacy", cached_history=None)` — generator
+  yielding `{"type": "delta", "text": ...}` events, then one terminal
+  `{"type": "done", "reply": ..., "reasoning": ..., "retrieved": ..., "cost": ...}`.
+  Callers pass `history_mode="cached"` (the default in both chat apps, gated by
+  `cached_history_enabled()`) plus `cached_history` — the per-turn
+  `{student_content, rag_text, tutor_json}` rows from
+  `ui_core.services.conversation.get_cached_history_for_tutor` — to drive the
+  interleaved, cache-friendly path; `history_mode="legacy"` (or omitting it)
+  uses the flat `history` list from `get_history_for_tutor` instead.
 
-**System-message assembly** — `_build_system_message(system_prompt, model, retrieved_context)`
-folds the turn's retrieved RAG material (the `RetrievedContext.text`) into the
-tutor's system message, appended **after** the static cacheable prompt so the
-static prefix still auto-caches. The retrieved block is introduced by the
-module constant `RETRIEVED_CONTEXT_HEADER`. Provider-specific shape: for
-Anthropic it's a second, **uncached** text block placed after the
-`cache_control` breakpoint; for OpenAI it's appended to the system string (the
-static prefix still auto-caches). It rides in the **system** message — not a
-"developer" message — because LangChain has no developer role, and never on the
+**System-message assembly** — by **default** (cache-friendly history, gated by
+`TUTOR_CACHED_HISTORY`; see `cached_history_enabled()` above),
+`tutor.cached_history.build_message_plan()` places each turn's retrieved RAG
+material (the `RetrievedContext.text`, framed via `_retrieved_context_block` /
+the module constant `RETRIEVED_CONTEXT_HEADER`) as its **own** system message
+interleaved right after that turn's student message, with the current turn's
+retrieved block coming last. The plan is sent through the raw `anthropic` SDK
+for Claude (`langchain_anthropic` rejects multiple non-consecutive system
+messages) or as interleaved `SystemMessage`s via langchain for GPT (which
+accepts them).
+
+Under the legacy `TUTOR_CACHED_HISTORY=0` fallback,
+`_build_system_message(system_prompt, model, retrieved_context)` instead folds
+the turn's retrieved RAG material into the single leading system message,
+appended **after** the static cacheable prompt — a second, **uncached** text
+block after the `cache_control` breakpoint for Anthropic, or appended to the
+system string for OpenAI — so the static prefix still auto-caches, though the
+growing history itself does not.
+
+Either way, retrieved material rides in the **system** message — not a
+"developer" message, since LangChain has no developer role — and never on the
 student's turn (which stays clean).
 
 ### What the tutor receives each turn
 
-Each turn the tutor gets a **system** message (the tutor prompt with the
-assignment context baked in — the exercise, the tutor-only answer key, and, in
-RAG mode, the retrieved course-material block appended after the cacheable
-prompt), then the **conversation history** (prior student messages and the
-tutor's student-facing answers, with the hidden pedagogical-reasoning
-stripped), then the **current student turn** (their text plus any attached
-figures/uploaded files). It never sees its own past pedagogical-reasoning, and
-retrieved material arrives as background in the system channel rather than as
-the student's words.
+**By default** (cache-friendly history, gated by `TUTOR_CACHED_HISTORY` — see
+`cached_history_enabled()` above), the streaming path interleaves the turns
+rather than sending three flat blocks: a leading **system** message carries
+the tutor prompt with the assignment context baked in (the exercise, the
+tutor-only answer key); then, for each prior turn, the student's message, that
+turn's retrieved RAG as its own **system** message (when there was any), and
+the tutor's **verbatim past reply** — the full `pedagogical-reasoning` +
+`Student-facing-answer` JSON, not just the student-facing text; then the
+**current student turn** (their text plus any attached figures/uploaded
+files), followed by the current turn's retrieved RAG as the last message.
+Because every replayed rag/tutor block is byte-identical turn to turn, the
+tutor's own past reasoning **is** replayed back to it — intentional, so the
+prefix stays stable for caching and few-shots the JSON output format — and the
+whole conversation history becomes cacheable, not just the static prompt.
+
+Set `TUTOR_CACHED_HISTORY=0`/`false`/`no`/`off` to fall back to the legacy
+shape (also always used by the non-streaming `get_tutor_reply` path): one
+**system** message (tutor prompt + assignment context, with any per-turn RAG
+appended after the cacheable prompt), then the **conversation history** as
+prior student messages and the tutor's student-facing answers only, with the
+hidden pedagogical-reasoning **stripped** — the tutor never re-receives its own
+past reasoning in this mode — then the **current student turn**.
+
+Either way, retrieved material always arrives as background in the system
+channel rather than as the student's words.
 
 `main_ui` uses `TutorBridge` directly; `sandbox_ui` subclasses it.
 

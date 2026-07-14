@@ -93,14 +93,22 @@ built-in options from the curriculum:
   courses with a built RAG index); turning it on retrieves course/syllabus/lecture
   material per turn and **skips the Syllabus and Lectures steps**. The choice is
   stored per conversation in `context_mode` (`rag`/`full_context`; `NULL` = resolve
-  by default). The retrieved material is delivered to the tutor in its **system
-  message** — appended after the static, cacheable prompt rather than riding on the
-  student's chat turn. LangChain (langchain-core 1.4.0) has no "developer" message
-  role, so the system message is the fallback; caching still holds because the static
-  prompt keeps its `cache_control` breakpoint (Anthropic) / stays the auto-cached
-  prefix (OpenAI) and the per-turn RAG block sits after it (uncached, re-read each
-  turn). The shared assembly lives in `ui_core.tutor_bridge` (`_build_system_message()`
-  / `RETRIEVED_CONTEXT_HEADER`)
+  by default). The retrieved material always rides in the tutor's **system**
+  channel — never on the student's chat turn — since LangChain (langchain-core
+  1.4.0) has no "developer" message role. **By default** (cache-friendly
+  interleaved history, gated by `TUTOR_CACHED_HISTORY`; see
+  [`ui_core/README.md`](../ui_core/README.md#what-the-tutor-receives-each-turn)),
+  each turn's retrieved block is its own system message interleaved right after
+  that turn's student message, and — because past turns replay byte-identically —
+  the whole growing conversation becomes a cacheable prefix, not just the static
+  prompt. Under the legacy `TUTOR_CACHED_HISTORY=0` fallback, the retrieved block
+  is instead appended after the single static, cacheable prompt as its own
+  (uncached) segment: the static prompt keeps its `cache_control` breakpoint
+  (Anthropic) / stays the auto-cached prefix (OpenAI), but the per-turn RAG block
+  sits after it, re-read at full price each turn. The shared assembly lives in
+  `ui_core.tutor_bridge` (`RETRIEVED_CONTEXT_HEADER`) and
+  `tutor.cached_history.build_message_plan()` (default) /
+  `_build_system_message()` (legacy)
 - **Exercise** — an exercise (`exercises/exercise_<NN>.txt`) or a **practice
   problem** (`practices/practice_<NN>.txt`) for the chosen course, shown as
   separate "Exercises" and "Practice problems" groups. The chosen kind is stored
@@ -176,7 +184,8 @@ schema matches `main_ui` plus the sandbox-only `conversations` columns —
 `course_enabled`, `syllabus_enabled`, `lectures_enabled`, `exercise_kind`,
 and `context_mode` — plus the sandbox-only `messages.retrieved_context` column
 (a JSON string of the RAG chunks retrieved for a tutor turn, `NULL` for non-RAG
-turns and legacy rows) and the `messages.rating` column (integer thumbs vote:
+turns and legacy rows — replayed on later turns to re-render that turn's RAG
+block for cache-friendly history) and the `messages.rating` column (integer thumbs vote:
 `-1` down / `0` none / `1` up, default `0`, `CHECK (rating IN (-1,0,1))`; only
 tutor rows go non-zero, and legacy rows read back `NULL` and are treated as `0`).
 It also includes the shared `uploaded_files` table (student CSV/TSV/XLSX/PDF/

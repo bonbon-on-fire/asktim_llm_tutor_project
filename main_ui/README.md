@@ -88,7 +88,7 @@ python -m alembic -c main_ui\db\migrations\alembic.ini upgrade head
 Seven tables in `public`:
 
 - `conversations` — one per chat thread (UUID PK, session_id, username, course, exercise_number, tutor_prompt)
-- `messages` — student/tutor turns (BigInt PK, FK to conversations, role, content, `pedagogical_reasoning`, `rating` — integer thumbs rating, `-1` down / `0` none / `1` up, default `0`, CHECK `rating IN (-1,0,1)`; legacy rows read `NULL` and are treated as `0`)
+- `messages` — student/tutor turns (BigInt PK, FK to conversations, role, content, `pedagogical_reasoning`, `rating` — integer thumbs rating, `-1` down / `0` none / `1` up, default `0`, CHECK `rating IN (-1,0,1)`; legacy rows read `NULL` and are treated as `0`; `retrieved_context` — nullable text, a JSON string of the RAG chunks retrieved for a tutor turn, `NULL` for non-RAG turns and pre-migration rows, added by the `c9f1a2b3d4e5` migration — persisted so cache-friendly history can re-render each prior turn's RAG block deterministically on replay)
 - `students` — username + bcrypt password hash for cross-browser identity (one row per username)
 - `uploaded_images` — student-uploaded images: `filename`, `mime_type`, `size_bytes`, and `data` (BYTEA bytes), FK to the student `messages` row
 - `uploaded_files` — student-uploaded non-image attachments: `filename`, `kind`, `extracted_text`, `size_bytes`, and `data` (raw bytes), FK to the student `messages` row
@@ -233,3 +233,12 @@ bridge, and the base chat template/stylesheet actually live.
 > supersedes the star-rating toast — applied automatically by
 > `alembic upgrade head` on Railway boot. The `feedback` table and
 > `POST /api/feedback` route are kept but dormant.
+
+> **Cache-friendly interleaved history is now the default tutor path.** The
+> `c9f1a2b3d4e5` migration (down_revision `a1b2c3d4e5f6`) adds the nullable
+> `messages.retrieved_context` column so per-turn RAG can be replayed
+> deterministically. Gated by `TUTOR_CACHED_HISTORY` (default ON); set it to
+> `0`/`false`/`no`/`off` to fall back to the legacy single-system-message path.
+> See [`tutor/README.md`](../tutor/README.md#prompt-caching) and
+> [`ui_core/README.md`](../ui_core/README.md#what-the-tutor-receives-each-turn)
+> for the full request-shape/caching details.

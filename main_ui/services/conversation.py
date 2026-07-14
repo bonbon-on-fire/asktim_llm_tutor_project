@@ -93,9 +93,14 @@ def complete_exchange_tutor(
     turn: int,
     tutor_text: str,
     pedagogical_reasoning: str | None,
+    cost_usd: float | None = None,
+    usage_json: str | None = None,
 ) -> Message:
     """Insert the tutor reply for a turn previously opened by
     :func:`start_exchange_student_only`.
+
+    ``cost_usd`` / ``usage_json`` carry the turn's estimated cost + breakdown;
+    persisted here (main_ui stores but does not render it).
     """
     return _shared.complete_exchange_tutor(
         db,
@@ -104,6 +109,8 @@ def complete_exchange_tutor(
         turn=turn,
         tutor_text=tutor_text,
         pedagogical_reasoning=pedagogical_reasoning,
+        cost_usd=cost_usd,
+        usage_json=usage_json,
     )
 
 

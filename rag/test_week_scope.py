@@ -34,7 +34,8 @@ def test_max_week_drops_future_lectures_keeps_course_level(monkeypatch):
         _FakeChunk("local:course", "course-level, no week"),
     ]
     monkeypatch.setattr(_RETRIEVE_MOD, "_get_store", lambda course: _FakeStore(chunks))
-    monkeypatch.setattr(_RETRIEVE_MOD, "embed_query", lambda q: [0.0])
+    # retrieve_scored now embeds via embed_query_with_usage -> (vector, tokens).
+    monkeypatch.setattr(_RETRIEVE_MOD, "embed_query_with_usage", lambda q: ([0.0], 3))
 
     # No cutoff: every chunk is eligible.
     assert len(retrieve_scored("c", "q", k=5)) == 5

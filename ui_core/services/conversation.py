@@ -162,9 +162,15 @@ def complete_exchange_tutor(
     turn: int,
     tutor_text: str,
     pedagogical_reasoning: str | None,
+    cost_usd: float | None = None,
+    usage_json: str | None = None,
 ) -> Any:
     """Insert the tutor reply for a turn previously opened by
     :func:`start_exchange_student_only`.
+
+    ``cost_usd`` / ``usage_json`` carry the turn's estimated cost + auditable
+    token breakdown (see :mod:`utils.pricing`); both default to ``None`` for
+    callers that don't cost-account.
     """
     tutor_msg = models.Message(
         conversation_id=conversation.id,
@@ -172,6 +178,8 @@ def complete_exchange_tutor(
         role="tutor",
         content=tutor_text,
         pedagogical_reasoning=pedagogical_reasoning,
+        cost_usd=cost_usd,
+        usage_json=usage_json,
     )
     db.add(tutor_msg)
     conversation.last_active_at = datetime.now(timezone.utc)
@@ -337,6 +345,7 @@ def get_messages_for_conversation(
     models: Models,
     include_reasoning: bool = False,
     include_retrieved: bool = False,
+    include_cost: bool = False,
 ) -> list[dict]:
     """Return chronologically ordered messages as JSON-friendly dicts.
 
@@ -348,6 +357,10 @@ def get_messages_for_conversation(
     when ``include_reasoning`` is set — sandbox_ui is a dev/TA tool where
     reviewers may inspect it (same policy as the database_ui review
     dashboard); main_ui excludes it (student-facing policy).
+
+    ``include_cost`` adds ``cost_usd`` and ``model`` (parsed from ``usage_json``)
+    to tutor rows that have a stored cost — sandbox_ui only; main_ui persists the
+    cost but does not surface it.
     """
     stmt = (
         select(models.Message)
@@ -387,6 +400,22 @@ def get_messages_for_conversation(
                     entry["retrieved"] = _json.loads(raw)
                 except (ValueError, TypeError):
                     pass
+        if include_cost:
+            cost = getattr(m, "cost_usd", None)
+            if cost is not None:
+                entry["cost_usd"] = cost
+                # Model id lives inside the stored breakdown; parse it out so the
+                # UI can render "model ($cost)". Absent/corrupt JSON -> None.
+                import json as _json
+
+                model = None
+                raw_usage = getattr(m, "usage_json", None)
+                if raw_usage:
+                    try:
+                        model = (_json.loads(raw_usage) or {}).get("model")
+                    except (ValueError, TypeError):
+                        pass
+                entry["model"] = model
         entry["images"] = images_by_message.get(m.id, [])
         entry["attachments"] = attachments_by_message.get(m.id, [])
         result.append(entry)
@@ -473,6 +502,15 @@ def _summarize_conversation(
     else:
         snippet = None
 
+    # Running conversation cost — SUM over tutor rows' cost_usd (NULLs, i.e.
+    # student rows and pre-feature rows, coalesce to 0). Both apps carry this in
+    # the summary; only sandbox_ui renders it.
+    total_cost = db.execute(
+        select(func.coalesce(func.sum(models.Message.cost_usd), 0.0)).where(
+            models.Message.conversation_id == c.id
+        )
+    ).scalar_one()
+
     summary = {
         "id": str(c.id),
         "course": c.course,
@@ -482,6 +520,7 @@ def _summarize_conversation(
         "last_active_at": c.last_active_at.isoformat() if c.last_active_at else None,
         "message_count": int(msg_count),
         "last_message_snippet": snippet,
+        "total_cost_usd": float(total_cost or 0.0),
     }
     if summarize_extra is not None:
         summary.update(summarize_extra(c))

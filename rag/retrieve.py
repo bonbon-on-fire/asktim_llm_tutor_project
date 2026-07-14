@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 
 from rag.chunking import Chunk
-from rag.embeddings import embed_query
+from rag.embeddings import embed_query_with_usage
 from rag.store import NumpyVectorStore
 
 # Per-course store cache so we load each index from disk only once per process.
@@ -121,6 +121,42 @@ def has_index(course: str) -> bool:
     return _get_store(course) is not None
 
 
+def retrieve_scored_with_usage(
+    course: str, query: str, *, k: int = 3, max_chars: int = 8000, max_week: int | None = None
+) -> tuple[list[tuple[Chunk, float]], int]:
+    """Like :func:`retrieve_scored`, but also returns the query-embedding tokens billed.
+
+    The second element is the exact prompt-token count of the one embedding call
+    made for *query* (``0`` when there's no index / empty query, so no call is
+    made). Callers that cost-account a turn use this; :func:`retrieve_scored`
+    delegates here and drops it.
+    """
+    store = _get_store(course)
+    if store is None or not query.strip():
+        return [], 0
+    query_vec, embed_tokens = embed_query_with_usage(query)
+    if max_week is None:
+        hits = store.search(query_vec, k)
+    else:
+        # Over-fetch the whole ranked list, drop future-week chunks, THEN take the
+        # top-k — filtering after a top-k search would let a future-week hit
+        # displace an in-scope one.
+        ranked = store.search(query_vec, len(store.chunks))
+        hits = [
+            (c, s)
+            for c, s in ranked
+            if (_source_week(c.source) is None or _source_week(c.source) <= max_week)
+        ][:k]
+    out: list[tuple[Chunk, float]] = []
+    total = 0
+    for chunk, score in hits:
+        if out and total + len(chunk.text) > max_chars:
+            break
+        out.append((chunk, score))
+        total += len(chunk.text)
+    return out, embed_tokens
+
+
 def retrieve_scored(
     course: str, query: str, *, k: int = 3, max_chars: int = 8000, max_week: int | None = None
 ) -> list[tuple[Chunk, float]]:
@@ -134,29 +170,10 @@ def retrieve_scored(
     Returns ``[]`` when there's no index or the query is empty — callers fall
     back to their non-RAG context path.
     """
-    store = _get_store(course)
-    if store is None or not query.strip():
-        return []
-    if max_week is None:
-        hits = store.search(embed_query(query), k)
-    else:
-        # Over-fetch the whole ranked list, drop future-week chunks, THEN take the
-        # top-k — filtering after a top-k search would let a future-week hit
-        # displace an in-scope one.
-        ranked = store.search(embed_query(query), len(store.chunks))
-        hits = [
-            (c, s)
-            for c, s in ranked
-            if (_source_week(c.source) is None or _source_week(c.source) <= max_week)
-        ][:k]
-    out: list[tuple[Chunk, float]] = []
-    total = 0
-    for chunk, score in hits:
-        if out and total + len(chunk.text) > max_chars:
-            break
-        out.append((chunk, score))
-        total += len(chunk.text)
-    return out
+    scored, _ = retrieve_scored_with_usage(
+        course, query, k=k, max_chars=max_chars, max_week=max_week
+    )
+    return scored
 
 
 def retrieve(

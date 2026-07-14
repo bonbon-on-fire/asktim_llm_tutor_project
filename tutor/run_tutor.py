@@ -757,7 +757,7 @@ def stream_tutor_reply(
     system_prompt: str,
     retrieved_context: str = "",
 ):
-    """Yield visible answer chunks, then a final ``("__done__", full_json)`` tuple.
+    """Yield visible answer chunks, then a final ``("__done__", full_json, msg)`` tuple.
 
     Bypasses the LangGraph wrapper so we can use ``model.stream(...)`` directly.
     Mirrors the non-student-like guard from ``tutor_node`` so a malformed
@@ -768,8 +768,11 @@ def stream_tutor_reply(
 
     Yields:
         ``str`` for each batch of visible chars to emit to the client.
-        Finally ``("__done__", full_raw_json)`` so callers can run
-        :func:`parse_tutor_response` to recover the hidden reasoning.
+        Finally ``("__done__", full_raw_json, ai_message)`` where ``ai_message``
+        is the terminal ``AIMessage`` carrying ``usage_metadata`` /
+        ``response_metadata`` (for cost accounting); callers run
+        :func:`parse_tutor_response` on ``full_raw_json`` to recover the hidden
+        reasoning. The canned-reply path carries no usage (no model call ran).
     """
     safe_messages = [_build_system_message(system_prompt, model, retrieved_context)]
     for msg in messages:
@@ -784,7 +787,7 @@ def stream_tutor_reply(
             _, answer = parse_tutor_response(canned_json)
             if answer:
                 yield answer
-            yield ("__done__", canned_json)
+            yield ("__done__", canned_json, canned)
             return
 
     _cache_last_message(safe_messages, model)
@@ -829,4 +832,4 @@ def stream_tutor_reply(
         if answer:
             yield answer
 
-    yield ("__done__", normalized_text)
+    yield ("__done__", normalized_text, normalized)

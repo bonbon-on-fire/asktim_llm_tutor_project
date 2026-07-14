@@ -109,12 +109,15 @@ def complete_exchange_tutor(
     tutor_text: str,
     pedagogical_reasoning: str | None,
     retrieved_context: str | None = None,
+    cost_usd: float | None = None,
+    usage_json: str | None = None,
 ) -> Message:
     """Insert the tutor reply for a turn previously opened by
     :func:`start_exchange_student_only`.
 
     ``retrieved_context`` is a JSON string of the RAG chunks retrieved for this
     turn (``[{source, score, chars, text}]``), or ``None`` for non-RAG turns.
+    ``cost_usd`` / ``usage_json`` carry the turn's estimated cost + breakdown.
     """
     msg = _shared.complete_exchange_tutor(
         db,
@@ -123,6 +126,8 @@ def complete_exchange_tutor(
         turn=turn,
         tutor_text=tutor_text,
         pedagogical_reasoning=pedagogical_reasoning,
+        cost_usd=cost_usd,
+        usage_json=usage_json,
     )
     if retrieved_context is not None:
         msg.retrieved_context = retrieved_context
@@ -197,7 +202,12 @@ def get_messages_for_conversation(
     database_ui review dashboard, unlike the student-facing main_ui.
     """
     return _shared.get_messages_for_conversation(
-        db, conversation, models=_MODELS, include_reasoning=True, include_retrieved=True
+        db,
+        conversation,
+        models=_MODELS,
+        include_reasoning=True,
+        include_retrieved=True,
+        include_cost=True,
     )
 
 

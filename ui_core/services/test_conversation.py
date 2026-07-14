@@ -13,6 +13,7 @@ columns main_ui's doesn't have).
 
 from __future__ import annotations
 
+import json
 import tempfile
 import uuid
 from datetime import datetime, timezone
@@ -660,6 +661,80 @@ def test_message_rating_and_message_payload_ids() -> None:
         tmp.cleanup()
 
 
+def test_cost_persisted_summarized_and_surfaced() -> None:
+    """cost_usd/usage_json persist; summary sums them; include_cost surfaces per-message."""
+    tmp, eng = _new_session()
+    try:
+        with Session(eng) as s:
+            convo = svc.find_or_create_conversation(
+                s,
+                models=_MODELS,
+                session_id="sessC",
+                conversation_id=None,
+                course="cs101",
+                exercise_number="ex1",
+                tutor_prompt="be nice",
+                username="cara",
+            )
+            s.commit()
+
+            student = svc.start_exchange_student_only(
+                s, models=_MODELS, conversation=convo, student_text="q"
+            )
+            usage = {"model": "gpt-5.4", "usd": 0.0123, "tutor": {"input_tokens": 100}}
+            tutor = svc.complete_exchange_tutor(
+                s,
+                models=_MODELS,
+                conversation=convo,
+                turn=student.turn,
+                tutor_text="a",
+                pedagogical_reasoning=None,
+                cost_usd=0.0123,
+                usage_json=json.dumps(usage),
+            )
+            s.commit()
+
+            _check("cost_usd persisted on tutor row", tutor.cost_usd == 0.0123, str(tutor.cost_usd))
+            _check(
+                "usage_json persisted with model",
+                json.loads(tutor.usage_json)["model"] == "gpt-5.4",
+                str(tutor.usage_json),
+            )
+
+            summary = svc._summarize_conversation(s, convo, models=_MODELS)
+            _check(
+                "summary total_cost_usd sums tutor rows",
+                abs(summary["total_cost_usd"] - 0.0123) < 1e-9,
+                str(summary.get("total_cost_usd")),
+            )
+
+            with_cost = svc.get_messages_for_conversation(
+                s, convo, models=_MODELS, include_cost=True
+            )
+            tutor_entry = next(m for m in with_cost if m["role"] == "tutor")
+            _check(
+                "include_cost surfaces cost_usd + model on tutor entry",
+                tutor_entry.get("cost_usd") == 0.0123 and tutor_entry.get("model") == "gpt-5.4",
+                str(tutor_entry),
+            )
+            student_entry = next(m for m in with_cost if m["role"] == "student")
+            _check(
+                "student entry carries no cost",
+                "cost_usd" not in student_entry,
+                str(student_entry),
+            )
+
+            without_cost = svc.get_messages_for_conversation(s, convo, models=_MODELS)
+            _check(
+                "default (include_cost=False) omits cost_usd",
+                all("cost_usd" not in m for m in without_cost),
+                str(without_cost),
+            )
+        eng.dispose()
+    finally:
+        tmp.cleanup()
+
+
 def main() -> int:
     """Run all tests in this module and return an exit code (1 if any failed)."""
     tests = (
@@ -672,6 +747,7 @@ def main() -> int:
         test_get_conversation_for_viewer_ownership,
         test_backfill_username_for_session,
         test_message_rating_and_message_payload_ids,
+        test_cost_persisted_summarized_and_surfaced,
     )
     for t in tests:
         print(t.__name__)

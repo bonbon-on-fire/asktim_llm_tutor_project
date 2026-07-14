@@ -333,13 +333,31 @@
     return provider === "gpt" ? "gpt-5.4" : "claude-sonnet-5";
   }
 
+  // Per-message estimated cost, 4 decimals so a ~$0.005-0.02 turn stays legible
+  // (2 decimals would collapse most turns to $0.00).
+  function formatCostUsd(usd) {
+    return "$" + Number(usd).toFixed(4);
+  }
+
+  // Conversation total: 2 decimals, but fall back to 4 when under a cent so a
+  // cheap conversation still shows a non-zero figure.
+  function formatTotalCostUsd(usd) {
+    const n = Number(usd);
+    return "$" + n.toFixed(n < 0.01 ? 4 : 2);
+  }
+
   // Small non-collapsible label shown ABOVE the "Pedagogical reasoning" row, in
-  // the same muted font, naming the LLM behind this tutor turn. Sandbox-only
-  // (this whole file is sandbox_ui's chat.js — main_ui has its own).
-  function appendModelLabel(li, provider) {
+  // the same muted font, naming the LLM behind this tutor turn and — when known —
+  // that turn's estimated cost, e.g. "gpt-5.4 ($0.0075)". Sandbox-only (this whole
+  // file is sandbox_ui's chat.js — main_ui has its own). *model* (the actual id
+  // reported by the response) is preferred over the provider-derived label;
+  // *costUsd* is omitted when null (e.g. legacy rows predating cost tracking).
+  function appendModelLabel(li, provider, model, costUsd) {
     const div = document.createElement("div");
     div.className = "review-model";
-    div.textContent = providerModelLabel(provider);
+    const label = model || providerModelLabel(provider);
+    div.textContent =
+      costUsd == null ? label : label + " (" + formatCostUsd(costUsd) + ")";
     li.appendChild(div);
   }
 
@@ -394,7 +412,7 @@
     li.appendChild(details);
   }
 
-  function renderMessage(role, content, imageSrcs, reasoning, retrieved, attachmentNames, messageId, rating) {
+  function renderMessage(role, content, imageSrcs, reasoning, retrieved, attachmentNames, messageId, rating, model, costUsd) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
     if (imageSrcs && imageSrcs.length) {
@@ -413,7 +431,7 @@
     }
     appendFileChips(li, attachmentNames);
     if (role === "tutor") {
-      appendModelLabel(li, activeProvider);
+      appendModelLabel(li, activeProvider, model, costUsd);
       appendReasoning(li, reasoning);
       appendRetrieved(li, retrieved);
     }
@@ -673,8 +691,9 @@
   }
 
   function formatEntryHeader(c) {
-    // "Exercise 3 · May 19 · 8 messages" — strip leading zeros from
-    // exercise number; show the most-recent-active date.
+    // "Exercise 3 · May 19 · 8 messages · $0.04" — strip leading zeros from
+    // exercise number; show the most-recent-active date; append the running
+    // estimated cost when the conversation has any.
     const exNumber = parseInt(c.exercise_number, 10);
     const kindLabel = c.exercise_kind === "practice" ? "Practice" : "Exercise";
     const parts = [
@@ -688,6 +707,9 @@
     }
     const count = c.message_count;
     parts.push(`${count} ${count === 1 ? "message" : "messages"}`);
+    if (typeof c.total_cost_usd === "number" && c.total_cost_usd > 0) {
+      parts.push(formatTotalCostUsd(c.total_cost_usd));
+    }
     return parts.join(" · ");
   }
 
@@ -788,6 +810,8 @@
           attachmentNames,
           m.id,
           m.rating,
+          m.model,
+          m.cost_usd,
         );
       }
       highlightActiveEntry();
@@ -1580,7 +1604,12 @@
               // any tokens we'd accumulated in case they drifted. Render
               // markdown now that the full (table-complete) reply is in hand.
               setMessageContent(tutorBubble, "tutor", finalReply);
-              appendModelLabel(tutorBubble, activeProvider);
+              appendModelLabel(
+                tutorBubble,
+                activeProvider,
+                parsed.data && parsed.data.model,
+                parsed.data && parsed.data.cost_usd,
+              );
               appendReasoning(
                 tutorBubble,
                 parsed.data && parsed.data.pedagogical_reasoning,

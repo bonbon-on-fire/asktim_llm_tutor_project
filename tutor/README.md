@@ -186,9 +186,11 @@ minimum cacheable length, so both are always safe.
   final parse.
 - **`stream_tutor_reply(messages, *, model, system_prompt, retrieved_context="")`**
   — generator that yields visible answer chunks, then a final
-  `("__done__", full_raw_json)` tuple so the caller can recover the hidden reasoning
-  via `parse_tutor_response`. `retrieved_context`, when given, is folded into the
-  system message after the cacheable prompt (RAG mode). Bypasses
+  `("__done__", full_raw_json, ai_message)` tuple: `full_raw_json` recovers the
+  hidden reasoning via `parse_tutor_response`, and `ai_message` is the terminal
+  `AIMessage` carrying `usage_metadata` / `response_metadata` for cost accounting
+  (the canned-reply path carries no usage). `retrieved_context`, when given, is
+  folded into the system message after the cacheable prompt (RAG mode). Bypasses
   the graph to use `model.stream(...)`; mirrors the non-student-like guard; falls
   back to emitting the parsed answer if the incremental extractor never locates the
   field.
@@ -223,11 +225,12 @@ messages = [HumanMessage(content="explain urban heat islands")]
 for chunk in stream_tutor_reply(messages, model=model, system_prompt=system_prompt):
     if isinstance(chunk, tuple) and chunk[0] == "__done__":
         full_raw_json = chunk[1]                         # for parse_tutor_response()
+        ai_message = chunk[2]                             # usage_metadata for cost accounting
         break
     print(chunk, end="", flush=True)
 ```
 
-This yields one batch of visible characters per LLM token batch, then a final `("__done__", full_raw_json)` sentinel so the caller can recover the hidden `pedagogical-reasoning` field via `parse_tutor_response()`.
+This yields one batch of visible characters per LLM token batch, then a final `("__done__", full_raw_json, ai_message)` sentinel so the caller can recover the hidden `pedagogical-reasoning` field via `parse_tutor_response()` and the turn's token usage from `ai_message`.
 
 ## Environment variables
 

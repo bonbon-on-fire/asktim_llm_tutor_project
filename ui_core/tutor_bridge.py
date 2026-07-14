@@ -34,7 +34,8 @@ from pathlib import Path
 
 from langchain_core.messages import AIMessage, HumanMessage
 
-from rag.retrieve import format_context, retrieve_scored, to_records
+from rag.embeddings import EMBEDDING_MODEL
+from rag.retrieve import format_context, retrieve_scored_with_usage, to_records
 from tutor.run_tutor import (
     build_tutor_model,
     create_tutor_graph,
@@ -51,6 +52,7 @@ from utils.curriculum import (
 )
 from utils.figures import build_multimodal_content, discover_figures
 from utils.lectures import load_lecture_transcripts
+from utils.pricing import model_from_message, priced, usage_from_message
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -73,10 +75,15 @@ class RetrievedContext:
     ``[{source, score, chars, text}]`` list persisted into
     transcripts and the DB so callers can see what RAG pulled. Retrieval runs
     once and populates both, so nothing is embedded twice.
+
+    ``embedding_tokens`` is the exact prompt-token count billed for embedding
+    the student query this turn (``0`` outside rag mode / when no call is made),
+    used to cost-account the embedding call alongside the tutor call.
     """
 
     text: str = ""
     records: list[dict] = field(default_factory=list)
+    embedding_tokens: int = 0
 
 
 class RagUnavailableError(RuntimeError):
@@ -130,6 +137,40 @@ def _resolve_provider(requested: str | None) -> str:
     """Tutor provider for this call: ``claude`` (default, Sonnet 5) or ``gpt`` (gpt-5.4)."""
     p = (requested or "").strip().lower()
     return p if p in _VALID_PROVIDERS else _DEFAULT_PROVIDER
+
+
+def _fallback_model(provider: str | None) -> str:
+    """Concrete model id for pricing when the response omits one — mirrors build_tutor_model."""
+    if _resolve_provider(provider) == "claude":
+        return os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
+    return os.environ.get("OPENAI_MODEL", "gpt-5.4")
+
+
+def _cost_for_turn(tutor_msg, *, provider: str | None, embedding_tokens: int = 0) -> dict:
+    """Estimate the USD cost of one tutor turn from its reported token usage.
+
+    Prices the tutor call (input / output / prompt-cache-read / prompt-cache-write
+    tokens) using the *actual* model id reported on the response, plus the RAG
+    query-embedding call when it ran (``embedding_tokens > 0``). Returns a
+    JSON-serializable breakdown; ``usd`` is the total. Missing usage — a canned or
+    fallback reply with no model call (``tutor_msg`` None or without metadata) —
+    degrades to zeros rather than crashing (``usage_from_message`` /
+    ``model_from_message`` both tolerate ``None``).
+    """
+    model = model_from_message(tutor_msg, _fallback_model(provider))
+    tutor_priced = priced(model, usage_from_message(tutor_msg))
+    embedding_priced = (
+        priced(EMBEDDING_MODEL, {"input_tokens": int(embedding_tokens)})
+        if embedding_tokens
+        else None
+    )
+    total = tutor_priced["usd"] + (embedding_priced["usd"] if embedding_priced else 0.0)
+    return {
+        "model": model,
+        "usd": round(total, 6),
+        "tutor": tutor_priced,
+        "embedding": embedding_priced,
+    }
 
 
 def _week_for_exercise(exercise) -> int | None:
@@ -245,9 +286,15 @@ class TutorBridge:
         if ctx.get("context_mode", "full_context") != "rag":
             return RetrievedContext()
         try:
-            scored = retrieve_scored(course, query, max_week=_week_for_exercise(ctx.get("exercise")))
+            scored, embed_tokens = retrieve_scored_with_usage(
+                course, query, max_week=_week_for_exercise(ctx.get("exercise"))
+            )
             chunks = [c for c, _ in scored]
-            return RetrievedContext(text=format_context(chunks, course), records=to_records(scored))
+            return RetrievedContext(
+                text=format_context(chunks, course),
+                records=to_records(scored),
+                embedding_tokens=embed_tokens,
+            )
         except Exception:
             return RetrievedContext()
 
@@ -405,13 +452,20 @@ class TutorBridge:
         )
 
         reasoning: str | None = None
-        if out_messages:
-            last = out_messages[-1]
-            if isinstance(last, AIMessage):
-                raw = last.content if isinstance(last.content, str) else str(last.content)
-                reasoning, _ = parse_tutor_response(raw)
+        last_msg = out_messages[-1] if out_messages else None
+        if isinstance(last_msg, AIMessage):
+            raw = last_msg.content if isinstance(last_msg.content, str) else str(last_msg.content)
+            reasoning, _ = parse_tutor_response(raw)
 
-        return {"reply": reply_text, "reasoning": reasoning, "retrieved": rc.records}
+        cost = _cost_for_turn(
+            last_msg, provider=ctx.get("provider"), embedding_tokens=rc.embedding_tokens
+        )
+        return {
+            "reply": reply_text,
+            "reasoning": reasoning,
+            "retrieved": rc.records,
+            "cost": cost,
+        }
 
     def stream_tutor_reply(
         self,
@@ -446,6 +500,7 @@ class TutorBridge:
         messages.append(self._new_student_message(new_student_message, attachments))
 
         full_raw: str | None = None
+        full_msg = None
         for item in _upstream_stream_tutor_reply(
             messages,
             model=model,
@@ -454,6 +509,9 @@ class TutorBridge:
         ):
             if isinstance(item, tuple) and item and item[0] == "__done__":
                 full_raw = item[1]
+                # Third element (the usage-bearing AIMessage) is optional for
+                # backward-compatible callers/fakes that yield only a 2-tuple.
+                full_msg = item[2] if len(item) > 2 else None
                 break
             if isinstance(item, str) and item:
                 yield {"type": "delta", "text": item}
@@ -463,4 +521,13 @@ class TutorBridge:
         if full_raw:
             reasoning, answer = parse_tutor_response(full_raw)
             reply_text = answer or ""
-        yield {"type": "done", "reply": reply_text, "reasoning": reasoning, "retrieved": rc.records}
+        cost = _cost_for_turn(
+            full_msg, provider=ctx.get("provider"), embedding_tokens=rc.embedding_tokens
+        )
+        yield {
+            "type": "done",
+            "reply": reply_text,
+            "reasoning": reasoning,
+            "retrieved": rc.records,
+            "cost": cost,
+        }

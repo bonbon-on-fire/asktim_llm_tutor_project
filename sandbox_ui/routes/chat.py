@@ -362,6 +362,7 @@ def chat():
         full_reply = ""
         reasoning = None
         retrieved = None  # per-turn RAG records: [{source, score, chars, text}]
+        cost = None  # {model, usd, tutor, embedding} — estimated turn cost
         try:
             try:
                 for ev in tutor_bridge.stream_tutor_reply(**stream_kwargs):
@@ -379,6 +380,7 @@ def chat():
                             full_reply = ev["reply"]
                         reasoning = ev.get("reasoning")
                         retrieved = ev.get("retrieved") or None
+                        cost = ev.get("cost") or None
                         break
             except Exception as exc:
                 yield _sse_event(
@@ -392,6 +394,10 @@ def chat():
                 )
                 return
 
+            # Estimated turn cost: numeric total for the column + full breakdown
+            # (model + per-call token counts) as JSON so the figure stays auditable.
+            cost_usd = cost.get("usd") if cost else None
+            usage_json = json.dumps(cost, ensure_ascii=False) if cost else None
             try:
                 convo_obj = db.get(type(convo), convo.id)
                 tutor_msg = complete_exchange_tutor(
@@ -403,6 +409,8 @@ def chat():
                     retrieved_context=(
                         json.dumps(retrieved, ensure_ascii=False) if retrieved else None
                     ),
+                    cost_usd=cost_usd,
+                    usage_json=usage_json,
                 )
                 # Capture the tutor row's id before commit expires the attribute,
                 # so the client can rate this message via POST /api/message/<id>/rating.
@@ -430,6 +438,10 @@ def chat():
                     "pedagogical_reasoning": reasoning,
                     # Also surface what RAG retrieved this turn (may be None).
                     "retrieved": retrieved,
+                    # Estimated cost of this turn + the model that produced it, so
+                    # the UI can render "model ($cost)" under the tutor bubble.
+                    "cost_usd": cost_usd,
+                    "model": (cost.get("model") if cost else None),
                 },
             )
         finally:

@@ -277,6 +277,7 @@ def chat():
         """Generate SSE frames: stream tutor deltas, persist the reply, emit done/error."""
         full_reply = ""
         reasoning = None
+        cost = None  # {model, usd, ...} — estimated turn cost (persisted, not rendered)
         try:
             try:
                 for ev in tutor_bridge.stream_tutor_reply(**stream_kwargs):
@@ -293,6 +294,7 @@ def chat():
                         if ev.get("reply"):
                             full_reply = ev["reply"]
                         reasoning = ev.get("reasoning")
+                        cost = ev.get("cost") or None
                         break
             except Exception as exc:
                 yield _sse_event(
@@ -306,6 +308,8 @@ def chat():
                 )
                 return
 
+            cost_usd = cost.get("usd") if cost else None
+            usage_json = json.dumps(cost, ensure_ascii=False) if cost else None
             try:
                 convo_obj = db.get(type(convo), convo.id)
                 tutor_msg = complete_exchange_tutor(
@@ -314,6 +318,8 @@ def chat():
                     turn=student_turn,
                     tutor_text=full_reply,
                     pedagogical_reasoning=reasoning,
+                    cost_usd=cost_usd,
+                    usage_json=usage_json,
                 )
                 # Capture the tutor row's id before commit expires the attribute,
                 # so the client can rate this message via POST /api/message/<id>/rating.

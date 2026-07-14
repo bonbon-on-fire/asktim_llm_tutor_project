@@ -24,6 +24,7 @@ from sqlalchemy import (
     BigInteger,
     CheckConstraint,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -83,6 +84,14 @@ class MessageMixin:
     # Only ever set on tutor rows; student rows stay 0. server_default keeps it
     # backfilling cleanly when the column is added to an existing table.
     rating: Mapped[int] = mapped_column(nullable=False, server_default="0", default=0)
+    # Estimated USD cost of producing this turn (tutor tokens + prompt cache +
+    # RAG query embedding), priced via utils.pricing. Only ever set on tutor
+    # rows; NULL on student rows and on rows created before this feature.
+    cost_usd: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # JSON breakdown backing ``cost_usd`` (model id + token counts per priced
+    # call), so any stored dollar figure can be re-derived and audited. NULL when
+    # ``cost_usd`` is.
+    usage_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )

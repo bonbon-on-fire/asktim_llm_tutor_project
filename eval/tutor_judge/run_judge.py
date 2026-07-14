@@ -600,7 +600,9 @@ def _create_model_invoke(provider: Provider, model_name: str, api_key: str, reas
     return model.invoke
 
 
-def _create_judge_graph(*, invoke_model: Callable[[list[Any]], Any], model_name: str) -> Any:
+def _create_judge_graph(
+    *, invoke_model: Callable[[list[Any]], Any], model_name: str, provider: Provider = "gpt"
+) -> Any:
     """Build a retrying LangGraph pipeline for judge generation and validation."""
 
     _USAGE_KEYS = ("input_tokens", "output_tokens", "cache_read", "cache_write")
@@ -608,7 +610,24 @@ def _create_judge_graph(*, invoke_model: Callable[[list[Any]], Any], model_name:
     def judge_node(state: JudgeState) -> dict[str, Any]:
         """Call the model with either a fresh prompt or repair prompt."""
 
-        messages = [SystemMessage(content=state["system_prompt"])]
+        # The rubric/system prompt is byte-identical across every transcript in a
+        # bulk run, so mark it cacheable on Anthropic — after the first call it
+        # bills at ~0.1x within the 5-minute window. OpenAI auto-caches long
+        # prefixes (and rejects a stray cache_control key), so only mark Claude.
+        if provider == "claude":
+            messages = [
+                SystemMessage(
+                    content=[
+                        {
+                            "type": "text",
+                            "text": state["system_prompt"],
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ]
+                )
+            ]
+        else:
+            messages = [SystemMessage(content=state["system_prompt"])]
         if state.get("last_error") and state.get("last_output"):
             messages.append(
                 HumanMessage(
@@ -692,7 +711,7 @@ def _judge_transcript(
         reasoning = "off"
 
     invoke_model = _create_model_invoke(provider, model_name, api_key, reasoning)
-    graph = _create_judge_graph(invoke_model=invoke_model, model_name=model_name)
+    graph = _create_judge_graph(invoke_model=invoke_model, model_name=model_name, provider=provider)
 
     system_prompt = load_judge_prompt(prompt_name=prompt_name, rubric_name=rubric_name)
     conversation_text = _format_conversation_for_judge(transcript)

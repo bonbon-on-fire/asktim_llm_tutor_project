@@ -60,14 +60,26 @@ def read_username_cookie(req=None) -> str | None:
 def default_cookie_kwargs(*, secure: bool, max_age: int) -> dict:
     """Cookie attribute kwargs for Flask ``response.set_cookie(...)``.
 
-    HttpOnly + SameSite=None + Secure + Partitioned (CHIPS) for iframe /
-    third-party context. ``secure`` and ``max_age`` come from the app's config.
+    On HTTPS (``secure=True``): HttpOnly + SameSite=None + Secure + Partitioned
+    (CHIPS) so the cookie survives an iframe / third-party (embed) context.
+
+    On plain http (``secure=False``, e.g. ``*_COOKIE_SECURE=false`` for local
+    dev): browsers **drop** ``SameSite=None`` and ``Partitioned`` cookies unless
+    ``Secure`` is also set — which would make the identity cookie vanish in
+    exactly the local-http case this flag exists for. Fall back to
+    ``SameSite=Lax`` (works same-site over http); iframe-embed testing needs
+    HTTPS regardless.
     """
-    return {
+    kwargs = {
         "httponly": True,
-        "samesite": "None",
         "secure": secure,
         "max_age": max_age,
         "path": "/",
-        "partitioned": True,
     }
+    if secure:
+        kwargs["samesite"] = "None"
+        kwargs["partitioned"] = True
+    else:
+        kwargs["samesite"] = "Lax"
+        kwargs["partitioned"] = False
+    return kwargs

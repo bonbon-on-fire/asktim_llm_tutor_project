@@ -59,7 +59,10 @@ class Conversation(Base):
 
 
 class Message(MessageMixin, Base):
-    pass
+    # Cached-history mode: JSON string of the RAG records retrieved for this
+    # (tutor) turn, so past RAG can be replayed as a system message. NULL for
+    # pre-feature rows and turns where no retrieval ran.
+    retrieved_context: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class Student(StudentMixin, Base):

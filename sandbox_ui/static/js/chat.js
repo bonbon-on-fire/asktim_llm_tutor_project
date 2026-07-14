@@ -858,29 +858,137 @@
   }
   const LOCKED_TUTOR = "tutor_07"; // the tutor prompt is locked to this in the wizard
 
+  // Custom dropdown that replaces the native <select> in the Create-context
+  // wizard. A native <select> flips its option list UPWARD when the control sits
+  // low on a centered modal (the long Exercise/Practice list); this one always
+  // opens DOWNWARD with a scroll. Drop-in for the old buildSelect: the returned
+  // element still carries id="create-select" and exposes a `.value` get/set, a
+  // `.disabled` set, and fires a "change" event on selection — exactly what
+  // renderCreateStep/saveCreateStep already read.
   function buildSelect(options, value) {
-    const sel = document.createElement("select");
-    sel.className = "context-select";
-    sel.id = "create-select";
-    const addOption = (parent, o) => {
-      const opt = document.createElement("option");
-      opt.value = o.value;
-      opt.textContent = o.label;
-      if (o.value === value) opt.selected = true;
-      parent.appendChild(opt);
-    };
+    const flat = [];
     for (const o of options) {
       if (o.group) {
-        if (!o.options.length) continue;
-        const og = document.createElement("optgroup");
-        og.label = o.group;
-        for (const inner of o.options) addOption(og, inner);
-        sel.appendChild(og);
+        for (const inner of o.options || []) flat.push(inner);
       } else {
-        addOption(sel, o);
+        flat.push(o);
       }
     }
-    return sel;
+
+    const root = document.createElement("div");
+    root.className = "context-dropdown";
+    root.id = "create-select";
+    let currentValue = value;
+    let isOpen = false;
+    let isDisabled = false;
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "context-dropdown-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "context-dropdown-label";
+    const caret = document.createElement("span");
+    caret.className = "context-dropdown-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "▾";
+    trigger.appendChild(labelSpan);
+    trigger.appendChild(caret);
+
+    const list = document.createElement("div");
+    list.className = "context-dropdown-list";
+    list.setAttribute("role", "listbox");
+    list.hidden = true;
+
+    const labelFor = (v) => {
+      const o = flat.find((x) => x.value === v);
+      return o ? o.label : "";
+    };
+    const paintLabel = () => {
+      labelSpan.textContent = labelFor(currentValue);
+    };
+
+    const optionEls = [];
+    const markSelected = () => {
+      for (const el of optionEls) {
+        if (el.dataset.value === currentValue) el.setAttribute("aria-selected", "true");
+        else el.removeAttribute("aria-selected");
+      }
+    };
+    for (const o of flat) {
+      const item = document.createElement("div");
+      item.className = "context-dropdown-option";
+      item.setAttribute("role", "option");
+      item.dataset.value = o.value;
+      item.textContent = o.label;
+      item.addEventListener("click", () => {
+        if (isDisabled) return;
+        const changed = currentValue !== o.value;
+        currentValue = o.value;
+        markSelected();
+        paintLabel();
+        close();
+        if (changed) root.dispatchEvent(new Event("change"));
+      });
+      list.appendChild(item);
+      optionEls.push(item);
+    }
+
+    function onDocClick(e) {
+      if (!root.contains(e.target)) close();
+    }
+    function open() {
+      if (isDisabled || isOpen) return;
+      isOpen = true;
+      list.hidden = false;
+      root.classList.add("open");
+      const sel = optionEls.find((el) => el.dataset.value === currentValue);
+      if (sel) sel.scrollIntoView({ block: "nearest" });
+      setTimeout(() => document.addEventListener("click", onDocClick), 0);
+    }
+    function close() {
+      if (!isOpen) return;
+      isOpen = false;
+      list.hidden = true;
+      root.classList.remove("open");
+      document.removeEventListener("click", onDocClick);
+    }
+
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      isOpen ? close() : open();
+    });
+    trigger.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+    });
+
+    Object.defineProperty(root, "value", {
+      get() {
+        return currentValue;
+      },
+      set(v) {
+        currentValue = v;
+        markSelected();
+        paintLabel();
+      },
+    });
+    Object.defineProperty(root, "disabled", {
+      get() {
+        return isDisabled;
+      },
+      set(v) {
+        isDisabled = !!v;
+        trigger.disabled = isDisabled;
+        root.classList.toggle("disabled", isDisabled);
+        if (isDisabled) close();
+      },
+    });
+
+    markSelected();
+    paintLabel();
+    root.appendChild(trigger);
+    root.appendChild(list);
+    return root;
   }
 
   function renderCreateStep() {

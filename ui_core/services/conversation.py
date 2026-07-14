@@ -283,9 +283,13 @@ def _rag_text_from_records(records_json: str | None, course: str) -> str:
         return ""
     if not records:
         return ""
+    # Records are always dicts (written via `rag.retrieve.to_records`); guard
+    # against a malformed row so a corrupt `retrieved_context` degrades to an
+    # empty RAG block rather than raising mid-turn.
     chunks = [
         Chunk(text=r.get("text", ""), source=r.get("source", ""), course=course, index=i)
         for i, r in enumerate(records)
+        if isinstance(r, dict)
     ]
     block = format_context(chunks, course)
     return f"{RETRIEVED_CONTEXT_HEADER}\n\n{block}" if block else ""

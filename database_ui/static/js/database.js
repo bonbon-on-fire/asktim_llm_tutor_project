@@ -60,7 +60,7 @@
   function renderSidebar(conversations) {
     sidebarList.innerHTML = "";
     if (!conversations || conversations.length === 0) {
-      showSidebarEmpty("No conversations yet.");
+      showSidebarEmpty("No past conversations yet");
       return;
     }
     sidebarEmpty.hidden = true;

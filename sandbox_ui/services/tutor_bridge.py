@@ -49,11 +49,12 @@ def build_assignment_text(
     """Concatenate about_asktim.txt + course.txt + optional syllabus.txt + optional lectures + exercise_<NN>.txt.
 
     ``context_mode`` controls how much course-level material is baked into the
-    prompt. In ``full_context`` (default) the course description and syllabus are
-    included as today. In ``rag`` / ``exercise_only`` they are dropped — course,
-    syllabus, and lectures are reached via retrieval (``rag``) or omitted
-    (``exercise_only``) — leaving only the about-block and the exercise, which is
-    the one thing always kept in context verbatim.
+    prompt. The course description and syllabus are small and always useful, so
+    they're pinned in BOTH ``full_context`` and ``rag`` (and correspondingly
+    excluded from the RAG index — see ``rag.sources`` — so nothing pinned is also
+    retrieved). Lecture transcripts (large) are included only in ``full_context``;
+    in ``rag`` they're reached via retrieval. ``exercise_only`` drops all course
+    material, leaving only the about-block and the exercise, which is always kept.
 
     Mirrors `internal_testing/run_transcript.py:_build_assignment_text` but omits the
     `Run configuration` block — sandbox_ui chats are open-ended, no planned
@@ -69,9 +70,12 @@ def build_assignment_text(
     context.
     """
     course_dir = _CURRICULUM_DIR / course if course else None
-    # Course + syllabus go in the prompt only in full_context; in rag /
-    # exercise_only they're retrieved or omitted (the exercise still always goes in).
-    include_course_material = context_mode == "full_context"
+    # course.txt + syllabus.txt are pinned in full_context AND rag (small, always-useful,
+    # and excluded from the RAG index so nothing pinned is also retrieved — see rag.sources).
+    # Lecture transcripts (large) stay full_context-only; rag reaches them via retrieval.
+    # exercise_only drops all course material (the exercise still always goes in).
+    pin_course_syllabus = context_mode in ("full_context", "rag")
+    include_lecture_transcripts = context_mode == "full_context"
 
     parts: list[str] = []
 
@@ -79,7 +83,7 @@ def build_assignment_text(
     if about_text:
         parts.append("About yourself:\n" + about_text)
 
-    if include_course_material:
+    if pin_course_syllabus:
         # Course context — gated by the include_course toggle.
         if include_course and course_dir is not None:
             course_path = course_dir / "course.txt"
@@ -96,11 +100,11 @@ def build_assignment_text(
                     "Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip()
                 )
 
-        # Lectures — gated by the include_lectures toggle.
-        if include_lectures and course:
-            _lectures = load_lecture_transcripts(course)
-            if _lectures:
-                parts.append("Lecture transcripts:\n" + _lectures)
+    # Lectures (large) — full_context only; gated by the include_lectures toggle.
+    if include_lecture_transcripts and include_lectures and course:
+        _lectures = load_lecture_transcripts(course)
+        if _lectures:
+            parts.append("Lecture transcripts:\n" + _lectures)
 
     # Exercise — read exercise_<NN>.txt or practice_<NN>.txt.
     _path = (

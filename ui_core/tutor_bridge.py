@@ -253,11 +253,14 @@ class TutorBridge:
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
-        """Concatenate about + (course/syllabus/lectures in full_context only) + exercise + solution key.
+        """Concatenate about + course/syllabus (full_context & rag) + lectures (full_context) + exercise + solution key.
 
-        In ``rag`` / ``exercise_only`` the course description, syllabus, and lecture
-        transcripts are dropped — reached via retrieval (``rag``) or omitted
-        (``exercise_only``). The exercise and tutor-only solution key are always kept.
+        The course description and syllabus are small and always useful, so they're
+        pinned in both ``full_context`` and ``rag`` — and correspondingly excluded
+        from the RAG index (see ``rag.sources``) so nothing pinned is also retrieved.
+        Lecture transcripts (large) stay ``full_context``-only; in ``rag`` they're
+        reached via retrieval, and ``exercise_only`` drops all course material. The
+        exercise and tutor-only solution key are always kept.
         """
         mode = ctx.get("context_mode", "full_context")
         course_dir = _CURRICULUM_DIR / course
@@ -269,7 +272,9 @@ class TutorBridge:
         if about_text:
             parts.append("About yourself:\n" + about_text)
 
-        if mode == "full_context":
+        # course.txt + syllabus.txt: pinned in full_context AND rag (cheap, ~2k tokens,
+        # and always-relevant policy/context). NOT retrievable — see rag.sources.
+        if mode in ("full_context", "rag"):
             course_path = course_dir / "course.txt"
             if course_path.is_file():
                 parts.append("Course context:\n" + course_path.read_text(encoding="utf-8").strip())
@@ -278,6 +283,8 @@ class TutorBridge:
             if syllabus_path.is_file():
                 parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
 
+        # Lecture transcripts (large): full_context only; retrieved in rag.
+        if mode == "full_context":
             lectures = load_lecture_transcripts(course)
             if lectures:
                 parts.append("Lecture transcripts:\n" + lectures)

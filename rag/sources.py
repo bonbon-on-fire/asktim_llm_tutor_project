@@ -3,17 +3,21 @@
 Returns the course-level text that should be *retrievable*, as labeled
 ``(source, text)`` documents:
 
-- top-level ``course.txt``, ``syllabus.txt``, ``key_concepts.txt``
+- top-level ``key_concepts.txt`` (too large to pin, so reached via retrieval)
 - every ``lectures/*.txt`` (transcripts)
 - every ``practices/*.txt`` (practice-problem prompts)
 
-Deliberately excluded: the ``exercises/*.txt`` graded-problem prompts (the
-exercise the student is working on is paired into context directly, so retrieval
-must not surface it or any *other* graded exercise), the ``*_solutions/`` folders
-(the current problem's solution is paired in the same way — see
-``utils.curriculum.read_solution`` — never surfaced by similarity), ``figures/``
-(images, not text), the numpy ``rag_index/``, and metadata files
-(``course_name.txt``, ``online_link.txt``).
+Deliberately excluded because they are paired directly into tutor context and must
+not also be retrieved (that would waste the top-k budget re-fetching content
+already present): ``course.txt`` and ``syllabus.txt`` (pinned every turn in
+``full_context`` and ``rag`` modes — see ``ui_core.tutor_bridge`` /
+``sandbox_ui.services.tutor_bridge`` ``build_assignment_text``), the
+``exercises/*.txt`` graded-problem prompts (the exercise the student is working on
+is paired directly, so retrieval must not surface it or any *other* graded
+exercise), and the ``*_solutions/`` folders (the current problem's solution is
+paired the same way — see ``utils.curriculum.read_solution`` — never surfaced by
+similarity). Also excluded: ``figures/`` (images, not text), the numpy
+``rag_index/``, and metadata files (``course_name.txt``, ``online_link.txt``).
 """
 
 from __future__ import annotations
@@ -32,7 +36,11 @@ def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> l
     course_dir = root / course
     docs: list[Doc] = []
 
-    for name in ("course.txt", "syllabus.txt", "key_concepts.txt"):
+    # course.txt / syllabus.txt are pinned directly into tutor context (full_context
+    # and rag modes), so they're intentionally NOT retrievable — retrieving a chunk
+    # of a doc that's already fully in context would waste a top-k slot. key_concepts
+    # is too large to pin, so it stays retrievable.
+    for name in ("key_concepts.txt",):
         path = course_dir / name
         if path.is_file():
             text = path.read_text(encoding="utf-8").strip()

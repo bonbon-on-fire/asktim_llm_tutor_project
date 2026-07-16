@@ -9,19 +9,23 @@ handful of chunks relevant to the current student turn.
 
 ## What is and isn't ingested
 
-- **Ingested (retrievable):** course description (`course.txt`), syllabus
-  (`syllabus.txt`), key concepts (`key_concepts.txt`), lectures
+- **Ingested (retrievable):** key concepts (`key_concepts.txt`), lectures
   (`lectures/*.txt`), practice-problem prompts (`practices/*.txt`), and OCW
   content — both HTML pages **and linked PDFs** (lecture notes, problem sets,
   where OCW keeps the substantive material) — pulled from the local files, the
   course's OCW site (`online_link.txt`), or both.
-- **Never ingested:** the **`exercises/*.txt` graded-problem prompts** (the
-  exercise the student is on is paired directly into tutor context, so retrieval
-  must never surface it or any *other* graded exercise), the **`*_solutions/`
-  folders** (the current problem's solution is paired the same way — see
-  `utils.curriculum.read_solution` — never surfaced by similarity), **figures**
-  (`figures/`, handled by the multimodal pipeline), and metadata files
-  (`course_name.txt`, `online_link.txt`).
+- **Never ingested (pinned directly into context instead):** `course.txt` and
+  `syllabus.txt` are **pinned into tutor context every turn** in both
+  `full_context` and `rag` (they're small and always useful — see
+  `ui_core.tutor_bridge.build_assignment_text`), so retrieval must **not** also
+  surface them and waste a top-k slot re-fetching content already present.
+  Likewise the **`exercises/*.txt` graded-problem prompts** (the exercise the
+  student is on is paired directly into tutor context, so retrieval must never
+  surface it or any *other* graded exercise) and the **`*_solutions/` folders**
+  (the current problem's solution is paired the same way — see
+  `utils.curriculum.read_solution` — never surfaced by similarity).
+- **Never ingested (other):** **figures** (`figures/`, handled by the multimodal
+  pipeline) and metadata files (`course_name.txt`, `online_link.txt`).
 
 ## Build an index
 
@@ -87,8 +91,9 @@ Lecture and practice sources encode the course **week** as their first number
 any lecture/practice material from a **later** week than `N` before the top-k is
 taken, so the tutor never surfaces content the student hasn't reached. The tutor
 bridge passes the current problem's number as `max_week` (exercise/practice
-numbers share the lecture week number). Week-agnostic docs — course description,
-syllabus, key concepts, OCW content — carry no week and are always in scope.
+numbers share the lecture week number). Week-agnostic docs — key concepts and
+OCW content — carry no week and are always in scope (course description and
+syllabus aren't retrievable at all; they're pinned into context, see above).
 Omit `max_week` (the default) to retrieve across all weeks.
 
 ## Layout
@@ -98,7 +103,7 @@ Omit `max_week` (the default) to retrieve across all weeks.
 | `chunking.py` | sentence-aware splitter → `Chunk(text, source, course, index)` |
 | `embeddings.py` | OpenAI `text-embedding-3-small` batch embedder |
 | `store.py` | numpy cosine store (`vectors.npy` + `chunks.jsonl` + `manifest.json`) |
-| `sources.py` | local reader: `course.txt` / `syllabus.txt` / `key_concepts.txt` / `lectures/*.txt` / `practices/*.txt` (excludes `exercises/*.txt` and `*_solutions/`) |
+| `sources.py` | local reader: `key_concepts.txt` / `lectures/*.txt` / `practices/*.txt` (excludes `course.txt` + `syllabus.txt` — pinned into context, not retrieved — plus `exercises/*.txt` and `*_solutions/`) |
 | `ocw.py` | OCW crawler (reads `online_link.txt`; HTML via `beautifulsoup4`, linked PDFs via `pypdf`) |
 | `ingest.py` | CLI: gather → chunk → embed → save |
 | `retrieve.py` | query-time `retrieve()` / `retrieve_scored()` / `to_records()` + `format_context()`; `_source_label()` renders citeable labels from `lecture_index.json` |

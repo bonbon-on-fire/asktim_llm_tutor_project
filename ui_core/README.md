@@ -203,11 +203,17 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   caches; return `None` to skip caching for that call (sandbox does this for
   one-off custom context)
 - `build_assignment_text(course, exercise, **ctx)` — concatenates
-  `about_asktim.txt` + `course.txt` + optional `syllabus.txt` + optional
-  lecture transcripts + `exercise_<NN>.txt`, then, when a matching solution file
-  exists, the current problem's paired **correct answer & worked solution** as a
+  `about_asktim.txt` + `course.txt` + `syllabus.txt` + optional lecture
+  transcripts + `exercise_<NN>.txt`, then, when a matching solution file exists,
+  the current problem's paired **correct answer & worked solution** as a
   tutor-only reference block (via `utils.curriculum.read_solution`, keyed by
-  problem number — deterministic, never retrieved, never shown to the student)
+  problem number — deterministic, never retrieved, never shown to the student).
+  `course.txt` + `syllabus.txt` are small and always useful, so they're **pinned
+  in both `full_context` and `rag`** — and correspondingly **excluded from the RAG
+  index** (see `rag/sources.py`) so nothing pinned is also retrieved. Lecture
+  transcripts (large) are baked in only in `full_context`; in `rag` they're reached
+  via retrieval. `exercise_only` drops all course material (about-block + exercise
+  only)
 - `build_system_prompt(tutor, assignment_text, **ctx)` — wraps the assignment
   text into a full system prompt via `tutor.run_tutor.load_system_prompt`
 - `retrieved_context(course, query, **ctx)` — per-turn RAG retrieval, returned as
@@ -267,8 +273,9 @@ student's turn (which stays clean).
 **By default** (cache-friendly history, gated by `TUTOR_CACHED_HISTORY` — see
 `cached_history_enabled()` above), the streaming path interleaves the turns
 rather than sending three flat blocks: a leading **system** message carries
-the tutor prompt with the assignment context baked in (the exercise, the
-tutor-only answer key); then, for each prior turn, the student's message, that
+the tutor prompt with the assignment context baked in (course description +
+syllabus in `full_context`/`rag`, lecture transcripts in `full_context` only,
+the exercise, the tutor-only answer key); then, for each prior turn, the student's message, that
 turn's retrieved RAG as its own **system** message (when there was any), and
 the tutor's **verbatim past reply** — the full `pedagogical-reasoning` +
 `Student-facing-answer` JSON, not just the student-facing text; then the

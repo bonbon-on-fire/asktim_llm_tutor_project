@@ -9,14 +9,14 @@ Returns the course-level text that should be *retrievable*, as labeled
 
 Deliberately excluded because they are paired directly into tutor context and must
 not also be retrieved (that would waste the top-k budget re-fetching content
-already present): ``course.txt`` and ``syllabus.txt`` (pinned every turn in
-``full_context`` and ``rag`` modes — see ``ui_core.tutor_bridge`` /
-``sandbox_ui.services.tutor_bridge`` ``build_assignment_text``), the
-``pinned/*.txt`` reference docs (always pinned into context — see
-``utils.curriculum.read_pinned_context``), the
+already present): the ``pinned/*.txt`` reference docs — the course description
+(``pinned/course.txt``), the syllabus (``pinned/syllabus.txt``), and any other
+always-on material — which are pinned every turn in ``full_context`` and ``rag``
+modes (see ``ui_core.tutor_bridge`` / ``sandbox_ui.services.tutor_bridge``
+``build_assignment_text`` and ``utils.curriculum.read_pinned_context``); the
 ``exercises/*.txt`` graded-problem prompts (the exercise the student is working on
 is paired directly, so retrieval must not surface it or any *other* graded
-exercise), and the ``*_solutions/`` folders (the current problem's solution is
+exercise); and the ``*_solutions/`` folders (the current problem's solution is
 paired the same way — see ``utils.curriculum.read_solution`` — never surfaced by
 similarity). Also excluded: ``figures/`` (images, not text), the numpy
 ``rag_index/``, and metadata files (``course_name.txt``, ``online_link.txt``).
@@ -33,15 +33,16 @@ Doc = tuple[str, str]  # (source_label, text)
 
 
 def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> list[Doc]:
-    """Collect local course/syllabus/lecture text as labeled documents."""
+    """Collect local key-concepts/lecture/practice text as labeled documents."""
     root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
     course_dir = root / course
     docs: list[Doc] = []
 
-    # course.txt / syllabus.txt are pinned directly into tutor context (full_context
-    # and rag modes), so they're intentionally NOT retrievable — retrieving a chunk
-    # of a doc that's already fully in context would waste a top-k slot. key_concepts
-    # is too large to pin, so it stays retrievable.
+    # The pinned/*.txt reference docs (course description, syllabus, …) are pinned
+    # directly into tutor context (full_context and rag modes), so they're
+    # intentionally NOT retrievable — retrieving a chunk of a doc that's already
+    # fully in context would waste a top-k slot. key_concepts is too large to pin,
+    # so it stays retrievable.
     for name in ("key_concepts.txt",):
         path = course_dir / name
         if path.is_file():

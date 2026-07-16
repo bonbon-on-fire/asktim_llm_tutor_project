@@ -38,8 +38,6 @@ def find_or_create_conversation(
     exercise_kind: str = "exercise",
     tutor_prompt: str,
     username: str | None = None,
-    course_enabled: bool = True,
-    syllabus_enabled: bool = True,
     lectures_enabled: bool = True,
     context_mode: str | None = None,
     provider: str | None = None,
@@ -61,8 +59,6 @@ def find_or_create_conversation(
         username=username,
         extra_fields={
             "exercise_kind": exercise_kind,
-            "course_enabled": course_enabled,
-            "syllabus_enabled": syllabus_enabled,
             "lectures_enabled": lectures_enabled,
             "context_mode": context_mode,
             "provider": provider,
@@ -154,8 +150,6 @@ def _summarize_extra(c: Conversation) -> dict:
     return {
         "course_name": load_course_name(c.course),
         "exercise_kind": c.exercise_kind or "exercise",
-        "course_enabled": c.course_enabled is None or bool(c.course_enabled),
-        "syllabus_enabled": bool(c.syllabus_enabled),
         "lectures_enabled": c.lectures_enabled is None or bool(c.lectures_enabled),
     }
 

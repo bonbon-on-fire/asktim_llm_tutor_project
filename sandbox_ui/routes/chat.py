@@ -148,20 +148,11 @@ def chat():
     # Sandbox is locked to a single tutor prompt: ignore any client-supplied
     # tutor and always use DEFAULT_TUTOR (mirrors main_ui).
     tutor = DEFAULT_TUTOR
-    # sandbox_ui context switch: syllabus defaults ON (matches main_ui) unless the
-    # request explicitly turns it off. Only applies when creating a new convo;
-    # existing conversations keep their stored flag. Multipart sends the flag as
-    # a string ("true"/"false"); JSON sends a real bool.
-    raw_syllabus = src.get("syllabus")
-    if raw_syllabus is None:
-        syllabus_enabled = True
-    elif isinstance(raw_syllabus, str):
-        syllabus_enabled = raw_syllabus.strip().lower() not in {"0", "false", "no", "off", ""}
-    else:
-        syllabus_enabled = bool(raw_syllabus)
-
-    # Same shape as syllabus: whether the course lectures/*.txt transcripts are
+    # sandbox_ui context switch: whether the course lectures/*.txt transcripts are
     # folded into context. Defaults ON; "No lectures" in the wizard sends it off.
+    # Only applies when creating a new convo; existing conversations keep their
+    # stored flag. Multipart sends the flag as a string ("true"/"false"); JSON
+    # sends a real bool.
     raw_lectures = src.get("lectures")
     if raw_lectures is None:
         lectures_enabled = True
@@ -169,17 +160,6 @@ def chat():
         lectures_enabled = raw_lectures.strip().lower() not in {"0", "false", "no", "off", ""}
     else:
         lectures_enabled = bool(raw_lectures)
-
-    # Same shape as syllabus: whether the built-in course.txt description is
-    # folded into context. Defaults ON; "No course description" in the wizard
-    # sends it off. Only honored when creating a new convo.
-    raw_course_enabled = src.get("course_enabled")
-    if raw_course_enabled is None:
-        course_enabled = True
-    elif isinstance(raw_course_enabled, str):
-        course_enabled = raw_course_enabled.strip().lower() not in {"0", "false", "no", "off", ""}
-    else:
-        course_enabled = bool(raw_course_enabled)
 
     # sandbox_ui RAG toggle: per-conversation context mode ("rag" | "full_context").
     # None = let the bridge resolve by default (rag when the course has an index).
@@ -253,8 +233,6 @@ def chat():
             exercise_kind=exercise_kind,
             tutor_prompt=tutor,
             username=username,
-            course_enabled=course_enabled,
-            syllabus_enabled=syllabus_enabled,
             lectures_enabled=lectures_enabled,
             context_mode=context_mode,
             provider=provider,
@@ -326,10 +304,6 @@ def chat():
     # Legacy rows predating this column read back NULL; treat as "exercise".
     stream_exercise_kind = convo.exercise_kind or "exercise"
     stream_tutor = convo.tutor_prompt
-    # Legacy rows predating this column read back NULL; treat that as ON so
-    # continuing an old conversation keeps the course description it had.
-    stream_course_enabled = convo.course_enabled is None or bool(convo.course_enabled)
-    stream_syllabus = convo.syllabus_enabled
     # Legacy rows predating this column read back NULL; treat as ON.
     stream_lectures = convo.lectures_enabled is None or bool(convo.lectures_enabled)
     stream_context_mode = convo.context_mode
@@ -358,8 +332,6 @@ def chat():
         history=history,
         new_student_message=student_text + files_service.files_to_text(attachments),
         images=images_to_tuples(images),
-        include_course=stream_course_enabled,
-        include_syllabus=stream_syllabus,
         include_lectures=stream_lectures,
         context_mode=stream_context_mode,
         provider=stream_provider,

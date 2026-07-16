@@ -155,13 +155,27 @@ def append_course_tutor_rules(
 def pinned_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
     """Return the always-pinned reference-context folder (``curriculum/<course>/pinned/``).
 
-    Every ``*.txt`` here is folded directly into the tutor's context (like
-    ``course.txt`` / ``syllabus.txt``) in ``full_context`` and ``rag`` modes, and
-    is deliberately NOT ingested by ``rag.sources`` — so a pinned doc is never also
-    retrieved. Use it for course reference material the tutor should always have on
-    hand (e.g. a debugging flow chart), as opposed to per-exercise attachments.
+    Every ``*.txt`` here is folded directly into the tutor's context in
+    ``full_context`` and ``rag`` modes (the course description, syllabus, and any
+    other always-on material), and is deliberately NOT ingested by ``rag.sources``
+    — so a pinned doc is never also retrieved. Use it for course reference material
+    the tutor should always have on hand (e.g. a debugging flow chart), as opposed
+    to per-exercise attachments.
     """
     return course_dir(course, curriculum_root) / "pinned"
+
+
+def read_course_description(course: str, curriculum_root: Path | str | None = None) -> str:
+    """Read the course description (``curriculum/<course>/pinned/course.txt``), or ``""``.
+
+    A single-doc accessor for the short course-description text (used e.g. as the
+    lean judge-context in the bulk-simulation runners), centralizing the pinned/
+    location so callers don't hardcode the path.
+    """
+    if not course:
+        return ""
+    path = pinned_dir(course, curriculum_root) / "course.txt"
+    return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
 
 
 def read_pinned_context(course: str, curriculum_root: Path | str | None = None) -> str:

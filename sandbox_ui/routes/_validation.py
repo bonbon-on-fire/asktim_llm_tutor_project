@@ -115,13 +115,6 @@ def list_practice(course) -> list[str]:
     return _discover_practice(course)
 
 
-def course_has_syllabus(course) -> bool:
-    """True if the course ships a syllabus.txt that can be toggled into context."""
-    if not course:
-        return False
-    return (_CURRICULUM_DIR / course / "syllabus.txt").is_file()
-
-
 def course_has_lectures(course) -> bool:
     """True if the course ships any lectures/*.txt that can be toggled into context."""
     if not course:
@@ -157,7 +150,7 @@ def list_context_options() -> dict:
     Shape:
         {
           "courses": [
-            {"slug": ..., "name": ..., "exercises": [...], "practice": [...], "has_syllabus": bool, "has_rag": bool},
+            {"slug": ..., "name": ..., "exercises": [...], "practice": [...], "has_lectures": bool, "has_rag": bool},
             ...
           ],
           "tutors": ["tutor_01", ...],
@@ -171,7 +164,6 @@ def list_context_options() -> dict:
                 "name": load_course_name(slug),
                 "exercises": list_exercises(slug),
                 "practice": list_practice(slug),
-                "has_syllabus": course_has_syllabus(slug),
                 "has_lectures": course_has_lectures(slug),
                 "has_rag": course_has_rag(slug),
             }

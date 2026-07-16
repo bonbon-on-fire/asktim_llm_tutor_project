@@ -32,13 +32,12 @@ def _bad_param(err: dict):
     return jsonify({"error": "invalid_param", **err}), 404
 
 
-def _render_embed(*, course: str, exercise: str, tutor: str, syllabus: bool = True):
+def _render_embed(*, course: str, exercise: str, tutor: str):
     """Render the embed.html chat widget for the given course/exercise/tutor context."""
     tutor_config = {
         "course": course,
         "exercise": exercise,
         "tutor": tutor,
-        "syllabus": syllabus,
     }
     has_email = bool(read_username_cookie(request))
     return render_template(
@@ -54,7 +53,7 @@ def _render_embed(*, course: str, exercise: str, tutor: str, syllabus: bool = Tr
 
 @embed_bp.get("/api/context/options")
 def context_options():
-    """Courses (+ their exercises and syllabus availability) and tutor prompts,
+    """Courses (+ their exercises and lecture/RAG availability) and tutor prompts,
     used to populate the sandbox_ui Change-context switcher."""
     return jsonify(list_context_options())
 

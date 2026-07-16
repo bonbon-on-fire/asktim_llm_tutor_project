@@ -6,7 +6,7 @@ Developer/TA **testing website** for the tutor. It mirrors the student-facing
 [`main_ui/`](../main_ui/README.md) chat experience — token-streamed replies,
 persistent cross-session history, username + password identity — but adds a
 **Create context** wizard so a tester can switch course and exercise on the fly
-(picking from built-in options, with toggleable syllabus/lectures and a RAG mode
+(picking from built-in options, with a toggleable lectures step and a RAG mode
 selector), and runs against its **own separate database** so test chats never touch
 production data.
 
@@ -44,12 +44,12 @@ package, plus its own sandbox-specific additions on top:
   sandbox_ui's own model classes to the shared, app-agnostic logic in
   `ui_core.services.*`. `services/tutor_bridge.py` defines `SandboxTutorBridge`,
   a subclass of `ui_core.tutor_bridge.TutorBridge` that overrides its hooks
-  (`cache_key`, `build_assignment_text`) to inject sandbox_ui's include-toggle
+  (`cache_key`, `build_assignment_text`) to inject sandbox_ui's lectures-toggle
   and RAG-mode behavior; the other hooks (`prepare_ctx`, `build_system_prompt`,
   `turn_attachments`) are inherited from the base. **Per-turn RAG is the default context mode** when selected via the wizard; when RAG retrieval yields no results (including a missing index), both apps fail closed with an error banner and `TUTOR_CONTEXT_MODE=full_context` is the escape hatch — see [`rag/README.md`](../rag/README.md#mandatory-rag-fail-closed).
-- `db/models.py` defines sandbox_ui's own `Conversation` (carrying its 5
-  sandbox-only columns — `exercise_kind`, `course_enabled`, `syllabus_enabled`,
-  `lectures_enabled`, and `context_mode`) but pulls `Message`, `Student`, `UploadedImage`,
+- `db/models.py` defines sandbox_ui's own `Conversation` (carrying its
+  sandbox-only columns — `exercise_kind`, `lectures_enabled`, `context_mode`, and
+  `provider`) but pulls `Message`, `Student`, `UploadedImage`,
   `UploadedFile`, and `Feedback` from the shared mixins in
   `ui_core.db.models_common`, since those tables are schema-identical across
   the web apps.
@@ -84,14 +84,14 @@ Both apps can run side by side.
 The solid-blue **Edit context** button (top of the sidebar, above "Log in")
 opens a step-by-step wizard — internally still called the "Create context"
 wizard in code/routes, since it also starts a fresh conversation. The steps
-are **Course → Exercise → Tutor → Syllabus → Lectures**, each offering
+are **Course → Exercise → Tutor → Lectures**, each offering
 built-in options from the curriculum:
 
-- **Course** — any folder under `curriculum/` or **No course description** (keeps
-  the course for exercises/figures/RAG but drops its `course.txt` from context).
-  This step also hosts a **Use RAG for course context** toggle (shown only for
-  courses with a built RAG index); turning it on retrieves course/syllabus/lecture
-  material per turn and **skips the Syllabus and Lectures steps**. The choice is
+- **Course** — any folder under `curriculum/`. This step also hosts a **Use RAG
+  for course context** toggle (shown only for courses with a built RAG index);
+  turning it on retrieves course/lecture material per turn and **skips the Lectures
+  step** (the course's pinned material — description, syllabus, guides — is always
+  in context via `pinned/*.txt` regardless of mode). The choice is
   stored per conversation in `context_mode` (`rag`/`full_context`; `NULL` = resolve
   by default). The retrieved material always rides in the tutor's **system**
   channel — never on the student's chat turn — since LangChain (langchain-core
@@ -124,14 +124,14 @@ built-in options from the curriculum:
   (default + coercion of anything unrecognized back to `claude`) is
   `_resolve_provider()` in `ui_core/tutor_bridge.py`, which threads through
   `build_tutor_model` / `create_tutor_graph` and is part of the graph/stream cache key
-- **Syllabus** — the course's `syllabus.txt` or none
 - **Lectures** — the course's `lectures/*.txt` transcripts (concatenated) or none.
   Uses [`utils.lectures.load_lecture_transcripts`](../utils/lectures.py)
 
 Finishing the wizard **starts a fresh conversation** under the new settings; the
-previous chat stays in history. The course/syllabus/lectures flags are stored per
-conversation in `course_enabled`/`syllabus_enabled`/`lectures_enabled`, so reopening
-a past chat replays it with the same context.
+previous chat stays in history. The lectures flag is stored per conversation in
+`lectures_enabled`, so reopening a past chat replays it with the same context.
+(The course description and syllabus are no longer per-conversation toggles — they
+live in `curriculum/<course>/pinned/` and are always folded into context.)
 
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
 > wizard. It was removed in June 2026 because the Create-context wizard offered a

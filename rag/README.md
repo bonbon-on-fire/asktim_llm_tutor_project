@@ -14,12 +14,13 @@ handful of chunks relevant to the current student turn.
   content — both HTML pages **and linked PDFs** (lecture notes, problem sets,
   where OCW keeps the substantive material) — pulled from the local files, the
   course's OCW site (`online_link.txt`), or both.
-- **Never ingested (pinned directly into context instead):** `course.txt` and
-  `syllabus.txt` are **pinned into tutor context every turn** in both
-  `full_context` and `rag` (they're small and always useful — see
-  `ui_core.tutor_bridge.build_assignment_text`), so retrieval must **not** also
-  surface them and waste a top-k slot re-fetching content already present.
-  Likewise the **`exercises/*.txt` graded-problem prompts** (the exercise the
+- **Never ingested (pinned directly into context instead):** the **`pinned/*.txt`**
+  reference docs — the course description (`pinned/course.txt`), the syllabus
+  (`pinned/syllabus.txt`), and any other always-on material — are **pinned into
+  tutor context every turn** in both `full_context` and `rag` (see
+  `ui_core.tutor_bridge.build_assignment_text` / `utils.curriculum.read_pinned_context`),
+  so retrieval must **not** also surface them and waste a top-k slot re-fetching
+  content already present. Likewise the **`exercises/*.txt` graded-problem prompts** (the exercise the
   student is on is paired directly into tutor context, so retrieval must never
   surface it or any *other* graded exercise) and the **`*_solutions/` folders**
   (the current problem's solution is paired the same way — see
@@ -92,9 +93,9 @@ any lecture/practice material from a **later** week than `N` before the top-k is
 taken, so the tutor never surfaces content the student hasn't reached. The tutor
 bridge passes the current problem's number as `max_week` (exercise/practice
 numbers share the lecture week number). Week-agnostic docs — key concepts and
-OCW content — carry no week and are always in scope (course description and
-syllabus aren't retrievable at all; they're pinned into context, see above).
-Omit `max_week` (the default) to retrieve across all weeks.
+OCW content — carry no week and are always in scope (the `pinned/*.txt` docs —
+course description, syllabus — aren't retrievable at all; they're pinned into
+context, see above). Omit `max_week` (the default) to retrieve across all weeks.
 
 ## Layout
 
@@ -103,7 +104,7 @@ Omit `max_week` (the default) to retrieve across all weeks.
 | `chunking.py` | sentence-aware splitter → `Chunk(text, source, course, index)` |
 | `embeddings.py` | OpenAI `text-embedding-3-small` batch embedder |
 | `store.py` | numpy cosine store (`vectors.npy` + `chunks.jsonl` + `manifest.json`) |
-| `sources.py` | local reader: `key_concepts.txt` / `lectures/*.txt` / `practices/*.txt` (excludes `course.txt` + `syllabus.txt` — pinned into context, not retrieved — plus `exercises/*.txt` and `*_solutions/`) |
+| `sources.py` | local reader: `key_concepts.txt` / `lectures/*.txt` / `practices/*.txt` (excludes `pinned/*.txt` — course description + syllabus, pinned into context, not retrieved — plus `exercises/*.txt` and `*_solutions/`) |
 | `ocw.py` | OCW crawler (reads `online_link.txt`; HTML via `beautifulsoup4`, linked PDFs via `pypdf`) |
 | `ingest.py` | CLI: gather → chunk → embed → save |
 | `retrieve.py` | query-time `retrieve()` / `retrieve_scored()` / `to_records()` + `format_context()`; `_source_label()` renders citeable labels from `lecture_index.json` |

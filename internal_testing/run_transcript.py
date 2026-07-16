@@ -40,7 +40,7 @@ from internal_testing.cli_utils import (
 )
 from utils.curriculum import append_course_tutor_rules
 from utils.curriculum import discover_exercises as _discover_course_exercises
-from utils.curriculum import exercise_path, read_pinned_context
+from utils.curriculum import exercise_path, read_course_description, read_pinned_context
 from utils.figures import discover_figures, figure_filenames
 from utils.lectures import load_lecture_transcripts
 
@@ -147,21 +147,13 @@ def _parse_persona_name(persona_name: str) -> str:
 
 
 def _build_assignment_text(course: str, exercise_number: str, turn_size: int) -> str:
-    """Build the full assignment string: course context + syllabus (optional) + exercise text + run config."""
-    course_dir = _CURRICULUM_DIR / course
+    """Build the full assignment string: pinned reference docs + lectures + exercise text + run config."""
     exercise_text = exercise_path(course, exercise_number).read_text(encoding="utf-8").strip()
 
     parts: list[str] = []
 
-    course_path = course_dir / "course.txt"
-    if course_path.exists():
-        parts.append("Course context:\n" + course_path.read_text(encoding="utf-8").strip())
-
-    syllabus_path = course_dir / "syllabus.txt"
-    if syllabus_path.exists():
-        parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
-
-    # Always-pinned reference docs (pinned/*.txt) — mirrors the live bridges.
+    # Pinned reference docs (pinned/*.txt — course description, syllabus, guides) —
+    # mirrors the live bridges' full_context mode.
     pinned = read_pinned_context(course)
     if pinned:
         parts.append(pinned)
@@ -344,17 +336,14 @@ def _save_raw_transcript(
     """Serialize and save a raw transcript JSON; returns (transcript_name, output_path).
 
     The stored ``context``/``exercise`` are kept lean for the judge (which grades
-    tutor behavior per the rubric): context = course.txt, exercise = the problem
-    prompt. The full course material the tutor saw is reconstructable from the
-    course folder — no need to inline the lecture corpus into every transcript.
+    tutor behavior per the rubric): context = the course description, exercise = the
+    problem prompt. The full course material the tutor saw is reconstructable from
+    the course folder — no need to inline the lecture corpus into every transcript.
     """
     output_dir = _TRANSCRIPTS_DIR / config.persona_type / f"{config.persona_type}_{output_suffix}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    course_path = _CURRICULUM_DIR / config.course / "course.txt"
-    context_text = (
-        course_path.read_text(encoding="utf-8").strip() if course_path.exists() else ""
-    )
+    context_text = read_course_description(config.course)
     exercise_text = (
         "Exercise:\n"
         + exercise_path(config.course, config.exercise_number).read_text(encoding="utf-8").strip()

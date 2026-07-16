@@ -58,9 +58,9 @@ from tutor.run_tutor import get_tutor_reply as upstream_get_tutor_reply  # noqa:
 from utils.curriculum import (  # noqa: E402
     SOLUTION_CONTEXT_LABEL,
     append_course_tutor_rules,
-    course_dir,
     exercise_path,
     practice_path,
+    read_course_description,
     read_pinned_context,
     read_solution,
 )
@@ -135,18 +135,11 @@ def _problem_label(kind: str) -> str:
 def _tutor_rag_assignment(course: str, kind: str, number: str, turn_size: int) -> str:
     """Tutor's RAG base prompt, mirroring the live bridges' ``rag`` mode.
 
-    course.txt + syllabus.txt + any pinned reference docs (``pinned/*.txt``) are
-    baked in (they're pinned, not retrieved); lectures are reached via per-turn
+    Pinned reference docs (``pinned/*.txt`` — course description, syllabus, guides)
+    are baked in (they're pinned, not retrieved); lectures are reached via per-turn
     retrieval. Then the problem, its paired tutor-only solution, and the run config.
     """
     parts: list[str] = []
-    cdir = course_dir(course)
-    course_txt = cdir / "course.txt"
-    if course_txt.is_file():
-        parts.append("Course context:\n" + course_txt.read_text(encoding="utf-8").strip())
-    syllabus_txt = cdir / "syllabus.txt"
-    if syllabus_txt.is_file():
-        parts.append("Syllabus:\n" + syllabus_txt.read_text(encoding="utf-8").strip())
     pinned = read_pinned_context(course)
     if pinned:
         parts.append(pinned)
@@ -376,11 +369,8 @@ def _save_transcript(
     # only the conversation + the problem prompt + a short course description — never
     # the full lecture corpus (which the RAG tutor never saw anyway; what it actually
     # retrieved per turn is in each exchange's ``retrieved`` field). Keep the
-    # transcript lean: context = course.txt, exercise = the problem prompt.
-    course_path = _CURRICULUM_DIR / config.course / "course.txt"
-    context_text = (
-        course_path.read_text(encoding="utf-8").strip() if course_path.is_file() else ""
-    )
+    # transcript lean: context = the course description, exercise = the problem prompt.
+    context_text = read_course_description(config.course)
     exercise_text = (
         f"{_problem_label(config.kind)}:\n"
         + _problem_text(config.course, config.kind, config.number)

@@ -255,17 +255,18 @@ class TutorBridge:
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
-        """Concatenate about + course/syllabus (full_context & rag) + lectures (full_context) + exercise + solution key.
+        """Concatenate about + pinned reference docs (full_context & rag) + lectures (full_context) + exercise + solution key.
 
-        The course description and syllabus are small and always useful, so they're
-        pinned in both ``full_context`` and ``rag`` — and correspondingly excluded
-        from the RAG index (see ``rag.sources``) so nothing pinned is also retrieved.
-        Lecture transcripts (large) stay ``full_context``-only; in ``rag`` they're
-        reached via retrieval, and ``exercise_only`` drops all course material. The
-        exercise and tutor-only solution key are always kept.
+        Pinned reference docs live in ``curriculum/<course>/pinned/*.txt`` — the
+        course description, syllabus, and any other always-on material (e.g. a
+        debugging flow chart). They're folded in for both ``full_context`` and
+        ``rag`` and correspondingly excluded from the RAG index (see ``rag.sources``)
+        so nothing pinned is also retrieved. Lecture transcripts (large) stay
+        ``full_context``-only; in ``rag`` they're reached via retrieval, and
+        ``exercise_only`` drops all course material. The exercise and tutor-only
+        solution key are always kept.
         """
         mode = ctx.get("context_mode", "full_context")
-        course_dir = _CURRICULUM_DIR / course
         exercise_text = exercise_path(course, exercise).read_text(encoding="utf-8").strip()
 
         parts: list[str] = []
@@ -274,19 +275,10 @@ class TutorBridge:
         if about_text:
             parts.append("About yourself:\n" + about_text)
 
-        # course.txt + syllabus.txt: pinned in full_context AND rag (cheap, ~2k tokens,
-        # and always-relevant policy/context). NOT retrievable — see rag.sources.
+        # Pinned reference docs (curriculum/<course>/pinned/*.txt) — course description,
+        # syllabus, debugging guides, etc. Pinned in full_context AND rag; NOT
+        # retrievable (see rag.sources). Each file carries its own title.
         if mode in ("full_context", "rag"):
-            course_path = course_dir / "course.txt"
-            if course_path.is_file():
-                parts.append("Course context:\n" + course_path.read_text(encoding="utf-8").strip())
-
-            syllabus_path = course_dir / "syllabus.txt"
-            if syllabus_path.is_file():
-                parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
-
-            # Always-pinned reference docs (curriculum/<course>/pinned/*.txt) — e.g. a
-            # debugging flow chart. Pinned like course/syllabus; never retrieved.
             pinned = read_pinned_context(course)
             if pinned:
                 parts.append(pinned)

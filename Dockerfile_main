@@ -20,6 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main_ui/ main_ui/
 COPY ui_core/ ui_core/
 COPY tutor/ tutor/
+# rag/ is required: ui_core.tutor_bridge imports it at module load, and main_ui's
+# default context mode is RAG (per-turn retrieval over the committed rag_index/).
+COPY rag/ rag/
 COPY curriculum/ curriculum/
 COPY utils/ utils/
 COPY scripts/railway-entrypoint-main.sh /entrypoint.sh

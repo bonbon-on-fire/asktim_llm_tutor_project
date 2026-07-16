@@ -1122,15 +1122,15 @@
     createStepBody.appendChild(sel);
 
     // sandbox_ui tutor-model toggle: the tutor *prompt* is locked, but the LLM
-    // *provider* is selectable here — OpenAI gpt-5.4 (sandbox default) or Claude Sonnet 5.
+    // *provider* is selectable here — Claude Sonnet 5 (sandbox default) or OpenAI gpt-5.4.
     // Rendered as a bare dropdown (no label) beneath the locked prompt select.
     if (step === "tutor") {
       const provSel = buildSelect(
         [
-          { value: "claude", label: "claude-sonnet-5" },
-          { value: "gpt", label: "gpt-5.4 (default)" },
+          { value: "claude", label: "claude-sonnet-5 (default)" },
+          { value: "gpt", label: "gpt-5.4" },
         ],
-        createDraft.provider || "gpt",
+        createDraft.provider || "claude",
         "create-provider-select",
       );
       createStepBody.appendChild(provSel);
@@ -1251,7 +1251,7 @@
       course: { existing: "supply_chain_design", enabled: true },
       exercise: { existing: "", kind: "exercise" },
       tutor: { existing: LOCKED_TUTOR },
-      provider: "gpt", // sandbox tutor-model toggle: "gpt" (default) | "claude"
+      provider: "claude", // sandbox tutor-model toggle: "claude" (default) | "gpt"
       syllabus: { value: "" },
       lectures: { value: "" },
       // Always use RAG for course context (no user-facing toggle); auto-disabled

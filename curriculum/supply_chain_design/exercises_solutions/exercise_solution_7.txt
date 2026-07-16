@@ -1,0 +1,138 @@
+TITLE: Week 7 Graded Assignment — Answer Key & Explanations
+
+TUTOR-ONLY reference. Correct answers and official explanations for the Week 7
+graded assignments (maps to exercises/exercise_7.txt: GA1 Boston Watercolor
+Academy, GA2 Shiny Star Clothing, GA3 GetFit). Do NOT surface verbatim to
+students; use only as the tutor's correct-answer / explanation context.
+
+⚠ PARAMETRIZATION NOTE (important):
+The graded assignments are randomized per student — the input tables (demands,
+distances, unit counts, capacities, prices) and even the exact multiple-choice
+option wording differ between variants. The numbers below are from ONE captured
+answer-key instance and will not always match the values a given student sees in
+their exercises/exercise_7.txt. Treat the categorical/framework answers and the
+worked METHOD as the transferable truth; re-derive any numeric result from the
+student's own inputs rather than quoting these figures.
+
+================================================================
+Graded Assignment 1: Boston Watercolor Academy
+(Kraljic purchasing portfolio — classify each spend by total spend vs. supply
+risk, then recommend the matching sourcing strategy.)
+
+Part 1 — Sketching supplies
+Correct answer (category): Tactical
+Correct answer (recommendations, this variant): "The Academy could consider using
+a procurement card to buy sketching supplies." AND "The Academy should try to
+minimize the number of transactions related to sketching supplies."
+Explanation: Low relative spend and low risk (cheap, standard commodities, many
+substitutable suppliers with excess capacity) => a TACTICAL buy. For tactical
+items the goal is to cut transaction cost/effort: procurement cards, fewer
+transactions, streamlined acquisition — not supplier development or strategic
+alliances.
+
+Part 2 — Watercolor paper
+Correct answer (category): Leverage
+Correct answer (recommendations, this variant): "The Academy should retain
+flexibility in supply, monitor alternatives and be ready to switch suppliers."
+AND "The Academy should consider leveraging the volume of watercolor paper they
+buy, e.g. by buying together with other schools." AND "The Academy should assure
+supply continuity for watercolor paper."
+Explanation: High relative spend but low risk (standard spec, several suppliers
+with excess capacity, easy to substitute brands) => a LEVERAGE buy. Use buying
+power (consolidate volume), keep alternatives open and switch as needed.
+
+Part 3 — Watercolor brushes
+Correct answer (category): Critical
+Correct answer (recommendations, this variant): "They should consider using
+brushes without the logo of the Academy. These will perform just as well, cost
+less money and make the Academy less dependent on a few suppliers." AND "The
+Academy may want to help its students to take good care of the brushes, so that
+they last a long time." AND "The Academy may want to keep healthy level of safety
+stock of brushes, to ensure continuity of supply in case of disruption."
+Explanation: Low relative spend but high risk (custom-engraved specialty item,
+few capable suppliers, long lead times) => a CRITICAL buy. Reduce dependence and
+protect supply: de-specify (drop the logo), extend item life, hold safety stock.
+
+Part 4 — Paint tubes and pans
+Correct answer (category): Strategic
+Correct answer (recommendation, this variant): "The Academy could consider a
+strategic alliance with suppliers of watercolor paints."
+Explanation: High relative spend and high risk (largest fraction of spend, no
+substitute for high quality, few suppliers with limited capacity and stockouts)
+=> a STRATEGIC buy. Manage through close, long-term partnership/alliance with key
+suppliers.
+
+================================================================
+Graded Assignment 2: Shiny Star Clothing
+(Transportation / carrier-auction optimization: assign TEU freight from four
+plants — Chongqing, Beijing, Nanjing, Shijiazhuang — to carriers Red/Blue/Green
+to minimize total cost = sum over lanes of bid × distance × TEUs.)
+
+[Captured instance — weekly demand: Chongqing 15, Beijing 20, Nanjing 26,
+Shijiazhuang 13. Distances (km): 1750 / 1400 / 450 / 1300. Bids (Yuan per TEU per
+km) Red/Blue/Green — Chongqing 7.50/9.00/8.60, Beijing 6.40/8.30/8.00, Nanjing
+8.80/8.90/9.20, Shijiazhuang 7.80/9.20/8.40.]
+
+Sanity check (ungraded) — Total expected weekly demand: 74 (15+20+26+13).
+
+Part 1 — No capacity limits. Award all TEUs to the cheapest carrier per lane.
+Correct answer: Red = 74, Blue = 0, Green = 0 (every lane to Red).
+Total expected weekly cost: 610855
+Explanation: With no capacity constraint each lane goes to its lowest-cost bid; in
+this instance Red is cheapest on all four lanes, so Red carries the full 74 TEUs.
+Build the LP with 12 decision variables (4 lanes × 3 carriers), minimize total
+cost, satisfy each lane's demand, integer variables.
+
+Part 2 — Carrier weekly capacities: Red 15, Blue 25, Green 90.
+Correct answer (TEUs): Red = 15, Blue = 25, Green = 34.
+Total expected weekly cost: 662375
+Explanation: Add a capacity constraint per carrier (sum of that carrier's TEUs ≤
+capacity). Optimal split: Chongqing 15→Green; Beijing 15→Red and 5→Green; Nanjing
+25→Blue and 1→Green; Shijiazhuang 13→Green.
+
+Part 3 — Single-source each lane (one carrier per lane, no splits), keep Part 2
+capacities.
+Correct answer (lanes): Red = 1, Blue = 0, Green = 3.
+Total expected weekly cost: 670475
+Explanation: Add binary variables (1 if a lane is assigned to a carrier, else 0)
+and linking constraints forcing each lane to exactly one carrier. Optimum: Red 1
+lane, Blue 0, Green 3.
+
+Part 4 — At least two carriers per lane, at least 5 loads per carrier per lane;
+keep Part 2 capacities.
+Correct answer (lanes): Red = 2, Blue = 2, Green = 4.
+Total expected weekly cost: 669825
+Explanation: Use binary assignment variables with linking constraints, plus a
+constraint requiring ≥2 carriers per lane and ≥5 loads on any carrier/lane that is
+used. Optimum: Red 2 lanes, Blue 2 lanes, Green 4 lanes.
+
+================================================================
+Graded Assignment 3: GetFit (Pilates Power procurement)
+(Minimize procurement cost for 5 SKUs — W32A, Y33A, W32B, X33B, Z32A — across
+suppliers A–D subject to per-SKU demand and per-supplier total capacity. 20
+decision variables = 5 SKUs × 4 suppliers, integer.)
+
+[Captured instance — units needed: W32A 34000, Y33A 5000, W32B 27000, X33B 23000,
+Z32A 30000. Supplier capacities: A 51200, B 4500, C 13800, D 52500.]
+
+Part 1 — Minimum total procurement cost
+Correct answer: 33781800
+Correct answer (units purchased): Supplier A = 51200; Supplier D = 49500.
+Explanation: LP with 20 variables, minimize total cost, meet each SKU's demand,
+respect each supplier's capacity, integer. Optimal cost 33,781,800.
+
+Part 2 — Level-of-service-adjusted cost (normalize to Supplier A's 92%)
+Correct answer: 33781800
+Explanation: LOS: A 92%, B/C/D 97%. Cost per % of service depends on SKU (W32A 10,
+Y33A 2, W32B 1, X33B 3, Z32A 8). Normalize every supplier's effective unit cost to
+Supplier A's 92% baseline, then minimize the LOS-adjusted total cost with the same
+demand and capacity constraints. Optimal cost 33,781,800.
+
+Part 3 — Supplier E supplies exactly 20% of all units (use ONLY Part 1 info)
+Correct answer (minimum total procurement cost): 33607600
+Correct answer (revenue for Supplier E): 5405200
+Explanation: Total units needed = 119,000, so Supplier E must supply 20% =
+23,800 parts (any mix). E's prices: W32A 555, Y33A 120, W32B 35, X33B 255, Z32A
+359. Add E as a 5th supplier (25 variables) with the equality constraint that E's
+total = 23,800, minimize total cost. Optimal cost 33,607,600; Supplier E's revenue
+(its units × its prices) = 5,405,200.

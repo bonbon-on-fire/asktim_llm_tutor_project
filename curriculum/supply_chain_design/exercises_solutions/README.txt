@@ -1,8 +1,9 @@
 Graded-exercise solutions / explanations for MIT CTL.SC2x Supply Chain Design.
 
 These are TUTOR-ONLY reference material, scraped from the course's graded
-assignments' revealed solutions/explanations. They mirror exercises/exercise_XX.txt
-one-to-one by number.
+assignments' revealed solutions/explanations. Each solution is named
+exercise_solution_<N>.txt and mirrors exercises/exercise_<N>.txt one-to-one by
+number.
 
 IMPORTANT: These files must NOT be folded into the student-facing assignment
 text. They are intended for the tutor's "correct-answer" context channel only

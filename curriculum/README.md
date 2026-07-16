@@ -18,14 +18,14 @@ curriculum/
       exercise_2.txt
       ...
     exercises_solutions/             # optional — reference solutions, one per exercise
-      exercise_1.txt
+      exercise_solution_1.txt        # naming: exercise_solution_<N>.txt (mirrors exercise_<N>.txt)
       ...
     practices/                       # optional — ungraded practice problems (sandbox_ui)
       practice_1.txt
       practice_2.txt
       ...
     practices_solutions/             # optional — reference solutions, one per practice
-      practice_1.txt
+      practice_solution_1.txt        # naming: practice_solution_<N>.txt (mirrors practice_<N>.txt)
       ...
     figures/
       exercise_4_power_actors_map.png    # naming: exercise_<N>_<slug>.png
@@ -48,7 +48,7 @@ curriculum/
 - `figures/` holds visual context that belongs to a specific exercise. Files must start with `exercise_<N>_` so the framework (Phase 6 — see root [PLANNING.md](../PLANNING.md)) attaches the matching figures as multimodal input when the tutor/student/judge see that exercise — both in batch runs and in the live AskTIM/Sandbox chat (auto-attached per turn via `services/tutor_bridge.py`). Supported extensions: `.png`, `.jpg`, `.jpeg`. Loaded by [`utils/figures.py`](../utils/figures.py).
 - `lectures/` (optional) holds **per-course** lecture transcripts as plain `.txt` files. Every file in the folder is read (sorted by filename, labeled by stem). In `full_context` mode they're all folded into the tutor's context; in `rag` mode (the default) they're **retrievable via RAG** instead (too large to pin). Loaded by [`utils/lectures.py`](../utils/lectures.py); absent folder = no transcripts.
 - `key_concepts.txt` (optional) holds a condensed distillation of the course's key concepts. It is **retrievable via RAG** (chunked + embedded by [`rag/`](../rag/)) — too large to pin, unlike `course.txt`/`syllabus.txt` which are pinned into context and excluded from retrieval.
-- `exercises_solutions/` and `practices_solutions/` (optional) hold **reference solutions**, one file per exercise/practice (same non-padded numbering). They are **paired directly into the tutor's context** for the current problem (a tutor-only correct-answer input) and are deliberately **excluded from the RAG index** so a solution is never surfaced by similarity. Resolved via `read_solution()` in [`utils/curriculum.py`](../utils/curriculum.py).
+- `exercises_solutions/` and `practices_solutions/` (optional) hold **reference solutions**, one file per exercise/practice named `exercise_solution_<N>.txt` / `practice_solution_<N>.txt` (same non-padded numbering as the problem it mirrors — the `_solution_` infix keeps solution files from colliding with problem filenames). They are **paired directly into the tutor's context** for the current problem (a tutor-only correct-answer input) and are deliberately **excluded from the RAG index** so a solution is never surfaced by similarity. Resolved via `read_solution()` in [`utils/curriculum.py`](../utils/curriculum.py).
 - `lecture_index.json` (optional) maps each `lectures/*.txt` stem to its **true course coordinates** — `week`, `lesson`, `video`, `video_title`, and a ready-to-render `citation` string (e.g. `"Week 10, Lesson 1 · Video 7: DuPont Analysis"`). Built by scraping the live course structure (edX blocks API), it lets the tutor cite a lecture by a location a student can actually find, instead of the synthetic `lecture_<week>_<seq>` file stem. Consumed by `_source_label()` in [`rag/retrieve.py`](../rag/README.md); a validation test asserts every entry resolves to a real lecture file.
 - `rag_index/` (optional) holds the **built RAG index** for the course (`vectors.npy` + `chunks.jsonl` + `manifest.json`), produced by `python -m rag.ingest` and committed so deploys don't re-embed. See [`rag/README.md`](../rag/README.md).
 

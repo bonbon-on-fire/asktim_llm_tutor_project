@@ -51,7 +51,8 @@ resolvers normalize any input to that form.
   `read_practice`, `discover_practice`
 - Solutions (tutor-only correct answers): `solution_path`, `read_solution` (both
   take `kind="exercise"|"practice"`, reading
-  `exercises_solutions/exercise_<N>.txt` or `practices_solutions/practice_<N>.txt`),
+  `exercises_solutions/exercise_solution_<N>.txt` or
+  `practices_solutions/practice_solution_<N>.txt`),
   plus `exercises_solutions_dir` / `practices_solutions_dir` and the
   `SOLUTION_CONTEXT_LABEL` constant prefixed to the injected answer block
 - `list_courses()` — sorted course folder names

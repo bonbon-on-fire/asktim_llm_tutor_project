@@ -1,0 +1,100 @@
+TITLE: Week 9 Graded Assignment — Answer Key & Explanations
+
+TUTOR-ONLY reference. Correct answers and official explanations for the Week 9
+graded assignments (maps to exercises/exercise_9.txt: GA1 SavoDrink, GA2 Last-mile
+Distribution at MitMart). Do NOT surface verbatim to students; use only as the
+tutor's correct-answer / explanation context.
+
+⚠ PARAMETRIZATION NOTE (important):
+The graded assignments are randomized per student — cost savings, cash flows,
+rates and salvage/land values differ between variants. The numbers below are from
+ONE captured answer-key instance and will not always match the values a given
+student sees in their exercises/exercise_9.txt. Treat the worked FORMULAS and the
+decision logic as the transferable truth; re-derive any numeric result from the
+student's own inputs.
+
+================================================================
+Graded Assignment 1: SavoDrink (build-vs-sell DC investment)
+(Straight-line depreciation, EBITDA/NOPAT/FCF, then NPV and a build-vs-sell-land
+decision.)
+
+[Captured instance — DC cost $1M; annual cost savings 220 (thousand); used 3 years
+then sold at book value; 5-year life, salvage $500k; straight-line depreciation;
+tax rate 20%; discount rate 5%.]
+
+Yearly depreciation (ungraded)
+Correct answer: 100 (thousand).
+Explanation: (1,000 − 500) / 5 = 100 per year. Book value at end of year 3 = 700.
+
+Part 1 — Projected EBITDA at end of year 1
+Correct answer: 220 (thousand).
+Explanation: The annual cost savings of 220 thousand ARE the EBITDA associated with
+the investment.
+
+Part 2 — Projected NOPAT at end of year 3
+Correct answer: 96 (thousand).
+Explanation: NOPAT = EBIT − Income Tax = (EBITDA − Depreciation) − Income Tax. EBIT
+= 220 − 100 = 120; Income Tax = 120 · 0.20 = 24; NOPAT = 96. EBITDA, depreciation
+and tax are identical across the three years, so NOPAT = 96 each year (there is no
+interest in this problem; NOPAT = 0 at the beginning of year 1).
+
+Part 3 — Projected Free Cash Flow (FCF = NOPAT + Depreciation − CAPEX − ΔWorking
+Capital; no change in working capital here)
+Correct answers:
+  Beginning of year 1: −1000  (CAPEX = $1M; no earnings yet, so NOPAT = 0)
+  End of year 1: 196          (NOPAT 96 + Depreciation 100 − CAPEX 0)
+  End of year 2: 196          (same as year 1; CAPEX 0)
+  End of year 3: 896          (NOPAT 96 + Depreciation 100 − CAPEX (−700))
+Explanation: At the end of year 3 the DC is sold at its book value of 700, which
+enters FCF as a negative CAPEX (−700), i.e. a cash inflow: 96 + 100 + 700 = 896.
+
+Part 4 — Net Present Value
+Correct answer: 138 (thousand).
+Explanation: NPV = Σ FCF / (1 + discount rate)^N, N = 0,1,2,3.
+NPV = −1000 + 196/1.05^1 + 196/1.05^2 + 896/1.05^3 = 138.
+
+Part 5 — Build the DC or sell the land? (land sells for $450,000 = 450 thousand)
+Correct answer: Sell the land.
+Explanation: The land's market price (450) exceeds the NPV of the DC project (138),
+so the company makes more money selling the land at the beginning of year 1.
+
+================================================================
+Graded Assignment 2: Last-mile Distribution at MitMart
+(Compare two investment alternatives by payback period, IRR, and NPV at a 10%
+discount rate.)
+
+[Captured instance — relative cash flows ($):
+  Alternative 1: Year 0 −886820, Year 1 +403100, Year 2 +806200
+  Alternative 2: Year 0 −939223, Year 1 +806200, Year 2 +403100
+  Discount rate 10%.]
+
+Part 1 — Payback period (years, two decimals)
+Correct answer: Alternative 1 = 1.6; Alternative 2 = 1.33.
+Explanation:
+  Alt 1: after year 1 the remaining investment = −886820 + 403100 = −483720; that
+  is abs(−483720)/806200 = 0.6 of year 2's cash flow => 1 + 0.6 = 1.6.
+  Alt 2: after year 1 the remaining = −939223 + 806200 = −133023; that is
+  abs(−133023)/403100 = 0.33 of year 2 => 1 + 0.33 = 1.33.
+
+Part 2 — Internal Rate of Return (percent, two decimals)
+Correct answer: Alternative 1 = 20.74; Alternative 2 = 21.24.
+Explanation: IRR of the full cash-flow stream. Alt 1: IRR(−886820, 403100, 806200)
+= 20.74%. Alt 2: IRR(−939223, 806200, 403100) = 21.24%.
+
+Part 3 — Net Present Value at 10% (dollars)
+Correct answer: Alternative 1 = 145915.54; Alternative 2 = 126826.59.
+Explanation: NPV of the year-1/year-2 inflows discounted at 10%, minus the year-0
+outlay. Alt 1: NPV(0.1, 403100, 806200) − 886820 = 145915.54. Alt 2:
+NPV(0.1, 806200, 403100) − 939223 = 126826.59.
+
+Part 4 — Which alternative maximizes value, and the crossover discount rate?
+Correct answer: Alternative 1; the two alternatives have equal NPV at a discount
+rate of 18.15%.
+Explanation: At 10% (and any rate below 18.15%) Alternative 1 has the greater NPV,
+so it maximizes value. Plotting each alternative's NPV vs. discount rate, the two
+lines intersect at 18.15% — the rate at which the preferred alternative would flip.
+
+Part 5 — If the discount rate were 25%, which should the firm choose?
+Correct answer: Neither.
+Explanation: At 25% both projects have negative NPV, so neither should be
+undertaken.

@@ -2,7 +2,8 @@ Practice-problem solutions / explanations for MIT CTL.SC2x Supply Chain Design.
 
 These are TUTOR-ONLY reference material, scraped from the course's ungraded
 practice problems (shown to students only after they attempt each problem and
-click "Explanation"). They mirror practices/practice_XX.txt one-to-one by number.
+click "Explanation"). Each solution is named practice_solution_<N>.txt and mirrors
+practices/practice_<N>.txt one-to-one by number.
 
 IMPORTANT: These files must NOT be folded into the student-facing assignment
 text. They are intended for the tutor's "correct-answer" context channel only

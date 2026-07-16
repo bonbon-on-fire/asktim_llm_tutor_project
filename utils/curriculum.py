@@ -178,14 +178,15 @@ def solution_path(
 ) -> Path:
     """Return the path to a problem's solution file (existence not guaranteed).
 
-    ``kind`` is ``"exercise"`` (``exercises_solutions/exercise_<N>.txt``) or
-    ``"practice"`` (``practices_solutions/practice_<N>.txt``); the number is
-    normalized to its non-padded form.
+    ``kind`` is ``"exercise"`` (``exercises_solutions/exercise_solution_<N>.txt``)
+    or ``"practice"`` (``practices_solutions/practice_solution_<N>.txt``); the
+    number is normalized to its non-padded form. The ``_solution_`` infix keeps
+    solution filenames distinct from the problem files they mirror.
     """
     n = _norm_num(number)
     if kind == "practice":
-        return practices_solutions_dir(course, curriculum_root) / f"practice_{n}.txt"
-    return exercises_solutions_dir(course, curriculum_root) / f"exercise_{n}.txt"
+        return practices_solutions_dir(course, curriculum_root) / f"practice_solution_{n}.txt"
+    return exercises_solutions_dir(course, curriculum_root) / f"exercise_solution_{n}.txt"
 
 
 def read_solution(

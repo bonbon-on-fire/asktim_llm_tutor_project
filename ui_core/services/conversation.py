@@ -32,6 +32,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from tutor.cached_history import tutor_output_json
+from ui_core.usage import model_from_usage_json, records_from_retrieved_context
 
 
 @dataclass(frozen=True)
@@ -489,30 +490,18 @@ def get_messages_for_conversation(
         if include_reasoning:
             entry["pedagogical_reasoning"] = m.pedagogical_reasoning
         if include_retrieved:
-            raw = getattr(m, "retrieved_context", None)
-            if raw:
-                import json as _json
-
-                try:
-                    entry["retrieved"] = _json.loads(raw)
-                except (ValueError, TypeError):
-                    pass
+            records = records_from_retrieved_context(
+                getattr(m, "retrieved_context", None)
+            )
+            if records:
+                entry["retrieved"] = records
         if include_cost:
             cost = getattr(m, "cost_usd", None)
             if cost is not None:
                 entry["cost_usd"] = cost
                 # Model id lives inside the stored breakdown; parse it out so the
                 # UI can render "model ($cost)". Absent/corrupt JSON -> None.
-                import json as _json
-
-                model = None
-                raw_usage = getattr(m, "usage_json", None)
-                if raw_usage:
-                    try:
-                        model = (_json.loads(raw_usage) or {}).get("model")
-                    except (ValueError, TypeError):
-                        pass
-                entry["model"] = model
+                entry["model"] = model_from_usage_json(getattr(m, "usage_json", None))
         entry["images"] = images_by_message.get(m.id, [])
         entry["attachments"] = attachments_by_message.get(m.id, [])
         result.append(entry)

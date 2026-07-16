@@ -164,9 +164,33 @@ def _restore_stubs(module, originals: dict) -> None:
         setattr(module, name, value)
 
 
+def _test_build_system_prompt_course_rules():
+    """build_system_prompt appends curriculum/<course>/tutor_rules.txt when present.
+
+    Runs against the real (unstubbed) load_system_prompt + curriculum files, so it
+    also proves `course` is threaded through to build_system_prompt.
+    """
+    from utils.curriculum import TUTOR_RULES_HEADER
+
+    bridge = tb.TutorBridge()
+    # supply_chain_design ships a tutor_rules.txt -> header appended.
+    with_rules = bridge.build_system_prompt("tutor_07", "ASSIGN", course="supply_chain_design")
+    _check(
+        "course with tutor_rules.txt: rules appended",
+        TUTOR_RULES_HEADER in with_rules,
+    )
+    # A course with no such file -> base prompt unchanged.
+    none = bridge.build_system_prompt("tutor_07", "ASSIGN", course="___no_such_course___")
+    _check(
+        "course without tutor_rules.txt: base unchanged",
+        TUTOR_RULES_HEADER not in none,
+    )
+
+
 def main() -> int:
     """Run the offline bridge control-flow checks and return an exit code (1 if any failed)."""
     _test_mode_resolution()
+    _test_build_system_prompt_course_rules()
 
     canned_raw = json.dumps(
         {

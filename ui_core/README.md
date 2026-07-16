@@ -214,8 +214,11 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   transcripts (large) are baked in only in `full_context`; in `rag` they're reached
   via retrieval. `exercise_only` drops all course material (about-block + exercise
   only)
-- `build_system_prompt(tutor, assignment_text, **ctx)` — wraps the assignment
-  text into a full system prompt via `tutor.run_tutor.load_system_prompt`
+- `build_system_prompt(tutor, assignment_text, course="", **ctx)` — wraps the
+  assignment text into a full system prompt via `tutor.run_tutor.load_system_prompt`,
+  then appends the course's `curriculum/<course>/tutor_rules.txt` (if any) via
+  `utils.curriculum.append_course_tutor_rules` — a course-specific rules delta on
+  top of the shared base prompt (`tutor_07`), so no per-course prompt fork is needed
 - `retrieved_context(course, query, **ctx)` — per-turn RAG retrieval, returned as
   a `RetrievedContext(text, records)` dataclass: `.text` is the formatted block
   that always rides in the tutor's **system** channel, never onto the student's

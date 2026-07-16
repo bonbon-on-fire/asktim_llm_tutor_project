@@ -38,6 +38,7 @@ from internal_testing.cli_utils import (
     prompt_numbered_selection,
     prompt_single_selection,
 )
+from utils.curriculum import append_course_tutor_rules
 from utils.curriculum import discover_exercises as _discover_course_exercises
 from utils.curriculum import exercise_path
 from utils.figures import discover_figures, figure_filenames
@@ -249,6 +250,9 @@ def _run_conversation(
         config.tutor_prompt,
         assignment_override=assignment_text,
     )
+    # Append the course's per-course tutor rules (curriculum/<course>/tutor_rules.txt),
+    # if any, so judged transcripts reflect the exact deployed prompt.
+    system_prompt = append_course_tutor_rules(system_prompt, config.course)
     tutor_graph = create_tutor_graph(system_prompt, provider=config.provider, figures=figures)
     student_graph = build_student_graph(prompt_name=config.student_persona)
 

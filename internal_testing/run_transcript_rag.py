@@ -57,6 +57,7 @@ from tutor.run_tutor import (  # noqa: E402
 from tutor.run_tutor import get_tutor_reply as upstream_get_tutor_reply  # noqa: E402
 from utils.curriculum import (  # noqa: E402
     SOLUTION_CONTEXT_LABEL,
+    append_course_tutor_rules,
     exercise_path,
     practice_path,
     read_solution,
@@ -208,6 +209,9 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
         config.course, config.kind, config.number, config.turn_size
     )
     system_prompt = load_system_prompt(config.tutor_prompt, assignment_override=tutor_assignment)
+    # Append the course's per-course tutor rules (curriculum/<course>/tutor_rules.txt),
+    # if any, so judged transcripts reflect the exact deployed prompt.
+    system_prompt = append_course_tutor_rules(system_prompt, config.course)
     # Figures only apply to graded exercises (naming is exercise_<NN>_*); practice
     # problems have none, and reusing a matching number would wrongly attach them.
     figures = discover_figures(config.course, config.number) if config.kind == "exercise" else []

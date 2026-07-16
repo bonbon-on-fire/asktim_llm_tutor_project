@@ -53,6 +53,7 @@ from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
 from utils.curriculum import (
     SOLUTION_CONTEXT_LABEL,
+    append_course_tutor_rules,
     exercise_path,
     load_about_asktim,
     read_solution,
@@ -299,9 +300,16 @@ class TutorBridge:
             parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
         return "\n\n".join(parts)
 
-    def build_system_prompt(self, tutor: str, assignment_text: str, **ctx) -> str:
-        """Wrap *assignment_text* into the full system prompt for *tutor*."""
-        return load_system_prompt(tutor, assignment_override=assignment_text)
+    def build_system_prompt(self, tutor: str, assignment_text: str, course: str = "", **ctx) -> str:
+        """Wrap *assignment_text* into the full system prompt for *tutor*.
+
+        When *course* ships a ``curriculum/<course>/tutor_rules.txt``, its
+        course-specific rules are appended to the base prompt (see
+        ``utils.curriculum.append_course_tutor_rules``); otherwise the base prompt
+        is returned unchanged.
+        """
+        base = load_system_prompt(tutor, assignment_override=assignment_text)
+        return append_course_tutor_rules(base, course)
 
     def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
         """Per-turn RAG retrieval (prompt text + records); empty outside rag mode.
@@ -411,7 +419,7 @@ class TutorBridge:
             if cached is not None:
                 return cached
         assignment_text = self.build_assignment_text(course, exercise, **ctx)
-        system_prompt = self.build_system_prompt(tutor, assignment_text, **ctx)
+        system_prompt = self.build_system_prompt(tutor, assignment_text, course=course, **ctx)
         # Tutor provider is per-call: main_ui never passes one (-> claude/Sonnet 5),
         # sandbox_ui threads the tester's wizard choice through ctx.
         graph = create_tutor_graph(system_prompt, provider=_resolve_provider(ctx.get("provider")))
@@ -429,7 +437,7 @@ class TutorBridge:
             if cached is not None:
                 return cached
         assignment_text = self.build_assignment_text(course, exercise, **ctx)
-        system_prompt = self.build_system_prompt(tutor, assignment_text, **ctx)
+        system_prompt = self.build_system_prompt(tutor, assignment_text, course=course, **ctx)
         # Per-call provider for the streaming path too — see _get_or_build_graph.
         model = build_tutor_model(provider=_resolve_provider(ctx.get("provider")))
         if key is not None:

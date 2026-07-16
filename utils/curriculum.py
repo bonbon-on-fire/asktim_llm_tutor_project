@@ -116,6 +116,42 @@ def read_practice(
     return path.read_text(encoding="utf-8") if path.is_file() else ""
 
 
+# Optional per-course tutor-behavior delta appended to the base tutor prompt.
+# A course drops ``curriculum/<course>/tutor_rules.txt`` holding ONLY its
+# course-specific rules; the base prompt (tutor_07) stays the shared source of
+# truth. See docs/superpowers/specs/2026-07-16-per-course-tutor-rules-design.md.
+TUTOR_RULES_HEADER = "## Course-specific rules:"
+
+
+def tutor_rules_path(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the per-course tutor-rules file (``curriculum/<course>/tutor_rules.txt``)."""
+    return course_dir(course, curriculum_root) / "tutor_rules.txt"
+
+
+def read_course_tutor_rules(course: str, curriculum_root: Path | str | None = None) -> str:
+    """Return the course's ``tutor_rules.txt`` stripped, or ``""`` if absent/empty."""
+    if not course:
+        return ""
+    path = tutor_rules_path(course, curriculum_root)
+    return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+
+
+def append_course_tutor_rules(
+    base_prompt: str, course: str, curriculum_root: Path | str | None = None
+) -> str:
+    """Append the course's tutor rules (under ``TUTOR_RULES_HEADER``) to *base_prompt*.
+
+    Returns *base_prompt* unchanged when the course has no non-empty
+    ``tutor_rules.txt``. The delta lands at the very end of the prompt, after any
+    ``<Assignment>`` substitution has already run, so no base-prompt parsing is
+    needed and the course rules get recency weight.
+    """
+    rules = read_course_tutor_rules(course, curriculum_root)
+    if not rules:
+        return base_prompt
+    return f"{base_prompt}\n\n{TUTOR_RULES_HEADER}\n{rules}"
+
+
 # Label for the tutor-only correct-answer block that is paired directly with the
 # current problem (never retrieved via RAG, never shown to the student).
 SOLUTION_CONTEXT_LABEL = (

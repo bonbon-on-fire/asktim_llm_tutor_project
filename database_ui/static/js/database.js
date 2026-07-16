@@ -89,22 +89,22 @@
       li.setAttribute("role", "button");
       li.dataset.conversationId = c.id;
 
-      // Course eyebrow: a compact, muted label sitting ABOVE the identity line.
-      // With several courses feeding one DB, it groups entries at a glance.
-      // Truncated to one line via CSS; the full name shows on hover.
-      if (c.course_name) {
-        const course = document.createElement("div");
-        course.className = "sidebar-entry-course";
-        course.textContent = c.course_name;
-        course.title = c.course_name;
-        li.appendChild(course);
-      }
-
-      // Email/identity line sits ABOVE the exercise header line.
+      // Identity line sits at the TOP of the entry — the username (or
+      // "Anonymous"), in the crimson accent.
       const student = document.createElement("div");
       student.className = "sidebar-entry-student";
       student.textContent = studentLabel(c);
       if (!c.email) student.classList.add("is-anonymous");
+
+      // Course eyebrow: a compact, muted label BELOW the identity line. With
+      // several courses feeding one DB, it groups entries at a glance. Truncated
+      // to one line via CSS; the full name shows on hover.
+      const course = document.createElement("div");
+      if (c.course_name) {
+        course.className = "sidebar-entry-course";
+        course.textContent = c.course_name;
+        course.title = c.course_name;
+      }
 
       const title = document.createElement("div");
       title.className = "sidebar-entry-title";
@@ -115,6 +115,7 @@
       snippet.textContent = c.last_message_snippet || "(no messages)";
 
       li.appendChild(student);
+      if (c.course_name) li.appendChild(course);
       li.appendChild(title);
       li.appendChild(snippet);
 

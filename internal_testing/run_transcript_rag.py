@@ -58,8 +58,10 @@ from tutor.run_tutor import get_tutor_reply as upstream_get_tutor_reply  # noqa:
 from utils.curriculum import (  # noqa: E402
     SOLUTION_CONTEXT_LABEL,
     append_course_tutor_rules,
+    course_dir,
     exercise_path,
     practice_path,
+    read_pinned_context,
     read_solution,
 )
 from utils.figures import discover_figures, figure_filenames  # noqa: E402
@@ -131,9 +133,24 @@ def _problem_label(kind: str) -> str:
 
 
 def _tutor_rag_assignment(course: str, kind: str, number: str, turn_size: int) -> str:
-    """Tutor's RAG base prompt: the problem (+ its paired solution, tutor-only).
-    Course/syllabus/lectures are reached via per-turn retrieval, not baked in."""
-    parts = [f"{_problem_label(kind)}:\n" + _problem_text(course, kind, number)]
+    """Tutor's RAG base prompt, mirroring the live bridges' ``rag`` mode.
+
+    course.txt + syllabus.txt + any pinned reference docs (``pinned/*.txt``) are
+    baked in (they're pinned, not retrieved); lectures are reached via per-turn
+    retrieval. Then the problem, its paired tutor-only solution, and the run config.
+    """
+    parts: list[str] = []
+    cdir = course_dir(course)
+    course_txt = cdir / "course.txt"
+    if course_txt.is_file():
+        parts.append("Course context:\n" + course_txt.read_text(encoding="utf-8").strip())
+    syllabus_txt = cdir / "syllabus.txt"
+    if syllabus_txt.is_file():
+        parts.append("Syllabus:\n" + syllabus_txt.read_text(encoding="utf-8").strip())
+    pinned = read_pinned_context(course)
+    if pinned:
+        parts.append(pinned)
+    parts.append(f"{_problem_label(kind)}:\n" + _problem_text(course, kind, number))
     # Tutor-only correct-answer reference, paired to the current problem (mirrors
     # the live bridges). Never given to the student model (_student_assignment_text).
     solution = read_solution(course, number, kind=kind)

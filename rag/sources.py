@@ -12,6 +12,8 @@ not also be retrieved (that would waste the top-k budget re-fetching content
 already present): ``course.txt`` and ``syllabus.txt`` (pinned every turn in
 ``full_context`` and ``rag`` modes — see ``ui_core.tutor_bridge`` /
 ``sandbox_ui.services.tutor_bridge`` ``build_assignment_text``), the
+``pinned/*.txt`` reference docs (always pinned into context — see
+``utils.curriculum.read_pinned_context``), the
 ``exercises/*.txt`` graded-problem prompts (the exercise the student is working on
 is paired directly, so retrieval must not surface it or any *other* graded
 exercise), and the ``*_solutions/`` folders (the current problem's solution is

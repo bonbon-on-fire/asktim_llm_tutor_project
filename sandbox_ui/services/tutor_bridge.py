@@ -27,6 +27,7 @@ from utils.curriculum import (
     exercise_path,
     load_about_asktim,
     practice_path,
+    read_pinned_context,
     read_solution,
 )
 from utils.lectures import load_lecture_transcripts
@@ -99,6 +100,13 @@ def build_assignment_text(
                 parts.append(
                     "Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip()
                 )
+
+        # Always-pinned reference docs (curriculum/<course>/pinned/*.txt) — e.g. a
+        # debugging flow chart. Pinned like course/syllabus; never retrieved.
+        if course:
+            pinned = read_pinned_context(course)
+            if pinned:
+                parts.append(pinned)
 
     # Lectures (large) — full_context only; gated by the include_lectures toggle.
     if include_lecture_transcripts and include_lectures and course:

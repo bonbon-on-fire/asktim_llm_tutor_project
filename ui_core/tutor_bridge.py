@@ -56,6 +56,7 @@ from utils.curriculum import (
     append_course_tutor_rules,
     exercise_path,
     load_about_asktim,
+    read_pinned_context,
     read_solution,
 )
 from utils.figures import build_multimodal_content, discover_figures
@@ -283,6 +284,12 @@ class TutorBridge:
             syllabus_path = course_dir / "syllabus.txt"
             if syllabus_path.is_file():
                 parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
+
+            # Always-pinned reference docs (curriculum/<course>/pinned/*.txt) — e.g. a
+            # debugging flow chart. Pinned like course/syllabus; never retrieved.
+            pinned = read_pinned_context(course)
+            if pinned:
+                parts.append(pinned)
 
         # Lecture transcripts (large): full_context only; retrieved in rag.
         if mode == "full_context":

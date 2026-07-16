@@ -203,17 +203,17 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   caches; return `None` to skip caching for that call (sandbox does this for
   one-off custom context)
 - `build_assignment_text(course, exercise, **ctx)` — concatenates
-  `about_asktim.txt` + `course.txt` + `syllabus.txt` + optional lecture
-  transcripts + `exercise_<NN>.txt`, then, when a matching solution file exists,
-  the current problem's paired **correct answer & worked solution** as a
-  tutor-only reference block (via `utils.curriculum.read_solution`, keyed by
-  problem number — deterministic, never retrieved, never shown to the student).
-  `course.txt` + `syllabus.txt` are small and always useful, so they're **pinned
-  in both `full_context` and `rag`** — and correspondingly **excluded from the RAG
-  index** (see `rag/sources.py`) so nothing pinned is also retrieved. Lecture
-  transcripts (large) are baked in only in `full_context`; in `rag` they're reached
-  via retrieval. `exercise_only` drops all course material (about-block + exercise
-  only)
+  `about_asktim.txt` + `course.txt` + `syllabus.txt` + any `pinned/*.txt` reference
+  docs + optional lecture transcripts + `exercise_<NN>.txt`, then, when a matching
+  solution file exists, the current problem's paired **correct answer & worked
+  solution** as a tutor-only reference block (via `utils.curriculum.read_solution`,
+  keyed by problem number — deterministic, never retrieved, never shown to the
+  student). `course.txt` + `syllabus.txt` + `pinned/*.txt` (the last via
+  `utils.curriculum.read_pinned_context`) are **pinned in both `full_context` and
+  `rag`** — and correspondingly **excluded from the RAG index** (see
+  `rag/sources.py`) so nothing pinned is also retrieved. Lecture transcripts (large)
+  are baked in only in `full_context`; in `rag` they're reached via retrieval.
+  `exercise_only` drops all course material (about-block + exercise only)
 - `build_system_prompt(tutor, assignment_text, course="", **ctx)` — wraps the
   assignment text into a full system prompt via `tutor.run_tutor.load_system_prompt`,
   then appends the course's `curriculum/<course>/tutor_rules.txt` (if any) via

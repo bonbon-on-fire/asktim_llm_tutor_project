@@ -1,0 +1,34 @@
+Optimization Model Debugging Guide (spreadsheet Solver)
+
+This is the course's official flow chart for debugging optimization models built with the Excel Solver. Use it to diagnose where a student is stuck and steer them to the right branch — keep guiding them Socratically rather than solving it for them. Routing for help: for Practice Problems and Quick Questions, students post in the Discussion Forum (with background on what they've tried) and the CTAs help; for Graded Assignments and Exams, students must contact the TA by email and must NOT post in the Discussion Forum.
+
+START — What problem are you facing?
+- The Solver returns an error message -> Section A.
+- The model runs, but the result is not correct -> Section B.
+- I don't know how to formulate the problem (or part of it) -> Section C. First identify the model: continuous facility location (Weber / Center of Gravity) -> C-1; Network Design / Transshipment -> C-2; Aggregate Planning -> C-3; anything else -> C-4.
+
+SECTION A — The Solver returns an error message. Which message appears?
+- "Solver could not find a feasible solution": Open the Feasibility Report in the Solver Results dialog — it lists every constraint and whether it is violated. Revise the formulas in the cells flagged as violated.
+- "The linearity conditions required by this LP Solver are not satisfied": Open the Linearity Report in the Solver Results dialog — it shows every cell and whether its formula is linear. Revise the formulas in the cells flagged as not linear.
+- "Solver encountered an error value in the Objective cell or a Constraint cell": Check whether any decision variables are non-numeric, and whether any cell used to compute the objective-function value shows an error value (or could).
+- Other: Check the Solver support team's guidance / the linked support article.
+Then ask: were you able to solve it? If not, continue to Section B. If still stuck, use the help routing above (forum for practice/quick questions; email the TA for graded/exams).
+
+SECTION B — The model runs, but the result is not correct. What happened?
+- "I entered my solution on edX, but it's marked incorrect": Read the question twice — it always states how to input the answer (round, round up, number of decimal places) for it to be graded. Double-check you copied the data correctly from the problem statement, that Excel isn't treating dots as commas (or vice versa), and that cells have no hidden decimals. Note: the relevant data points can change from one question to the next.
+- "My model's minimized cost is LOWER than the correct answer": A lower-than-optimal cost usually means a missing constraint. Does the model need a Level-of-Service (LOS) constraint? If yes, make the relevant constraint binding — use "=" instead of ">=" (e.g., the demand constraint).
+- "Binary variable output shows a fractional number" (e.g., 0.3): Uncheck "Ignore Integer Constraints" in the Solver settings, and confirm the variables are actually constrained as binary.
+- "After running the Solver, all binary variables are set to 0": Check the linking constraint — see C-5.
+Then ask: were you able to solve it? If still stuck, use the help routing above.
+
+SECTION C — I don't know how to formulate the problem (or part of it).
+- C-1 Facility Location (continuous, e.g. Weber / Center of Gravity): purpose — find an optimal facility location. Objective — minimize the weighted distance (non-linear). Constraints — upper and lower bounds on the X and Y coordinate variables.
+- C-2 Network Design / Transshipment: purpose — optimize network flows and decide which facilities to use. Objective — minimize total transportation and facility costs. Constraints — capacity/supply, demand, conservation-of-flow, linking, binary, LOS, etc.
+- C-3 Aggregate Planning: purpose — determine aggregate production plans. Objective — minimize total production, inventory-holding, setup, hiring/firing, and overtime costs. Constraints — inventory-balance, capacity, demand, linking constraints for production setup, workforce constraints, etc.
+- C-4 Others: specialized models also covered in the course — procurement, transportation, omni-channel networks, or adding components like inventory levels. The course team can help.
+- C-5 Help with Linking Constraints:
+  - Choosing Big M: set it to the sum of all demand; if no demand is available, use a reasonably high number (not excessively high).
+  - How many linking constraints: as a rule of thumb, one per flow to link; the minimum is the number of binary constraints.
+  - Binary values come out as a fraction (e.g., 0.3): check they are constrained as binary and untick "Ignore Integer Constraints."
+
+Remember: this guide won't cover every possible problem or assumption. If in doubt, students should email the course team.

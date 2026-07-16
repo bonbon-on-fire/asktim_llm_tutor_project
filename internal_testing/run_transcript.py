@@ -40,7 +40,7 @@ from internal_testing.cli_utils import (
 )
 from utils.curriculum import append_course_tutor_rules
 from utils.curriculum import discover_exercises as _discover_course_exercises
-from utils.curriculum import exercise_path
+from utils.curriculum import exercise_path, read_pinned_context
 from utils.figures import discover_figures, figure_filenames
 from utils.lectures import load_lecture_transcripts
 
@@ -160,6 +160,11 @@ def _build_assignment_text(course: str, exercise_number: str, turn_size: int) ->
     syllabus_path = course_dir / "syllabus.txt"
     if syllabus_path.exists():
         parts.append("Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip())
+
+    # Always-pinned reference docs (pinned/*.txt) — mirrors the live bridges.
+    pinned = read_pinned_context(course)
+    if pinned:
+        parts.append(pinned)
 
     lectures = load_lecture_transcripts(course)
     if lectures:

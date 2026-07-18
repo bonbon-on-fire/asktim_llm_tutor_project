@@ -1,10 +1,12 @@
 """GET /embed — main iframe entry point.
 
-All of `course`, `exercise`, and `tutor` are optional query params — any that
-are absent fall back to the module defaults, so partial URLs still load. Values
-that *are* supplied are validated against the on-disk curriculum and tutor
-folders (via shared validators in `_validation`); an invalid explicit value
-404s. Then renders the `embed.html` chat page.
+`course`, `exercise`, and `tutor` are optional query params — any absent one
+falls back to the module defaults, so partial URLs still load. A `practice=<n>`
+param selects a practice problem instead of an exercise; supplying both
+`exercise` and `practice` is rejected (404). Supplied values are validated
+against the on-disk curriculum and tutor folders (via shared validators in
+`_validation`); an invalid explicit value 404s. Then renders the `embed.html`
+chat page.
 """
 
 from __future__ import annotations
@@ -18,8 +20,8 @@ from sandbox_ui.routes._validation import (
     DEFAULT_TUTOR,
     list_context_options,
     load_course_name,
+    resolve_embed_selection,
     validate_course,
-    validate_exercise,
     validate_tutor,
 )
 
@@ -32,13 +34,13 @@ def _bad_param(err: dict):
     return jsonify({"error": "invalid_param", **err}), 404
 
 
-def _render_embed(*, course: str, exercise: str, tutor: str, syllabus: bool = True):
-    """Render the embed.html chat widget for the given course/exercise/tutor context."""
+def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise"):
+    """Render the embed.html chat widget for the given course/exercise|practice/tutor context."""
     tutor_config = {
         "course": course,
         "exercise": exercise,
         "tutor": tutor,
-        "syllabus": syllabus,
+        "exerciseKind": exercise_kind,
     }
     has_email = bool(read_username_cookie(request))
     return render_template(
@@ -54,7 +56,7 @@ def _render_embed(*, course: str, exercise: str, tutor: str, syllabus: bool = Tr
 
 @embed_bp.get("/api/context/options")
 def context_options():
-    """Courses (+ their exercises and syllabus availability) and tutor prompts,
+    """Courses (+ their exercises and lecture/RAG availability) and tutor prompts,
     used to populate the sandbox_ui Change-context switcher."""
     return jsonify(list_context_options())
 
@@ -71,23 +73,22 @@ def index():
 
 @embed_bp.get("/embed")
 def embed():
-    """Render the chat widget from query params, falling back to defaults and validating the resolved values."""
-    # Missing params fall back to defaults so partial URLs (e.g. ?exercise=02)
-    # still load instead of 404ing. An *explicitly* invalid value is still
-    # rejected below, since validation runs on the resolved value either way.
+    """Render the chat widget from query params (exercise XOR practice), validating the resolved value."""
     course = request.args.get("course") or DEFAULT_COURSE
-    exercise = request.args.get("exercise") or DEFAULT_EXERCISE
-    # Sandbox is locked to a single tutor prompt: ignore any ?tutor= override.
-    tutor = DEFAULT_TUTOR
+    tutor = DEFAULT_TUTOR  # sandbox is locked to a single tutor prompt
 
     err = validate_course(course)
     if err:
         return _bad_param(err)
-    err = validate_exercise(course, exercise)
+
+    number, kind, err = resolve_embed_selection(
+        course, request.args.get("exercise"), request.args.get("practice"), DEFAULT_EXERCISE
+    )
     if err:
         return _bad_param(err)
+
     err = validate_tutor(tutor)
     if err:
         return _bad_param(err)
 
-    return _render_embed(course=course, exercise=exercise, tutor=tutor)
+    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind)

@@ -24,7 +24,9 @@
   white-space: nowrap;
 }
 
-/* The email/identity line that sits above the exercise header in each entry. */
+/* The username/identity line sits at the TOP of each entry, in the crimson
+   accent — for named students and anonymous rows alike. Anonymous rows keep an
+   italic treatment so the placeholder still reads as one. */
 .sidebar-entry-student {
   font-size: 0.78rem;
   font-weight: 600;
@@ -35,7 +37,6 @@
   white-space: nowrap;
 }
 .sidebar-entry-student.is-anonymous {
-  color: var(--muted, #888);
   font-style: italic;
   font-weight: 500;
 }
@@ -77,6 +78,56 @@
   border-left: 2px solid var(--border, #e2e2e2);
   color: var(--muted, #666);
   white-space: pre-wrap;
+}
+
+/* Tutor-model label: a non-collapsible line above the reasoning disclosure,
+   same muted small font/weight as a .review-reasoning summary. Mirrors
+   sandbox_ui's review rendering. */
+.review-model {
+  margin-top: 0.3rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--muted, #888);
+}
+
+/* Nested "RAG retrieval" chunks: each retrieved chunk is its own collapsible —
+   summary shows score/source/size, body is the full chunk text. */
+.review-retrieved-chunk {
+  margin-top: 0.3rem;
+}
+.review-retrieved-chunk > summary {
+  cursor: pointer;
+  color: var(--muted, #888);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  user-select: none;
+}
+.review-retrieved-chunk > summary:hover {
+  color: var(--text, #2a2a2a);
+}
+.review-retrieved-text {
+  margin: 0.2rem 0 0.3rem 0.3rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--border, #e2e2e2);
+  color: var(--muted, #666);
+  white-space: pre-wrap;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+/* Read-only thumbs: the .rating-btn glyphs (from chat.css) render as inert
+   spans here — highlighted to show the student's stored rating, but not
+   interactive (database_ui never writes). Drop the button hover affordance and
+   the pointer cursor so they don't look clickable. */
+.msg-rating-readonly .rating-btn {
+  cursor: default;
+}
+.msg-rating-readonly .rating-btn:hover {
+  opacity: 0.4;
+  background: none;
+}
+.msg-rating-readonly .rating-btn.is-active:hover {
+  opacity: 1;
 }
 
 /* Login reuses the student app's modal classes (.modal-overlay / .modal-card /

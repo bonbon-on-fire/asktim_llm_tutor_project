@@ -34,7 +34,7 @@ def load_config() -> Config:
     # apps load the same root .env, so if DATABASE_URL there points at main_ui's
     # Postgres, setting SANDBOX_UI_DATABASE_URL keeps the Sandbox on its own DB
     # instead of writing into production's (whose conversations table lacks
-    # sandbox_ui's syllabus_enabled/custom_* columns). On Railway you can set just
+    # sandbox_ui's lectures_enabled/context_mode/provider columns). On Railway you can set just
     # DATABASE_URL and it still works.
     database_url = (
         os.environ.get("SANDBOX_UI_DATABASE_URL")

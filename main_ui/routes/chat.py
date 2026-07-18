@@ -38,7 +38,7 @@ from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
     DEFAULT_TUTOR,
     validate_course,
-    validate_exercise,
+    validate_selection,
     validate_tutor,
 )
 from main_ui.services import files as files_service
@@ -144,6 +144,8 @@ def chat():
 
     course = src.get("course")
     exercise = src.get("exercise")
+    raw_kind = src.get("exercise_kind")
+    exercise_kind = "practice" if str(raw_kind).strip().lower() == "practice" else "exercise"
     # Production is locked to a single tutor prompt: ignore any client-supplied
     # tutor and always use DEFAULT_TUTOR.
     tutor = DEFAULT_TUTOR
@@ -151,7 +153,7 @@ def chat():
     err = validate_course(course)
     if err:
         return _bad_param(err)
-    err = validate_exercise(course, exercise)
+    err = validate_selection(course, exercise, exercise_kind)
     if err:
         return _bad_param(err)
     err = validate_tutor(tutor)
@@ -192,6 +194,7 @@ def chat():
             conversation_id=convo_id,
             course=course,
             exercise_number=exercise,
+            exercise_kind=exercise_kind,
             tutor_prompt=tutor,
             username=username,
         )
@@ -259,6 +262,7 @@ def chat():
     stream_course = convo.course
     stream_exercise = convo.exercise_number
     stream_tutor = convo.tutor_prompt
+    stream_exercise_kind = convo.exercise_kind or "exercise"
 
     try:
         db.commit()
@@ -275,6 +279,7 @@ def chat():
     stream_kwargs = dict(
         course=stream_course,
         exercise=stream_exercise,
+        exercise_kind=stream_exercise_kind,
         tutor=stream_tutor,
         history=history,
         new_student_message=student_text + files_service.files_to_text(attachments),

@@ -76,3 +76,49 @@ def test_cached_gpt_builds_interleaved_messages():
         "HumanMessage",
         "SystemMessage",
     ]
+
+
+def test_cached_gpt_attaches_current_turn_images():
+    # A pasted table (image upload) must ride on the CURRENT student turn in
+    # cached mode, not be dropped — the GPT/langchain path.
+    bridge = TutorBridge()
+    captured = {}
+
+    class FakeChunk:
+        content = '{"pedagogical-reasoning":"r","Student-facing-answer":"hi"}'
+
+    class FakeModel:
+        def stream(self, messages, **kw):
+            captured["messages"] = messages
+            return iter([FakeChunk()])
+
+    with patch.object(
+        bridge, "_get_or_build_stream_context", return_value=(FakeModel(), "SYS")
+    ), patch.object(
+        bridge,
+        "retrieved_context",
+        return_value=type(
+            "RC", (), {"text": "", "records": [], "embedding_tokens": 0}
+        )(),
+    ), patch.object(bridge, "_enforce_rag_available"):
+        list(
+            bridge.stream_tutor_reply(
+                course="c",
+                exercise="1",
+                tutor="tutor_07",
+                history=[],
+                new_student_message="read this table",
+                images=[(b"\x89PNGDATA", "image/png")],
+                provider="gpt",
+                history_mode="cached",
+                cached_history=[],
+            )
+        )
+    # Messages: SystemMessage(static), HumanMessage(current student with image)
+    human = captured["messages"][-1]
+    assert type(human).__name__ == "HumanMessage"
+    assert isinstance(human.content, list), human.content
+    assert any(b.get("type") == "text" and b["text"] == "read this table" for b in human.content)
+    image_blocks = [b for b in human.content if b.get("type") == "image_url"]
+    assert len(image_blocks) == 1
+    assert image_blocks[0]["image_url"]["url"].startswith("data:image/png;base64,")

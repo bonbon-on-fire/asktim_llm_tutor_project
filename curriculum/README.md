@@ -7,12 +7,15 @@ Assignment content used by tutor and student runs, organized by course.
 ```text
 curriculum/
   <course_name>/
-    course.txt                       # shared course context
     course_name.txt                  # display name shown in the main_ui course banner
-    syllabus.txt                     # optional — pinned into tutor context (full_context & rag); NOT retrieved
     tutor_rules.txt                  # optional — course-specific tutor rules appended to the base prompt
     online_link.txt                  # optional — OCW course URL; source for RAG ingestion (Phase 11)
     key_concepts.txt                 # optional — condensed course concepts; retrievable via RAG
+    pinned/                          # always-pinned reference docs (folded into context; NOT retrieved)
+      course.txt                     # course description (first line is its title)
+      syllabus.txt                   # optional — course syllabus
+      optimization_debugging_flowchart.txt   # optional — any other course reference doc
+      ...
     exercises/                       # assignment prompts
       exercise_1.txt
       exercise_2.txt
@@ -38,16 +41,15 @@ curriculum/
 ```
 
 - Each course is a subfolder (for example `cities_and_climate_change/`, `mathematics_for_cs/`).
-- `course.txt` stores shared course context.
 - `course_name.txt` holds the human-readable course title rendered in the `main_ui/` course banner (via `load_course_name()` in [main_ui/routes/_validation.py](../main_ui/routes/_validation.py)). If empty or absent, the banner renders blank.
-- `syllabus.txt` (optional) is **pinned directly into the tutor's context every turn** in both `full_context` and `rag` modes (it's small and always useful — course policy, communication rules, schedule), and is correspondingly **excluded from the RAG index** so retrieval never wastes a slot re-fetching content already present. See `build_assignment_text` in [ui_core/tutor_bridge.py](../ui_core/tutor_bridge.py) and the exclusion in [rag/sources.py](../rag/sources.py). `course.txt` is pinned the same way.
-- `tutor_rules.txt` (optional) holds **course-specific tutor rules** appended to the base tutor prompt (`tutor_07`) whenever the course has one — so a course can tune tutor behavior (e.g. "assume spreadsheets over Python") without forking a whole prompt version. Read + appended by `read_course_tutor_rules()` / `append_course_tutor_rules()` in [`utils/curriculum.py`](../utils/curriculum.py); applied in both apps (via `build_system_prompt`) and the bulk-simulation runners so evals mirror production.
+- `pinned/` holds **always-pinned reference docs** — every `pinned/*.txt` is folded directly into the tutor's context in `full_context` and `rag` modes, and is **excluded from the RAG index** (never retrieved), so nothing pinned is also re-fetched by retrieval. This is where the **course description (`pinned/course.txt`)**, the **syllabus (`pinned/syllabus.txt`)**, and any other always-on material (e.g. a Solver debugging flow chart) live. Each file carries its own title as its first line; they're read (sorted, stripped, blank-line-joined) by `read_pinned_context()` in [`utils/curriculum.py`](../utils/curriculum.py) and folded in by `build_assignment_text` ([ui_core/tutor_bridge.py](../ui_core/tutor_bridge.py)); the exclusion from retrieval is in [rag/sources.py](../rag/sources.py). `read_course_description()` is a single-doc accessor for `pinned/course.txt` (the lean judge-context in the runners).
+- `tutor_rules.txt` (optional) holds **course-specific tutor rules** appended to the base tutor prompt (`tutor_07`) whenever the course has one — so a course can tune tutor behavior (e.g. "assume spreadsheets over Python") without forking a whole prompt version. Read + appended by `read_course_tutor_rules()` / `append_course_tutor_rules()` in [`utils/curriculum.py`](../utils/curriculum.py); applied in both apps (via `build_system_prompt`) and the bulk-simulation runners so evals mirror production. (Unlike `pinned/*.txt`, this is a system-prompt delta, not context body — so it lives at the course top level, not under `pinned/`.)
 - `online_link.txt` (optional) holds the course's MIT OpenCourseWare URL — the canonical source link for **RAG ingestion** of fuller course materials. The [`rag/`](../rag/) pipeline reads it (`python -m rag.ingest --course <c> --source ocw`) to crawl the OCW site's HTML pages **and linked PDFs** (lecture notes, problem sets) into the per-course `rag_index/`. See **Phase 11** in the root [PLANNING.md](../PLANNING.md) and [`rag/README.md`](../rag/README.md).
 - `exercises/exercise_X.txt` stores the assignment prompt for a specific exercise (non-padded numbering — `exercise_1.txt`, `exercise_10.txt`). Path resolution for all readers (web apps + runners) is centralized in [`utils/curriculum.py`](../utils/curriculum.py), which normalizes numbers and sorts them numerically. `01` and `1` both resolve to `exercise_1.txt`.
 - `practices/practice_X.txt` (optional) holds **ungraded practice problems** — a parallel content kind to exercises, selectable as a distinct "Practice problems" group in the `sandbox_ui/` Create-context wizard. Same non-padded numbering; resolved via `practices_dir()` / `discover_practice()` in [`utils/curriculum.py`](../utils/curriculum.py).
 - `figures/` holds visual context that belongs to a specific exercise. Files must start with `exercise_<N>_` so the framework (Phase 6 — see root [PLANNING.md](../PLANNING.md)) attaches the matching figures as multimodal input when the tutor/student/judge see that exercise — both in batch runs and in the live AskTIM/Sandbox chat (auto-attached per turn via `services/tutor_bridge.py`). Supported extensions: `.png`, `.jpg`, `.jpeg`. Loaded by [`utils/figures.py`](../utils/figures.py).
 - `lectures/` (optional) holds **per-course** lecture transcripts as plain `.txt` files. Every file in the folder is read (sorted by filename, labeled by stem). In `full_context` mode they're all folded into the tutor's context; in `rag` mode (the default) they're **retrievable via RAG** instead (too large to pin). Loaded by [`utils/lectures.py`](../utils/lectures.py); absent folder = no transcripts.
-- `key_concepts.txt` (optional) holds a condensed distillation of the course's key concepts. It is **retrievable via RAG** (chunked + embedded by [`rag/`](../rag/)) — too large to pin, unlike `course.txt`/`syllabus.txt` which are pinned into context and excluded from retrieval.
+- `key_concepts.txt` (optional) holds a condensed distillation of the course's key concepts. It is **retrievable via RAG** (chunked + embedded by [`rag/`](../rag/)) — too large to pin, unlike the `pinned/` docs (course description, syllabus) which are folded into context and excluded from retrieval.
 - `exercises_solutions/` and `practices_solutions/` (optional) hold **reference solutions**, one file per exercise/practice named `exercise_solution_<N>.txt` / `practice_solution_<N>.txt` (same non-padded numbering as the problem it mirrors — the `_solution_` infix keeps solution files from colliding with problem filenames). They are **paired directly into the tutor's context** for the current problem (a tutor-only correct-answer input) and are deliberately **excluded from the RAG index** so a solution is never surfaced by similarity. Resolved via `read_solution()` in [`utils/curriculum.py`](../utils/curriculum.py).
 - `lecture_index.json` (optional) maps each `lectures/*.txt` stem to its **true course coordinates** — `week`, `lesson`, `video`, `video_title`, and a ready-to-render `citation` string (e.g. `"Week 10, Lesson 1 · Video 7: DuPont Analysis"`). Built by scraping the live course structure (edX blocks API), it lets the tutor cite a lecture by a location a student can actually find, instead of the synthetic `lecture_<week>_<seq>` file stem. Consumed by `_source_label()` in [`rag/retrieve.py`](../rag/README.md); a validation test asserts every entry resolves to a real lecture file.
 - `rag_index/` (optional) holds the **built RAG index** for the course (`vectors.npy` + `chunks.jsonl` + `manifest.json`), produced by `python -m rag.ingest` and committed so deploys don't re-embed. See [`rag/README.md`](../rag/README.md).
@@ -68,8 +70,8 @@ The four courses beyond Cities and Climate Change (Development Planning, Mathema
 ## Adding a new course
 
 1. Create a folder under `curriculum/` with the course name.
-2. Add `course.txt` with shared context, and `course_name.txt` with the display title for the banner.
-3. Optionally add `syllabus.txt` for course-level material that should accompany every exercise.
+2. Add `course_name.txt` with the display title for the banner, and `pinned/course.txt` with the course description (its first line is the doc's title, e.g. `Course description`).
+3. Optionally add `pinned/syllabus.txt` (and any other always-in-context reference doc) under `pinned/` — each is folded into the tutor context every turn.
 4. Add an `exercises/` folder with one or more `exercise_X.txt` files (non-padded numbering).
 5. If an exercise references diagrams or maps, drop them in `figures/` with the `exercise_<N>_<slug>.<ext>` naming convention.
 6. If the course has lecture transcripts, drop plain `.txt` files into `lectures/`; they are included in the tutor context for every exercise in the course.

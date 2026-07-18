@@ -67,10 +67,14 @@ class Message(MessageMixin, Base):
   (FK → `conversations.id`, cascade delete), `turn`, `role` (checked
   `student`/`tutor`), `content`, `pedagogical_reasoning` (nullable), `rating`
   (int, default `0`, checked `rating IN (-1, 0, 1)` — per-message thumbs
-  down/none/up; legacy rows stored as NULL are treated as `0`), `created_at`;
-  declares the `conversation`, `uploaded_images`, and `uploaded_files`
-  relationships plus the role and rating check-constraints and an index on
-  `conversation_id`.
+  down/none/up; legacy rows stored as NULL are treated as `0`), `cost_usd`
+  (nullable float — estimated USD cost of producing a tutor turn; NULL on student
+  rows / pre-feature rows), `usage_json` (nullable text — the model-id + token
+  breakdown backing `cost_usd`, so any figure can be re-derived; parsed via
+  `ui_core.usage`), `created_at`; declares the `conversation`, `uploaded_images`,
+  and `uploaded_files` relationships plus the role and rating check-constraints
+  and an index on `conversation_id`. (`retrieved_context` — the turn's RAG chunks
+  as JSON — is declared on each app's own `Message`, not this shared mixin.)
 - `UploadedImageMixin` — `uploaded_images` table: `id`, `message_id` (FK,
   cascade delete), `filename`, `mime_type`, `size_bytes`, `data` (raw bytes,
   stored in-DB since Railway's filesystem is ephemeral), `created_at`; declares
@@ -95,6 +99,23 @@ class Message(MessageMixin, Base):
 (`sandbox_ui` adds extra columns), so each app declares its own. `_utcnow`
 and `_BigIntPk` are exported from here because every app's own `Conversation`
 uses them too.
+
+### `usage.py`
+
+Two dependency-light pure parsers for a tutor message's stored review JSON,
+shared by every reader of the `messages` table:
+
+- `model_from_usage_json(usage_json)` — pull the `model` id out of the JSON
+  written beside `cost_usd` (model id + token counts); `None` on missing/empty/
+  unparseable input
+- `records_from_retrieved_context(retrieved_context)` — parse the turn's RAG
+  JSON into a `[{source, score, chars, text}]` list; `[]` on missing/empty/
+  non-list input
+
+Used by `services/conversation.py`'s `get_messages_for_conversation` **and** by
+`database_ui`'s own dependency-minimal service (which can't import
+`services/conversation.py` — that pulls in `tutor` — but `ui_core.usage` is
+import-light and in database_ui's image), so both parse these columns identically.
 
 ### `services/images.py`, `services/files.py`, `services/conversation.py`, `services/students.py`, `services/feedback.py`
 
@@ -160,11 +181,14 @@ attachments (csv/tsv/xlsx/pdf/docx/txt):
   and `get_conversation_for_viewer(db, conversation_id, session_id, username, *, models)`
   — history/detail read paths; `summarize_extra` lets `sandbox_ui` merge extra
   summary keys
-- `get_messages_for_conversation(db, conversation, *, models, include_reasoning=False)`
-  — `sandbox_ui` passes `include_reasoning=True` (dev/TA tool), `main_ui`
-  excludes the tutor's hidden reasoning (student-facing policy). Each message
-  dict now also carries `id` and `rating` (so the client can render and toggle
-  the thumbs control)
+- `get_messages_for_conversation(db, conversation, *, models, include_reasoning=False, include_retrieved=False, include_cost=False)`
+  — `sandbox_ui` passes all three flags on (dev/TA tool); `main_ui` leaves them
+  off (student-facing policy). Each message dict always carries `id` and `rating`
+  (so the client can render and toggle the thumbs control); `include_reasoning`
+  adds `pedagogical_reasoning`, `include_retrieved` adds the turn's RAG `retrieved`
+  chunks, and `include_cost` adds `cost_usd` plus the `model` id (both parsed via
+  `ui_core.usage`). The read-only `database_ui` service produces the same shape
+  from its own models.
 - `get_message_for_viewer(db, message_id, session_id, username, *, models)` —
   return a `Message` only if the viewer owns its parent conversation (by
   `session_id` or matching `username`), else `None`; mirrors
@@ -203,17 +227,17 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   caches; return `None` to skip caching for that call (sandbox does this for
   one-off custom context)
 - `build_assignment_text(course, exercise, **ctx)` — concatenates
-  `about_asktim.txt` + `course.txt` + `syllabus.txt` + optional lecture
-  transcripts + `exercise_<NN>.txt`, then, when a matching solution file exists,
-  the current problem's paired **correct answer & worked solution** as a
-  tutor-only reference block (via `utils.curriculum.read_solution`, keyed by
-  problem number — deterministic, never retrieved, never shown to the student).
-  `course.txt` + `syllabus.txt` are small and always useful, so they're **pinned
-  in both `full_context` and `rag`** — and correspondingly **excluded from the RAG
-  index** (see `rag/sources.py`) so nothing pinned is also retrieved. Lecture
-  transcripts (large) are baked in only in `full_context`; in `rag` they're reached
-  via retrieval. `exercise_only` drops all course material (about-block + exercise
-  only)
+  `about_asktim.txt` + the `pinned/*.txt` reference docs (course description,
+  syllabus, and any other always-on material) + optional lecture transcripts +
+  `exercise_<NN>.txt`, then, when a matching solution file exists, the current
+  problem's paired **correct answer & worked solution** as a tutor-only reference
+  block (via `utils.curriculum.read_solution`, keyed by problem number —
+  deterministic, never retrieved, never shown to the student). The `pinned/*.txt`
+  docs (via `utils.curriculum.read_pinned_context`) are **pinned in both
+  `full_context` and `rag`** — and correspondingly **excluded from the RAG index**
+  (see `rag/sources.py`) so nothing pinned is also retrieved. Lecture transcripts
+  (large) are baked in only in `full_context`; in `rag` they're reached via
+  retrieval. `exercise_only` drops all course material (about-block + exercise only)
 - `build_system_prompt(tutor, assignment_text, course="", **ctx)` — wraps the
   assignment text into a full system prompt via `tutor.run_tutor.load_system_prompt`,
   then appends the course's `curriculum/<course>/tutor_rules.txt` (if any) via
@@ -276,9 +300,9 @@ student's turn (which stays clean).
 **By default** (cache-friendly history, gated by `TUTOR_CACHED_HISTORY` — see
 `cached_history_enabled()` above), the streaming path interleaves the turns
 rather than sending three flat blocks: a leading **system** message carries
-the tutor prompt with the assignment context baked in (course description +
-syllabus in `full_context`/`rag`, lecture transcripts in `full_context` only,
-the exercise, the tutor-only answer key); then, for each prior turn, the student's message, that
+the tutor prompt with the assignment context baked in (the `pinned/*.txt` docs —
+course description, syllabus — in `full_context`/`rag`, lecture transcripts in
+`full_context` only, the exercise, the tutor-only answer key); then, for each prior turn, the student's message, that
 turn's retrieved RAG as its own **system** message (when there was any), and
 the tutor's **verbatim past reply** — the full `pedagogical-reasoning` +
 `Student-facing-answer` JSON, not just the student-facing text; then the
@@ -460,8 +484,9 @@ math rendering and that `$...$` currency stays literal.
   (`SandboxTutorBridge`) to add RAG/context-mode/reasoning-toggle behavior.
 - `database_ui` only partially depends on `ui_core`: it uses
   `build_engine`/`make_session_factory`/`session_scope` directly (with
-  `pool_pre_ping=True, normalize_pg=True`, and always `read_only=True`), and
+  `pool_pre_ping=True, normalize_pg=True`, and always `read_only=True`),
   registers `static_bp` directly so its auth gate can allowlist
-  `ui_core.static` as a public endpoint. It does not use `app_factory`, the
-  identity/history blueprints, the model mixins, or `tutor_bridge` — it has no
-  chat and no student-identity linking of its own.
+  `ui_core.static` as a public endpoint, and imports `ui_core.usage` for the
+  message JSON parsers. It does not use `app_factory`, the identity/history
+  blueprints, the model mixins, or `tutor_bridge` — it has no chat and no
+  student-identity linking of its own.

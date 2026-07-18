@@ -27,6 +27,7 @@ from utils.curriculum import (
     exercise_path,
     load_about_asktim,
     practice_path,
+    read_pinned_context,
     read_solution,
 )
 from utils.lectures import load_lecture_transcripts
@@ -41,20 +42,19 @@ def build_assignment_text(
     exercise: str,
     *,
     exercise_kind: str = "exercise",
-    include_course: bool = True,
-    include_syllabus: bool = True,
     include_lectures: bool = True,
     context_mode: str = "full_context",
 ) -> str:
-    """Concatenate about_asktim.txt + course.txt + optional syllabus.txt + optional lectures + exercise_<NN>.txt.
+    """Concatenate about_asktim.txt + pinned reference docs + optional lectures + exercise_<NN>.txt.
 
     ``context_mode`` controls how much course-level material is baked into the
-    prompt. The course description and syllabus are small and always useful, so
-    they're pinned in BOTH ``full_context`` and ``rag`` (and correspondingly
-    excluded from the RAG index — see ``rag.sources`` — so nothing pinned is also
-    retrieved). Lecture transcripts (large) are included only in ``full_context``;
-    in ``rag`` they're reached via retrieval. ``exercise_only`` drops all course
-    material, leaving only the about-block and the exercise, which is always kept.
+    prompt. Pinned reference docs live in ``curriculum/<course>/pinned/*.txt`` (the
+    course description, syllabus, and any other always-on material); they're folded
+    in for BOTH ``full_context`` and ``rag`` and correspondingly excluded from the
+    RAG index (see ``rag.sources``) so nothing pinned is also retrieved. Lecture
+    transcripts (large) are included only in ``full_context``; in ``rag`` they're
+    reached via retrieval. ``exercise_only`` drops all course material, leaving only
+    the about-block and the exercise, which is always kept.
 
     Mirrors `internal_testing/run_transcript.py:_build_assignment_text` but omits the
     `Run configuration` block — sandbox_ui chats are open-ended, no planned
@@ -63,18 +63,14 @@ def build_assignment_text(
     it lives at `curriculum/about_asktim.txt` and is only read here so
     `tutor/` and the bulk-transcript runners stay unaware of it.
 
-    ``include_course`` / ``include_syllabus`` / ``include_lectures`` are
-    sandbox_ui additions: when False, the corresponding built-in on-disk file
-    (``course.txt`` / ``syllabus.txt`` / lecture transcripts) is dropped so
-    testers can compare tutor behaviour with and without that material in
-    context.
+    ``include_lectures`` is a sandbox_ui addition: when False, the course's lecture
+    transcripts are dropped so testers can compare tutor behaviour with and without
+    them (full_context only).
     """
-    course_dir = _CURRICULUM_DIR / course if course else None
-    # course.txt + syllabus.txt are pinned in full_context AND rag (small, always-useful,
-    # and excluded from the RAG index so nothing pinned is also retrieved — see rag.sources).
-    # Lecture transcripts (large) stay full_context-only; rag reaches them via retrieval.
-    # exercise_only drops all course material (the exercise still always goes in).
-    pin_course_syllabus = context_mode in ("full_context", "rag")
+    # Pinned reference docs are folded in for full_context AND rag; lectures (large)
+    # stay full_context-only (rag retrieves them); exercise_only drops all course
+    # material (the exercise still always goes in).
+    pin_context = context_mode in ("full_context", "rag")
     include_lecture_transcripts = context_mode == "full_context"
 
     parts: list[str] = []
@@ -83,22 +79,12 @@ def build_assignment_text(
     if about_text:
         parts.append("About yourself:\n" + about_text)
 
-    if pin_course_syllabus:
-        # Course context — gated by the include_course toggle.
-        if include_course and course_dir is not None:
-            course_path = course_dir / "course.txt"
-            if course_path.is_file():
-                parts.append(
-                    "Course context:\n" + course_path.read_text(encoding="utf-8").strip()
-                )
-
-        # Syllabus — gated by the include_syllabus toggle.
-        if include_syllabus and course_dir is not None:
-            syllabus_path = course_dir / "syllabus.txt"
-            if syllabus_path.is_file():
-                parts.append(
-                    "Syllabus:\n" + syllabus_path.read_text(encoding="utf-8").strip()
-                )
+    # Pinned reference docs (curriculum/<course>/pinned/*.txt) — course description,
+    # syllabus, debugging guides, etc. Never retrieved (see rag.sources).
+    if pin_context and course:
+        pinned = read_pinned_context(course)
+        if pinned:
+            parts.append(pinned)
 
     # Lectures (large) — full_context only; gated by the include_lectures toggle.
     if include_lecture_transcripts and include_lectures and course:
@@ -129,13 +115,11 @@ class SandboxTutorBridge(TutorBridge):
     """Adds sandbox_ui's RAG / include-toggle behavior."""
 
     def cache_key(self, tutor: str, course: str, exercise: str, **ctx):
-        """Cache key for the built context, keyed on the sandbox include-toggles/kind/mode."""
+        """Cache key for the built context, keyed on the sandbox lectures-toggle/kind/mode."""
         return (
             tutor,
             course,
             exercise,
-            ctx.get("include_course", True),
-            ctx.get("include_syllabus", True),
             ctx.get("include_lectures", True),
             ctx.get("exercise_kind", "exercise"),
             ctx.get("context_mode", "full_context"),
@@ -143,13 +127,11 @@ class SandboxTutorBridge(TutorBridge):
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
-        """Build the assignment text block, honoring include toggles and context mode."""
+        """Build the assignment text block, honoring the lectures toggle and context mode."""
         return build_assignment_text(
             course,
             exercise,
             exercise_kind=ctx.get("exercise_kind", "exercise"),
-            include_course=ctx.get("include_course", True),
-            include_syllabus=ctx.get("include_syllabus", True),
             include_lectures=ctx.get("include_lectures", True),
             context_mode=ctx.get("context_mode", "full_context"),
         )
@@ -167,8 +149,6 @@ def get_tutor_reply(
     new_student_message: str,
     images: list | None = None,
     exercise_kind: str = "exercise",
-    include_course: bool = True,
-    include_syllabus: bool = True,
     include_lectures: bool = True,
     context_mode: str | None = None,
     provider: str | None = None,
@@ -181,7 +161,7 @@ def get_tutor_reply(
         tutor: tutor prompt stem (e.g. ``"tutor_07"``)
         history: prior conversation as ``[{"role": "student"|"tutor", "content": str}, ...]``
         new_student_message: the latest student turn to respond to
-        include_syllabus: whether to fold the course syllabus into context
+        include_lectures: whether to fold the course lecture transcripts into context
 
     Returns:
         ``{"reply": str, "reasoning": str | None}`` — reasoning is the
@@ -196,8 +176,6 @@ def get_tutor_reply(
         new_student_message=new_student_message,
         images=images,
         exercise_kind=exercise_kind,
-        include_course=include_course,
-        include_syllabus=include_syllabus,
         include_lectures=include_lectures,
         context_mode=context_mode,
         provider=provider,
@@ -213,8 +191,6 @@ def stream_tutor_reply(
     new_student_message: str,
     images: list | None = None,
     exercise_kind: str = "exercise",
-    include_course: bool = True,
-    include_syllabus: bool = True,
     include_lectures: bool = True,
     context_mode: str | None = None,
     provider: str | None = None,
@@ -243,8 +219,6 @@ def stream_tutor_reply(
         new_student_message=new_student_message,
         images=images,
         exercise_kind=exercise_kind,
-        include_course=include_course,
-        include_syllabus=include_syllabus,
         include_lectures=include_lectures,
         context_mode=context_mode,
         provider=provider,

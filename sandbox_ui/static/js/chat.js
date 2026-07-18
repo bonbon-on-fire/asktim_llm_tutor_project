@@ -3,13 +3,10 @@
 (() => {
   const configEl = document.getElementById("tutor-config");
   const config = JSON.parse(configEl.textContent);
-  if (typeof config.syllabus === "undefined") config.syllabus = true;
-  // Whether the course's lecture transcripts are folded into context. Mirrors
-  // `syllabus`; defaults on; the wizard's "No lectures" turns it off.
+  // Whether the course's lecture transcripts are folded into context. Defaults
+  // on; the wizard's "No lectures" turns it off. (Course description + syllabus
+  // now live in curriculum/<course>/pinned/ and are always folded in — no toggle.)
   if (typeof config.lectures === "undefined") config.lectures = true;
-  // Whether the built-in course.txt description is folded into context. Like
-  // `syllabus`, defaults on; the wizard's "No course description" turns it off.
-  if (typeof config.courseEnabled === "undefined") config.courseEnabled = true;
   // Per-conversation RAG toggle (Create-context wizard). null = let the server
   // resolve by default; "rag" / "full_context" force the mode.
   if (typeof config.contextMode === "undefined") config.contextMode = null;
@@ -93,8 +90,8 @@
   const createCancel = document.getElementById("create-cancel");
   let createModalOpen = false;
   let createStep = 0;
-  // Per-step draft: built-in selection only — e.g. course:{existing,enabled},
-  // exercise:{existing,kind}, syllabus/lectures:{value}, tutor:{existing} (locked).
+  // Per-step draft: built-in selection only — e.g. course:{existing},
+  // exercise:{existing,kind}, lectures:{value}, tutor:{existing} (locked).
   let createDraft = null;
 
   const detailView = document.getElementById("detail-view");
@@ -878,21 +875,19 @@
 
   // ---- Create-context wizard (sandbox_ui only) ---------------------------------
 
-  const CREATE_STEPS = ["course", "exercise", "tutor", "syllabus", "lectures"];
-  const CREATE_LABELS = ["Course", "Exercise", "Tutor", "Syllabus", "Lectures"];
+  const CREATE_STEPS = ["course", "exercise", "tutor", "lectures"];
+  const CREATE_LABELS = ["Course", "Exercise", "Tutor", "Lectures"];
   const STEP_LABELS = {
     course: "Course",
     exercise: "Exercise",
     tutor: "Tutor",
-    syllabus: "Syllabus",
     lectures: "Lectures",
   };
-  // When the RAG toggle is on, the syllabus and lectures steps are skipped —
-  // course, syllabus, and lectures all come from retrieval, so there's nothing
-  // to pick there.
+  // When the RAG toggle is on, the lectures step is skipped — course material
+  // and lectures all come from retrieval, so there's nothing to pick there.
   function activeSteps() {
     return createDraft && createDraft.useRag
-      ? CREATE_STEPS.filter((s) => s !== "syllabus" && s !== "lectures")
+      ? CREATE_STEPS.filter((s) => s !== "lectures")
       : CREATE_STEPS;
   }
   const LOCKED_TUTOR = "tutor_07"; // the tutor prompt is locked to this in the wizard
@@ -1093,19 +1088,6 @@
       let v = d.value;
       if (v === "default" && !(courseObj && courseObj.has_lectures)) v = "none";
       currentValue = v;
-    } else {
-      // syllabus
-      const cd = createDraft.course;
-      const courseObj = courseBySlug(cd.existing);
-      options = [];
-      if (courseObj && courseObj.has_syllabus) {
-        options.push({ value: "default", label: "Course syllabus" });
-      }
-      options.push({ value: "none", label: "No syllabus" });
-      const d = createDraft.syllabus;
-      let v = d.value;
-      if (v === "default" && !(courseObj && courseObj.has_syllabus)) v = "none";
-      currentValue = v;
     }
 
     // Default to the first option in the dropdown when the draft has no valid
@@ -1136,31 +1118,9 @@
       createStepBody.appendChild(provSel);
     }
 
-    // RAG toggle — course step only, and only for courses with a built index.
-    // When on, course/syllabus/lectures are retrieved and the syllabus step is
-    // skipped.
-    let courseDescRow = null;
-    if (step === "course") {
-      // "Include course description" toggle — gates the built-in course.txt.
-      // Hidden when RAG is on (RAG retrieves the course material instead).
-      courseDescRow = document.createElement("label");
-      courseDescRow.className = "rag-toggle";
-      const dcb = document.createElement("input");
-      dcb.type = "checkbox";
-      dcb.id = "create-course-desc-toggle";
-      dcb.checked = createDraft.course.enabled !== false;
-      const dspan = document.createElement("span");
-      dspan.textContent = "Include course description";
-      courseDescRow.appendChild(dcb);
-      courseDescRow.appendChild(dspan);
-      dcb.addEventListener("change", () => {
-        createDraft.course.enabled = dcb.checked;
-      });
-      createStepBody.appendChild(courseDescRow);
-    }
-
     // RAG is always used for a course that has a built index (no user-facing
     // toggle); it falls back to full context only when the course has no index.
+    // Toggling it re-counts the wizard steps (the lectures step is skipped in RAG).
     function updateRagToggleVisibility() {
       if (step !== "course") return;
       const v = sel.value;
@@ -1176,18 +1136,9 @@
       }
     }
 
-    function updateCourseDescVisibility() {
-      if (!courseDescRow) return;
-      const v = sel.value;
-      // Show only when RAG is off — RAG retrieves course material instead.
-      courseDescRow.hidden = !(v && !createDraft.useRag);
-    }
-
     updateRagToggleVisibility();
-    updateCourseDescVisibility();
     sel.addEventListener("change", () => {
       updateRagToggleVisibility();
-      updateCourseDescVisibility();
     });
 
     createBack.hidden = createStep === 0;
@@ -1200,14 +1151,13 @@
     const sel = document.getElementById("create-select");
     if (!sel) return;
     const step = activeSteps()[createStep];
-    if (step === "syllabus" || step === "lectures") {
+    if (step === "lectures") {
       createDraft[step].value = sel.value;
       return;
     }
     if (step === "course") {
       const cd = createDraft.course;
       cd.existing = sel.value;
-      // cd.enabled is set by the "Include course description" toggle.
       return;
     }
     if (step === "exercise") {
@@ -1248,11 +1198,10 @@
     // existing/value empty means no explicit match and the <select> falls back
     // to its first <option>.
     createDraft = {
-      course: { existing: "supply_chain_design", enabled: true },
+      course: { existing: "supply_chain_design" },
       exercise: { existing: "", kind: "exercise" },
       tutor: { existing: LOCKED_TUTOR },
       provider: "claude", // sandbox tutor-model toggle: "claude" (default) | "gpt"
-      syllabus: { value: "" },
       lectures: { value: "" },
       // Always use RAG for course context (no user-facing toggle); auto-disabled
       // per-course when the selected course has no built index.
@@ -1290,13 +1239,9 @@
     const c = createDraft.course;
     const e = createDraft.exercise;
     const t = createDraft.tutor;
-    const s = createDraft.syllabus;
     const l = createDraft.lectures;
 
-    // Keep the real slug even when the description is off — exercises,
-    // figures, and RAG all key off the course identity.
     config.course = c.existing;
-    config.courseEnabled = c.enabled !== false;
 
     config.exercise = e.existing;
     config.exerciseKind = e.kind === "practice" ? "practice" : "exercise";
@@ -1305,16 +1250,13 @@
     config.provider = createDraft.provider || "gpt";
     activeProvider = config.provider;
 
-    config.syllabus = s.value === "default";
     config.lectures = l.value === "default";
 
-    // RAG toggle → per-conversation context mode. When on, course/syllabus/
-    // lectures are retrieved (the syllabus and lectures steps were skipped), so
-    // force them off; when off, pin full_context so an indexed course isn't
-    // silently RAG'd.
+    // RAG toggle → per-conversation context mode. When on, lectures are retrieved
+    // (the lectures step was skipped), so force it off; when off, pin full_context
+    // so an indexed course isn't silently RAG'd.
     if (createDraft.useRag) {
       config.contextMode = "rag";
-      config.syllabus = false;
       config.lectures = false;
     } else {
       config.contextMode = "full_context";
@@ -1515,8 +1457,6 @@
       exercise: config.exercise,
       exercise_kind: config.exerciseKind,
       tutor: config.tutor,
-      course_enabled: config.courseEnabled,
-      syllabus: config.syllabus,
       lectures: config.lectures,
     };
     if (config.contextMode != null) fields.context_mode = config.contextMode;

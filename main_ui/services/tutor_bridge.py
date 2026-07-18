@@ -20,9 +20,9 @@ from ui_core.tutor_bridge import TutorBridge
 _bridge = TutorBridge()
 
 
-def build_assignment_text(course: str, exercise: str) -> str:
-    """Return the assignment text for a course/exercise via the shared bridge."""
-    return _bridge.build_assignment_text(course, exercise)
+def build_assignment_text(course: str, exercise: str, *, exercise_kind: str = "exercise") -> str:
+    """Return the assignment text for a course/exercise|practice via the shared bridge."""
+    return _bridge.build_assignment_text(course, exercise, exercise_kind=exercise_kind)
 
 
 def get_tutor_reply(
@@ -33,6 +33,7 @@ def get_tutor_reply(
     history: list[dict],
     new_student_message: str,
     images: list | None = None,
+    exercise_kind: str = "exercise",
 ) -> dict:
     """Return one tutor reply for the given conversation state.
 
@@ -56,6 +57,7 @@ def get_tutor_reply(
         history=history,
         new_student_message=new_student_message,
         images=images,
+        exercise_kind=exercise_kind,
     )
 
 
@@ -67,6 +69,7 @@ def stream_tutor_reply(
     history: list[dict],
     new_student_message: str,
     images: list | None = None,
+    exercise_kind: str = "exercise",
     history_mode: str = "legacy",
     cached_history: list[dict] | None = None,
 ):
@@ -93,6 +96,7 @@ def stream_tutor_reply(
         history=history,
         new_student_message=new_student_message,
         images=images,
+        exercise_kind=exercise_kind,
         history_mode=history_mode,
         cached_history=cached_history,
     )

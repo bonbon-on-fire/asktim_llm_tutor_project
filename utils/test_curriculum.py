@@ -17,6 +17,7 @@ from utils.curriculum import (
     practice_exists,
     practice_path,
     read_course_tutor_rules,
+    read_pinned_context,
     read_practice,
 )
 
@@ -123,12 +124,41 @@ def test_course_tutor_rules() -> None:
         _check("read '' course -> ''", read_course_tutor_rules("", curriculum_root=root) == "")
 
 
+def test_pinned_context() -> None:
+    """Assert read_pinned_context joins all pinned/*.txt (absent/empty/multiple)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+
+        # No pinned/ folder -> ''.
+        (root / "bare").mkdir(parents=True)
+        _check("no pinned/ folder -> ''", read_pinned_context("bare", curriculum_root=root) == "")
+
+        # Multiple files -> sorted by name, stripped, joined with a blank line;
+        # empty/whitespace-only files skipped.
+        pdir = root / "sc" / "pinned"
+        pdir.mkdir(parents=True)
+        (pdir / "b_second.txt").write_text("  Second doc.\n", encoding="utf-8")
+        (pdir / "a_first.txt").write_text("First doc.", encoding="utf-8")
+        (pdir / "c_empty.txt").write_text("   \n", encoding="utf-8")  # skipped
+        (pdir / "note.md").write_text("ignored — wrong extension", encoding="utf-8")
+        got = read_pinned_context("sc", curriculum_root=root)
+        _check(
+            "pinned docs sorted + joined, empties/non-txt skipped",
+            got == "First doc.\n\nSecond doc.",
+            f"got {got!r}",
+        )
+
+        # Empty course string -> '' (defensive).
+        _check("read '' course -> ''", read_pinned_context("", curriculum_root=root) == "")
+
+
 def main() -> int:
     """Run all tests and return 1 if any failed, else 0."""
     tests = [
         test_discover_practice_filters_and_sorts,
         test_practice_path_exists_and_read,
         test_course_tutor_rules,
+        test_pinned_context,
     ]
     for t in tests:
         print(t.__name__)

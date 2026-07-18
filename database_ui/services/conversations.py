@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from database_ui.courses import course_display_name
 from database_ui.db.models import Conversation, Message, UploadedImage
+from ui_core.usage import model_from_usage_json, records_from_retrieved_context
 
 
 def list_all_conversations(
@@ -45,7 +46,8 @@ def list_all_conversations(
     ids = [c.id for c in convos]
     counts = _message_counts(db, ids)
     snippets = _last_message_snippets(db, ids)
-    return [_summarize(c, counts, snippets) for c in convos]
+    costs = _total_costs(db, ids)
+    return [_summarize(c, counts, snippets, costs) for c in convos]
 
 
 def get_conversation(db: Session, conversation_id: UUID) -> Conversation | None:
@@ -67,16 +69,36 @@ def get_messages_for_conversation(db: Session, conversation: Conversation) -> li
     )
     messages = db.execute(stmt).scalars().all()
     images_by_message = _images_by_message(db, [m.id for m in messages])
-    return [
-        {
-            "turn": m.turn,
-            "role": m.role,
-            "content": m.content,
-            "pedagogical_reasoning": m.pedagogical_reasoning,
-            "images": images_by_message.get(m.id, []),
-        }
-        for m in messages
-    ]
+    return [_message_dict(m, images_by_message) for m in messages]
+
+
+def _message_dict(m: Message, images_by_message: dict[int, list[dict]]) -> dict:
+    """One message as a JSON-friendly dict for the transcript view.
+
+    Beyond the base fields, tutor rows carry the review metadata the sandbox
+    surfaces: the per-message thumb ``rating`` (-1/0/1), the turn's estimated
+    ``cost_usd`` with the ``model`` id parsed out of ``usage_json``, and the
+    ``retrieved`` RAG chunks parsed from ``retrieved_context``.
+    """
+    entry = {
+        "turn": m.turn,
+        "role": m.role,
+        "content": m.content,
+        "pedagogical_reasoning": m.pedagogical_reasoning,
+        # Per-message thumb (-1/0/1); legacy rows read back NULL -> 0.
+        "rating": getattr(m, "rating", 0) or 0,
+        "images": images_by_message.get(m.id, []),
+    }
+    cost = getattr(m, "cost_usd", None)
+    if cost is not None:
+        entry["cost_usd"] = cost
+        # Model id lives inside the stored breakdown; parse it out so the UI can
+        # render "model ($cost)". Absent/corrupt JSON -> None.
+        entry["model"] = model_from_usage_json(getattr(m, "usage_json", None))
+    retrieved = records_from_retrieved_context(getattr(m, "retrieved_context", None))
+    if retrieved:
+        entry["retrieved"] = retrieved
+    return entry
 
 
 def get_image(db: Session, image_id: int) -> UploadedImage | None:
@@ -106,6 +128,25 @@ def _message_counts(db: Session, conversation_ids: list[UUID]) -> dict[UUID, int
         .group_by(Message.conversation_id)
     )
     return {cid: int(n) for cid, n in db.execute(stmt).all()}
+
+
+def _total_costs(db: Session, conversation_ids: list[UUID]) -> dict[UUID, float]:
+    """Map conversation_id -> summed tutor ``cost_usd`` (one grouped query).
+
+    NULL costs (student rows, pre-feature rows) coalesce to 0, so a conversation
+    with no tracked cost sums to 0.0.
+    """
+    if not conversation_ids:
+        return {}
+    stmt = (
+        select(
+            Message.conversation_id,
+            func.coalesce(func.sum(Message.cost_usd), 0.0),
+        )
+        .where(Message.conversation_id.in_(conversation_ids))
+        .group_by(Message.conversation_id)
+    )
+    return {cid: float(total or 0.0) for cid, total in db.execute(stmt).all()}
 
 
 def _last_message_snippets(
@@ -142,6 +183,7 @@ def _summarize(
     c: Conversation,
     counts: dict[UUID, int],
     snippets: dict[UUID, str],
+    costs: dict[UUID, float],
 ) -> dict:
     """Build the list-view summary dict for one conversation from prefetched maps."""
     return {
@@ -156,6 +198,7 @@ def _summarize(
         "last_active_at": c.last_active_at.isoformat() if c.last_active_at else None,
         "message_count": counts.get(c.id, 0),
         "last_message_snippet": snippets.get(c.id),
+        "total_cost_usd": costs.get(c.id, 0.0),
     }
 
 

@@ -115,13 +115,6 @@ def list_practice(course) -> list[str]:
     return _discover_practice(course)
 
 
-def course_has_syllabus(course) -> bool:
-    """True if the course ships a syllabus.txt that can be toggled into context."""
-    if not course:
-        return False
-    return (_CURRICULUM_DIR / course / "syllabus.txt").is_file()
-
-
 def course_has_lectures(course) -> bool:
     """True if the course ships any lectures/*.txt that can be toggled into context."""
     if not course:
@@ -157,7 +150,7 @@ def list_context_options() -> dict:
     Shape:
         {
           "courses": [
-            {"slug": ..., "name": ..., "exercises": [...], "practice": [...], "has_syllabus": bool, "has_rag": bool},
+            {"slug": ..., "name": ..., "exercises": [...], "practice": [...], "has_lectures": bool, "has_rag": bool},
             ...
           ],
           "tutors": ["tutor_01", ...],
@@ -171,7 +164,6 @@ def list_context_options() -> dict:
                 "name": load_course_name(slug),
                 "exercises": list_exercises(slug),
                 "practice": list_practice(slug),
-                "has_syllabus": course_has_syllabus(slug),
                 "has_lectures": course_has_lectures(slug),
                 "has_rag": course_has_rag(slug),
             }
@@ -184,3 +176,21 @@ def validate_selection(course, number, kind) -> dict | None:
     if kind == "practice":
         return validate_practice(course, number)
     return validate_exercise(course, number)
+
+
+def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise):
+    """Resolve (number, kind) from embed query params.
+
+    Returns ``(number, kind, err)``. ``err`` is a failure dict (mapped to 404 by
+    the route) when both params are supplied or the resolved value is invalid;
+    ``number``/``kind`` are None on the both-params error.
+    """
+    if raw_exercise and raw_practice:
+        return None, None, _err(
+            "selection", "exercise+practice",
+            "cannot specify both exercise and practice",
+        )
+    if raw_practice:
+        return raw_practice, "practice", validate_practice(course, raw_practice)
+    number = raw_exercise or default_exercise
+    return number, "exercise", validate_exercise(course, number)

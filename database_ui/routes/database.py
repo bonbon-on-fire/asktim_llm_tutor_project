@@ -92,7 +92,7 @@ def login_submit():
             "login.html",
             title=current_app.config["DATABASE_UI_TITLE"],
             accent=current_app.config["DATABASE_UI_ACCENT"],
-            error="Incorrect password.",
+            error="Wrong password, try again",
         ),
         401,
     )

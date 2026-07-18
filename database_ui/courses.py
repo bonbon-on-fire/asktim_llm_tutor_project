@@ -23,6 +23,7 @@ COURSE_DISPLAY_NAMES: dict[str, str] = {
     "mathematics_for_cs": "MIT 6.1200J Mathematics for Computer Science",
     "meaning_of_life": "MIT 21A.157 The Meaning of Life",
     "physics_iii_vibrations_and_waves": "MIT 8.03SC Physics III: Vibrations and Waves",
+    "supply_chain_design": "MIT CTL.SC2x Supply Chain Design",
 }
 
 

@@ -56,6 +56,7 @@ from utils.curriculum import (
     append_course_tutor_rules,
     exercise_path,
     load_about_asktim,
+    practice_path,
     read_pinned_context,
     read_solution,
 )
@@ -250,6 +251,7 @@ class TutorBridge:
             tutor,
             course,
             exercise,
+            ctx.get("exercise_kind", "exercise"),
             ctx.get("context_mode", "full_context"),
             _resolve_provider(ctx.get("provider")),
         )
@@ -267,7 +269,13 @@ class TutorBridge:
         solution key are always kept.
         """
         mode = ctx.get("context_mode", "full_context")
-        exercise_text = exercise_path(course, exercise).read_text(encoding="utf-8").strip()
+        kind = ctx.get("exercise_kind", "exercise")
+        problem_path = (
+            practice_path(course, exercise)
+            if kind == "practice"
+            else exercise_path(course, exercise)
+        )
+        exercise_text = problem_path.read_text(encoding="utf-8").strip()
 
         parts: list[str] = []
 
@@ -294,7 +302,7 @@ class TutorBridge:
         # Tutor-only correct-answer reference, paired directly to this exercise
         # (never retrieved, never shown to the student). Absent for problems whose
         # solution file doesn't exist yet.
-        solution = read_solution(course, exercise, kind="exercise")
+        solution = read_solution(course, exercise, kind=kind)
         if solution.strip():
             parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
         return "\n\n".join(parts)

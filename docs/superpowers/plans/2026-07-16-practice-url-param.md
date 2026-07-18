@@ -1084,17 +1084,16 @@ def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise
 
 In `sandbox_ui/routes/embed.py`, add `resolve_embed_selection` to the `_validation` import block (15-24).
 
-Change `_render_embed` (35-52) to accept and pass the kind (camelCase key for sandbox JS):
+Change `_render_embed` (35-51) to accept and pass the kind (camelCase key for sandbox JS). Note: this function no longer carries a `syllabus` field (removed by the pinned-docs refactor) — do not reintroduce it:
 
 ```python
-def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise", syllabus: bool = True):
+def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise"):
     """Render the embed.html chat widget for the given course/exercise|practice/tutor context."""
     tutor_config = {
         "course": course,
         "exercise": exercise,
         "tutor": tutor,
         "exerciseKind": exercise_kind,
-        "syllabus": syllabus,
     }
     has_email = bool(read_username_cookie(request))
     return render_template(
@@ -1108,7 +1107,7 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
     )
 ```
 
-Replace the `embed()` view (72-93) to resolve + reject both:
+Replace the `embed()` view (71-92) to resolve + reject both:
 
 ```python
 @embed_bp.get("/embed")

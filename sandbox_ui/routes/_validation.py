@@ -176,3 +176,21 @@ def validate_selection(course, number, kind) -> dict | None:
     if kind == "practice":
         return validate_practice(course, number)
     return validate_exercise(course, number)
+
+
+def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise):
+    """Resolve (number, kind) from embed query params.
+
+    Returns ``(number, kind, err)``. ``err`` is a failure dict (mapped to 404 by
+    the route) when both params are supplied or the resolved value is invalid;
+    ``number``/``kind`` are None on the both-params error.
+    """
+    if raw_exercise and raw_practice:
+        return None, None, _err(
+            "selection", "exercise+practice",
+            "cannot specify both exercise and practice",
+        )
+    if raw_practice:
+        return raw_practice, "practice", validate_practice(course, raw_practice)
+    number = raw_exercise or default_exercise
+    return number, "exercise", validate_exercise(course, number)

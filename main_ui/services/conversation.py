@@ -35,6 +35,7 @@ def find_or_create_conversation(
     course: str,
     exercise_number: str,
     tutor_prompt: str,
+    exercise_kind: str = "exercise",
     username: str | None = None,
 ) -> Conversation:
     """Resolve to an existing conversation or insert a new one.
@@ -52,6 +53,7 @@ def find_or_create_conversation(
         exercise_number=exercise_number,
         tutor_prompt=tutor_prompt,
         username=username,
+        extra_fields={"exercise_kind": exercise_kind},
     )
 
 
@@ -132,11 +134,18 @@ def count_student_messages(db: Session, conversation: Conversation) -> int:
     return _shared.count_student_messages(db, conversation, models=_MODELS)
 
 
+def _summarize_extra(c: Conversation) -> dict:
+    """main_ui summary key: the conversation's exercise_kind (for sidebar labels)."""
+    return {"exercise_kind": c.exercise_kind or "exercise"}
+
+
 def list_conversations_for_username(db: Session, username: str) -> list[dict]:
     """Return all conversations linked to the given username, most-recently-active
     first. Each entry is a JSON-serializable dict suitable for the history API.
     """
-    return _shared.list_conversations_for_username(db, username, models=_MODELS)
+    return _shared.list_conversations_for_username(
+        db, username, models=_MODELS, summarize_extra=_summarize_extra
+    )
 
 
 def get_conversation_for_viewer(

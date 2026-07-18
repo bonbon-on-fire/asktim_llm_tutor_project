@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import practice_exists as _practice_exists
 
@@ -103,6 +104,13 @@ def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise
         return raw_practice, "practice", validate_practice(course, raw_practice)
     number = raw_exercise or default_exercise
     return number, "exercise", validate_exercise(course, number)
+
+
+def list_practice(course) -> list[str]:
+    """Non-padded practice-problem numbers for a course, sorted numerically."""
+    if not course:
+        return []
+    return _discover_practice(course)
 
 
 def validate_tutor(tutor) -> dict | None:

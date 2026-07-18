@@ -1,3 +1,5 @@
+import base64
+
 from tutor.cached_history import tutor_output_json, build_message_plan
 from tutor.run_tutor import build_anthropic_request, _MAX_MSG_BREAKPOINTS
 
@@ -59,6 +61,44 @@ def test_build_anthropic_request_shapes_roles_and_caches_static():
     # last message carries a cache breakpoint (as a content block)
     last = messages[-1]
     assert isinstance(last["content"], list) and last["content"][-1]["cache_control"] == {"type": "ephemeral"}
+
+
+def test_build_anthropic_request_attaches_current_turn_images():
+    # Cached-mode regression: student-uploaded images (e.g. a pasted table) must
+    # ride on the CURRENT student turn as Anthropic image blocks, not be dropped.
+    plan = [
+        ("system_static", "SYS"),
+        ("student", "s1"), ("tutor", "t1"),
+        ("student", "s2"),  # current student turn (last "student" step)
+    ]
+    _, messages = build_anthropic_request(plan, images=[(b"\x89PNGDATA", "image/png")])
+
+    last = messages[-1]  # the current student turn
+    assert isinstance(last["content"], list), last["content"]
+    image_blocks = [b for b in last["content"] if b.get("type") == "image"]
+    assert len(image_blocks) == 1, last["content"]
+    src = image_blocks[0]["source"]
+    assert src["type"] == "base64"
+    assert src["media_type"] == "image/png"
+    assert src["data"] == base64.b64encode(b"\x89PNGDATA").decode("ascii")
+    # the text is still present on that turn
+    assert any(b.get("type") == "text" and b["text"] == "s2" for b in last["content"])
+    # an earlier student turn stays image-free
+    assert all(
+        not (isinstance(m["content"], list) and any(b.get("type") == "image" for b in m["content"]))
+        for m in messages[:-1]
+    )
+
+
+def test_build_anthropic_request_no_images_is_unchanged():
+    # When no images are supplied, output shape is byte-identical to before.
+    plan = [("system_static", "SYS"), ("student", "s1"), ("tutor", "t1"), ("student", "s2")]
+    a = build_anthropic_request(plan)
+    b = build_anthropic_request(plan, images=None)
+    assert a == b
+    # unmarked non-image steps stay plain strings
+    _, messages = a
+    assert messages[0]["content"] == "s1"
 
 
 def test_build_anthropic_request_caps_breakpoints_on_long_conversations():

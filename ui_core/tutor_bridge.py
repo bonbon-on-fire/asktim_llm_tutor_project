@@ -402,15 +402,26 @@ class TutorBridge:
             return ""
         return f"{RETRIEVED_CONTEXT_HEADER}\n\n{retrieved_context}"
 
-    def _plan_to_langchain(self, plan):
+    def _plan_to_langchain(self, plan, images=None):
         """Convert a (role, content) message plan into langchain messages
-        (GPT cached path — langchain accepts interleaved system messages)."""
+        (GPT cached path — langchain accepts interleaved system messages).
+
+        *images* (``(bytes, mime)`` tuples) attach to the CURRENT student turn
+        (the last ``student`` step) as multimodal content, so pasted tables /
+        screenshots reach the model in cached mode. Prior turns stay text-only."""
+        last_student_idx = max(
+            (i for i, (role, _content) in enumerate(plan) if role == "student"),
+            default=None,
+        )
         out = []
-        for role, content in plan:
+        for i, (role, content) in enumerate(plan):
             if role in ("system_static", "rag"):
                 out.append(SystemMessage(content=content))
             elif role == "student":
-                out.append(HumanMessage(content=content))
+                if images and i == last_student_idx:
+                    out.append(HumanMessage(content=build_multimodal_content(content, images)))
+                else:
+                    out.append(HumanMessage(content=content))
             else:  # tutor
                 out.append(AIMessage(content=content))
         return out
@@ -569,6 +580,7 @@ class TutorBridge:
                     plan,
                     model_name=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5"),
                     api_key=_require_anthropic_api_key(),
+                    images=images,
                 ):
                     if isinstance(item, tuple) and item and item[0] == "__done__":
                         full_raw = item[1]
@@ -577,7 +589,7 @@ class TutorBridge:
                     if isinstance(item, str) and item:
                         yield {"type": "delta", "text": item}
             else:  # gpt via langchain (accepts interleaved system messages)
-                lc_messages = self._plan_to_langchain(plan)
+                lc_messages = self._plan_to_langchain(plan, images=images)
                 extractor = StudentAnswerExtractor()
                 full_chunk = None
                 for chunk in model.stream(lc_messages):

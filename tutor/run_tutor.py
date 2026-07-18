@@ -917,6 +917,13 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key):
     final_message = None
     with client.messages.stream(
         model=model_name, max_tokens=8192, system=system_blocks, messages=messages,
+        # Disable extended thinking (mirrors build_tutor_model). Sonnet 5's default
+        # is adaptive thinking; left on, thinking blocks stream separately from
+        # text_stream and can consume the whole max_tokens budget before the
+        # Student-facing-answer is emitted — leaving the visible stream empty and
+        # tripping the "I could not generate a valid response" fallback in
+        # _normalize_tutor_ai_message.
+        thinking={"type": "disabled"},
     ) as stream:
         for text in stream.text_stream:
             visible = extractor.feed(text)

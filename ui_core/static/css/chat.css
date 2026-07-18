@@ -706,8 +706,12 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
     transition: background-color 0.12s ease;
 }
 
-.sidebar-entry:hover,
-.sidebar-entry:focus {
+/* Grey ONLY non-active entries on hover/focus. A bare `.sidebar-entry:focus`
+   (specificity 0,2,0) out-specifies `.sidebar-entry-active` (0,1,0), so without
+   the :not() the just-clicked (focused) active entry flashes grey until a repaint
+   (e.g. alt-tab) drops the focus state and reveals the crimson underneath. */
+.sidebar-entry:hover:not(.sidebar-entry-active),
+.sidebar-entry:focus:not(.sidebar-entry-active) {
     background: #f5f5f5;
     outline: none;
 }
@@ -720,6 +724,11 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
 
 .sidebar-entry-active:hover {
     background: #f8dada;
+}
+
+/* Active entry keeps its crimson tint while focused; just drop the focus ring. */
+.sidebar-entry-active:focus {
+    outline: none;
 }
 
 .sidebar-entry-title {

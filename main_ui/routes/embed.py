@@ -1,10 +1,12 @@
 """GET /embed — main iframe entry point.
 
-All of `course`, `exercise`, and `tutor` are optional query params — any that
-are absent fall back to the module defaults, so partial URLs still load. Values
-that *are* supplied are validated against the on-disk curriculum and tutor
-folders (via shared validators in `_validation`); an invalid explicit value
-404s. Then renders the `embed.html` chat page.
+`course`, `exercise`, and `tutor` are optional query params — any absent one
+falls back to the module defaults, so partial URLs still load. A `practice=<n>`
+param selects a practice problem instead of an exercise; supplying both
+`exercise` and `practice` is rejected (404). Supplied values are validated
+against the on-disk curriculum and tutor folders (via shared validators in
+`_validation`); an invalid explicit value 404s. Then renders the `embed.html`
+chat page.
 """
 
 from __future__ import annotations

@@ -119,12 +119,17 @@ def _migrate_email_to_username() -> None:
             pass
 
 
-def _drop_custom_context_columns(engine) -> None:
-    """One-time: drop the removed custom_* Conversation columns if present.
+def _drop_retired_columns(engine) -> None:
+    """One-time: drop retired Conversation columns if present.
 
     Sandbox has no Alembic; this mirrors the hand-rolled boot reconciler. Idempotent
     and safe on a fresh DB (create_all never creates these now) and on both SQLite
     (local dev) and Postgres (prod). The dropped snapshots are disposable test data.
+
+    Retiring a column REQUIRES adding it here: _reconcile_columns only ever ADDs, so
+    a column dropped from the model lingers in long-lived DBs. When the leftover is
+    NOT NULL, every insert then fails — course/syllabus_enabled did exactly that,
+    500ing all new sandbox conversations until they were listed below.
     """
     removed = (
         "custom_course_text",
@@ -132,6 +137,10 @@ def _drop_custom_context_columns(engine) -> None:
         "custom_tutor_prompt",
         "custom_syllabus_text",
         "custom_lectures_text",
+        # Retired when course.txt/syllabus.txt moved into curriculum/<course>/pinned/
+        # and became unconditionally in-context (lectures_enabled still toggles).
+        "course_enabled",
+        "syllabus_enabled",
     )
     inspector = inspect(engine)
     if "conversations" not in inspector.get_table_names():
@@ -166,11 +175,11 @@ app = create_app(
     # that already existed (e.g. uploaded_images.data); _migrate_email_to_username
     # finishes the email->username rename (which reconcile can't, since it only
     # adds columns) so the long-lived Sandbox DB never needs a manual reset;
-    # _drop_custom_context_columns removes the retired custom_* snapshot columns.
+    # _drop_retired_columns removes columns dropped from the model.
     on_startup=lambda: (
         Base.metadata.create_all(engine),
         _reconcile_columns(),
         _migrate_email_to_username(),
-        _drop_custom_context_columns(engine),
+        _drop_retired_columns(engine),
     ),
 )

@@ -181,8 +181,10 @@ already-existing tables. By default that's its **own Postgres database**
 (`asktim_test`), separate from main_ui's `asktim` so test chats never mix with
 production data (falls back to a local SQLite file if the var is unset). The
 schema matches `main_ui` plus the sandbox-only `conversations` columns —
-`course_enabled`, `syllabus_enabled`, `lectures_enabled`, `exercise_kind`,
-and `context_mode` — plus the sandbox-only `messages.retrieved_context` column
+`lectures_enabled`, `exercise_kind`, and `context_mode` (the `course_enabled` /
+`syllabus_enabled` toggles were retired once that material became pinned, and
+`_drop_retired_columns()` clears them from long-lived DBs on boot) — plus the
+sandbox-only `messages.retrieved_context` column
 (a JSON string of the RAG chunks retrieved for a tutor turn, `NULL` for non-RAG
 turns and legacy rows — replayed on later turns to re-render that turn's RAG
 block for cache-friendly history) and the `messages.rating` column (integer thumbs vote:
@@ -235,8 +237,8 @@ runs once per boot.
 >
 > **Related reminder:** the Sandbox needs its **own** Postgres. Pointing it at
 > main_ui's shared DB is still a bad idea — the two apps would interleave chats —
-> but the sandbox-only `conversations` columns (`syllabus_enabled`,
-> `lectures_enabled`, `context_mode`, etc.) no longer *fail* against a main_ui-shaped
+> but the sandbox-only `conversations` columns (`lectures_enabled`,
+> `context_mode`, etc.) no longer *fail* against a main_ui-shaped
 > table: `_reconcile_columns()` adds any missing columns on boot.
 
 ## API surface

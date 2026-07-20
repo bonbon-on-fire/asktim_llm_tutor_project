@@ -52,9 +52,11 @@ fi
 
 # No Alembic step for sandbox_ui: the schema is built by Base.metadata.create_all()
 # inside create_app(), which runs when gunicorn imports sandbox_ui.run_app:app.
-# The target Postgres just needs to exist and be the Sandbox's OWN empty DB
-# (main_ui's schema lacks sandbox_ui's syllabus_enabled/custom_* columns, and
-# create_all only creates missing tables, never adds columns to existing ones).
+# create_all only creates missing TABLES; the boot steps beside it reconcile
+# columns on tables that already exist — _reconcile_columns() adds ones the model
+# gained, _drop_retired_columns() drops ones it lost (a retired NOT NULL column
+# left behind fails every insert). The target Postgres just needs to exist and be
+# the Sandbox's OWN DB, so test chats never interleave with main_ui's.
 echo "[startup] Schema is created on boot via create_all (no migration step)"
 
 PORT="${PORT:-5000}"

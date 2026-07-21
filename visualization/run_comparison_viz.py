@@ -10,7 +10,6 @@ is the earlier open-learning-ai-tutor generation.
     2. score by persona     — the lead is concentrated under pressure
     3. integrity cliff rate — why: 1.1.A.a answer-giving, per persona
     4. cost per conversation — the structural gap, and where it comes from
-    5. score distribution   — the floor, which the means hide
 
 Reads the graded transcripts written by ``internal_testing.run_transcript_rag``
 under ``transcripts/<type>/<type>_{cmp,phys}_{asktim,stem}/``.
@@ -75,6 +74,15 @@ class Row:
     cliff: bool
     usd: float
     cost_parts: tuple[tuple[str, float], ...]
+
+    @property
+    def usd_tutor_only(self) -> float:
+        """Cost of the tutor-side model calls, excluding the simulated student.
+
+        The student is a harness artifact — in production it's a person — so
+        billing it would inflate both arms and understate the ratio between them.
+        """
+        return sum(v for k, v in self.cost_parts if k != "student")
 
 
 def _load() -> list[Row]:
@@ -327,12 +335,14 @@ def chart_cost(rows: list[Row], plt) -> Path:
     call reads as the difference rather than needing a second axis.
     """
     courses = list(_ROUNDS)
-    order = ("tutor", "tutor_assessment", "student", "embedding")
+    # Tutor-side model calls only. The simulated student is a harness artifact —
+    # in production the student is a person, so billing it would overstate both
+    # arms and muddy the comparison. Embedding is New AskTIM's RAG query call
+    # (~$0.0002/conversation, invisible at this scale but real).
+    order = ("tutor", "tutor_assessment", "embedding")
     shade = {  # one hue per arm, stepped light->dark within the stack
-        ("asktim", "tutor"): "#2a78d6", ("asktim", "student"): "#8cb9ea",
-        ("asktim", "embedding"): "#c7dcf5",
+        ("asktim", "tutor"): "#2a78d6", ("asktim", "embedding"): "#c7dcf5",
         ("stem", "tutor"): "#eb6834", ("stem", "tutor_assessment"): "#f4a583",
-        ("stem", "student"): "#fad3c3",
     }
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -354,9 +364,15 @@ def chart_cost(rows: list[Row], plt) -> Path:
                        color=shade.get((arm, comp), "#cccccc"),
                        edgecolor="#fcfcfb", linewidth=1.2, zorder=3)
                 if val > 0.06:
-                    ax.annotate(comp.replace("tutor_assessment", "2nd call: assessment"),
-                                (idx, bottom + val / 2), ha="center", va="center",
-                                fontsize=8, color="#0b0b0b")
+                    # The assessment pass runs *before* the reply, not after —
+                    # it classifies the student turn, then the reply is generated
+                    # from the resulting intent codes.
+                    seg = {
+                        "tutor": "reply",
+                        "tutor_assessment": "extra: assessment pass",
+                    }.get(comp, comp)
+                    ax.annotate(seg, (idx, bottom + val / 2), ha="center",
+                                va="center", fontsize=8.5, color="#0b0b0b")
                 bottom += val
             ax.annotate(f"${bottom:.2f}", (idx, bottom), textcoords="offset points",
                         xytext=(0, 4), ha="center", fontsize=10,
@@ -368,7 +384,7 @@ def chart_cost(rows: list[Row], plt) -> Path:
 
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, color=_INK_SOFT, fontsize=9.5)
-    _style(ax, ylabel="Mean cost per 10-turn conversation (USD)", ymax=1.42)
+    _style(ax, ylabel="Mean tutor cost per 10-turn conversation (USD)", ymax=1.32)
     # Same legend, same place, on every chart in the set — the viewer learns
     # blue=ours once and it holds across the whole deck.
     handles = [
@@ -382,90 +398,22 @@ def chart_cost(rows: list[Row], plt) -> Path:
     for i, course in enumerate(courses):
         ax.text(xs[i * 2] + 0.5, -0.16, _ROUNDS[course].replace("\n", " "),
                 ha="center", fontsize=10, color=_INK, transform=ax.get_xaxis_transform())
+    # Ratio is derived, not hardcoded — it shifts whenever the component set does
+    # (dropping the simulated-student cost moved it from 2.4-3.1x to 2.5-3.4x).
+    ratios = sorted(
+        sum(r.usd_tutor_only for r in rows if r.arm == "stem" and r.round_key == c)
+        / max(1e-9, sum(r.usd_tutor_only for r in rows if r.arm == "asktim" and r.round_key == c))
+        for c in courses
+    )
     ax.set_title(
-        "STEM AskTIM's two-calls-per-turn design costs 2.4-3.1x more",
+        f"STEM AskTIM's two-calls-per-turn design costs {ratios[0]:.1f}-{ratios[-1]:.1f}x more",
         color=_INK, fontsize=13, fontweight="bold", loc="left", pad=34,
     )
     ax.text(0, 1.085,
-            "Segments are billed components · New AskTIM gets a 41% prompt-cache hit rate, STEM AskTIM 0%",
+            "Tutor model calls only · STEM AskTIM classifies every student turn before it replies",
             transform=ax.transAxes, color=_INK_SOFT, fontsize=9)
     fig.tight_layout()
     path = _OUT / "04_cost_per_conversation.png"
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    return path
-
-
-# --------------------------------------------------------------------------- #
-# 5. The floor — what the means hide
-# --------------------------------------------------------------------------- #
-
-def chart_distribution(rows: list[Row], plt) -> Path:
-    """Per-conversation score spread, so the low tail is visible.
-
-    Both arms reach 40 at the top; they separate at the bottom. Means alone make
-    the tutors look closer than they behave, and for a student-facing tool the
-    worst case matters more than the average.
-    """
-    courses = list(_ROUNDS)
-    fig, axes = plt.subplots(1, 2, figsize=(11, 5.4), sharey=True)
-
-    for ax, course in zip(axes, courses):
-        data = [[r.score for r in rows if r.arm == arm and r.round_key == course]
-                for arm in _ARMS]
-
-        bp = ax.boxplot(
-            data, positions=[0, 1], widths=0.42, patch_artist=True,
-            showfliers=False, medianprops={"color": "#fcfcfb", "linewidth": 2},
-            whiskerprops={"color": _INK_SOFT, "linewidth": 1.2},
-            capprops={"color": _INK_SOFT, "linewidth": 1.2},
-            boxprops={"linewidth": 0},
-        )
-        for patch, arm in zip(bp["boxes"], _ARMS):
-            patch.set_facecolor(_ARM_COLOR[arm])
-            patch.set_alpha(0.85)
-
-        # Individual conversations, deterministically jittered so the shape of the
-        # low tail is visible rather than implied by a whisker.
-        for i, (arm, scores) in enumerate(zip(_ARMS, data)):
-            for j, s in enumerate(sorted(scores)):
-                offset = ((j % 7) - 3) * 0.035
-                ax.plot(i + offset, s, "o", markersize=4.5,
-                        color=_INK, alpha=0.45, zorder=4)
-            ax.annotate(
-                f"min {min(scores)}", (i, min(scores)), textcoords="offset points",
-                xytext=(0, -16), ha="center", fontsize=9.5, color=_INK,
-                fontweight="bold",
-            )
-
-        ax.set_xticks([0, 1])
-        ax.set_xticklabels([_ARM_LABEL[a] for a in _ARMS],
-                           color=_INK_SOFT, fontsize=10)
-        _style(ax, ylabel=f"Judge score (of {_MAX_SCORE})" if ax is axes[0] else "")
-        ax.set_ylim(12, 43)
-        ax.set_title(_ROUNDS[course].replace("\n", " "), color=_INK_SOFT,
-                     fontsize=11, loc="left")
-
-    handles = [
-        plt.Rectangle((0, 0), 1, 1, color=_ARM_COLOR[a], label=_ARM_LABEL[a])
-        for a in _ARMS
-    ]
-    axes[0].legend(
-        handles=handles, frameon=False, fontsize=10, labelcolor=_INK_SOFT, ncol=2,
-        loc="lower left", bbox_to_anchor=(0, 1.06),
-    )
-    fig.suptitle(
-        "Both reach 40 at their best — they separate at their worst",
-        color=_INK, fontsize=13, fontweight="bold", x=0.008, ha="left", y=0.985,
-    )
-    fig.text(
-        0.008, 0.93,
-        "Each dot is one conversation (27 per arm per course) · box spans the "
-        "middle 50%, white line is the median",
-        color=_INK_SOFT, fontsize=9,
-    )
-    fig.tight_layout(rect=(0, 0, 1, 0.87))
-    path = _OUT / "05_score_distribution.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return path
@@ -491,7 +439,6 @@ def main() -> int:
         chart_score_by_persona(rows, plt),
         chart_integrity_cliff(rows, plt),
         chart_cost(rows, plt),
-        chart_distribution(rows, plt),
     ):
         print(f"wrote {path.relative_to(_REPO_ROOT)}")
     return 0

@@ -159,15 +159,21 @@ def _plt():
 # Shared frame — every chart in the set is laid out identically
 # --------------------------------------------------------------------------- #
 
-def _frame(fig, plt, title: str, caption: str) -> None:
+def _frame(fig, plt, title: str, caption: str, *, bare: bool = False) -> None:
     """Title, one-line caption, and a bottom-centred tutor legend.
 
     Keeping the frame identical across the set means the reader learns
     blue = New AskTIM once and it holds for every chart.
+
+    With *bare*, the title and caption are omitted and the plot expands to fill
+    the space. That variant is for the markdown deck, where the heading and the
+    explanation are prose around the image — baking them into the PNG too would
+    duplicate the words and let the two drift apart.
     """
-    fig.suptitle(title, color=_INK, fontsize=14.5, fontweight="bold",
-                 x=0.012, ha="left", y=0.965)
-    fig.text(0.012, 0.895, caption, color=_INK_SOFT, fontsize=9.5, va="top")
+    if not bare:
+        fig.suptitle(title, color=_INK, fontsize=14.5, fontweight="bold",
+                     x=0.012, ha="left", y=0.965)
+        fig.text(0.012, 0.895, caption, color=_INK_SOFT, fontsize=9.5, va="top")
     handles = [
         plt.Rectangle((0, 0), 1, 1, color=_ARM_COLOR[a], label=_ARM_LABEL[a])
         for a in _ARMS
@@ -177,8 +183,8 @@ def _frame(fig, plt, title: str, caption: str) -> None:
         fontsize=10.5, labelcolor=_INK_SOFT, bbox_to_anchor=(0.5, 0.005),
         handlelength=1.1, handleheight=1.1, columnspacing=2.2,
     )
-    # Leaves room for the title block above and the legend below.
-    fig.tight_layout(rect=(0, 0.075, 1, 0.855))
+    # Leaves room for the title block above (when present) and the legend below.
+    fig.tight_layout(rect=(0, 0.075, 1, 0.995 if bare else 0.855))
 
 
 def _style(ax, *, ylabel: str = "", ymax: float | None = None) -> None:
@@ -220,7 +226,7 @@ def _grouped(ax, categories, series, *, fmt="{:.1f}", width=0.3, gap=0.02):
 # 1. Score by course
 # --------------------------------------------------------------------------- #
 
-def chart_score_by_course(rows: list[Row], plt) -> Path:
+def chart_score_by_course(rows: list[Row], plt, *, bare: bool = False) -> Path:
     courses = list(_ROUNDS)
     series = {arm: [_mean(rows, arm=arm, round_key=c) for c in courses]
               for arm in _ARMS}
@@ -236,8 +242,8 @@ def chart_score_by_course(rows: list[Row], plt) -> Path:
 
     _frame(fig, plt, "Judge score by course",
            "Mean of 27 conversations per tutor per course assignment, scored out of 40 "
-           "on the pedagogy rubric.\nNew AskTIM leads on both.")
-    path = _OUT / "01_score_by_course.png"
+           "on the pedagogy rubric.\nNew AskTIM leads on both.", bare=bare)
+    path = (_OUT / "bare" if bare else _OUT) / "01_score_by_course.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return path
@@ -247,7 +253,7 @@ def chart_score_by_course(rows: list[Row], plt) -> Path:
 # 2. Score by student type
 # --------------------------------------------------------------------------- #
 
-def chart_score_by_persona(rows: list[Row], plt) -> Path:
+def chart_score_by_persona(rows: list[Row], plt, *, bare: bool = False) -> Path:
     courses = list(_ROUNDS)
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 5.4), sharey=True)
 
@@ -262,8 +268,8 @@ def chart_score_by_persona(rows: list[Row], plt) -> Path:
 
     _frame(fig, plt, "Judge score by student type",
            "Nine conversations per student type per tutor. The two are close on "
-           "cooperative students\nand separate as students get harder to handle.")
-    path = _OUT / "02_score_by_persona.png"
+           "cooperative students\nand separate as students get harder to handle.", bare=bare)
+    path = (_OUT / "bare" if bare else _OUT) / "02_score_by_persona.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return path
@@ -273,7 +279,7 @@ def chart_score_by_persona(rows: list[Row], plt) -> Path:
 # 3. Answer-giving failures
 # --------------------------------------------------------------------------- #
 
-def chart_integrity_cliff(rows: list[Row], plt) -> Path:
+def chart_integrity_cliff(rows: list[Row], plt, *, bare: bool = False) -> Path:
     courses = list(_ROUNDS)
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 5.4), sharey=True)
 
@@ -292,8 +298,8 @@ def chart_integrity_cliff(rows: list[Row], plt) -> Path:
 
     _frame(fig, plt, "Answer-giving failures",
            "Conversations where the tutor handed over submission-ready work — one "
-           "deduction that costs\nall 12 pedagogy points. Lower is better.")
-    path = _OUT / "03_integrity_cliff.png"
+           "deduction that costs\nall 12 pedagogy points. Lower is better.", bare=bare)
+    path = (_OUT / "bare" if bare else _OUT) / "03_integrity_cliff.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return path
@@ -303,7 +309,7 @@ def chart_integrity_cliff(rows: list[Row], plt) -> Path:
 # 4. Tutor cost
 # --------------------------------------------------------------------------- #
 
-def chart_cost(rows: list[Row], plt) -> Path:
+def chart_cost(rows: list[Row], plt, *, bare: bool = False) -> Path:
     """Stacked tutor cost, so STEM AskTIM's extra assessment call is visible.
 
     The reply is the shared base, so the classification step reads as the
@@ -370,8 +376,8 @@ def chart_cost(rows: list[Row], plt) -> Path:
     _frame(fig, plt, "Tutor cost per conversation",
            "STEM AskTIM makes two model calls per turn — it classifies the student's "
            "message, then replies.\n"
-           f"That costs {ratios[0]:.1f}–{ratios[-1]:.1f}× more.")
-    path = _OUT / "04_cost_per_conversation.png"
+           f"That costs {ratios[0]:.1f}–{ratios[-1]:.1f}× more.", bare=bare)
+    path = (_OUT / "bare" if bare else _OUT) / "04_cost_per_conversation.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return path
@@ -392,13 +398,14 @@ def main() -> int:
             label = _ROUNDS[course].replace("\n", " ")
             print(f"  {_ARM_LABEL[arm]:<14} {label:<32} n={n}")
 
-    for path in (
-        chart_score_by_course(rows, plt),
-        chart_score_by_persona(rows, plt),
-        chart_integrity_cliff(rows, plt),
-        chart_cost(rows, plt),
-    ):
-        print(f"wrote {path.relative_to(_REPO_ROOT)}")
+    # Titled versions for standalone use, plus bare ones for the markdown deck
+    # (docs/meeting_deck_2026_july.md), where the words live in the prose.
+    (_OUT / "bare").mkdir(parents=True, exist_ok=True)
+    for bare in (False, True):
+        for builder in (chart_score_by_course, chart_score_by_persona,
+                        chart_integrity_cliff, chart_cost):
+            path = builder(rows, plt, bare=bare)
+            print(f"wrote {path.relative_to(_REPO_ROOT)}")
     return 0
 
 

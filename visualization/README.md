@@ -78,6 +78,8 @@ every number in these charts is recomputable from the repo.
 
 Every chart uses the same frame — concise title, one caption line, legend centred at the bottom — so the set reads as one deck.
 
+Each run also writes **bare** copies (no title, no caption, legend only) to `visualization/outputs/comparison/bare/`. Those are what [`docs/meeting_deck_2026_july.md`](../docs/meeting_deck_2026_july.md) embeds — the heading and explanation live in the markdown, so the words exist in one place and can't drift from the image.
+
 Series colours are the validated two-slot categorical pair (all-pairs CVD ΔE
 24.7, normal-vision 33.6, both ≥ 3:1 on the light surface). Every bar is also
 direct-labelled, so identity never rests on hue alone.

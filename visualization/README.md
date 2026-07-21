@@ -78,7 +78,7 @@ Writes four charts to `visualization/outputs/comparison/`:
 | `01_score_by_course.png` | Mean judge score per course, both tutors (+4.5 SCD, +3.4 physics) |
 | `02_score_by_persona.png` | The lead is near-zero on cooperative students and widens on confused/adversarial ones |
 | `03_integrity_cliff.png` | How often each arm took the 12-point `1.1.A.a` answer-giving deduction |
-| `04_cost_per_conversation.png` | Stacked **tutor-side** cost; STEM AskTIM's per-turn assessment pass is its own segment. Excludes the simulated student (a harness artifact — in production the student is a person) |
+| `04_cost_per_conversation.png` | Stacked **tutor-side** cost; STEM AskTIM's per-turn assessment call is its own segment. Excludes the simulated student (a harness artifact — in production the student is a person) |
 
 **Scope:** reads only what is on disk — the SCD *practices* and *physics* rounds,
 108 conversations (27 per arm per course). A third round (SCD exercises 1–3) was

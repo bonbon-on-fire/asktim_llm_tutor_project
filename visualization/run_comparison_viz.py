@@ -369,7 +369,7 @@ def chart_cost(rows: list[Row], plt) -> Path:
                     # from the resulting intent codes.
                     seg = {
                         "tutor": "reply",
-                        "tutor_assessment": "extra: assessment pass",
+                        "tutor_assessment": "assessment",
                     }.get(comp, comp)
                     ax.annotate(seg, (idx, bottom + val / 2), ha="center",
                                 va="center", fontsize=8.5, color="#0b0b0b")

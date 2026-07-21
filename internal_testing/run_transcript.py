@@ -41,6 +41,7 @@ from internal_testing.cli_utils import (
 from utils.curriculum import append_course_tutor_rules
 from utils.curriculum import discover_exercises as _discover_course_exercises
 from utils.curriculum import exercise_path, read_course_description, read_pinned_context
+from utils.curriculum import list_courses as _list_active_courses
 from utils.figures import discover_figures, figure_filenames
 from utils.lectures import load_lecture_transcripts
 
@@ -130,10 +131,13 @@ def _discover_tutor_prompts() -> list[str]:
 
 
 def _discover_courses() -> list[str]:
-    """Return available course folder names from curriculum/."""
-    if not _CURRICULUM_DIR.exists():
-        return []
-    return sorted(path.name for path in _CURRICULUM_DIR.iterdir() if path.is_dir())
+    """Return available ACTIVE course folder names from curriculum/.
+
+    Archived courses (under curriculum/_archive/) are excluded from sweeps that
+    iterate every course; pass ``--course <slug>`` to run one explicitly, which
+    still resolves via course_dir()'s archive fallback.
+    """
+    return _list_active_courses(_CURRICULUM_DIR)
 
 
 def _discover_exercises(course: str) -> list[str]:

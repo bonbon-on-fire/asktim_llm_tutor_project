@@ -8,9 +8,15 @@ because that's what the Thursday conversation needs.
     2. score by persona     — the lead is concentrated under pressure
     3. integrity cliff rate — why: 1.1.A.a answer-giving, per persona
     4. cost per conversation — the structural gap, and where it comes from
+    5. score distribution   — the floor, which the means hide
 
 Reads the graded transcripts written by ``internal_testing.run_transcript_rag``
 under ``transcripts/<type>/<type>_{cmp,phys}_{asktim,stem}/``.
+
+Scope note: this reads only what is on disk — the SCD *practices* and *physics*
+rounds, 108 conversations. A third round (SCD exercises 1-3, +4.52) was run and
+deleted before being committed; it is deliberately NOT folded in from memory,
+so every number here is recomputable from the repo.
 
     python -m visualization.run_comparison_viz
 
@@ -375,6 +381,73 @@ def chart_cost(rows: list[Row], plt) -> Path:
     return path
 
 
+# --------------------------------------------------------------------------- #
+# 5. The floor — what the means hide
+# --------------------------------------------------------------------------- #
+
+def chart_distribution(rows: list[Row], plt) -> Path:
+    """Per-conversation score spread, so the low tail is visible.
+
+    Both arms reach 40 at the top; they separate at the bottom. Means alone make
+    the tutors look closer than they behave, and for a student-facing tool the
+    worst case matters more than the average.
+    """
+    courses = list(_ROUNDS)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.4), sharey=True)
+
+    for ax, course in zip(axes, courses):
+        data = [[r.score for r in rows if r.arm == arm and r.round_key == course]
+                for arm in _ARMS]
+
+        bp = ax.boxplot(
+            data, positions=[0, 1], widths=0.42, patch_artist=True,
+            showfliers=False, medianprops={"color": "#fcfcfb", "linewidth": 2},
+            whiskerprops={"color": _INK_SOFT, "linewidth": 1.2},
+            capprops={"color": _INK_SOFT, "linewidth": 1.2},
+            boxprops={"linewidth": 0},
+        )
+        for patch, arm in zip(bp["boxes"], _ARMS):
+            patch.set_facecolor(_ARM_COLOR[arm])
+            patch.set_alpha(0.85)
+
+        # Individual conversations, deterministically jittered so the shape of the
+        # low tail is visible rather than implied by a whisker.
+        for i, (arm, scores) in enumerate(zip(_ARMS, data)):
+            for j, s in enumerate(sorted(scores)):
+                offset = ((j % 7) - 3) * 0.035
+                ax.plot(i + offset, s, "o", markersize=4.5,
+                        color=_INK, alpha=0.45, zorder=4)
+            ax.annotate(
+                f"min {min(scores)}", (i, min(scores)), textcoords="offset points",
+                xytext=(0, -16), ha="center", fontsize=9.5, color=_INK,
+                fontweight="bold",
+            )
+
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels([_ARM_LABEL[a].replace(" (MIT)", "") for a in _ARMS],
+                           color=_INK_SOFT, fontsize=10)
+        _style(ax, ylabel=f"Judge score (of {_MAX_SCORE})" if ax is axes[0] else "")
+        ax.set_ylim(12, 43)
+        ax.set_title(_ROUNDS[course].replace("\n", " "), color=_INK_SOFT,
+                     fontsize=11, loc="left")
+
+    fig.suptitle(
+        "Both reach 40 at their best — they separate at their worst",
+        color=_INK, fontsize=13, fontweight="bold", x=0.008, ha="left", y=0.985,
+    )
+    fig.text(
+        0.008, 0.925,
+        "Each dot is one conversation (27 per arm per course) · box spans the "
+        "middle 50%, white line is the median",
+        color=_INK_SOFT, fontsize=9,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.90))
+    path = _OUT / "05_score_distribution.png"
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
 def main() -> int:
     rows = _load()
     if not rows:
@@ -395,6 +468,7 @@ def main() -> int:
         chart_score_by_persona(rows, plt),
         chart_integrity_cliff(rows, plt),
         chart_cost(rows, plt),
+        chart_distribution(rows, plt),
     ):
         print(f"wrote {path.relative_to(_REPO_ROOT)}")
     return 0

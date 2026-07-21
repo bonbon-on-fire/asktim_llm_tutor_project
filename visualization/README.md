@@ -1,5 +1,17 @@
 # Visualization
 
+Two modules, different questions:
+
+- **`run_visualization`** — one tutor's rubric profile in depth (11 charts).
+  Reads `transcripts/<type>/<type>_judge/`.
+- **`run_comparison_viz`** — AskTIM vs STEM AskTIM, 5 charts. Reads the
+  comparison folders `transcripts/<type>/<type>_{cmp,phys}_{asktim,stem}/`.
+  See [Comparison charts](#comparison-charts) below.
+
+`run_visualization` has no notion of two arms — every chart groups by persona
+only, so pointed at the comparison corpus it would silently average the two
+tutors into the same bar. Use `run_comparison_viz` for anything two-armed.
+
 Generate Claude transcript grading charts. Each run produces **all 11** configured
 outputs (no prompts or modes): the six persona-type evaluation charts
 (`01`–`06`) followed by the score-distribution and per-transcript grade charts
@@ -52,3 +64,28 @@ mean score with integer y-ticks.
 ## Sorting
 
 Rows are ordered with the same key as other tooling: persona type, full student persona, course, exercise number, then transcript number.
+
+## Comparison charts
+
+```powershell
+python -m visualization.run_comparison_viz
+```
+
+Writes five charts to `visualization/outputs/comparison/`:
+
+| Chart | Shows |
+| --- | --- |
+| `01_score_by_course.png` | Mean judge score per course, both arms (+4.5 SCD, +3.4 physics) |
+| `02_score_by_persona.png` | The lead is near-zero on cooperative students and widens on confused/adversarial ones |
+| `03_integrity_cliff.png` | How often each arm took the 12-point `1.1.A.a` answer-giving deduction |
+| `04_cost_per_conversation.png` | Stacked cost; the STEM tutor's second per-turn assessment call is visible as its own segment |
+| `05_score_distribution.png` | Per-conversation spread — both arms reach 40, they separate at the floor |
+
+**Scope:** reads only what is on disk — the SCD *practices* and *physics* rounds,
+108 conversations (27 per arm per course). A third round (SCD exercises 1–3) was
+run and deleted before being committed; it is deliberately not folded in, so
+every number in these charts is recomputable from the repo.
+
+Series colours are the validated two-slot categorical pair (all-pairs CVD ΔE
+24.7, normal-vision 33.6, both ≥ 3:1 on the light surface). Every bar is also
+direct-labelled, so identity never rests on hue alone.

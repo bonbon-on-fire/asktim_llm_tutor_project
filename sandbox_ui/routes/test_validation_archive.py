@@ -1,0 +1,66 @@
+"""Standalone test: archived courses are hidden and rejected by validate_course.
+
+Run with:
+    python -m sandbox_ui.routes.test_validation_archive
+"""
+
+from __future__ import annotations
+
+import shutil
+
+from sandbox_ui.routes import _validation as V
+from utils.curriculum import ARCHIVE_DIRNAME
+
+_PASSED = 0
+_FAILED = 0
+
+
+def _check(name, cond, detail=""):
+    """Record a pass/fail for a named assertion and print the result."""
+    global _PASSED, _FAILED
+    if cond:
+        _PASSED += 1
+        print(f"  PASS  {name}")
+    else:
+        _FAILED += 1
+        print(f"  FAIL  {name}  {detail}")
+
+
+def main() -> int:
+    """Assert an archived course is hidden and rejected, and DEFAULT_COURSE is active."""
+    course = "tmp_course_archived"
+    archived_dir = V._CURRICULUM_DIR / ARCHIVE_DIRNAME / course
+    (archived_dir / "exercises").mkdir(parents=True, exist_ok=True)
+    (archived_dir / "exercises" / "exercise_1.txt").write_text("BODY", encoding="utf-8")
+    try:
+        courses = V._list_courses()
+        _check("archived course not listed", course not in courses, sorted(courses))
+        _check("_archive itself not listed", ARCHIVE_DIRNAME not in courses, sorted(courses))
+
+        failure = V.validate_course(course)
+        _check("validate_course rejects archived", failure is not None)
+        _check(
+            "rejection reason is 'no such course'",
+            (failure or {}).get("reason") == "no such course",
+            failure,
+        )
+        # Guard: archiving a course that is still an app default would otherwise
+        # break that app silently.
+        _check(
+            f"DEFAULT_COURSE {V.DEFAULT_COURSE!r} is active",
+            V.DEFAULT_COURSE in courses,
+            sorted(courses),
+        )
+
+        opts = V.list_context_options()
+        slugs = [c["slug"] for c in opts["courses"]]
+        _check("picker omits archived course", course not in slugs, slugs)
+        _check("picker omits _archive itself", ARCHIVE_DIRNAME not in slugs, slugs)
+    finally:
+        shutil.rmtree(archived_dir, ignore_errors=True)
+    print(f"\n{_PASSED} passed, {_FAILED} failed")
+    return 1 if _FAILED else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

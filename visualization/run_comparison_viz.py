@@ -50,7 +50,10 @@ _PERSONAS = ("cooperative", "clueless", "chaotic")
 # Folder token -> course label. Both rounds are 9 personas x 3 problems x 1 trial.
 _ROUNDS = {
     "cmp": "Supply Chain\n(practices 1-3)",
-    "phys": "Physics III\n(exams 11-13)",
+    # exercises/exercise_11..13.txt — kind "exercise". Their content is practice
+    # exam papers (11 covers lectures 1-8, 12 covers 9-17, 13 covers 1-23), which
+    # is why retrieval runs unscoped here; the label tracks the repo, not the title.
+    "phys": "Physics III\n(exercises 11-13)",
 }
 
 # Recessive ink; text never wears a series color.

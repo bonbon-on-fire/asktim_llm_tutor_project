@@ -88,7 +88,7 @@ The four courses beyond Cities and Climate Change (Development Planning, Mathema
 
 Archived courses stay in the repo but disappear from the apps: the sandbox
 context switcher stops listing them and `validate_course` rejects their slug, so
-their embed URLs return 400.
+their embed URLs return 404.
 
 1. Move the folder: `git mv curriculum/<course> curriculum/_archive/<course>`.
 2. Confirm no app still defaults to it — `DEFAULT_COURSE` in

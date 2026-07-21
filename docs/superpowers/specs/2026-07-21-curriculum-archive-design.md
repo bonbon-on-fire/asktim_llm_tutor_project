@@ -126,7 +126,7 @@ drop out of that validation test automatically.
 | Surface | Archived course |
 |---|---|
 | Sandbox picker | Gone — `list_context_options()` loops `list_courses()` |
-| `validate_course()`, both apps | `"no such course"`; embed URLs return 400 |
+| `validate_course()`, both apps | `"no such course"`; embed URLs return 404 |
 | Old transcripts in `database_ui` | Still render — its `COURSE_DISPLAY_NAMES` map is hardcoded and never reads `curriculum/` |
 | `rag.ingest --course <archived>` | Still works |
 | `internal_testing` sweeps over all courses | Skips archived; explicit `--course` still works |

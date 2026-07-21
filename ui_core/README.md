@@ -229,10 +229,10 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
 - `build_assignment_text(course, exercise, **ctx)` — concatenates
   `about_asktim.txt` + the `pinned/*.txt` reference docs (course description,
   syllabus, and any other always-on material) + optional lecture transcripts +
-  `exercise_<NN>.txt`, then, when a matching solution file exists, the current
-  problem's paired **correct answer & worked solution** as a tutor-only reference
-  block (via `utils.curriculum.read_solution`, keyed by problem number —
-  deterministic, never retrieved, never shown to the student). The `pinned/*.txt`
+  `exercise_<NN>.txt`. The problem's paired **correct answer & worked solution**
+  used to follow as a tutor-only reference block; it was **withdrawn 2026-07-21**
+  after a simulated run leaked a verbatim key value to a student who never asked
+  for it, so solution keys no longer reach the tutor at all. The `pinned/*.txt`
   docs (via `utils.curriculum.read_pinned_context`) are **pinned in both
   `full_context` and `rag`** — and correspondingly **excluded from the RAG index**
   (see `rag/sources.py`) so nothing pinned is also retrieved. Lecture transcripts

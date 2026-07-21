@@ -23,12 +23,10 @@ from pathlib import Path
 
 from ui_core.tutor_bridge import TutorBridge, _resolve_provider
 from utils.curriculum import (
-    SOLUTION_CONTEXT_LABEL,
     exercise_path,
     load_about_asktim,
     practice_path,
     read_pinned_context,
-    read_solution,
 )
 from utils.lectures import load_lecture_transcripts
 
@@ -101,13 +99,8 @@ def build_assignment_text(
     resolved_exercise = _path.read_text(encoding="utf-8").strip()
     parts.append("Exercise:\n" + resolved_exercise)
 
-    # Tutor-only correct-answer reference, paired directly to the current problem
-    # (never retrieved via RAG, never shown to the student). Skipped for
-    # problems with no solution file yet.
-    solution = read_solution(course, exercise, kind=exercise_kind)
-    if solution.strip():
-        parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
-
+    # Solution key withdrawn from tutor context 2026-07-21 — see the note in
+    # ui_core.tutor_bridge.build_assignment_text for why.
     return "\n\n".join(parts)
 
 

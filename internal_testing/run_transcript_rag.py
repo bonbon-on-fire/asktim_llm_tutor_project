@@ -57,13 +57,11 @@ from tutor.run_tutor import (  # noqa: E402
 )
 from tutor.run_tutor import get_tutor_reply as upstream_get_tutor_reply  # noqa: E402
 from utils.curriculum import (  # noqa: E402
-    SOLUTION_CONTEXT_LABEL,
     append_course_tutor_rules,
     exercise_path,
     practice_path,
     read_course_description,
     read_pinned_context,
-    read_solution,
 )
 from utils.figures import discover_figures, figure_filenames  # noqa: E402
 from utils.pricing import model_from_message, priced, usage_from_message  # noqa: E402
@@ -145,18 +143,16 @@ def _tutor_rag_assignment(course: str, kind: str, number: str, turn_size: int) -
 
     Pinned reference docs (``pinned/*.txt`` — course description, syllabus, guides)
     are baked in (they're pinned, not retrieved); lectures are reached via per-turn
-    retrieval. Then the problem, its paired tutor-only solution, and the run config.
+    retrieval. Then the problem and the run config. The paired solution key is no
+    longer included — see ``ui_core.tutor_bridge.build_assignment_text``.
     """
     parts: list[str] = []
     pinned = read_pinned_context(course)
     if pinned:
         parts.append(pinned)
     parts.append(f"{_problem_label(kind)}:\n" + _problem_text(course, kind, number))
-    # Tutor-only correct-answer reference, paired to the current problem (mirrors
-    # the live bridges). Never given to the student model (_student_assignment_text).
-    solution = read_solution(course, number, kind=kind)
-    if solution.strip():
-        parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
+    # Solution key withdrawn from tutor context 2026-07-21 (mirrors the live
+    # bridges) — see ui_core.tutor_bridge.build_assignment_text.
     parts.append(
         f"Run configuration:\n- Planned conversation length: {turn_size} student+tutor exchanges."
     )

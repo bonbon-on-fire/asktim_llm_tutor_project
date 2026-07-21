@@ -129,7 +129,7 @@ class StemTutorAdapter:
         turn_size: int,
         provider: str = "claude",
         tools: list | None = None,
-        include_solution: bool = True,
+        include_solution: bool = False,
     ) -> None:
         self.course = course
         self.kind = kind
@@ -167,9 +167,14 @@ class StemTutorAdapter:
 
         We use ``variant="canvas"``, whose template takes free-form text; the
         default ``"edx"`` variant asserts the payload is XML, which ours isn't.
-        The tutor-only solution goes in here because upstream's assessment codes
-        (WRONG, COMPLETE_SOLUTION, ...) are unassignable without it — and a
-        solution-blind assessor fails *silently*, defaulting rather than erroring.
+
+        The solution key is withheld by default as of 2026-07-21, matching what our
+        own tutor now gets (see ui_core.tutor_bridge.build_assignment_text) — the
+        arms have to see the same material for the comparison to mean anything.
+        Note the cost: upstream's assessment codes (WRONG, COMPLETE_SOLUTION, ...)
+        are only confidently assignable with the answer in hand, and a
+        solution-blind assessor degrades *silently*. Pass include_solution=True to
+        measure that difference deliberately.
         """
         parts = [f"{'Practice problem' if self.kind == 'practice' else 'Exercise'}:\n{problem_text}"]
         if include_solution:

@@ -52,13 +52,11 @@ from tutor.run_tutor import (
 from tutor.run_tutor import get_tutor_reply as _upstream_get_tutor_reply
 from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
 from utils.curriculum import (
-    SOLUTION_CONTEXT_LABEL,
     append_course_tutor_rules,
     exercise_path,
     load_about_asktim,
     practice_path,
     read_pinned_context,
-    read_solution,
 )
 from utils.figures import build_multimodal_content, discover_figures
 from utils.lectures import load_lecture_transcripts
@@ -257,7 +255,7 @@ class TutorBridge:
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
-        """Concatenate about + pinned reference docs (full_context & rag) + lectures (full_context) + exercise + solution key.
+        """Concatenate about + pinned reference docs (full_context & rag) + lectures (full_context) + exercise.
 
         Pinned reference docs live in ``curriculum/<course>/pinned/*.txt`` — the
         course description, syllabus, and any other always-on material (e.g. a
@@ -265,8 +263,10 @@ class TutorBridge:
         ``rag`` and correspondingly excluded from the RAG index (see ``rag.sources``)
         so nothing pinned is also retrieved. Lecture transcripts (large) stay
         ``full_context``-only; in ``rag`` they're reached via retrieval, and
-        ``exercise_only`` drops all course material. The exercise and tutor-only
-        solution key are always kept.
+        ``exercise_only`` drops all course material. The exercise is always kept.
+
+        The tutor-only solution key was dropped from this block on 2026-07-21; see
+        the note at the end of the method.
         """
         mode = ctx.get("context_mode", "full_context")
         kind = ctx.get("exercise_kind", "exercise")
@@ -299,12 +299,15 @@ class TutorBridge:
 
         parts.append("Exercise:\n" + exercise_text)
 
-        # Tutor-only correct-answer reference, paired directly to this exercise
-        # (never retrieved, never shown to the student). Absent for problems whose
-        # solution file doesn't exist yet.
-        solution = read_solution(course, exercise, kind=kind)
-        if solution.strip():
-            parts.append(SOLUTION_CONTEXT_LABEL + solution.strip())
+        # The paired solution key used to be injected here as tutor-only reference.
+        # Withdrawn 2026-07-21: a simulated run leaked a verbatim key value ("390",
+        # the Part 0 total for supply_chain_design exercise 1) to a cooperative
+        # student who never asked for it, despite both SOLUTION_CONTEXT_LABEL and
+        # tutor_07 forbidding it. Keeping the key out of context removes the
+        # failure mode at the source rather than relying on the model to withhold
+        # a value sitting in its prompt every turn.
+        # Trade-off: the tutor can no longer check a student's answer against the
+        # key. Revisit once there's an output-side check for key values.
         return "\n\n".join(parts)
 
     def build_system_prompt(self, tutor: str, assignment_text: str, course: str = "", **ctx) -> str:

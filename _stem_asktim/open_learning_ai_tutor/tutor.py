@@ -3,12 +3,17 @@ from typing import Literal
 
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-from open_learning_ai_tutor.tools import execute_python, python_calculator
 
 
 class Tutor:
     def __init__(self, client, tools=None) -> None:
         if tools is None:
+            # LOCAL PATCH (diverges from upstream): this import was at module
+            # scope, which made `langchain_experimental` a hard dependency even
+            # for callers passing tools=[]. Deferred so our comparison runner —
+            # which disables the PythonREPL tools — doesn't need it installed.
+            from open_learning_ai_tutor.tools import execute_python, python_calculator
+
             tools = [execute_python, python_calculator]
 
         client = client.bind_tools(tools)

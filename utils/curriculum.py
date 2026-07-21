@@ -21,6 +21,11 @@ _EXERCISE_NAME_RE = re.compile(r"^exercise_(\d+)\.txt$")
 # practice_<N>.txt — one or more digits (parallel to exercises).
 _PRACTICE_NAME_RE = re.compile(r"^practice_(\d+)\.txt$")
 
+# Courses under curriculum/_archive/ are retired: hidden from the apps, still
+# readable by offline tooling via course_dir(). See
+# docs/superpowers/specs/2026-07-21-curriculum-archive-design.md.
+ARCHIVE_DIRNAME = "_archive"
+
 
 def _norm_num(num: str) -> str:
     """Normalize an item number to its non-padded form ('01' -> '1'); pass through non-numeric."""
@@ -281,11 +286,30 @@ def discover_exercises(
 
 
 def list_courses(curriculum_root: Path | str | None = None) -> list[str]:
-    """Return sorted course folder names under the curriculum root."""
+    """Return sorted ACTIVE course folder names under the curriculum root.
+
+    Both the ``_archive`` folder itself and the courses inside it are excluded.
+    There is deliberately no ``include_archived`` flag — callers that want the
+    retired set call :func:`list_archived_courses` and compose, so no caller can
+    leak archived courses by passing a truthy argument.
+    """
     root = _root(curriculum_root)
     if not root.is_dir():
         return []
-    return sorted(p.name for p in root.iterdir() if p.is_dir())
+    return sorted(
+        p.name for p in root.iterdir() if p.is_dir() and p.name != ARCHIVE_DIRNAME
+    )
+
+
+def list_archived_courses(curriculum_root: Path | str | None = None) -> list[str]:
+    """Return sorted course folder names under ``curriculum/_archive/``.
+
+    Empty when the archive folder is absent.
+    """
+    archive = _root(curriculum_root) / ARCHIVE_DIRNAME
+    if not archive.is_dir():
+        return []
+    return sorted(p.name for p in archive.iterdir() if p.is_dir())
 
 
 def course_name_path(course: str, curriculum_root: Path | str | None = None) -> Path:

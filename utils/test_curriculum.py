@@ -10,10 +10,14 @@ from pathlib import Path
 import tempfile
 
 from utils.curriculum import (
+    ARCHIVE_DIRNAME,
     TUTOR_RULES_HEADER,
     append_course_tutor_rules,
     discover_exercises,
     discover_practice,
+    exercise_exists,
+    list_archived_courses,
+    list_courses,
     practice_exists,
     practice_path,
     read_course_tutor_rules,
@@ -152,6 +156,42 @@ def test_pinned_context() -> None:
         _check("read '' course -> ''", read_pinned_context("", curriculum_root=root) == "")
 
 
+def test_list_courses_excludes_archive() -> None:
+    """Assert list_courses hides _archive and its children, and the two sets are disjoint."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "active_course").mkdir()
+        (root / "another_active").mkdir()
+        (root / ARCHIVE_DIRNAME / "old_course").mkdir(parents=True)
+        (root / ARCHIVE_DIRNAME / "older_course").mkdir(parents=True)
+        (root / "README.md").write_text("not a course", encoding="utf-8")
+
+        active = list_courses(root)
+        _check("_archive itself is not a course", ARCHIVE_DIRNAME not in active, active)
+        _check(
+            "archived children excluded from active",
+            active == ["active_course", "another_active"],
+            active,
+        )
+
+        archived = list_archived_courses(root)
+        _check(
+            "list_archived_courses returns _archive children",
+            archived == ["old_course", "older_course"],
+            archived,
+        )
+        _check("active and archived are disjoint", set(active).isdisjoint(archived))
+
+
+def test_list_archived_courses_without_archive_folder() -> None:
+    """Assert an absent _archive/ yields [] and does not disturb list_courses."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "solo").mkdir()
+        _check("absent _archive -> []", list_archived_courses(root) == [])
+        _check("list_courses unaffected", list_courses(root) == ["solo"], list_courses(root))
+
+
 def main() -> int:
     """Run all tests and return 1 if any failed, else 0."""
     tests = [
@@ -159,6 +199,8 @@ def main() -> int:
         test_practice_path_exists_and_read,
         test_course_tutor_rules,
         test_pinned_context,
+        test_list_courses_excludes_archive,
+        test_list_archived_courses_without_archive_folder,
     ]
     for t in tests:
         print(t.__name__)

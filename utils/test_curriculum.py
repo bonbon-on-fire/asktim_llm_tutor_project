@@ -13,6 +13,7 @@ from utils.curriculum import (
     ARCHIVE_DIRNAME,
     TUTOR_RULES_HEADER,
     append_course_tutor_rules,
+    course_dir,
     discover_exercises,
     discover_practice,
     exercise_exists,
@@ -192,6 +193,58 @@ def test_list_archived_courses_without_archive_folder() -> None:
         _check("list_courses unaffected", list_courses(root) == ["solo"], list_courses(root))
 
 
+def test_course_dir_resolves_archived() -> None:
+    """Assert course_dir falls back to _archive/ and prefers active on collision."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "live_course").mkdir()
+        (root / ARCHIVE_DIRNAME / "old_course").mkdir(parents=True)
+        # Same slug in both places: an operator mistake, but must resolve
+        # deterministically to the active copy.
+        (root / "both").mkdir()
+        (root / ARCHIVE_DIRNAME / "both").mkdir(parents=True)
+
+        _check(
+            "active course resolves directly",
+            course_dir("live_course", root) == root / "live_course",
+            course_dir("live_course", root),
+        )
+        _check(
+            "archived course resolves under _archive",
+            course_dir("old_course", root) == root / ARCHIVE_DIRNAME / "old_course",
+            course_dir("old_course", root),
+        )
+        _check(
+            "collision prefers the active copy",
+            course_dir("both", root) == root / "both",
+            course_dir("both", root),
+        )
+        _check(
+            "unknown slug returns the direct path unchanged",
+            course_dir("ghost", root) == root / "ghost",
+            course_dir("ghost", root),
+        )
+
+
+def test_archived_course_files_still_readable() -> None:
+    """Assert helpers built on course_dir reach an archived course's content."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        exdir = root / ARCHIVE_DIRNAME / "old_course" / "exercises"
+        exdir.mkdir(parents=True)
+        (exdir / "exercise_1.txt").write_text("BODY", encoding="utf-8")
+
+        _check(
+            "exercise_exists finds an archived exercise",
+            exercise_exists("old_course", "1", curriculum_root=root),
+        )
+        _check(
+            "discover_exercises lists an archived exercise",
+            discover_exercises("old_course", curriculum_root=root) == ["1"],
+            discover_exercises("old_course", curriculum_root=root),
+        )
+
+
 def main() -> int:
     """Run all tests and return 1 if any failed, else 0."""
     tests = [
@@ -201,6 +254,8 @@ def main() -> int:
         test_pinned_context,
         test_list_courses_excludes_archive,
         test_list_archived_courses_without_archive_folder,
+        test_course_dir_resolves_archived,
+        test_archived_course_files_still_readable,
     ]
     for t in tests:
         print(t.__name__)

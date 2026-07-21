@@ -39,8 +39,24 @@ def _root(curriculum_root: Path | str | None) -> Path:
 
 
 def course_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
-    """Return the course folder path (``curriculum/<course>/``)."""
-    return _root(curriculum_root) / course
+    """Return the course folder path, resolving archived courses too.
+
+    Active courses resolve to ``curriculum/<course>/``. A course that exists
+    only under ``curriculum/_archive/<course>/`` resolves there, so offline
+    tooling (``rag.ingest``, the eval runners) still reaches an archived course
+    by slug even though the apps reject it. A slug in neither location returns
+    the direct path unchanged, matching the previous behavior for an unknown
+    course.
+
+    A slug present in BOTH locations resolves to the active copy. That state is
+    an operator mistake, not a supported configuration.
+    """
+    root = _root(curriculum_root)
+    direct = root / course
+    if direct.is_dir():
+        return direct
+    archived = root / ARCHIVE_DIRNAME / course
+    return archived if archived.is_dir() else direct
 
 
 def exercises_dir(course: str, curriculum_root: Path | str | None = None) -> Path:

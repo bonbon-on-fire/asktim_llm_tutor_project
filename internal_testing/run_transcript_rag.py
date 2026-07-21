@@ -430,7 +430,13 @@ def _save_transcript(
         transcript_path = output_dir / f"transcript_{transcript_num}.json"
         payload = {
             "tutor_provider": config.provider,
-            "tutor_prompt": config.tutor_prompt,
+            # The STEM arm uses the vendored tutor's own prompts; recording our
+            # --tutor value there would wrongly imply tutor_07 shaped its replies.
+            "tutor_prompt": (
+                config.tutor_prompt
+                if config.tutor_impl == "asktim"
+                else "open_learning_ai_tutor (vendored)"
+            ),
             "student_persona": config.persona,
             "course": config.course,
             "exercise_number": config.number,

@@ -87,7 +87,7 @@ Shared image-upload rules for the web apps' chat composers, so the two apps
 can't drift. Pure functions over `(filename, mime, bytes)` — no Flask, no DB.
 
 - Constants: `ALLOWED_IMAGE_MIMES` (PNG/JPEG only), `MAX_IMAGE_BYTES` (10 MB),
-  `MAX_IMAGES_PER_MESSAGE` (5)
+  `MAX_IMAGES_PER_MESSAGE` (3)
 - `UploadValidationError` — raised on bad type / too big / too many
 - `ValidatedImage` — frozen dataclass (`filename`, `mime_type`, `data`,
   `size_bytes`)

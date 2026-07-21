@@ -45,6 +45,12 @@ class Conversation(Base):
     username: Mapped[str | None] = mapped_column(Text, nullable=True)
     course: Mapped[str] = mapped_column(Text, nullable=False)
     exercise_number: Mapped[str] = mapped_column(Text, nullable=False)
+    # Which content kind exercise_number refers to: "exercise" (graded, default)
+    # or "practice". Mirrors main_ui's Conversation.exercise_kind; legacy rows
+    # read back as exercises.
+    exercise_kind: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default="exercise"
+    )
     tutor_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

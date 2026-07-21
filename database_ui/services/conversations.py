@@ -193,6 +193,7 @@ def _summarize(
         "course": c.course,
         "course_name": course_display_name(c.course),
         "exercise_number": c.exercise_number,
+        "exercise_kind": c.exercise_kind or "exercise",
         "tutor_prompt": c.tutor_prompt,
         "started_at": c.started_at.isoformat() if c.started_at else None,
         "last_active_at": c.last_active_at.isoformat() if c.last_active_at else None,

@@ -63,7 +63,7 @@ curriculum/
 | `cities_and_climate_change/` | Cities and Climate Change: Mitigation and Adaptation (MIT 11.270x) | 12 — case study city research + mitigation/adaptation planning; **live in AskTIM for Spring 2026** |
 | `intro_to_international_development_planning/` | Introduction to International Development Planning (MIT 11.701) | 24 — 700–800 word reflection prompts |
 | `mathematics_for_cs/` | Mathematics for Computer Science (MIT 6.1200J) | 10 — discrete-math problem sets |
-| `physics_iii_vibrations_and_waves/` | Physics III: Vibrations and Waves (MIT 8.03SC) | 10 — vibrations/waves problem sets |
+| `physics_iii_vibrations_and_waves/` | Physics III: Vibrations and Waves (MIT 8.03SC) | 17 — 10 problem sets, 5 practice exams, and the 2 real Fall 2016 exams; also ships 24 `lectures/` transcripts, a `lecture_index.json`, and `exercises_solutions/` for the 5 practice exams (OCW publishes no solutions for the problem sets or the real exams) |
 | `meaning_of_life/` | The Meaning of Life (MIT 21A.157) | 3 — vignette + investigation + final reflection papers |
 | `supply_chain_design/` | MIT CTL.SC2x Supply Chain Design | 8 graded exercises (weeks 1–10, non-consecutive) — network/facility-location, production-planning, and supply-chain-finance assignments; also ships 8 ungraded `practices/`, 160 `lectures/` transcripts, and a `lecture_index.json` of real Week/Lesson/Video citations |
 

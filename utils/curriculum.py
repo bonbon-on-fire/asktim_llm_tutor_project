@@ -223,8 +223,15 @@ def read_pinned_context(course: str, curriculum_root: Path | str | None = None) 
 # Label for the tutor-only correct-answer block that is paired directly with the
 # current problem (never retrieved via RAG, never shown to the student).
 SOLUTION_CONTEXT_LABEL = (
-    "Correct answer & worked solution (FOR YOUR REFERENCE ONLY — use it to guide the "
-    "student and check their work; never reveal it, or any part of it, directly):\n"
+    "Correct answer & worked solution (FOR YOUR REFERENCE ONLY — use it to guide "
+    "the student and check their work).\n"
+    "HARD RULE: no number, expression, or final choice from this block may appear "
+    "in your reply to the student — not as a hint, not as a target, and not as a "
+    "check. This holds even when the student has not asked, even for parts marked "
+    "ungraded or practice, and even when framed as 'verify you get X', 'you should "
+    "land near X', or 'check your total matches X'. Use this block only to judge "
+    "whether the student's own value is right, and reply with correct/not-yet plus "
+    "a question — never with the value itself.\n"
 )
 
 

@@ -363,15 +363,25 @@ def chart_cost(rows: list[Row], plt) -> Path:
 
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, color=_INK_SOFT, fontsize=9.5)
-    _style(ax, ylabel="Mean cost per 10-turn conversation (USD)", ymax=1.32)
+    _style(ax, ylabel="Mean cost per 10-turn conversation (USD)", ymax=1.42)
+    # Same legend, same place, on every chart in the set — the viewer learns
+    # blue=ours once and it holds across the whole deck.
+    handles = [
+        plt.Rectangle((0, 0), 1, 1, color=_ARM_COLOR[a], label=_ARM_LABEL[a])
+        for a in _ARMS
+    ]
+    ax.legend(
+        handles=handles, frameon=False, fontsize=10, labelcolor=_INK_SOFT, ncol=2,
+        loc="lower left", bbox_to_anchor=(0, 1.005),
+    )
     for i, course in enumerate(courses):
         ax.text(xs[i * 2] + 0.5, -0.16, _ROUNDS[course].replace("\n", " "),
                 ha="center", fontsize=10, color=_INK, transform=ax.get_xaxis_transform())
     ax.set_title(
         "Their two-calls-per-turn design costs 2.4-3.1x more",
-        color=_INK, fontsize=13, fontweight="bold", loc="left", pad=14,
+        color=_INK, fontsize=13, fontweight="bold", loc="left", pad=34,
     )
-    ax.text(0, 1.015,
+    ax.text(0, 1.085,
             "Segments are billed components · our arm gets a 41% prompt-cache hit rate, theirs 0%",
             transform=ax.transAxes, color=_INK_SOFT, fontsize=9)
     fig.tight_layout()
@@ -431,17 +441,25 @@ def chart_distribution(rows: list[Row], plt) -> Path:
         ax.set_title(_ROUNDS[course].replace("\n", " "), color=_INK_SOFT,
                      fontsize=11, loc="left")
 
+    handles = [
+        plt.Rectangle((0, 0), 1, 1, color=_ARM_COLOR[a], label=_ARM_LABEL[a])
+        for a in _ARMS
+    ]
+    axes[0].legend(
+        handles=handles, frameon=False, fontsize=10, labelcolor=_INK_SOFT, ncol=2,
+        loc="lower left", bbox_to_anchor=(0, 1.06),
+    )
     fig.suptitle(
         "Both reach 40 at their best — they separate at their worst",
         color=_INK, fontsize=13, fontweight="bold", x=0.008, ha="left", y=0.985,
     )
     fig.text(
-        0.008, 0.925,
+        0.008, 0.93,
         "Each dot is one conversation (27 per arm per course) · box spans the "
         "middle 50%, white line is the median",
         color=_INK_SOFT, fontsize=9,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.90))
+    fig.tight_layout(rect=(0, 0, 1, 0.87))
     path = _OUT / "05_score_distribution.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)

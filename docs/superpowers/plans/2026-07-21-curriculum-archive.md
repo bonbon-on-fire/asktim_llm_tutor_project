@@ -585,8 +585,10 @@ Existing conversations that reference an archived course still render in
 `database_ui` — its display-name map is hardcoded and never reads `curriculum/`.
 
 Offline tooling still reaches an archived course by explicit slug (for example
-`python -m rag.ingest --course <archived>`), because `course_dir()` falls back to
-`curriculum/_archive/<course>/`. Only discovery and validation change.
+reading its lectures, figures, or RAG index), because `course_dir()` falls back
+to `curriculum/_archive/<course>/`. Only discovery and validation change.
+`rag.ingest` is the deliberate exception: it refuses an archived slug rather
+than silently rebuilding an index for a retired course.
 
 To unarchive, move the folder back.
 ```

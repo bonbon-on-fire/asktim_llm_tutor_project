@@ -28,7 +28,11 @@ INDEX_DIRNAME = "rag_index"
 
 
 def index_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
-    """Return the RAG index folder path (``curriculum/<course>/rag_index/``)."""
+    """Return the RAG index folder path (``curriculum/<course>/rag_index/``).
+
+    Resolves into ``curriculum/_archive/<course>/rag_index/`` for an archived
+    course, since the index is a child of the course folder and moves with it.
+    """
     return _course_dir(course, curriculum_root) / INDEX_DIRNAME
 
 

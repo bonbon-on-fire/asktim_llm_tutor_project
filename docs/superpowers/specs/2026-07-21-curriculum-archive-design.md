@@ -128,7 +128,7 @@ drop out of that validation test automatically.
 | Sandbox picker | Gone — `list_context_options()` loops `list_courses()` |
 | `validate_course()`, both apps | `"no such course"`; embed URLs return 404 |
 | Old transcripts in `database_ui` | Still render — its `COURSE_DISPLAY_NAMES` map is hardcoded and never reads `curriculum/` |
-| `rag.ingest --course <archived>` | Still works |
+| `rag.ingest --course <archived>` | Deliberately refused: `parser.error`, exit 2 — unarchive the course first |
 | `internal_testing` sweeps over all courses | Skips archived; explicit `--course` still works |
 
 Archiving a course does **not** migrate or invalidate `conversations.course`

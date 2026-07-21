@@ -9,6 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 import tempfile
 
+from eval.rag_judge.generate_ground_truth import _lecture_files
+from rag.ocw import read_online_link
 from rag.sources import load_local_docs
 from rag.store import index_dir
 from utils.curriculum import (
@@ -27,7 +29,7 @@ from utils.curriculum import (
     read_pinned_context,
     read_practice,
 )
-from utils.figures import discover_figures
+from utils.figures import discover_figures, resolve_figure_filenames
 from utils.lectures import load_lecture_transcripts
 
 _PASSED = 0
@@ -306,6 +308,32 @@ def test_active_course_paths_unchanged() -> None:
         )
 
 
+def test_archived_course_reachable_by_remaining_helpers() -> None:
+    """Assert figure re-resolution and online_link resolve into _archive/."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        base = root / ARCHIVE_DIRNAME / "old_course"
+        (base / "figures").mkdir(parents=True)
+        (base / "figures" / "exercise_4_map.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        (base / "online_link.txt").write_text(
+            "https://ocw.mit.edu/example\n", encoding="utf-8"
+        )
+
+        resolved = resolve_figure_filenames(
+            "old_course", ["exercise_4_map.png"], root
+        )
+        _check(
+            "resolve_figure_filenames resolves for an archived course",
+            [p.name for p in resolved] == ["exercise_4_map.png"],
+            resolved,
+        )
+        _check(
+            "read_online_link resolves for an archived course",
+            read_online_link("old_course", root) == "https://ocw.mit.edu/example",
+            read_online_link("old_course", root),
+        )
+
+
 def main() -> int:
     """Run all tests and return 1 if any failed, else 0."""
     tests = [
@@ -319,6 +347,7 @@ def main() -> int:
         test_archived_course_files_still_readable,
         test_archived_course_reachable_by_all_helpers,
         test_active_course_paths_unchanged,
+        test_archived_course_reachable_by_remaining_helpers,
     ]
     for t in tests:
         print(t.__name__)

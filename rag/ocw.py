@@ -18,8 +18,7 @@ import re
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
+from utils.curriculum import course_dir
 
 Doc = tuple[str, str]
 
@@ -29,9 +28,12 @@ _SKIP_EXT = (".zip", ".jpg", ".jpeg", ".png", ".gif", ".mp4", ".mov", ".srt", ".
 
 
 def read_online_link(course: str, curriculum_root: Path | str | None = None) -> str | None:
-    """Return the first non-empty URL in the course's ``online_link.txt``, or None."""
-    root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
-    path = root / course / "online_link.txt"
+    """Return the first non-empty URL in the course's ``online_link.txt``, or None.
+
+    Resolves into ``curriculum/_archive/<course>/`` for an archived course, same
+    as every other course-relative path in this module.
+    """
+    path = course_dir(course, curriculum_root) / "online_link.txt"
     if not path.is_file():
         return None
     for line in path.read_text(encoding="utf-8").splitlines():

@@ -107,6 +107,9 @@ falls back to `curriculum/_archive/<course>/`. Only discovery and validation
 change. `rag.ingest` is the one exception: it deliberately refuses an archived
 slug (`parser.error`, exit 2) rather than silently rebuilding an index for a
 retired course — unarchive the course first if you need to re-ingest it.
+In both apps, `validate_course()` rejects an archived slug before any
+course-relative path is resolved, so the apps themselves never read from
+`_archive/`.
 
 To unarchive, move the folder back.
 

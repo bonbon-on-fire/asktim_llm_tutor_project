@@ -26,16 +26,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
+from utils.curriculum import course_dir as _course_dir
 
 Doc = tuple[str, str]  # (source_label, text)
 
 
 def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> list[Doc]:
     """Collect local key-concepts/lecture/practice text as labeled documents."""
-    root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
-    course_dir = root / course
+    course_dir = _course_dir(course, curriculum_root)
     docs: list[Doc] = []
 
     # The pinned/*.txt reference docs (course description, syllabus, …) are pinned

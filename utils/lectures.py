@@ -16,8 +16,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
+from utils.curriculum import course_dir
 
 
 def _natural_key(path: Path) -> list:
@@ -40,8 +39,7 @@ def load_lecture_transcripts(
     natural (numeric) filename order, labels each block with its file stem, and
     joins them with blank lines. Returns ``""`` when the folder is missing or empty.
     """
-    root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
-    lectures_dir = root / course / "lectures"
+    lectures_dir = course_dir(course, curriculum_root) / "lectures"
     if not lectures_dir.is_dir():
         return ""
 

@@ -20,6 +20,8 @@ import base64
 import re
 from pathlib import Path
 
+from utils.curriculum import course_dir
+
 # Repo root is two levels up from this file (utils/ -> repo root).
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
@@ -47,8 +49,7 @@ def discover_figures(
     them sorted by filename. Returns an empty list when the folder or matches
     are absent — figures are always optional and back-compatible.
     """
-    root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
-    figures_dir = root / course / "figures"
+    figures_dir = course_dir(course, curriculum_root) / "figures"
     if not figures_dir.is_dir():
         return []
 

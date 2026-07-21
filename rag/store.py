@@ -22,16 +22,14 @@ from pathlib import Path
 import numpy as np
 
 from rag.chunking import Chunk
+from utils.curriculum import course_dir as _course_dir
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
 INDEX_DIRNAME = "rag_index"
 
 
 def index_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
     """Return the RAG index folder path (``curriculum/<course>/rag_index/``)."""
-    root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
-    return root / course / INDEX_DIRNAME
+    return _course_dir(course, curriculum_root) / INDEX_DIRNAME
 
 
 def _normalize(matrix: np.ndarray) -> np.ndarray:

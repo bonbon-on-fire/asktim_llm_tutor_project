@@ -96,14 +96,17 @@ their embed URLs return 404.
    [sandbox_ui/routes/_validation.py](../sandbox_ui/routes/_validation.py). The
    `test_validation_archive` standalone tests assert this.
 3. Commit. The course's `rag_index/` moves with it, since the index is a child
-   of the course folder.
+   of the course folder — it stays right where offline tooling can still read it.
 
 Existing conversations that reference an archived course still render in
 `database_ui` — its display-name map is hardcoded and never reads `curriculum/`.
 
 Offline tooling still reaches an archived course by explicit slug (for example
-`python -m rag.ingest --course <archived>`), because `course_dir()` falls back to
-`curriculum/_archive/<course>/`. Only discovery and validation change.
+the eval runners, or reading its `rag_index/` directly), because `course_dir()`
+falls back to `curriculum/_archive/<course>/`. Only discovery and validation
+change. `rag.ingest` is the one exception: it deliberately refuses an archived
+slug (`parser.error`, exit 2) rather than silently rebuilding an index for a
+retired course — unarchive the course first if you need to re-ingest it.
 
 To unarchive, move the folder back.
 

@@ -55,7 +55,9 @@ resolvers normalize any input to that form.
   `practices_solutions/practice_solution_<N>.txt`),
   plus `exercises_solutions_dir` / `practices_solutions_dir` and the
   `SOLUTION_CONTEXT_LABEL` constant prefixed to the injected answer block
-- `list_courses()` — sorted course folder names
+- `list_courses()` — sorted ACTIVE course folder names (excludes `_archive/` and
+  its contents)
+- `list_archived_courses()` — sorted course folder names under `_archive/`
 
 ### `figures.py`
 

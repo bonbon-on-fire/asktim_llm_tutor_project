@@ -9,6 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 import tempfile
 
+from rag.sources import load_local_docs
+from rag.store import index_dir
 from utils.curriculum import (
     ARCHIVE_DIRNAME,
     TUTOR_RULES_HEADER,
@@ -25,6 +27,8 @@ from utils.curriculum import (
     read_pinned_context,
     read_practice,
 )
+from utils.figures import discover_figures
+from utils.lectures import load_lecture_transcripts
 
 _PASSED = 0
 _FAILED = 0
@@ -245,6 +249,63 @@ def test_archived_course_files_still_readable() -> None:
         )
 
 
+def test_archived_course_reachable_by_all_helpers() -> None:
+    """Assert lectures, figures, RAG sources, and the index dir all resolve into _archive/."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        base = root / ARCHIVE_DIRNAME / "old_course"
+        (base / "lectures").mkdir(parents=True)
+        (base / "lectures" / "lecture_1_0_intro.txt").write_text(
+            "LECTURE BODY", encoding="utf-8"
+        )
+        (base / "figures").mkdir()
+        (base / "figures" / "exercise_4_map.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        (base / "key_concepts.txt").write_text("KEY CONCEPTS BODY", encoding="utf-8")
+
+        _check(
+            "lectures resolve for an archived course",
+            "LECTURE BODY" in load_lecture_transcripts("old_course", root),
+            load_lecture_transcripts("old_course", root),
+        )
+        figs = discover_figures("old_course", "4", root)
+        _check(
+            "figures resolve for an archived course",
+            [p.name for p in figs] == ["exercise_4_map.png"],
+            figs,
+        )
+        docs = load_local_docs("old_course", root)
+        _check(
+            "RAG sources resolve for an archived course",
+            any("KEY CONCEPTS BODY" in text for _label, text in docs),
+            docs,
+        )
+        _check(
+            "index_dir points inside _archive for an archived course",
+            index_dir("old_course", root) == base / "rag_index",
+            index_dir("old_course", root),
+        )
+
+
+def test_active_course_paths_unchanged() -> None:
+    """Assert the same helpers still resolve an ACTIVE course to its top-level path."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        base = root / "live_course"
+        (base / "lectures").mkdir(parents=True)
+        (base / "lectures" / "lecture_1_0_intro.txt").write_text(
+            "ACTIVE LECTURE", encoding="utf-8"
+        )
+        _check(
+            "active lectures still resolve to the top-level path",
+            "ACTIVE LECTURE" in load_lecture_transcripts("live_course", root),
+        )
+        _check(
+            "active index_dir still resolves to the top-level path",
+            index_dir("live_course", root) == base / "rag_index",
+            index_dir("live_course", root),
+        )
+
+
 def main() -> int:
     """Run all tests and return 1 if any failed, else 0."""
     tests = [
@@ -256,6 +317,8 @@ def main() -> int:
         test_list_archived_courses_without_archive_folder,
         test_course_dir_resolves_archived,
         test_archived_course_files_still_readable,
+        test_archived_course_reachable_by_all_helpers,
+        test_active_course_paths_unchanged,
     ]
     for t in tests:
         print(t.__name__)

@@ -38,11 +38,13 @@
     sidebarEmpty.hidden = false;
   }
 
-  // "Exercise 3 · May 19 · 8 messages" — mirrors main_ui's formatEntryHeader.
+  // "Exercise 3 · May 19 · 8 messages" (or "Practice 3 ...") — mirrors
+  // main_ui's formatEntryHeader.
   function formatEntryHeader(c) {
     const exNumber = parseInt(c.exercise_number, 10);
+    const kindLabel = c.exercise_kind === "practice" ? "Practice" : "Exercise";
     const parts = [
-      `Exercise ${Number.isFinite(exNumber) ? exNumber : c.exercise_number}`,
+      `${kindLabel} ${Number.isFinite(exNumber) ? exNumber : c.exercise_number}`,
     ];
     if (c.last_active_at) {
       const d = new Date(c.last_active_at);

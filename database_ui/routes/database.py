@@ -155,6 +155,7 @@ def api_conversation(conversation_id: str):
             "session_id": convo.session_id,
             "course": convo.course,
             "exercise_number": convo.exercise_number,
+            "exercise_kind": convo.exercise_kind or "exercise",
             "tutor_prompt": convo.tutor_prompt,
             "started_at": convo.started_at.isoformat() if convo.started_at else None,
             "last_active_at": (

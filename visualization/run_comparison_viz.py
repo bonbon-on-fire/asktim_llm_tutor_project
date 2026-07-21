@@ -2,9 +2,11 @@
 
 Deliberately narrow: ``run_visualization`` analyses one tutor's rubric profile in
 depth (11 charts); this renders only the four that carry the *comparison* story,
-because that's what the Thursday conversation needs.
+because that is what the Thursday conversation needs. Both tutors are ours:
+"New AskTIM" is the current one (formerly the Humanities Tutor); "STEM AskTIM"
+is the earlier open-learning-ai-tutor generation.
 
-    1. score by course      — we lead on both, and by how much
+    1. score by course      — New AskTIM leads on both, and by how much
     2. score by persona     — the lead is concentrated under pressure
     3. integrity cliff rate — why: 1.1.A.a answer-giving, per persona
     4. cost per conversation — the structural gap, and where it comes from
@@ -39,7 +41,7 @@ _OUT = _REPO_ROOT / "visualization" / "outputs" / "comparison"
 
 # Arm identity. Fixed order, never cycled — ours first everywhere.
 _ARMS = ("asktim", "stem")
-_ARM_LABEL = {"asktim": "Our AskTIM", "stem": "STEM AskTIM (MIT)"}
+_ARM_LABEL = {"asktim": "New AskTIM", "stem": "STEM AskTIM"}
 _ARM_COLOR = {"asktim": "#2a78d6", "stem": "#eb6834"}
 
 # Persona families, ordered easiest -> hardest so the widening gap reads left to right.
@@ -197,7 +199,7 @@ def chart_score_by_course(rows: list[Row], plt) -> Path:
     _grouped(ax, [_ROUNDS[c] for c in courses], series, width=0.26)
     _style(ax, ylabel=f"Mean judge score (of {_MAX_SCORE})", ymax=44)
     ax.set_title(
-        "Our tutor scores higher on both courses",
+        "New AskTIM scores higher on both courses",
         color=_INK, fontsize=13, fontweight="bold", loc="left", pad=34,
     )
     ax.text(
@@ -295,7 +297,7 @@ def chart_integrity_cliff(rows: list[Row], plt) -> Path:
         loc="lower left", bbox_to_anchor=(0, 1.06),
     )
     fig.suptitle(
-        "Why: the STEM tutor gives away submission-ready work when pushed",
+        "Why: STEM AskTIM gives away submission-ready work when pushed",
         color=_INK, fontsize=13, fontweight="bold", x=0.008, ha="left", y=0.985,
     )
     fig.text(
@@ -356,7 +358,7 @@ def chart_cost(rows: list[Row], plt) -> Path:
             ax.annotate(f"${bottom:.2f}", (idx, bottom), textcoords="offset points",
                         xytext=(0, 4), ha="center", fontsize=10,
                         color=_INK, fontweight="bold")
-            labels.append(_ARM_LABEL[arm].replace(" (MIT)", ""))
+            labels.append(_ARM_LABEL[arm])
             xs.append(idx)
             idx += 1
         idx += 0.45
@@ -378,11 +380,11 @@ def chart_cost(rows: list[Row], plt) -> Path:
         ax.text(xs[i * 2] + 0.5, -0.16, _ROUNDS[course].replace("\n", " "),
                 ha="center", fontsize=10, color=_INK, transform=ax.get_xaxis_transform())
     ax.set_title(
-        "Their two-calls-per-turn design costs 2.4-3.1x more",
+        "STEM AskTIM's two-calls-per-turn design costs 2.4-3.1x more",
         color=_INK, fontsize=13, fontweight="bold", loc="left", pad=34,
     )
     ax.text(0, 1.085,
-            "Segments are billed components · our arm gets a 41% prompt-cache hit rate, theirs 0%",
+            "Segments are billed components · New AskTIM gets a 41% prompt-cache hit rate, STEM AskTIM 0%",
             transform=ax.transAxes, color=_INK_SOFT, fontsize=9)
     fig.tight_layout()
     path = _OUT / "04_cost_per_conversation.png"
@@ -434,7 +436,7 @@ def chart_distribution(rows: list[Row], plt) -> Path:
             )
 
         ax.set_xticks([0, 1])
-        ax.set_xticklabels([_ARM_LABEL[a].replace(" (MIT)", "") for a in _ARMS],
+        ax.set_xticklabels([_ARM_LABEL[a] for a in _ARMS],
                            color=_INK_SOFT, fontsize=10)
         _style(ax, ylabel=f"Judge score (of {_MAX_SCORE})" if ax is axes[0] else "")
         ax.set_ylim(12, 43)

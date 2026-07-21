@@ -27,12 +27,24 @@ def _check(name, cond, detail=""):
 
 
 def main() -> int:
-    """Assert an archived course is hidden and rejected, and DEFAULT_COURSE is active."""
+    """Assert a course is visible+accepted while active, then hidden+rejected once archived."""
     course = "tmp_course_archived"
+    active_dir = V._CURRICULUM_DIR / course
     archived_dir = V._CURRICULUM_DIR / ARCHIVE_DIRNAME / course
-    (archived_dir / "exercises").mkdir(parents=True, exist_ok=True)
-    (archived_dir / "exercises" / "exercise_1.txt").write_text("BODY", encoding="utf-8")
+    (active_dir / "exercises").mkdir(parents=True, exist_ok=True)
+    (active_dir / "exercises" / "exercise_1.txt").write_text("BODY", encoding="utf-8")
     try:
+        # Active phase: prove the scanner genuinely sees this slug before it's archived.
+        courses = V._list_courses()
+        _check("active course is listed", course in courses, sorted(courses))
+        _check("validate_course accepts active", V.validate_course(course) is None)
+
+        active_slugs = [c["slug"] for c in V.list_context_options()["courses"]]
+        _check("picker includes active course", course in active_slugs, active_slugs)
+
+        # Archive phase: move the same folder and prove the transition hides/rejects it.
+        shutil.move(str(active_dir), str(archived_dir))
+
         courses = V._list_courses()
         _check("archived course not listed", course not in courses, sorted(courses))
         _check("_archive itself not listed", ARCHIVE_DIRNAME not in courses, sorted(courses))
@@ -57,6 +69,7 @@ def main() -> int:
         _check("picker omits archived course", course not in slugs, slugs)
         _check("picker omits _archive itself", ARCHIVE_DIRNAME not in slugs, slugs)
     finally:
+        shutil.rmtree(active_dir, ignore_errors=True)
         shutil.rmtree(archived_dir, ignore_errors=True)
     print(f"\n{_PASSED} passed, {_FAILED} failed")
     return 1 if _FAILED else 0

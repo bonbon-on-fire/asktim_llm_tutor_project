@@ -66,10 +66,10 @@ Writes four charts to `visualization/outputs/comparison/`:
 
 | Chart | Shows |
 | --- | --- |
-| `01_score_by_course.png` | **Judge score by course** — mean of 27 conversations per tutor per course (+4.5 SCD, +3.4 physics) |
+| `01_score_by_course.png` | **Judge score by course** — mean of 27 conversations per tutor per course assignment (+4.5 SCD, +3.4 physics) |
 | `02_score_by_persona.png` | **Judge score by student type** — the two are close on cooperative students and separate as students get harder |
 | `03_integrity_cliff.png` | **Answer-giving failures** — conversations where the tutor handed over submission-ready work (the 12-point `1.1.A.a` deduction) |
-| `04_cost_per_conversation.png` | **Tutor cost per conversation** — STEM AskTIM's per-turn assessment call broken out. Excludes the simulated student (a harness artifact — in production the student is a person) |
+| `04_cost_per_conversation.png` | **Tutor cost per conversation** — STEM AskTIM's per-turn assessment call broken out. Tutor-side model calls only; the simulated student is a harness artifact (in production the student is a person) |
 
 **Scope:** reads only what is on disk — the SCD *practices* and *physics* rounds,
 108 conversations (27 per arm per course). A third round (SCD exercises 1–3) was

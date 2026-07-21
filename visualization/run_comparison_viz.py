@@ -235,8 +235,8 @@ def chart_score_by_course(rows: list[Row], plt) -> Path:
                     ha="center", fontsize=11, color=_INK, fontweight="bold")
 
     _frame(fig, plt, "Judge score by course",
-           "Mean of 27 conversations per tutor per course, scored out of 40 on the "
-           "pedagogy rubric.\nNew AskTIM leads on both.")
+           "Mean of 27 conversations per tutor per course assignment, scored out of 40 "
+           "on the pedagogy rubric.\nNew AskTIM leads on both.")
     path = _OUT / "01_score_by_course.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)
@@ -370,7 +370,7 @@ def chart_cost(rows: list[Row], plt) -> Path:
     _frame(fig, plt, "Tutor cost per conversation",
            "STEM AskTIM makes two model calls per turn — it classifies the student's "
            "message, then replies.\n"
-           f"That costs {ratios[0]:.1f}–{ratios[-1]:.1f}× more. Excludes the simulated student.")
+           f"That costs {ratios[0]:.1f}–{ratios[-1]:.1f}× more.")
     path = _OUT / "04_cost_per_conversation.png"
     fig.savefig(path, dpi=150)
     plt.close(fig)

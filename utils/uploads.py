@@ -19,7 +19,9 @@ ALLOWED_IMAGE_MIMES: dict[str, str] = {
 # Per-file and per-message caps. Kept conservative so a single chat turn can't
 # push a huge multimodal payload at the model or bloat the Postgres row.
 MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
-MAX_IMAGES_PER_MESSAGE = 5
+# Matches MAX_ATTACHMENTS_PER_MESSAGE below: the combined cap always binds first,
+# so anything higher here is unreachable.
+MAX_IMAGES_PER_MESSAGE = 3
 
 # Magic-byte signatures so we don't trust the client-declared MIME blindly.
 _PNG_MAGIC = b"\x89PNG\r\n\x1a\n"

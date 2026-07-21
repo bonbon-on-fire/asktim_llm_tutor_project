@@ -113,6 +113,10 @@ class RunConfig:
     trial: int
     # "asktim" = our tutor (RAG context); "stem" = vendored MIT tutor (no context).
     tutor_impl: str = "asktim"
+    # Cap retrieval at the problem's week number. Sound only where problem N is
+    # week N's material (true for supply_chain_design). False for courses whose
+    # problems are exams spanning the whole term — see --no-week-scope.
+    week_scope: bool = True
 
     @property
     def persona_type(self) -> str:
@@ -235,10 +239,16 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
     figures = discover_figures(config.course, config.number) if config.kind == "exercise" else []
     # Scope retrieval to weeks the student has reached: the problem number is the
     # week number, so cap lecture/practice retrieval at it (drop later weeks).
-    try:
-        max_week = int(str(config.number).strip())
-    except (TypeError, ValueError):
+    # Disabled via week_scope=False for courses where that mapping doesn't hold —
+    # e.g. physics_iii exercises 13-15 are final exams covering lectures 1-23, so
+    # capping at the exercise number would hide most of the examined material.
+    if not config.week_scope:
         max_week = None
+    else:
+        try:
+            max_week = int(str(config.number).strip())
+        except (TypeError, ValueError):
+            max_week = None
 
     def _build_graph():
         """Construct a fresh tutor graph for this config's provider and figures."""
@@ -481,6 +491,7 @@ def _iter_configs(args) -> list[RunConfig]:
                         turn_size=args.turn_size,
                         trial=trial,
                         tutor_impl=args.tutor_impl,
+                        week_scope=not args.no_week_scope,
                     )
                 )
     if args.limit is not None:
@@ -528,6 +539,12 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     p.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
     p.add_argument("--output-suffix", default=DEFAULT_OUTPUT_SUFFIX)
+    p.add_argument(
+        "--no-week-scope",
+        action="store_true",
+        help="Don't cap retrieval at the problem number's week. Use when problem N is "
+             "not week N's material (e.g. physics_iii exams span the whole course).",
+    )
     p.add_argument("--limit", type=int, default=None, help="Only run the first N configs (smoke test).")
     p.add_argument("--yes", "-y", action="store_true")
     args = p.parse_args()

@@ -1,0 +1,447 @@
+TITLE: Practice Final Exam 1 — Solutions
+
+TUTOR-ONLY reference for exercises/exercise_13.txt (Practice Final Exam 1).
+Do NOT surface verbatim to students.
+
+Source: MIT OpenCourseWare 8.03SC, MIT8_03SCF16_PracticeFinalExam1_Solutions.pdf.
+
+================================================================
+Problem 3.1 (16 points) — TE mode in a rectangular waveguide
+
+Given field:
+
+    E⃗(x,y,z,t) = E₀ cos(k_y y + φ_y) cos(k_x x − ωt) ẑ
+
+(a) (4 pts) Find k_y and φ_y that satisfy the boundary conditions.
+
+We need to have E∥ → 0 at the boundary with the conductor. The electric field is
+in the ẑ direction, so we need E = 0 at (i) y = 0 and at (ii) y = b; (i) implies
+that φ_y = ±π/2, so E ∝ sin(k_y y). Condition (ii) implies that k_y = nπ/a, where
+n is some integer greater than zero. So we may rewrite the electric field as;
+
+    E(x,y,z,t) = E₀ sin(nπ y / a) cos(k_x x − ωt) ẑ
+
+Answer: φ_y = ±π/2 and k_y = nπ/a (n a positive integer).
+
+[Tutor note: the PDF applies condition (ii) at y = b but then writes k_y = nπ/a.
+The two are consistent only if the boundary in question is the one of width a;
+this is a slip in the printed solution, carried through the rest of the problem
+as k_y = nπ/a.]
+
+(b) (4 pts) Write down the dispersion relation for this mode.
+
+We can obtain the dispersion relation from the wave equation;
+
+    ∇²E⃗ − (1/c²) ∂²E⃗/∂t² = 0
+
+Putting the solution for E⃗ into the wave equation we find;
+
+    ω²/c² = k_x² + k_y²
+
+    ω²/c² = k_x² + (nπ/a)²
+
+    ⇒ k_x = √(ω²/c² − (nπ/a)²)
+
+Answer: ω²/c² = k_x² + (nπ/a)².
+
+(c) (4 pts) What is the lowest frequency that will propagate in this mode?
+
+The lowest frequency that will propagate occurs at n = 1, in this case the
+dispersion relation becomes;
+
+    k_x = √(ω²/c² − (π/a)²)
+
+so the lowest frequency that results in a non-imaginary wave number is;
+
+    ω_cutoff = πc/a
+
+    ⇒ f_cutoff = c/(2a)
+
+Answer: ω_cutoff = πc/a, i.e. f_cutoff = c/(2a).
+
+(d) (4 pts) What is the magnetic field B⃗(x,y,z,t) associated with this mode?
+
+We can find the magnetic field associated with this mode by the use of Faraday's
+law;
+
+    ∇⃗ × E⃗ = −∂B⃗/∂t
+
+    | x̂      ŷ      ẑ   |
+    | ∂/∂x  ∂/∂y  ∂/∂z |  =  −∂B⃗/∂t
+    | 0      0      E_z |
+
+    E₀k_y cos(k_y y) cos(k_x x − ωt) x̂ + E₀ sin(k_y y) k_x sin(k_x x − ωt) ŷ
+        = −∂B⃗/∂t
+
+    B⃗(x,y,z,t) = E₀ (k_y/ω) cos(k_y y) sin(k_x x − ωt) x̂
+                 − E₀ (k_x/ω) sin(k_y y) cos(k_x x − ωt) ŷ
+
+Answer: B⃗ = E₀(k_y/ω) cos(k_y y) sin(k_x x − ωt) x̂ − E₀(k_x/ω) sin(k_y y)
+cos(k_x x − ωt) ŷ.
+
+
+================================================================
+Problem 3.2 (16 points) — Two coupled masses joined by an elastic band
+
+(a) (5 pts) Coupled differential equations for {x₁, x₂}.
+
+For x₁ we have from Newton's law;
+
+    2m ẍ₁ = −2k x₁ − T sinθ
+
+Where sinθ = (x₁ − x₂)/L. Putting this in, we find;
+
+    2m ẍ₁ = (−2k − T/L) x₁ + (T/L) x₂
+
+    ẍ₁ = (−k/m − T/(2mL)) x₁ + (T/(2mL)) x₂
+
+    ẍ₁ = (−2k/m) x₁ + (k/m) x₂
+
+While for x₂ we find;
+
+    m ẍ₂ = −k x₂ + T sinθ
+
+    m ẍ₂ = (−k − T/L) x₂ + (T/L) x₁
+
+    ẍ₂ = (2k/m) x₁ − (3k/m) x₂
+
+Now calling ω₀² = k/m we can rewrite these as;
+
+    ẍ₁ = −2ω₀² x₁ + ω₀² x₂
+
+    ẍ₂ = 2ω₀² x₁ − 3ω₀² x₂
+
+(b) (7 pts) Find the normal mode frequencies of the system.
+
+In matrix form we can rewrite the equations of motion (using the ansatz
+ẍ_i = −ω² ẍ_i);
+
+    [ −2ω₀²   ω₀²  ] [ x₁ ]        [ x₁ ]
+    [  2ω₀²  −3ω₀² ] [ x₂ ]  = −ω² [ x₂ ]
+
+And solving for the possible values of ω we have;
+
+    [ −2ω₀² + ω²      ω₀²      ] [ x₁ ]
+    [   2ω₀²      −3ω₀² + ω²  ] [ x₂ ]  = 0
+
+    (−2ω₀² + ω²)(−3ω₀² + ω²) − 2ω₀⁴ = 0
+
+    6ω₀⁴ − 5ω₀²ω² + ω⁴ − 2ω₀⁴ = 0
+
+    (4ω₀² − ω²)(ω₀² − ω²) = 0
+
+So the two possible values of ω are;
+
+    ω₁ = ω₀ = √(k/m)
+
+and
+
+    ω₂ = 2ω₀ = 2√(k/m)
+
+Answer: ω₁ = √(k/m) and ω₂ = 2√(k/m).
+
+(c) (4 pts) Sketch the normal modes, indicating magnitude and direction.
+
+In mode 1 (ω₁), shown in the first figure the ratio of the amplitudes of the
+motion of the masses is;
+
+    x₂/x₁ = 1
+
+While in mode 2 (ω₂), shown in the second figure, the ratio of the amplitudes of
+the motion of the masses is;
+
+    x₂/x₁ = −2
+
+[Figure (mode 1): both masses drawn with equal-length arrows pointing in the same
+(+x) direction — 2m with arrow → labelled x₁, m with arrow → labelled x₂ of the
+same length.]
+
+[Figure (mode 2): the 2m mass has an arrow → labelled x₁ pointing in +x; the m
+mass has an arrow ← labelled x₂ pointing in −x and twice as long, i.e. the masses
+move in opposite directions with |x₂| = 2|x₁|.]
+
+
+================================================================
+Problem 3.3 (16 points) — Optical fiber, Brewster's angle, dispersion relation
+
+(a) (5 pts) Largest acceptance angle θ for the fiber.
+
+All rays in the solid rod which are incident on the cylindrical shell at an angle
+less than the critical angle θ_c = sin⁻¹(n_c/n_f) will be trapped in the rod. So
+the largest angle θ that can be incident on the rod and remain inside is given by;
+
+    n_a sinθ = n_f sinθ₂
+
+    θ₂ = π/2 − θ_c
+
+    ⇒ sinθ = (n_f/n_a) sin(π/2 − θ_c)
+
+    ⇒ θ = sin⁻¹( (n_f/n_a) sin(π/2 − θ_c) )
+
+Or equivalently, we can write;
+
+    (n_a/n_f) sinθ = sinθ₂ = √(n_f² − n_c²) / n_f
+
+    sinθ = (n_f/n_a) ( √(n_f² − n_c²) / n_f )
+
+    θ = sin⁻¹( (1/n_a) √(n_f² − n_c²) )
+
+Answer: θ = sin⁻¹( √(n_f² − n_c²) / n_a ).
+
+[Figure 4: path of an extreme ray — the ray enters the flat end face of the fiber
+from outside at angle θ to the fiber axis, refracts to an internal angle θ₂
+measured from the axis, then strikes the core/cladding wall at θ_c measured from
+the normal to that wall (so θ₂ + θ_c = π/2), and zig-zags down the fiber by total
+internal reflection.]
+
+(b) (4 pts) Index n of the liquid from the 100%-polarized reflected ray.
+
+If the reflected light is 100% polarized then it must be incident at Brewster's
+angle. So we have;
+
+    θ_B = tan⁻¹(n₂/n₁) = tan⁻¹(n₂) = π/2 − tan⁻¹(20/25)
+
+    ⇒ n₂ = tan( π/2 − tan⁻¹(4/5) )
+
+Or more simply, we can write;
+
+    tan⁻¹(n₂/n₁) = θ_B
+
+    tanθ_B = 25/20 = 5/4
+
+    ⇒ tan(tan⁻¹(n₂/n₁)) = 5/4
+
+    ⇒ n₂ = 5/4
+
+Answer: n = 5/4 = 1.25.
+
+(c) (7 pts) Dispersion relation ω² = ω₀² + A²k².
+
+(i) Rearranging the dispersion relation we find that the wave number in terms of
+the frequency is given by;
+
+    k = (1/A) √(ω₀² + A²k²)
+
+[Tutor note: this is a typo in the printed solution. The correct rearrangement,
+and the one actually used in the next line and in eq. for v_p, is
+k = (1/A)√(ω² − ω₀²).]
+
+So the lowest frequency that results in a non-imaginary wave number is ω = ω₀, so
+the range of frequencies that can propagate are ω₀ < ω < ∞.
+
+(ii) The phase velocity is given by ω/k, so we find;
+
+    v_p = ω/k = ω / [ (1/A) √(ω² − ω₀²) ] = Aω / √(ω² − ω₀²)
+
+While the group velocity is given by dω/dk;
+
+    v_g = dω/dk = A²k/ω = A √(1 − (ω₀/ω)²)
+
+Answer: propagation for ω₀ < ω < ∞; v_p = Aω/√(ω² − ω₀²),
+v_g = A√(1 − (ω₀/ω)²).
+
+[Figure 5: two plots versus ω. Left, v_p: a horizontal red reference line at
+v_p = A and a vertical red line at ω = ω₀; the curve diverges to +∞ as ω → ω₀⁺
+and falls monotonically, approaching A from above as ω → ∞. Right, v_g: same red
+reference lines at A and ω₀; the curve starts at zero at ω = ω₀ and rises
+monotonically, approaching A from below as ω → ∞.]
+
+
+================================================================
+Problem 3.4 (16 points) — N-slit interference pattern
+
+(a) (6 pts) The number of slits N. Explain your reasoning.
+
+There are three small bumps between peaks. Therefore, N = 5 (Note that there will
+be N − 2 small bumps for an N slit interference pattern).
+
+Answer: N = 5.
+
+(b) (6 pts) The ratio d/D. Explain your reasoning.
+
+First, recall that interference peaks appear at nλ/d, while diffraction minima
+appear at mλ/D where n and m are integers. From the interference pattern above, we
+can see 0th, 1st, 2nd, and 3rd peaks, but cannot see the 4th peak. This means that
+4th peak is cancelled due to the diffraction minima. So we notice that the 1st
+diffraction minima and 4th interference peak are at the same position. Therefore,
+
+    4λ/d = λ/D
+
+and therefore d/D = 4.
+
+Answer: d/D = 4.
+
+(c) (4 pts) Resulting pattern when the slit width is reduced to ~0.
+
+We recall from the demonstration in class that as the size of a slit is reduced
+the diffraction pattern is broadened, in the limit that the width of the slits
+goes to zero, the diffraction pattern is infinitely broadened so that it no longer
+modulates the interference pattern.
+
+[Figure 7: the drawn answer is a train of equally spaced, equally tall principal
+interference maxima across the whole plotted range of sin θ — the same peak
+spacing as before, but with the diffraction envelope removed so every principal
+maximum reaches the same height as the original central maximum, each with the
+same small subsidiary bumps between them.]
+
+
+================================================================
+Problem 3.5 (20 points) — Struck string of length 2L
+
+(a) (3 pts) Sketch the first three normal modes.
+
+[Figure 9: the string is fixed at both walls. Mode (1): a single half-wavelength
+hump filling the whole length, no interior node. Mode (2): one full wavelength —
+a hump above the axis in the left half and a hump below the axis in the right
+half, with one interior node at the center. Mode (3): three half-wavelengths — up,
+down, up — with two interior nodes.]
+
+(b) (10 pts) Amplitude of the n-th normal mode; lowest unexcited mode.
+
+In this case, the displacement of the string can be expressed in terms of a sum of
+normal modes with the form;
+
+    y(x,t) = ∑_n A_n sin(k_n x) sin(ω_n t + φ)     with φ = 0
+
+with ω_n = k_n v = k_n √(T/μ) and k_n = nπ/(2L).
+
+So the transverse velocity (in terms of a normal mode expansion) can be written;
+
+    ẏ(x,t) = ∑_n A_n ω_n sin(k_n x) cos(ω_n t)
+
+And the amplitude of excitation on each normal mode A_n can be found by;
+
+    A_n ω_n = (2/2L) ∫₀^(2L) ẏ(x,t = 0) sin(k_n x) dx
+
+    A_n = (1/(ω_n L)) [ ∫_(L−a)^L v₀ sin(k_n x) dx − ∫_L^(L+a) v₀ sin(k_n x) dx ]
+
+    A_n = −(v₀/(ω_n k_n L)) [ cos(k_n x)|_(L−a)^L − cos(k_n x)|_L^(L+a) ]
+
+    A_n = −(v₀/(ω_n k_n L)) [ cos(k_n L) − cos(k_n(L − a)) − cos(k_n(L + a))
+          + cos(k_n L) ]
+
+    A_n = −(v₀/(ω_n k_n L)) [ 2cos(k_n L) − 2cos(k_n L) cos(k_n a) ]
+
+    A_n = −(2v₀/(ω_n k_n L)) (1 − cos(k_n a)) (cos(k_n L))
+
+    A_n = −(v₀/v) (8L/(n²π²)) [ (1 − cos( (nπ/2)(a/L) )) cos(nπ/2) ]
+
+    A_n = −(v₀/√(T/μ)) (8L/(n²π²)) [ (1 − cos( (nπ/2)(a/L) )) cos(nπ/2) ]
+
+From the last equation above we can see that the n = 1 mode is unexcited. We could
+also see that this mode would be unexcited from symmetry, since the n = 1 mode is
+symmetric about the center of the string, while the initial conditions are
+anti-symmetric. Similarly any mode which is symmetric about the center of the
+string will be unexcited.
+
+Answer: A_n = −(v₀/√(T/μ)) (8L/(n²π²)) [ (1 − cos((nπ/2)(a/L))) cos(nπ/2) ]; the
+lowest unexcited mode is n = 1.
+
+(c) (5 pts) Sketch the displacement of the string at t = (L/2)√(μ/T).
+
+The displacement splits into two counter propagating waves, each with height
+
+    h = a v₀ / √(T/μ)
+
+as shown below.
+
+[Figure 10: the string is flat except for two triangular pulses. A single upward
+triangle of full base width 2a and height h sits with its center a distance L/2
+from the left wall; a single downward triangle of full base width 2a and depth h
+sits with its center a distance L/2 from the right wall. The rest of the string is
+at zero displacement.]
+
+Answer: two counter-propagating triangular pulses of base 2a and height
+h = a v₀ /√(T/μ), one up at L/2 from the left wall and one down at L/2 from the
+right wall.
+
+
+================================================================
+Problem 3.6 (18 points) — Radiation from an oscillating charge on a spring
+
+(a) (4 pts) Electric field radiated in an arbitrary direction in the x−z plane at
+distance R ≫ A.
+
+Assuming that the damping for the charge is neglectable, then the particle's
+motion is just that of a S.H.O, whose solution is;
+
+    x(t) = A cos(ω₀t)
+
+    ẍ(t) = −Aω² cos(ω₀t)
+
+with ω₀ = √(k/m). Now the electric field is given by;
+
+    E⃗(R⃗,t) = − q a⃗⊥(t′)/(4πε₀Rc²) = − q(n̂ × (n̂ × a⃗(t′)))/(4πε₀Rc²)
+
+Where n̂ is the unit vector pointing from the source to the observer. In the x−z
+plane we have n̂ = sinθ x̂ + cosθ ẑ. So the electric field is given by;
+
+    ( qAω₀² / (4πε₀c²R) ) cos(ω₀(t − R/c)) (cos²θ x̂ − cosθ sinθ ẑ)
+
+Answer: E⃗ = ( qAω₀²/(4πε₀c²R) ) cos(ω₀(t − R/c)) (cos²θ x̂ − cosθ sinθ ẑ).
+
+(b) (4 pts) Total time averaged power radiated.
+
+The total power radiated by the particle is just given to us by the Larmor
+formula;
+
+    P(t) = q²a²(t′)/(6πε₀c³) = q²A²ω₀⁴ cos²(ω₀(t − R/c)) / (6πε₀c³)
+
+Time averaging this results in;
+
+    ⟨P⟩ = q²A²ω₀⁴ / (12πε₀c³)
+
+Answer: ⟨P⟩ = q²A²ω₀⁴/(12πε₀c³).
+
+(c) (6 pts) Rough estimate of the time to decay to A/e, assuming constant radiated
+power. Is the assumption realistic?
+
+With the assumption that the power radiated does not change much over time, then
+the time t it would take for the original amplitude of motion to decrease to 1/e
+of its value can be found by;
+
+    (1/2) m ω₀² A² − ⟨P⟩ t = (1/2) m ω₀² (A/e)²
+
+    ⇒ t = ( m ω₀² A² / (2⟨P⟩) ) ( 1 − (1/e)² )
+
+    t ≈ 0.86 × 6π m ε₀ c³ / (q² ω₀²)
+
+This assumption is not quite realistic since the power radiated by the charge is
+proportional to the amplitude of its motion squared and the amplitude of the
+motion is decreasing as energy is radiated away. This method will always
+underestimate the time needed for the amplitude to decrease.
+
+Answer: t ≈ 0.86 × 6πmε₀c³/(q²ω₀²); the assumption is not realistic and
+underestimates the decay time.
+
+(d) (4 pts) Refined estimate using dA/dt = (dA/dE) × (dE/dt).
+
+The energy E is given by;
+
+    E = m ω₀² A² / 2
+
+so we have;
+
+    dA/dE = 1/(m ω₀² A)
+
+Whereas the average power radiated per cycle is what we found in part (b);
+
+    dE/dt = ⟨P⟩ = q²A²ω₀⁴ / (12πε₀c³)
+
+Combining these to find dA/dt we get;
+
+    dA/dt = (dA/dE)(dE/dt) = ( 1/(mω₀²A) )( q²A²ω₀⁴/(12πε₀c³) )
+          = q²Aω₀² / (12πε₀c³m)
+
+Now integrating to find the time needed for the amplitude to decrease from A to
+A/e, we have;
+
+    ∫_(A/e)^A dA/A = ( q²ω₀²/(12πε₀c³m) ) ∫ dt
+
+    ln(A) − ln(A/e) = ln(e) = 1 = ( q²ω₀²/(12πε₀c³m) ) t
+
+so the time t is given by;
+
+    t = ( 12πε₀c³m / (q²ω₀²) )
+
+Answer: t = 12πε₀c³m/(q²ω₀²).

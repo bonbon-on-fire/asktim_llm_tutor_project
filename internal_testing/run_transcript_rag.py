@@ -45,6 +45,7 @@ load_dotenv(find_dotenv(usecwd=True))
 from langchain_core.messages import AIMessage, HumanMessage  # noqa: E402
 
 from internal_testing.run_transcript import _next_transcript_number  # noqa: E402
+from internal_testing.stem_tutor_adapter import StemTutorAdapter  # noqa: E402
 from rag.retrieve import format_context, has_index, retrieve_scored, to_records  # noqa: E402
 from ui_core.tutor_bridge import RETRIEVED_CONTEXT_HEADER, RetrievedContext  # noqa: E402
 from students.run_student import build_graph as build_student_graph  # noqa: E402
@@ -110,11 +111,22 @@ class RunConfig:
     number: str
     turn_size: int
     trial: int
+    # "asktim" = our tutor (RAG context); "stem" = vendored MIT tutor (no context).
+    tutor_impl: str = "asktim"
+    # Cap retrieval at the problem's week number. Sound only where problem N is
+    # week N's material (true for supply_chain_design). False for courses whose
+    # problems are exams spanning the whole term — see --no-week-scope.
+    week_scope: bool = True
 
     @property
     def persona_type(self) -> str:
         """Family prefix of the persona (text before the first underscore)."""
         return self.persona.split("_", 1)[0]
+
+    @property
+    def context_mode(self) -> str:
+        """Retrieval mode this arm runs under (the STEM tutor gets no lectures)."""
+        return "rag" if self.tutor_impl == "asktim" else "none"
 
 
 # --------------------------------------------------------------------------- #
@@ -227,16 +239,39 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
     figures = discover_figures(config.course, config.number) if config.kind == "exercise" else []
     # Scope retrieval to weeks the student has reached: the problem number is the
     # week number, so cap lecture/practice retrieval at it (drop later weeks).
-    try:
-        max_week = int(str(config.number).strip())
-    except (TypeError, ValueError):
+    # Disabled via week_scope=False for courses where that mapping doesn't hold —
+    # e.g. physics_iii exercises 13-15 are final exams covering lectures 1-23, so
+    # capping at the exercise number would hide most of the examined material.
+    if not config.week_scope:
         max_week = None
+    else:
+        try:
+            max_week = int(str(config.number).strip())
+        except (TypeError, ValueError):
+            max_week = None
 
     def _build_graph():
         """Construct a fresh tutor graph for this config's provider and figures."""
         return create_tutor_graph(system_prompt, provider=config.provider, figures=figures)
 
-    tutor_graph = _build_graph()
+    # The STEM arm swaps in the vendored MIT tutor behind the same reply seam and
+    # runs without retrieval (see meeting_notes/2026-07-21.md — round one is
+    # deliberately no-context, matching how that tutor ships).
+    is_stem = config.tutor_impl == "stem"
+    stem_adapter = (
+        StemTutorAdapter(
+            course=config.course,
+            kind=config.kind,
+            number=config.number,
+            problem_text=_problem_text(config.course, config.kind, config.number),
+            turn_size=config.turn_size,
+            provider=config.provider,
+        )
+        if is_stem
+        else None
+    )
+
+    tutor_graph = None if is_stem else _build_graph()
     student_graph = build_student_graph(prompt_name=config.persona)
     student_assignment = _student_assignment_text(config)
 
@@ -263,20 +298,27 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
         # not onto the student's turn — so the student's words stay clean and stale
         # RAG doesn't accumulate in the growing history. ``rc.records`` captures what
         # was retrieved (source/score/text) for the transcript.
-        rc = _retrieved_context(config.course, student_text, max_week)
+        rc = RetrievedContext() if is_stem else _retrieved_context(config.course, student_text, max_week)
         rag_block = f"{RETRIEVED_CONTEXT_HEADER}\n\n{rc.text}" if rc.text else ""
         tutor_messages.append(HumanMessage(content=student_text))
-        tutor_messages, tutor_text = _tutor_reply_with_retry(
-            tutor_messages, tutor_graph, _build_graph, retrieved_context=rag_block
-        )
 
-        tutor_reasoning = ""
-        last_msg = tutor_messages[-1] if tutor_messages else None
-        if isinstance(last_msg, AIMessage):
-            raw = last_msg.content if isinstance(last_msg.content, str) else str(last_msg.content)
-            parsed_reasoning, _ = parse_tutor_response(raw)
-            if isinstance(parsed_reasoning, str) and parsed_reasoning.strip():
-                tutor_reasoning = parsed_reasoning.strip()
+        if is_stem:
+            tutor_messages, tutor_text = stem_adapter.reply(tutor_messages)
+            # The MIT tutor's analogue of pedagogical reasoning: the intents it
+            # routed on plus the assessor's raw JSON (see StemTutorAdapter).
+            tutor_reasoning = stem_adapter.last_reasoning
+            last_msg = stem_adapter.last_reply_message
+        else:
+            tutor_messages, tutor_text = _tutor_reply_with_retry(
+                tutor_messages, tutor_graph, _build_graph, retrieved_context=rag_block
+            )
+            tutor_reasoning = ""
+            last_msg = tutor_messages[-1] if tutor_messages else None
+            if isinstance(last_msg, AIMessage):
+                raw = last_msg.content if isinstance(last_msg.content, str) else str(last_msg.content)
+                parsed_reasoning, _ = parse_tutor_response(raw)
+                if isinstance(parsed_reasoning, str) and parsed_reasoning.strip():
+                    tutor_reasoning = parsed_reasoning.strip()
 
         student_messages.append(student_message)
         student_messages.append(HumanMessage(content=tutor_text))
@@ -298,11 +340,20 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
         turn_calls = {
             "student": priced(student_model, usage_from_message(student_message)),
             "tutor": priced(tutor_model, usage_from_message(last_msg)),
-            "embedding": {
+        }
+        if is_stem:
+            # The MIT tutor spends a second, blocking model call per turn on its
+            # assessment step. Counting only the reply would understate it ~2x and
+            # make the cost comparison meaningless.
+            turn_calls["tutor_assessment"] = priced(
+                model_from_message(stem_adapter.last_assessment_message, tutor_fallback),
+                usage_from_message(stem_adapter.last_assessment_message),
+            )
+        else:
+            turn_calls["embedding"] = {
                 **priced(embed_model, {"input_tokens": emb_tokens}),
                 "tokens_estimated": True,
-            },
-        }
+            }
         turn_usd = round(sum(c["usd"] for c in turn_calls.values()), 6)
 
         exchanges.append(
@@ -325,6 +376,7 @@ def _aggregate_cost(exchanges: list[dict[str, object]]) -> dict:
     """Sum per-turn costs into a transcript-level estimate (total / component / model)."""
     total = 0.0
     by_component: dict[str, float] = {"student": 0.0, "tutor": 0.0, "embedding": 0.0}
+    # "tutor_assessment" (STEM arm only) is added on demand by the loop below.
     by_model: dict[str, dict] = {}
     placeholder = False
     for e in exchanges:
@@ -388,12 +440,19 @@ def _save_transcript(
         transcript_path = output_dir / f"transcript_{transcript_num}.json"
         payload = {
             "tutor_provider": config.provider,
-            "tutor_prompt": config.tutor_prompt,
+            # The STEM arm uses the vendored tutor's own prompts; recording our
+            # --tutor value there would wrongly imply tutor_07 shaped its replies.
+            "tutor_prompt": (
+                config.tutor_prompt
+                if config.tutor_impl == "asktim"
+                else "open_learning_ai_tutor (vendored)"
+            ),
             "student_persona": config.persona,
             "course": config.course,
             "exercise_number": config.number,
             "exercise_kind": config.kind,
-            "context_mode": "rag",
+            "tutor_impl": config.tutor_impl,
+            "context_mode": config.context_mode,
             "figures": figure_names,
             "turn_size": config.turn_size,
             "context": context_text,
@@ -431,6 +490,8 @@ def _iter_configs(args) -> list[RunConfig]:
                         number=number,
                         turn_size=args.turn_size,
                         trial=trial,
+                        tutor_impl=args.tutor_impl,
+                        week_scope=not args.no_week_scope,
                     )
                 )
     if args.limit is not None:
@@ -461,6 +522,12 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--course", default=DEFAULT_COURSE)
     p.add_argument("--tutor", default=DEFAULT_TUTOR)
     p.add_argument("--provider", choices=["gpt", "claude"], default=DEFAULT_PROVIDER)
+    p.add_argument(
+        "--tutor-impl",
+        choices=["asktim", "stem"],
+        default="asktim",
+        help="Which tutor to drive: ours (RAG context) or the vendored MIT STEM tutor (no context).",
+    )
     p.add_argument("--personas", nargs="+", default=DEFAULT_PERSONAS)
     p.add_argument(
         "--problems",
@@ -472,6 +539,12 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     p.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
     p.add_argument("--output-suffix", default=DEFAULT_OUTPUT_SUFFIX)
+    p.add_argument(
+        "--no-week-scope",
+        action="store_true",
+        help="Don't cap retrieval at the problem number's week. Use when problem N is "
+             "not week N's material (e.g. physics_iii exams span the whole course).",
+    )
     p.add_argument("--limit", type=int, default=None, help="Only run the first N configs (smoke test).")
     p.add_argument("--yes", "-y", action="store_true")
     args = p.parse_args()
@@ -490,7 +563,8 @@ def main() -> int:
     if unknown:
         print(f"Unknown personas: {sorted(unknown)}")
         return 1
-    if not has_index(args.course):
+    # The STEM arm runs without retrieval, so a missing index isn't fatal for it.
+    if args.tutor_impl == "asktim" and not has_index(args.course):
         print(f"No RAG index for course {args.course!r} — build it first (python -m rag.ingest ...).")
         return 1
 
@@ -498,7 +572,8 @@ def main() -> int:
     total = len(configs)
     print(
         f"RAG batch: {total} conversation(s) | course={args.course} tutor={args.tutor} "
-        f"provider={args.provider} | {len(args.personas)} personas x {len(args.problems)} problems "
+        f"impl={args.tutor_impl} provider={args.provider} | "
+        f"{len(args.personas)} personas x {len(args.problems)} problems "
         f"x {args.trials} trials | turns={args.turn_size} workers={args.workers} "
         f"-> *_{args.output_suffix}/"
     )

@@ -1,0 +1,247 @@
+TITLE: Practice Exam 1 — Solutions
+
+TUTOR-ONLY reference for exercises/exercise_11.txt (Practice Exam 1).
+Do NOT surface verbatim to students.
+
+Source: MIT OpenCourseWare 8.03SC, MIT8_03SCF16_PracticeExam1_Solutions.pdf.
+
+================================================================
+Problem 1.1
+
+(a) When the bottom of the mass falls off the force of gravity on the system
+decreases by (1 − α)Mg, so the equilibrium position will move upward a distance
+(1 − α)Mg/k. In the coordinate system centered on the initial position of the
+mass, the new equilibrium position will be
+
+    y = (1 − α)Mg / k                                                    (1)
+
+(b) As usual, ω₀ = √(k/(αM)). Recall from the first problem set that gravity does
+not affect the oscillation frequency. Therefore, the period of the oscillations
+will be
+
+    τ = 2π/ω₀ = 2π√(αM/k)                                                (2)
+
+Answer: τ = 2π√(αM/k)
+
+(c) The most general form for the oscillations of this undamped, undriven
+harmonic oscillator is
+
+    y(t) = A cos(ω₀t + φ) + (1 − α)Mg/k                                  (3)
+
+where the (1 − α)Mg/k term comes from the fact that our system of coordinates is
+not centered on the equilibrium position of the oscillator. For simplicity we
+will move to a coordinate system centered on the new equilibrium position for the
+remainder of the problem. In this new coordinate system the motion of the system
+will be given by
+
+    y(t) = A cos(ω₀t + φ)                                                (4)
+
+(d) Since the system is initially at rest at the equilibrium position of the
+original (mass M) system, we know that
+
+    y(0)  =  −(1 − α)Mg/k                                                (5)
+    ẏ(0)  =  0                                                           (6)
+
+From (6) and the minus sign in (5) we know that φ = π (note that we could also
+have said that φ = 0 and included the minus sign in the coefficient). From (5) we
+can see that the amplitude of oscillations will be A = (1 − α)Mg/k.
+
+Answer: φ = π, A = (1 − α)Mg/k
+
+(e) The potential energy stored in the spring will be PE(y) = ½ky², so
+
+    PE(t) = ((1 − α)Mg)² / (2k) · cos²(ω₀t − π)                          (7)
+
+The kinetic energy of the mass is KE = ½αMẏ², and
+
+    ẏ(t) = −√(k/(αM)) · (1 − α)Mg/k · sin(ω₀t − π)                       (8)
+
+so
+
+    KE(t) = ((1 − α)Mg)² / (2k) · sin²(ω₀t − π)                          (9)
+
+and E = KE + PE = ((1 − α)Mg)²/k, a constant.
+
+[Tutor note: the printed total, ((1 − α)Mg)²/k, does not follow from (7) and (9),
+which sum to ((1 − α)Mg)²/(2k). The factor of 2 appears to be a typo in the
+official solution; the constancy of E is the point being made.]
+
+
+================================================================
+Problem 1.2
+
+(a)
+
+    A :  ẍ  =  −(k/m)x − (b/m)(ẋ + ω_d s₀ sin(ω_d t))                    (10)
+    B :  ẍ  =  −(k/m)(x − s₀ cos(ω_d t)) − (b/m)ẋ                        (11)
+
+So, rearranging to put the driving term on the right,
+
+    A :  ẍ + Γẋ + ω₀²x  =  −Γω_d s₀ sin(ω_d t)                           (12)
+    B :  ẍ + Γẋ + ω₀²x  =  ω₀²s₀ cos(ω_d t)                              (13)
+
+(b) The steady state solution in complex notation will be of the form
+z(t) = C e^(−iω_d t) for both cases. First, we'll rewrite the equations of motion
+in complex notation:
+
+    A :  z̈ + Γż + ω₀²z  =  −iΓω_d s₀ e^(−iω_d t)                        (14)
+    B :  z̈ + Γż + ω₀²z  =  ω₀²s₀ e^(−iω_d t)                            (15)
+
+Plugging our ansatz into the equations of motion yields
+
+    A :  (−ω_d² − iΓω_d + ω₀²) C  =  −iΓω_d s₀                           (16)
+    B :  (−ω_d² − iΓω_d + ω₀²) C  =  ω₀²s₀                               (17)
+
+Rearranging, we obtain
+
+    A :  C  =  − iΓω_d s₀ / (−ω_d² − iΓω_d + ω₀²)                        (18)
+    B :  C  =  ω₀²s₀ / (−ω_d² − iΓω_d + ω₀²)                             (19)
+
+Multiplying the expressions by
+
+    (−ω_d² + iΓω_d + ω₀²) / (−ω_d² + iΓω_d + ω₀²)
+
+so that the denominators are real, we find
+
+    A :  C  =  − ( i(ω₀² − ω_d²) − Γω_d ) Γω_d s₀
+               ────────────────────────────────────                      (20)
+                    (ω₀² − ω_d²)² + Γ²ω_d²
+
+    B :  C  =  ( (ω₀² − ω_d²) + iΓω_d ) ω₀²s₀
+               ───────────────────────────────                           (21)
+                   (ω₀² − ω_d²)² + Γ²ω_d²
+
+The real amplitude of oscillation is the absolute value of the complex amplitude:
+
+    A :  A  =  Γω_d s₀ / √((ω₀² − ω_d²)² + Γ²ω_d²)                       (22)
+    B :  A  =  ω₀²s₀ / √((ω₀² − ω_d²)² + Γ²ω_d²)                         (23)
+
+[Figure 1: Two Mathematica plots of amplitude as a function of ω_d/ω₀, with
+Γ = 0.3. The upper plot is case A: A/(Γs₀) plotted from the expression
+(0.3·w)/√((1 − w²)² + 0.09w²) over w from 0 to 3. It starts at 0 at w = 0, rises
+to a sharp peak of 1.0 at w = 1, then falls off, still around 0.1 at w = 3. The
+lower plot is case B: A/(ω₀²s₀) plotted from 1/√((1 − w²)² + 0.09w²) over the same
+range. It starts at 1.0 at w = 0, rises to a peak of about 3.3 just below w = 1,
+then decays to nearly 0 by w = 3.]
+
+(c) To find the drive frequency which results in the greatest amplitude we must
+take the derivative of the amplitude with respect to ω_d:
+
+    A :  dA/dω_d  =  Γs₀ (ω₀⁴ − ω_d⁴)
+                     ───────────────────────────────                     (24)
+                     ((ω₀² − ω_d²)² + Γ²ω_d²)^(3/2)
+
+    B :  dA/dω_d  =  −ω₀²s₀ ( 2ω_d³ − (2ω₀² − Γ)ω_d )
+                     ─────────────────────────────────                   (25)
+                       ((ω₀² − ω_d²)² + Γ²ω_d²)^(3/2)
+
+Setting these derivatives equal to zero and solving for ω_d yields
+
+    A :  ω_d  =  ±ω₀                                                     (26)
+    B :  ω_d  =  0, ±√(ω₀² − Γ/2)                                        (27)
+
+Since negative frequencies are unphysical and the zero frequency case is a local
+minimum, we find that the maximum response is achieved for ω_d = ω₀ for case A
+and ω_d = √(ω₀² − Γ/2) for case B.
+
+Answer: case A peaks at ω_d = ω₀; case B peaks at ω_d = √(ω₀² − Γ/2)
+
+(d) In case A, the amplitude of oscillations goes to zero as ω_d/ω₀ → 0 and it
+decays to zero as 1/ω_d as ω_d/ω₀ → ∞. In case B, amplitude goes to ω₀²s₀ as
+ω_d/ω₀ → 0, and it decays to zero as 1/ω_d² as ω_d/ω₀ → ∞, so the amplitude drops
+off faster as ω_d increases in the second case.
+
+
+================================================================
+Problem 1.3
+
+(A) We define our coordinates as follows: x_n (n = 1, 2, 3) is the displacement of
+the nth mass from the left from its equilibrium position, positive x_n to the
+right. The mass matrix is
+
+            ⎛ m   0    0 ⎞
+    M   =   ⎜ 0   3m   0 ⎟                                               (28)
+            ⎝ 0   0    m ⎠
+
+and the k matrix is
+
+               ⎛  2   −1    0 ⎞
+    K = ω₀²    ⎜ −1    2   −1 ⎟                                          (29)
+               ⎝  0   −1    2 ⎠
+
+where ω₀² = k/m, so we have
+
+    ⎛      ⎛   2    −1     0 ⎞           ⎞
+    ⎜ ω₀²  ⎜ −1/3   2/3  −1/3 ⎟  − ω²I   ⎟ C  =  0                       (30)
+    ⎝      ⎝   0    −1     2 ⎠           ⎠
+
+(B) Again, x_n (n = 1, 2, 3) is the displacement of the nth mass from the left
+from its equilibrium position, positive x_n to the right.
+
+    ⎛ ⎛ g/l + k/m     −k/m          0        ⎞           ⎞
+    ⎜ ⎜   −k/m      g/l + 4k/m    −3k/m      ⎟  − ω²I    ⎟ C  =  0       (31)
+    ⎝ ⎝     0         −3k/m      g/l + 3k/m  ⎠           ⎠
+
+(C) We number the masses starting with mass 1 at the top right and moving
+clockwise around the ring. We define our coordinates as follows: x_n
+(n = 1, 2, 3, 4) is the displacement of the nth mass from its equilibrium
+position, positive x_n in the clockwise direction.
+
+    ⎛      ⎛  4   −3    0   −1 ⎞           ⎞
+    ⎜      ⎜ −3    4   −1    0 ⎟           ⎟
+    ⎜ ω₀²  ⎜  0   −1    4   −3 ⎟  − ω²I    ⎟ C  =  0                     (32)
+    ⎝      ⎝ −1    0   −3    4 ⎠           ⎠
+
+(D) Q_n (n = 1, 2, 3, 4) is the charge on the upper plate of the nth capacitor
+from the left. Notice, however, that these charges are not linearly independent;
+charge cannot cross from the upper half of the circuit (with the inductors) to
+the lower half, so the total charge in each half must remain constant. Therefore,
+we can always solve for the charge on one of the capacitors in terms of the other
+three.
+
+Next, recall Kirchhoff's junction rule: the sum of currents in a network of
+conductors meeting at a point is zero. Applying this law at the point between the
+left-most capacitor and the left-most inductor we find that the current across
+the first inductor is simply Q̇₁ = −I₁, where I_n is the current across the nth
+inductor. Applying the rule between the first and second inductors yields
+Q̇₂ = I₁ − I₂. Likewise, Q̇₃ = I₂ − I₃. Hence,
+
+    I₁  =  −Q̇₁                                                          (33)
+    I₂  =  −Q̇₁ − Q̇₂                                                     (34)
+    I₃  =  −Q̇₁ − Q̇₂ − Q̇₃                                                (35)
+        =  Q̇₄                                                           (36)
+
+To derive the equations of motion, recall that the sum of the potential
+differences across the circuit elements along any closed loop path through the
+circuit must be zero. Applying this rule around the three simple loops in the
+circuit yields
+
+    (1/LC)(Q₁ − Q₂) − İ₁  =  0                                           (37)
+    (1/LC)(Q₂ − Q₃) − İ₂  =  0                                           (38)
+    (1/LC)(Q₃ − Q₄) + İ₃  =  0                                           (39)
+
+If we take the time derivative of each equation and replace all of the
+derivatives of Q with linear combinations of the currents I_n we obtain the
+equations of motion in terms of the currents:
+
+    (1/LC)(2I₁ − I₂) + Ï₁       =  0                                     (40)
+    (1/LC)(2I₂ − I₁ − I₃) + Ï₂  =  0                                     (41)
+    (1/LC)(2I₃ − I₂) + Ï₃       =  0                                     (42)
+
+    ⇒
+    ⎛       ⎛  2   −1    0 ⎞           ⎞
+    ⎜ 1/LC  ⎜ −1    2   −1 ⎟  − ω²I    ⎟ C  =  0                         (43)
+    ⎝       ⎝  0   −1    2 ⎠           ⎠
+
+(E) Defining x_n to be the horizontal distance from equilibrium of the nth mass
+from the top,
+
+    ẍ₁ + (5g/L)x₁ − (2g/L)x₂             =  0                            (44)
+    ẍ₂ + (3g/L)x₂ − (2g/L)x₁ − (g/L)x₃   =  0                            (45)
+    ẍ₃ + (g/L)(x₃ − x₂)                  =  0                            (46)
+
+so
+
+    ⎛      ⎛  5   −2    0 ⎞           ⎞
+    ⎜ g/L  ⎜ −2    3   −1 ⎟  − ω²I    ⎟ C  =  0                          (47)
+    ⎝      ⎝  0   −1    1 ⎠           ⎠

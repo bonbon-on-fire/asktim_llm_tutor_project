@@ -13,6 +13,7 @@ from pathlib import Path
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import practice_exists as _practice_exists
+from utils.curriculum import list_courses as _list_active_courses
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -25,10 +26,12 @@ DEFAULT_EXERCISE = "01"
 
 
 def _list_courses() -> set[str]:
-    """Return the set of course directory names under ``curriculum/``."""
-    if not _CURRICULUM_DIR.is_dir():
-        return set()
-    return {p.name for p in _CURRICULUM_DIR.iterdir() if p.is_dir()}
+    """Return the set of ACTIVE course directory names under ``curriculum/``.
+
+    Delegates to utils.curriculum so archived courses (under
+    ``curriculum/_archive/``) are excluded in exactly one place.
+    """
+    return set(_list_active_courses(_CURRICULUM_DIR))
 
 
 def _tutor_prompt_exists(tutor: str) -> bool:

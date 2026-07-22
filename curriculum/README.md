@@ -38,6 +38,8 @@ curriculum/
       ...
     lecture_index.json               # optional — maps each lecture stem to its real Week/Lesson/Video citation
     rag_index/                       # optional — built RAG index (vectors.npy + chunks.jsonl + manifest.json)
+  _archive/                          # archived courses — hidden from the apps, still readable by tooling
+    <course_name>/                   # same layout as an active course
 ```
 
 - Each course is a subfolder (for example `cities_and_climate_change/`, `mathematics_for_cs/`).
@@ -61,9 +63,13 @@ curriculum/
 | `cities_and_climate_change/` | Cities and Climate Change: Mitigation and Adaptation (MIT 11.270x) | 12 — case study city research + mitigation/adaptation planning; **live in AskTIM for Spring 2026** |
 | `intro_to_international_development_planning/` | Introduction to International Development Planning (MIT 11.701) | 24 — 700–800 word reflection prompts |
 | `mathematics_for_cs/` | Mathematics for Computer Science (MIT 6.1200J) | 10 — discrete-math problem sets |
-| `physics_iii_vibrations_and_waves/` | Physics III: Vibrations and Waves (MIT 8.03SC) | 10 — vibrations/waves problem sets |
+| `physics_iii_vibrations_and_waves/` | Physics III: Vibrations and Waves (MIT 8.03SC) | 17 — 10 problem sets, 5 practice exams, and the 2 real Fall 2016 exams; also ships 24 `lectures/` transcripts, a `lecture_index.json`, and `exercises_solutions/` for the 5 practice exams (OCW publishes no solutions for the problem sets or the real exams) |
 | `meaning_of_life/` | The Meaning of Life (MIT 21A.157) | 3 — vignette + investigation + final reflection papers |
 | `supply_chain_design/` | MIT CTL.SC2x Supply Chain Design | 8 graded exercises (weeks 1–10, non-consecutive) — network/facility-location, production-planning, and supply-chain-finance assignments; also ships 8 ungraded `practices/`, 160 `lectures/` transcripts, and a `lecture_index.json` of real Week/Lesson/Video citations |
+
+All six courses above are currently **active**. Archived courses, if any, live
+under `_archive/` and are listed by `list_archived_courses()` in
+[`utils/curriculum.py`](../utils/curriculum.py).
 
 The four courses beyond Cities and Climate Change (Development Planning, Mathematics for CS, Physics III, and Meaning of Life) were added in June 2026 as **cross-course test contexts** (two STEM, two humanities) to check how the tutor behaves across subjects. `supply_chain_design/` (MIT CTL.SC2x) was added later as a lecture-heavy course. Only `cities_and_climate_change/` is deployed to real students.
 
@@ -77,6 +83,35 @@ The four courses beyond Cities and Climate Change (Development Planning, Mathema
 6. If the course has lecture transcripts, drop plain `.txt` files into `lectures/`; they are included in the tutor context for every exercise in the course.
 7. Optionally add `online_link.txt` with the course's MIT OpenCourseWare URL — the source link for RAG ingestion of fuller course materials (see Phase 11 in the root [PLANNING.md](../PLANNING.md)).
 8. Optionally add `tutor_rules.txt` with course-specific tutor rules — they're appended to the base prompt for this course only (no per-course prompt fork).
+
+## Archiving a course
+
+Archived courses stay in the repo but disappear from the apps: the sandbox
+context switcher stops listing them and `validate_course` rejects their slug, so
+their embed URLs return 404.
+
+1. Move the folder: `git mv curriculum/<course> curriculum/_archive/<course>`.
+2. Confirm no app still defaults to it — `DEFAULT_COURSE` in
+   [main_ui/routes/_validation.py](../main_ui/routes/_validation.py) and
+   [sandbox_ui/routes/_validation.py](../sandbox_ui/routes/_validation.py). The
+   `test_validation_archive` standalone tests assert this.
+3. Commit. The course's `rag_index/` moves with it, since the index is a child
+   of the course folder — it stays right where offline tooling can still read it.
+
+Existing conversations that reference an archived course still render in
+`database_ui` — its display-name map is hardcoded and never reads `curriculum/`.
+
+Offline tooling still reaches an archived course by explicit slug (for example
+the eval runners, or reading its `rag_index/` directly), because `course_dir()`
+falls back to `curriculum/_archive/<course>/`. Only discovery and validation
+change. `rag.ingest` is the one exception: it deliberately refuses an archived
+slug (`parser.error`, exit 2) rather than silently rebuilding an index for a
+retired course — unarchive the course first if you need to re-ingest it.
+In both apps, `validate_course()` rejects an archived slug before any
+course-relative path is resolved, so the apps themselves never read from
+`_archive/`.
+
+To unarchive, move the folder back.
 
 ## Adding an exercise to an existing course
 

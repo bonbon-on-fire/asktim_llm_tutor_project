@@ -21,6 +21,7 @@ from rag.chunking import chunk_document
 from rag.embeddings import EMBEDDING_MODEL, embed_texts
 from rag.sources import load_local_docs
 from rag.store import NumpyVectorStore
+from utils.curriculum import ARCHIVE_DIRNAME, list_archived_courses
 
 
 def _gather(course: str, source: str) -> list[tuple[str, str]]:
@@ -94,6 +95,12 @@ def main() -> None:
     parser.add_argument("--target-chars", type=int, default=2400)
     parser.add_argument("--overlap-chars", type=int, default=300)
     args = parser.parse_args()
+
+    if args.course in list_archived_courses():
+        parser.error(
+            f"course {args.course!r} is archived (curriculum/{ARCHIVE_DIRNAME}/). "
+            "Move it back out of the archive before rebuilding its index."
+        )
 
     load_dotenv()  # OPENAI_API_KEY from repo .env for the embedding calls
     ingest(

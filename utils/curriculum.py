@@ -21,6 +21,11 @@ _EXERCISE_NAME_RE = re.compile(r"^exercise_(\d+)\.txt$")
 # practice_<N>.txt — one or more digits (parallel to exercises).
 _PRACTICE_NAME_RE = re.compile(r"^practice_(\d+)\.txt$")
 
+# Courses under curriculum/_archive/ are retired: hidden from the apps, still
+# readable by offline tooling via course_dir(). See
+# docs/superpowers/specs/2026-07-21-curriculum-archive-design.md.
+ARCHIVE_DIRNAME = "_archive"
+
 
 def _norm_num(num: str) -> str:
     """Normalize an item number to its non-padded form ('01' -> '1'); pass through non-numeric."""
@@ -34,8 +39,25 @@ def _root(curriculum_root: Path | str | None) -> Path:
 
 
 def course_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
-    """Return the course folder path (``curriculum/<course>/``)."""
-    return _root(curriculum_root) / course
+    """Return the course folder path, resolving archived courses too.
+
+    Active courses resolve to ``curriculum/<course>/``. A course that exists
+    only under ``curriculum/_archive/<course>/`` resolves there, so offline
+    tooling (the eval runners, lecture/figure loading, RAG index reads) still
+    reaches an archived course by slug even though the apps reject it.
+    ``rag.ingest`` is the one caller that deliberately refuses an archived slug
+    instead. A slug in neither location returns the direct path unchanged,
+    matching the previous behavior for an unknown course.
+
+    A slug present in BOTH locations resolves to the active copy. That state is
+    an operator mistake, not a supported configuration.
+    """
+    root = _root(curriculum_root)
+    direct = root / course
+    if direct.is_dir():
+        return direct
+    archived = root / ARCHIVE_DIRNAME / course
+    return archived if archived.is_dir() else direct
 
 
 def exercises_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
@@ -201,8 +223,15 @@ def read_pinned_context(course: str, curriculum_root: Path | str | None = None) 
 # Label for the tutor-only correct-answer block that is paired directly with the
 # current problem (never retrieved via RAG, never shown to the student).
 SOLUTION_CONTEXT_LABEL = (
-    "Correct answer & worked solution (FOR YOUR REFERENCE ONLY — use it to guide the "
-    "student and check their work; never reveal it, or any part of it, directly):\n"
+    "Correct answer & worked solution (FOR YOUR REFERENCE ONLY — use it to guide "
+    "the student and check their work).\n"
+    "HARD RULE: no number, expression, or final choice from this block may appear "
+    "in your reply to the student — not as a hint, not as a target, and not as a "
+    "check. This holds even when the student has not asked, even for parts marked "
+    "ungraded or practice, and even when framed as 'verify you get X', 'you should "
+    "land near X', or 'check your total matches X'. Use this block only to judge "
+    "whether the student's own value is right, and reply with correct/not-yet plus "
+    "a question — never with the value itself.\n"
 )
 
 
@@ -281,11 +310,30 @@ def discover_exercises(
 
 
 def list_courses(curriculum_root: Path | str | None = None) -> list[str]:
-    """Return sorted course folder names under the curriculum root."""
+    """Return sorted ACTIVE course folder names under the curriculum root.
+
+    Both the ``_archive`` folder itself and the courses inside it are excluded.
+    There is deliberately no ``include_archived`` flag — callers that want the
+    retired set call :func:`list_archived_courses` and compose, so no caller can
+    leak archived courses by passing a truthy argument.
+    """
     root = _root(curriculum_root)
     if not root.is_dir():
         return []
-    return sorted(p.name for p in root.iterdir() if p.is_dir())
+    return sorted(
+        p.name for p in root.iterdir() if p.is_dir() and p.name != ARCHIVE_DIRNAME
+    )
+
+
+def list_archived_courses(curriculum_root: Path | str | None = None) -> list[str]:
+    """Return sorted course folder names under ``curriculum/_archive/``.
+
+    Empty when the archive folder is absent.
+    """
+    archive = _root(curriculum_root) / ARCHIVE_DIRNAME
+    if not archive.is_dir():
+        return []
+    return sorted(p.name for p in archive.iterdir() if p.is_dir())
 
 
 def course_name_path(course: str, curriculum_root: Path | str | None = None) -> Path:

@@ -1,0 +1,71 @@
+name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+jobs:
+  # bump-version:
+  #   if: github.event.pull_request.merged == true
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         repository: ${{ github.event.pull_request.head.repo.full_name }}
+  #         ref: ${{ github.event.pull_request.head.ref }}
+  #         fetch-depth: "0"
+  #
+  #     - name: Version bumper
+  #       uses: apowis/pyproject-bump-version@v0.0.1
+  #       with:
+  #         file_to_bump: "./pyproject.toml"
+  #         bump_type: "minor"
+  #         main_branch: "main"
+  #         python_version: "3.12"
+
+  build:
+    name: Build distribution 📦
+    # needs: bump-version
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+    - name: Install uv
+      uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb # v6
+
+    - name: Install dependencies
+      run: uv sync
+
+    - name: Build a binary wheel and a source tarball
+      run: uv build
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+  publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    needs: build
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/open-learning-ai-tutor
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1

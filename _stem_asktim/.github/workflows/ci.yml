@@ -1,0 +1,30 @@
+name: CI
+on: [push]
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+
+    services:
+
+      redis:
+        image: redis:7.4.8@sha256:3e0669e42d4fe421c9dea0ba5fbc04d336b80b4f32a6c7d25bee3a1d089288a1
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: update apt
+        run: sudo apt-get update -y
+
+      - name: Apt install
+        run: cat Aptfile | sudo xargs apt-get install
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb # v6
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Tests
+        run: uv run pytest

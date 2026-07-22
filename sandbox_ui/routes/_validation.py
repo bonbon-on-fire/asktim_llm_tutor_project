@@ -15,6 +15,7 @@ from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import practice_exists as _practice_exists
 from utils.curriculum import load_course_name as _load_course_name
+from utils.curriculum import list_courses as _list_active_courses
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -27,10 +28,12 @@ DEFAULT_EXERCISE = "01"
 
 
 def _list_courses() -> set[str]:
-    """Slugs of all built-in courses (subdirectories of curriculum/)."""
-    if not _CURRICULUM_DIR.is_dir():
-        return set()
-    return {p.name for p in _CURRICULUM_DIR.iterdir() if p.is_dir()}
+    """Slugs of all ACTIVE built-in courses (subdirectories of curriculum/).
+
+    Delegates to utils.curriculum so archived courses (under
+    ``curriculum/_archive/``) are excluded in exactly one place.
+    """
+    return set(_list_active_courses(_CURRICULUM_DIR))
 
 
 def _tutor_prompt_exists(tutor: str) -> bool:

@@ -9,16 +9,14 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
 
 from rag.chunking import Chunk
 from rag.embeddings import embed_query_with_usage
 from rag.store import NumpyVectorStore
+from utils.curriculum import course_dir
 
 # Per-course store cache so we load each index from disk only once per process.
 _STORE_CACHE: dict[str, NumpyVectorStore | None] = {}
-
-_CURRICULUM_DIR = Path(__file__).resolve().parents[1] / "curriculum"
 
 # Per-course map: RAG source label -> {week, lesson, video, video_title, citation}.
 # Built from the live course structure (see curriculum/<course>/lecture_index.json);
@@ -28,9 +26,13 @@ _LECTURE_INDEX_CACHE: dict[str, dict[str, dict]] = {}
 
 
 def _lecture_index(course: str) -> dict[str, dict]:
-    """Return the cached lecture index for *course* ({} if the course has none)."""
+    """Return the cached lecture index for *course* ({} if the course has none).
+
+    Resolves into ``curriculum/_archive/<course>/`` for an archived course, same
+    as every other course-relative path here.
+    """
     if course not in _LECTURE_INDEX_CACHE:
-        path = _CURRICULUM_DIR / course / "lecture_index.json"
+        path = course_dir(course) / "lecture_index.json"
         try:
             _LECTURE_INDEX_CACHE[course] = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):

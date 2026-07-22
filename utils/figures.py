@@ -20,9 +20,7 @@ import base64
 import re
 from pathlib import Path
 
-# Repo root is two levels up from this file (utils/ -> repo root).
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_DEFAULT_CURRICULUM_ROOT = _REPO_ROOT / "curriculum"
+from utils.curriculum import course_dir
 
 # exercise_<N>_<slug>.<png|jpg|jpeg>, extension case-insensitive.
 _FIGURE_NAME_RE = re.compile(r"^exercise_(\d+)_.+\.(png|jpe?g)$", re.IGNORECASE)
@@ -47,8 +45,7 @@ def discover_figures(
     them sorted by filename. Returns an empty list when the folder or matches
     are absent — figures are always optional and back-compatible.
     """
-    root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
-    figures_dir = root / course / "figures"
+    figures_dir = course_dir(course, curriculum_root) / "figures"
     if not figures_dir.is_dir():
         return []
 
@@ -157,11 +154,12 @@ def resolve_figure_filenames(
     """Resolve recorded figure *filenames* back to paths under the course's figures dir.
 
     Used by the judge, which reads the ``figures`` field (filenames only) from
-    a transcript and needs the on-disk paths to re-attach the images. Silently
-    skips names that no longer exist on disk.
+    a transcript and needs the on-disk paths to re-attach the images. Resolves
+    into ``curriculum/_archive/<course>/figures/`` for an archived course, same
+    as :func:`discover_figures`. Silently skips names that no longer exist on
+    disk.
     """
-    root = Path(curriculum_root) if curriculum_root is not None else _DEFAULT_CURRICULUM_ROOT
-    figures_dir = root / course / "figures"
+    figures_dir = course_dir(course, curriculum_root) / "figures"
     resolved: list[Path] = []
     for name in filenames:
         candidate = figures_dir / name

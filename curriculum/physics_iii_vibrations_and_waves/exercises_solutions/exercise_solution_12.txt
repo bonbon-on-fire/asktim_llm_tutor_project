@@ -1,0 +1,520 @@
+TITLE: Practice Exam 2 — Solutions
+
+TUTOR-ONLY reference for exercises/exercise_12.txt (Practice Exam 2).
+Do NOT surface verbatim to students.
+
+Source: MIT OpenCourseWare 8.03SC, MIT8_03SCF16_PracticeExam2_Solutions.pdf.
+
+================================================================
+Problem 2.1
+
+(a) Start from the given wave equation
+
+    ∂²ρ/∂t² = c² ∂²ρ/∂x² − ω_p² ρ.                                    (1)
+
+Plug in ρ(x,t) = a sin(kx − ωt), we get
+
+    −ω² = −c²k² − ω_p²                                                (2)
+
+Hence
+
+    ω = √(c²k² + ω_p²)                                                (3)
+
+(b) Solving (3) for k as a function of ω,
+
+    k(ω) = (1/c) √(ω² − ω_p²).                                        (4)
+
+[Figure: plot of ω versus k. The curve starts at a nonzero intercept ω = ω_p at
+k = 0, rises steeply at first, then becomes asymptotically linear (slope c) at
+large k. Axes shown run 0 to 10 on both.]
+
+The phase velocity
+
+    v = ω/k = c · 1/√(1 − ω_p²/ω²)                                    (5)
+
+[Figure: plot of the phase velocity versus ω. It diverges to +∞ as ω approaches
+ω_p from above, drops rapidly, and flattens onto the asymptote v = c from above
+at large ω.]
+
+The group velocity
+
+    v = (dk/ω)^(−1) = c √(1 − ω_p²/ω²)                                (6)
+
+[Note: the source writes the derivative as dk/ω; it means (dk/dω)^(−1).]
+
+[Figure: plot of the group velocity versus ω. It rises from 0 at ω = ω_p,
+increases steeply, then flattens onto the asymptote v = c from below at large ω.
+Vertical axis runs 0 to 1.0 in units of c.]
+
+(c) Plug ρ(x,t) = a cos(ωt) e^(−κx) into the wave equation, we get
+
+    −ω² = c²κ² − ω_p²                                                 (7)
+
+Hence
+
+    κ = (1/c) √(ω_p² − ω²)                                            (8)
+
+[Figure: plot of κ versus ω for ω < ω_p. The curve starts flat at its maximum
+value at ω = 0 and falls to zero with a vertical tangent at ω = ω_p — a quarter
+circle. Both axes normalized to run 0 to 1.0.]
+
+
+================================================================
+Problem 2.2
+
+(a) The tension force from the string in the vertical direction
+
+    T_y = T (dy/dx)|_(x=0)                                            (9)
+
+balances the external force F(t). Hence the boundary condition is
+
+    F₀ sin(ωt) + T (dy/dx)|_(x=0) = 0                                (10)
+
+(b) The wave has to satisfy the wave equation:
+
+    ∂²y/∂x² = (1/v²) ∂²y/∂t²,                                        (11)
+
+where v² = T/μ. The general complex solution with a single frequency is
+
+    y = f cos(ω′(t − x/v) + φ₁) + g cos(ω′(t + x/v) + φ₂)            (12)
+
+For the steady-state solution to satisfy the boundary condition for arbitrary t,
+this ω′ has to equal to ω. Hence the frequency of steady-state solution has
+angular frequency ω and wavelength
+
+    λ = 2πv/ω.                                                       (13)
+
+Answer: angular frequency ω, wavelength λ = 2πv/ω.
+
+(c) We don't need to keep the reflected pulse term, hence just plug
+
+    y = f cos(ω(t − x/v) + φ₁)                                       (14)
+
+into the boundary condition
+
+    F₀ sin(ωt) + T ∂y/∂x = 0,                                        (15)
+
+we have
+
+    F₀ sin(ωt) + (T f ω / v) sin(ωt + φ₁) = 0.                       (16)
+
+We can take φ₁ = π, f = F₀v/(Tω), hence the result steady-state harmonic wave is
+in the form of
+
+    y = (F₀v/(Tω)) cos(ω(t − x/v) + π),                              (17)
+
+with amplitude
+
+    A = F₀v/(Tω).                                                    (18)
+
+Answer: A = F₀v/(Tω).
+
+
+================================================================
+Problem 2.3
+
+(a) The boundary condition is:
+
+    ∂y/∂x|_(x=0) = 0,                                                (19)
+
+    y(L,t) = 0.                                                      (20)
+
+The normal modes are then in form of
+
+    y(x) = cos(kx),                                                  (21)
+
+with condition
+
+    cos(kL) = 0.                                                     (22)
+
+Hence the normal mode m is
+
+    y_m = cos(k_m x) ,  k_m = (m − 1/2) π/L   (m = 1, 2, ...)        (23)
+
+The frequency of a normal mode is related to k by
+
+    ω = kv = k √(T/μ).                                               (24)
+
+Hence
+
+    ω_m = (m − 1/2) (π/L) √(T/μ),                                    (25)
+
+    τ_m = 2π/ω_m = (2L / (m − 1/2)) √(μ/T).                          (26)
+
+(b) Projecting the initial shape onto the modes:
+
+    A_m = (2/L) ∫₀^L y(x,0) cos((m − 1/2) πx/L) dx
+
+        = (2/L) ∫_(L/4−D/2)^(L/4+D/2) H cos((m − 1/2) πx/L) dx
+
+        = (2H / (π(m − 1/2))) [ sin((m − 1/2)π(1/4 + D/(2L)))
+                                − sin((m − 1/2)π(1/4 − D/(2L))) ]
+
+        = (4H / (π(m − 1/2))) cos((m − 1/2)π/4) sin((m − 1/2)πD/(2L))   (27)
+
+(c) A_m = 0 when
+
+    cos((m − 1/2)π/4) = 0                                            (28)
+
+or
+
+    sin((m − 1/2)πD/(2L)) = 0.                                       (29)
+
+The first condition can never happen for integral m. This is because no normal
+modes has y_m(L/4) = 0.
+
+The second condition may happen if there's some m satisfying
+
+    (m − 1/2) D / (2L) = p                                           (30)
+
+is an integer.
+
+(d) The full solution:
+
+    y(x,t) = ∑_(m=1)^∞ (4H / (π(m − 1/2))) cos((m − 1/2)π/4)
+             × sin((m − 1/2)πD/(2L)) cos((m − 1/2) πx/L)
+             × cos((m − 1/2) vπ t / L).                              (31)
+
+The time factors in each component are chosen to be cos(ω_m t), so that the time
+derivative ∂y/∂t (x, 0) = 0.
+
+(e)
+
+    τ₁ = 4L/v ,  t = τ₁/2 = 2L/v.                                    (32)
+
+The initial configuration of static string can be decomposed to two square pulses
+traveling in the opposite direction, each with velocity v, width D and height
+H/2. After time t, each of them have travelled back to the original position,
+hitting the wall once. Since hitting the wall will add a π phase shift, or turn
+the pulse upside down, while hitting the massless ring won't change the shape of
+the pulse, each of the two traveling pulses was turned upside down after time t.
+
+Hence the shape of string at time t = τ₁/2 is:
+
+[Figure: the string runs from x = 0 (massless ring on a vertical post, free end)
+to x = L (hatched fixed wall). The string is flat everywhere except for a single
+narrow rectangular notch of width D pointing DOWNWARD, centred at x = L/4 — i.e.
+the original upward square pulse of height H at L/4, inverted.]
+
+
+================================================================
+Problem 2.4
+
+(a) The wave equation on the left:
+
+    ∂²y_L/∂x² = (μ/T) ∂²y_L/∂t².                                     (33)
+
+The wave equation on the right:
+
+    ∂²y_R/∂x² = (μ/T) ∂²y_R/∂t².                                     (34)
+
+The boundary condition at x = 0: the vertical component of string tension on the
+left and right should balance, hence
+
+    T ∂y_L/∂x|_(x=0−) = (T/2) ∂y_R/∂x|_(x=0+).                       (35)
+
+We also have the continuity condition:
+
+    y_L|_(x=0−) = y_R|_(x=0+).                                       (36)
+
+(b) There are reflected waves at x = 0 and x = L. The reflected wave at x = 0
+does not change the sign, since the impedance √(Tμ) on the left is larger than
+the impedance on the right. The reflected wave at x = L change the sign because
+it's a fixed boundary condition at x = L.
+
+Hence these reflected waves have the opposite sign.
+
+(c) We denote
+
+    v = v₁ = √(T/μ).                                                 (37)
+
+Hence the wave on the left of x = 0:
+
+    y_L = f₁(x/v − t) + f₂(x,t),                                     (38)
+
+where the reflected wave
+
+    f₂(x,t) = r f₁(−x/v − t).                                        (39)
+
+The wave on the right of x = 0:
+
+    y_R = g(x,t) + g₂(x,t).                                          (40)
+
+Here g(x,t) is the transmitted wave through x = 0:
+
+    g(x,t) = t f₁(x/v − t),                                          (41)
+
+g₂(x,t) is the reflected wave from x = L:
+
+    g₂(x,t) = r₂ f₁((2L − x)/v − t).                                 (42)
+
+Then the boundary condition at x = 0 gives:
+
+    (T/v) f₁′(−t) − (rT/v) f₁′(−t)
+        = (tT/(2v)) f₁′(−t) − (r₂T/(2v)) f₁′(2L/v − t).              (43)
+
+Since
+
+    f₁(t ≥ 0) ≡ 0,                                                   (44)
+
+and we only consider times t ≤ 2L/v, the last term in (43) vanishes, we have
+
+    1 − r = t/2                                                      (45)
+
+and
+
+    1 + r = t.                                                       (46)
+
+Hence
+
+    r = 1/3 ,  t = 4/3.                                              (47)
+
+At boundary x = L, we have
+
+    g(L,t) + g₂(L,t) = 0,                                            (48)
+
+hence
+
+    r₂ = −t = −4/3.                                                  (49)
+
+Answer: r = 1/3, t = 4/3, r₂ = −4/3.
+
+(d) At time t = L/v, the right half of the pulse has passed x = 0, also reflected
+to the left. The left half of the pulse is still propagating to the right. Denote
+the height of the right edge of the initial pulse by 1, the shape of string at
+t = L/v is:
+
+[Figure: horizontal string with marked points x = 0 and x = L. To the left of
+x = 0 the string is flat at zero, then just left of x = 0 there is a rising ramp
+that climbs through the level 1/3 to 2/3 and reaches 4/3 at x = 0; at x = 0 it
+drops vertically back to zero, and the string is flat at zero from x = 0 out to
+x = L. Labels 1/3, 2/3 on the ramp and 4/3 at its peak.]
+
+At the time t = 2L/v, the reflected pulse f₂ has traveled back to x = −L, the
+transmitted pulse g has reached x = L. The right half of g is already reflected,
+while the left half is still propagating to the right. The shape of string at
+t = 2L/v is:
+
+[Figure: horizontal string with marked points x = 0 and x = L. Far to the left,
+near x = −L, there is a small step of height 1/3 that ramps back down to zero;
+the string is then flat at zero all the way through x = 0 to just before x = L,
+where it plunges to −4/3 in a narrow downward spike at x = L. Labels 1/3 on the
+left step and −4/3 at the spike.]
+
+
+================================================================
+Problem 2.5
+
+(a) The lowest mode is in the form
+
+    y₁ = sin(k₁x) ,  k₁ = π/L.                                       (50)
+
+The wavelength
+
+    λ₁ = 2L,                                                         (51)
+
+frequency
+
+    ω₁ = v k₁ = k₁ √(TL/M) = (π/L) √(TL/M).                          (52)
+
+(b) The nth mode is in the form
+
+    y_n = sin(k_n x) ,  k_n = nπ/L.                                  (53)
+
+The wavelength
+
+    λ_n = 2L/n,                                                      (54)
+
+frequency
+
+    ω_n = v k_n = k_n √(TL/M) = (nπ/L) √(TL/M).                      (55)
+
+(c) The modes with y_n(L/2) = 0 will be zero, because they are antisymmetric at
+x = L/2:
+
+    y_n(L/2 − x) = −y_n(L/2 + x).                                    (56)
+
+There shouldn't any contribution from these modes.
+
+Hence the modes n = 2m vanish.
+
+(d) At t = 0, the string has zero speed.
+
+The full function y(x,t):
+
+    y(x,t) = ∑_(n=1)^∞ B_n sin(nπx/L) cos(nπvt/L).                   (57)
+
+After time T = 2L/v, all the time dependent factors cos(nπvt/L) returns to 1.
+This is the minimal time since B₁ ≠ 0.
+
+Answer: T = 2L/v.
+
+(e) The initial configuration can be decomposed into two traveling pulses to the
+opposite direction with velocity v, height A/2 and the same width as the initial
+configuration. When it hits the left or right boundary, it changes sign after
+reflected.
+
+Hence at the time t = L/(4v), the string configuration is:
+
+[Figure: the string between x = 0 and x = L is essentially flat, with two small
+symmetric triangular bumps of height A/2 — one in the left half, one in the right
+half — the two half-pulses having separated from the initial shape. The source
+labels this "which is a straight line."]
+
+which is a straight line.
+
+(f) This time is t = L/(4v) in the expression (57). Shift the zero point of time
+to this time, we have the expression for the 5th mode:
+
+    y₅(x,t) = B₅ sin(5πx/L) cos(5πv(t + L/(4v))/L)
+            = B₅ sin(5πx/L) cos(5πt √(T/(ML)) + 5π/4).               (58)
+
+(g) Since all the non-vanishing modes correspond to odd n, the function f(x) in
+the range L ~ 2L should be the opposite of function f(x) in the range 0 ~ L:
+
+    f(x + L) = ∑_(m=1)^20 B_m sin((2m − 1)π(x + L)/L)
+             = −∑_(m=1)^20 B_m sin((2m − 1)πx/L) = −f(x)             (59)
+
+While the function f(x) in the range 2L ~ 3L should be the same as function f(x)
+in the range 0 ~ L:
+
+    f(x + 2L) = ∑_(m=1)^20 B_m sin((2m − 1)π(x + 2L)/L)
+              = ∑_(m=1)^20 B_m sin((2m − 1)πx/L) = −f(x).            (60)
+
+[Note: the source's final "= −f(x)" in (60) contradicts its own prose "should be
+the same"; the middle expression correctly equals +f(x).]
+
+Hence the shape of string:
+
+[Figure: the extended function drawn over 0 to 3L, with tick marks at 0, L, 2L,
+3L. Over 0 ~ L there is a single upward triangular spike (the original pulse).
+Over L ~ 2L there is a downward spike of the same shape (inverted image). Over
+2L ~ 3L the upward spike repeats — period 2L.]
+
+(h) In this new configuration, the lowest mode is in the form
+
+    y₁ = sin(k₁x) ,  k₁ = π/(2L).                                    (61)
+
+The wavelength
+
+    λ₁ = 4L,                                                         (62)
+
+frequency
+
+    ω₁ = v k₁ = k₁ √(TL/M) = (π/(2L)) √(TL/M).                       (63)
+
+(i) The nth mode is in the form
+
+    y_n = sin(k_n x) ,  k_n = (2n − 1)π/(2L).                        (64)
+
+The wavelength
+
+    λ_n = 4L/(2n − 1),                                               (65)
+
+frequency
+
+    ω_n = v k_n = k_n √(TL/M) = ((2n − 1)π/(2L)) √(TL/M).            (66)
+
+(j) In this case, the function f(x) in the range L ~ 2L should be the same as
+function f(x) in the range 0 ~ L:
+
+    f(2L − x) = ∑_(m=1)^20 B_m sin((2m − 1)π(2L − x)/(2L))
+              = ∑_(m=1)^20 B_m sin((2m − 1)πx/(2L)) = f(x)           (67)
+
+While the function f(x) in the range 2L ~ 3L should be the opposite of function
+f(x) in the range 0 ~ L:
+
+    f(x + 2L) = ∑_(m=1)^20 B_m sin((2m − 1)π(x + 2L)/(2L))
+              = −∑_(m=1)^20 B_m sin((2m − 1)πx/(2L)) = −f(x).        (68)
+
+Hence the shape of string:
+
+[Figure: the extended function drawn over 0 to 3L, with tick marks at 0, L, 2L,
+3L. Over 0 ~ L there is an upward triangular spike near x = L. Over L ~ 2L the
+upward spike repeats mirrored about x = L. Over 2L ~ 3L there is a downward
+spike — the inverted image.]
+
+
+================================================================
+Problem 2.6
+
+(a) The boundary conditions for the electric field is
+
+    E⃗(0,t) = E⃗(L,t) = 0.                                            (69)
+
+Hence the n-th normal mode is
+
+    E_y(n)(z) = sin(nπz/L),                                          (70)
+
+    E_y(n)(z,t) = sin(nπz/L) cos(nπct/L).                            (71)
+
+(b) The standing wave can be decomposed to:
+
+    E_y(n)(z,t) = sin(nπz/L) cos(nπct/L)
+        = Re[ (1/2) e^(i(nπ/L)(z−ct) − iπ/2) + (1/2) e^(i(nπ/L)(z+ct) − iπ/2) ]  (72)
+
+For a traveling wave component with unit wave vector k̂,
+
+    B⃗ = (1/c) k̂ × E⃗                                                 (73)
+
+Hence
+
+    B⃗ = Re[ ẑ × ŷ (1/2) e^(i(nπ/L)(z−ct) − iπ/2)
+             − ẑ × ŷ (1/2) e^(i(nπ/L)(z+ct) − iπ/2) ]
+
+       = (x̂/c) cos(nπz/L) sin(nπct/L)                                (74)
+
+(c) The Poynting vector:
+
+    S⃗ = (1/μ₀) E⃗ × B⃗
+       = −(ẑ/μ₀) sin(nπz/L) cos(nπz/L) cos(nπct/L) sin(nπct/L).      (75)
+
+    ⟨S⃗⟩ = 0                                                          (76)
+
+    U_E = (1/2) ϵ₀ E⃗² = (1/2) ϵ₀ sin²(nπz/L) cos²(nπct/L)            (77)
+
+    ⟨U_E⟩ = (1/4) ϵ₀ sin²(nπz/L)                                     (78)
+
+    U_B = (1/(2μ₀)) B⃗² = (1/(2μ₀c²)) cos²(nπz/L) sin²(nπct/L)
+        = (1/2) ϵ₀ cos²(nπz/L) sin²(nπct/L)                          (79)
+
+    ⟨U_E⟩ = (1/4) ϵ₀ cos²(nπz/L)                                     (80)
+
+[Note: (80) is labelled ⟨U_E⟩ in the source but is the time average of U_B.]
+
+Note that
+
+    ⟨U_E + U_B⟩ = (1/4) ϵ,                                           (81)
+
+which is evenly distributed.
+
+[Note: the source writes ϵ in (81); it means ϵ₀.]
+
+The amplitude of the normal mode is set to be 1 (without unit).
+
+(d) The plot of E_y:
+
+[Figure: E_y versus z over 0 to 1 (z in units of L), for n = 2. A full sine
+period: rises to +1.0 near z = 0.25, crosses zero at z = 0.5, dips to −1.0 near
+z = 0.75, returns to zero at z = 1.0.]
+
+The plot of U_E:
+
+[Figure: U_E versus z over 0 to 1, for n = 2. Two identical positive humps of
+peak value 0.5, at z ≈ 0.25 and z ≈ 0.75, touching zero at z = 0, 0.5 and 1.0 —
+i.e. sin² shape.]
+
+B⃗ and U_B identically vanish at t = 0 we chose.
+
+However, at another time when B⃗ and U_B does not vanish, the plot of B_x:
+
+[Figure: B_x versus z over 0 to 1, for n = 2. A full cosine period: starts at
++1.0 at z = 0, crosses zero near z = 0.25, reaches −1.0 near z = 0.5, crosses
+zero near z = 0.75, returns to +1.0 at z = 1.0.]
+
+The plot of U_B:
+
+[Figure: U_B versus z over 0 to 1, for n = 2. A cos² shape of peak value 0.5:
+starts at 0.5 at z = 0, falls to zero at z ≈ 0.25, rises to 0.5 at z = 0.5,
+falls to zero at z ≈ 0.75, and returns to 0.5 at z = 1.0. It is exactly the
+complement of the U_E plot.]

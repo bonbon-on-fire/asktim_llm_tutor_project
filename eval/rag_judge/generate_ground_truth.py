@@ -48,6 +48,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from eval.rag_judge.render_markdown import render_file
 from rag.retrieve import retrieve_scored
+from utils.curriculum import course_dir
 
 DEFAULT_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+")
@@ -147,8 +148,12 @@ def _retrieval_signal(course: str, question: str, quote: str) -> dict:
 
 
 def _lecture_files(course: str, min_chars: int) -> list[Path]:
-    """Lecture .txt files for *course* with at least *min_chars* of text, sorted."""
-    lectures_dir = _REPO_ROOT / "curriculum" / course / "lectures"
+    """Lecture .txt files for *course* with at least *min_chars* of text, sorted.
+
+    Resolves into ``curriculum/_archive/<course>/`` for an archived course, same
+    as every other course-relative path here.
+    """
+    lectures_dir = course_dir(course) / "lectures"
     files = sorted(p for p in lectures_dir.glob("*.txt"))
     return [p for p in files if len(p.read_text(encoding="utf-8")) >= min_chars]
 

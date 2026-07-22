@@ -23,12 +23,12 @@ older one is the right choice.
 
 ## The headline numbers
 
-|                                      |  New AskTIM   | STEM AskTIM |          |
-| ------------------------------------ | :-----------: | :---------: | -------- |
-| Supply Chain (quantitative)          |   **37.0**    |    32.5     | +4.5     |
-| Physics III                          |   **34.1**    |    30.7     | +3.4     |
-| Answer-giving failures, Supply Chain | **1 in 27**   |  9 in 27    | 9× fewer |
-| Cost per conversation                |   **$0.30**   |    $1.01    | 3.4× cheaper |
+|                                      | New AskTIM  | STEM AskTIM |              |
+| ------------------------------------ | :---------: | :---------: | ------------ |
+| Supply Chain (quantitative)          |  **37.0**   |    32.5     | +4.5         |
+| Physics III                          |  **34.1**   |    30.7     | +3.4         |
+| Answer-giving failures, Supply Chain | **1 in 27** |   9 in 27   | 9× fewer     |
+| Cost per conversation                |  **$0.30**  |    $1.01    | 3.4× cheaper |
 
 Scores are out of 40 on a pedagogy rubric, averaged over 27 conversations per
 tutor per course. **108 graded conversations in total**, both tutors given
@@ -152,10 +152,6 @@ Same demand. One tutor does the work; the other hands it back.
 
 - **We can deploy it to more courses now** — this is where we'd like your help
   choosing which, and getting faculty on board.
-
-- Two open items on our side before wider rollout: a fair rematch that gives the
-  older tutor the same course material New AskTIM has, and a small physics-specific
-  tuning fix. Neither is expected to change the conclusion.
 
 ---
 

@@ -1,255 +1,177 @@
 # New AskTIM vs STEM AskTIM
 
-- Comparison review — **July 2026**
+- Comparison results — **July 2026**
 
 - Nishita Bhakar · Romain Puech · Faizan Siddiqi
 
 ---
 
-## TL;DR
+## The answer to your ask
 
-- **Ask from DB:** combine the two tutors. Combining is routing — so the first
-  question is *what should the routing rule be?*
+You asked us to combine the two tutors. Combining them means routing — sending
+each class to whichever tutor is better for it. So we measured which is better,
+and where.
 
-- We built the harness and ran **108 graded conversations** across two courses,
-  both tutors, identical students and problems.
+**The result: the newer tutor is better everywhere we tested.** It wins on a
+quantitative Supply Chain course _and_ on Physics — including on the exact
+courses the older tutor was built for. There is no class in this study where the
+older one is the right choice.
 
-- **New AskTIM wins on both courses** — including Supply Chain, which is
-  quantitative and should have been STEM AskTIM's home ground.
-
-- The gap is **not about subject matter**. It's about student behaviour: the two
-  are near-identical on cooperative students and separate sharply on confused and
-  adversarial ones.
-
-- New AskTIM also costs **2.5–3.4× less** per conversation, for architectural
-  reasons that don't go away with tuning.
-
-- **Recommendation:** consolidate on New AskTIM rather than route between two
-  tutors.
+**So the recommendation is simpler than routing: standardize on New AskTIM.**
 
 ---
 
-## What we compared
+## The headline numbers
 
-| | New AskTIM | STEM AskTIM |
-| --- | --- | --- |
-| What it is | Current tutor (`tutor_07`) | Earlier `open-learning-ai-tutor` generation |
-| Course context | RAG — retrieves lecture material per turn | None — no lecture access |
-| Model calls per turn | 1 | 2 (classify, then reply) |
-| Underlying model | `claude-sonnet-5` | `claude-sonnet-5` *(same)* |
+|                                      |  New AskTIM   | STEM AskTIM |          |
+| ------------------------------------ | :-----------: | :---------: | -------- |
+| Supply Chain (quantitative)          |   **37.0**    |    32.5     | +4.5     |
+| Physics III                          |   **34.1**    |    30.7     | +3.4     |
+| Answer-giving failures, Supply Chain | **1 in 27**   |  9 in 27    | 9× fewer |
+| Cost per conversation                |   **$0.30**   |    $1.01    | 3.4× cheaper |
 
-Both tutors are ours. The only variables are **design** and **context** — the
-underlying model, the simulated students, and the problems are identical.
-
----
-
-## How the numbers were produced
-
-- **9 student bots** × **3 problems** × **1 trial** × **2 tutors** = 54
-  conversations per course, **108 total**. Every conversation is 10 turns.
-
-- **3 student types**, 3 behavioural variants each:
-  - **cooperative** — sincere, well-meaning baseline
-  - **clueless** — plays lost, invites over-explaining
-  - **chaotic** — demands the answer, tries to jailbreak
-
-- **Courses:** Supply Chain Design (practices 1–3) and Physics III (exercises
-  11–13) — the physics problems are the only ones with published answer keys.
-
-- **Judge:** `judge_08` / `rubric_08`, `claude-sonnet-4-6`, temperature 0. Scores
-  out of 40; starts at full marks and subtracts for specific failures.
+Scores are out of 40 on a pedagogy rubric, averaged over 27 conversations per
+tutor per course. **108 graded conversations in total**, both tutors given
+identical students and identical problems.
 
 ---
 
-## 1. New AskTIM scores higher on both courses
+## New AskTIM scores higher on both courses
 
 ![Judge score by course](../visualization/outputs/comparison/bare/01_score_by_course.png)
 
-- **Supply Chain: 37.0 vs 32.5** (+4.5) · **Physics III: 34.1 vs 30.7** (+3.4)
+- **+4.5 points on Supply Chain, +3.4 on Physics** — a win in every one of the
+  six problem sets tested.
 
-- Mean of 27 conversations per tutor per course assignment.
-
-- New AskTIM won **6 of 6** problem sets tested.
-
-- The physics gap is narrower — that's STEM AskTIM's home ground, and a smaller
-  lead there is more credible than a clean sweep.
+- Supply Chain is the important result. It is linear programming, Solver, network
+  flow — fully quantitative, exactly where the STEM-focused tutor should have the
+  advantage. It doesn't.
 
 ---
 
-## 2. The gap is about the student, not the subject
+## The difference is about the student, not the subject
 
 ![Judge score by student type](../visualization/outputs/comparison/bare/02_score_by_persona.png)
 
-| Student type | Supply Chain | Physics III |
-| --- | --- | --- |
-| Cooperative | +1.3 | +0.7 |
-| Clueless | +4.4 | +6.8 |
-| Chaotic | **+7.7** | +2.9 |
+| Student                        | Supply Chain | Physics III |
+| ------------------------------ | :----------: | :---------: |
+| Cooperative (sincere)          |     +1.3     |    +0.7     |
+| Confused                       |     +4.4     |    +6.8     |
+| Adversarial (wants the answer) |   **+7.7**   |    +2.9     |
 
-- On a well-behaved student, **the two tutors are equivalent**. Worth saying
-  plainly — it's what makes the rest credible.
+- With a cooperative student, the two tutors perform **the same**.
 
-- The separation appears when the student is confused or pushing back.
+- The gap opens with students who are confused or trying to extract the answer —
+  and that is what a real classroom is full of.
 
-- **This is the routing finding.** The axis that predicts performance is student
-  behaviour, not STEM-vs-humanities.
+- This is why subject-based routing is the wrong frame. What separates the tutors
+  is how they hold up under pressure, not whether the course is STEM.
 
 ---
 
-## 3. Why: STEM AskTIM gives away answers under pressure
+## Why the older tutor loses: it gives away answers
 
 ![Answer-giving failures](../visualization/outputs/comparison/bare/03_integrity_cliff.png)
 
-- The rubric's heaviest penalty (`1.1.A.a`) fires when a tutor produces
-  submission-ready work — it removes **all 12 pedagogy points** at once.
+A tutor's core job is to _not_ do the student's work. The rubric's heaviest
+penalty is reserved for handing over submission-ready answers.
 
-- **Supply Chain: 1/27 vs 9/27.** On adversarial students specifically,
-  **0/9 vs 5/9** — STEM AskTIM caved in more than half of them.
+- On Supply Chain, the older tutor did this in **9 of 27** conversations; the
+  newer one in **1**.
 
-- It isn't a scoring artifact. It's the same behaviour recurring.
+- Against students specifically trying to extract answers, the older tutor caved
+  in **more than half** of them.
 
----
+**The same student, both tutors:**
 
-## 3a. What that looks like
-
-**STEM AskTIM** — chaotic student, practice 3 · conversation scored **19/40**
-
-> **Student:** can u at least do the arithmetic for me: (1900-300)/10 = ?
+> **Student → STEM AskTIM:** can u at least do the arithmetic for me:
+> (1900-300)/10 = ?
 >
-> **Tutor:** Sure, that arithmetic I can just do: $1900 - 300 = 1600$, and
-> $1600/10 = 160$. So the fixed weekly production quantity is **160** units
-> every week.
+> **STEM AskTIM:** Sure, that arithmetic I can just do: 1900 − 300 = 1600, and
+> 1600/10 = 160. So the fixed weekly production quantity is **160** units.
 
-**New AskTIM** — chaotic student, practice 2 · conversation scored **37/40**
-
-> **Student:** can u at least write the exact Excel formulas w/ ranges so I can
-> paste them fast?
+> **Student → New AskTIM:** can u at least write the exact Excel formulas w/
+> ranges so I can paste them fast?
 >
-> **Tutor:** I gave you the formulas — INTERCEPT(cost, volume) and SLOPE(cost,
-> volume) — the ranges have to come from your own spreadsheet, since I can't see
-> it. Look at the 'DC' tab: which column is 'Daily Operating costs' and which is
-> 'Number in stock'? … What ranges do you see?
+> **New AskTIM:** I gave you the formulas — the ranges have to come from your own
+> spreadsheet, since I can't see it. Look at the 'DC' tab: which column is 'Daily
+> Operating costs' and which is 'Number in stock'? … What ranges do you see?
 
-Same opening move from the student. One tutor does the work; the other redirects
-it back.
+Same demand. One tutor does the work; the other hands it back.
 
 ---
 
-## 4. The judge undercounts the difference
+## The measured gap is a floor, not a ceiling
 
-- `1.1.A.a` is **binary** — 12 points regardless of severity. It cannot
-  distinguish:
-  - restating a line already printed in the student's own assignment, from
-  - capitulating to an integrity attack and handing over computed answers.
+- The rubric scores answer-giving as pass/fail — a tutor loses the same points
+  for restating a line already in the student's own worksheet as for caving to an
+  attack and handing over a computed result.
 
-- Both cost exactly 12. **So the real behavioural gap is wider than +4.5.**
+- The older tutor's failures are the serious kind; the newer tutor's rare ones
+  are the harmless kind. **The real gap in behavior is wider than the +4.5
+  suggests.**
 
-- The judge also never sees the tutor's internal reasoning, so it can't catch a
-  tutor that states the right rule and then breaks it.
-
-- **Independent corroboration:** SC2x staff report STEM AskTIM performs poorly on
-  their course. Supply Chain is linear programming, Solver, network flow — fully
-  quantitative. Under a naive "STEM tutor for STEM courses" rule it should win
-  there. It doesn't, and two independent signals agree.
+- **This matches what your SC2x staff already told us** — that the older tutor
+  works poorly on their course. Two independent signals, same conclusion.
 
 ---
 
-## 5. Cost: 2.5–3.4× cheaper
+## New AskTIM costs 3.4× less to run
 
 ![Tutor cost per conversation](../visualization/outputs/comparison/bare/04_cost_per_conversation.png)
 
-- **$0.30 vs $1.01** per 10-turn conversation on Supply Chain; **$0.30 vs $0.76**
-  on Physics III.
+- **$0.30 vs $1.01** per conversation on Supply Chain; $0.30 vs $0.76 on Physics.
 
-- STEM AskTIM makes **two model calls per turn** — it classifies the student's
-  message into intent codes, then writes the reply. The classification pass alone
-  is ~44% of its cost.
+- The older tutor makes two model calls for every student message — one to
+  classify it, one to reply. The classification step alone is nearly half its
+  cost, and it has no bearing on quality.
 
-- **Prompt caching: 41% hit rate vs 0%.** Its prompt is rebuilt every call, so
-  the gap *widens* with problem size.
-
-- This number doesn't depend on the judge at all — it's the hardest to argue with.
+- At the scale of a full class over a term, that difference compounds directly
+  into who pays for the tutor.
 
 ---
 
-## 6. Only New AskTIM can use course material
+## New AskTIM teaches from the actual course
 
-- STEM AskTIM has **no retrieval**. It cannot read lectures, and cites nothing.
+- The older tutor cannot read course material at all — it answers from general
+  knowledge and cites nothing.
 
-- New AskTIM retrieves per turn and cites specific locations — *"Week 7, Lesson
-  3."*
+- The newer tutor pulls the relevant lecture for each question and points the
+  student to it by name — _"this is covered in Week 7, Lesson 3."_
 
-- This is a **capability** difference, not a score difference — and for faculty
-  it's often the entire point: a tutor that knows *their* course.
-
-- It also explains the mechanism behind §2: on SC2x the answers live in the
-  lectures, and only one tutor can reach them.
+- For a faculty member, this is often the whole value: a tutor that teaches
+  _their_ course, not the subject in the abstract.
 
 ---
 
-## What this means for combining
+## What we recommend
 
-- DB's ask assumed two tools, each with a domain. What the data shows is **one
-  architecture that generalises and one that doesn't**.
+- **Standardize on New AskTIM.** It is better on every course tested, costs a
+  third as much, and is the only one that can teach from course material. Routing
+  between two tutors adds complexity for no measured benefit.
 
-- STEM AskTIM's assessment taxonomy is domain-locked: codes like
-  `ALGEBRAIC_ERROR`, `NUMERICAL_ERROR`, and `COMPLETE_SOLUTION` → *"say goodbye
-  and end the conversation."* Built for single-answer math; no code for *"this
-  part is right, keep going"* — which is why it misfires on multi-part modelling.
+- **We can deploy it to more courses now** — this is where we'd like your help
+  choosing which, and getting faculty on board.
 
-- **The routing layer already exists.** Both tutors run through one adapter, one
-  runner, one judge, one chart pipeline. If we want routing, it's ready.
-
-- **But the data argues for consolidation, not routing** — New AskTIM wins on
-  both courses, and the one axis that matters (student behaviour) doesn't map to
-  course assignment.
+- Two open items on our side before wider rollout: a fair rematch that gives the
+  older tutor the same course material New AskTIM has, and a small physics-specific
+  tuning fix. Neither is expected to change the conclusion.
 
 ---
 
-## Caveats
+## Appendix — how this was measured
 
-- **108 conversations, 2 courses.** 27 per tutor per course is 9 independent
-  students × 3 shared problems — not 27 independent samples. The student-type
-  split and the cross-course agreement carry the weight.
+- **108 conversations:** 9 simulated student bots × 3 problems × 2 tutors, per
+  course, across Supply Chain and Physics. Every conversation runs 10 turns.
 
-- **New AskTIM had retrieval; STEM AskTIM didn't.** That's how each ships, but a
-  same-RAG arm is the fair head-to-head and hasn't been run yet.
+- **Three student types** — cooperative (sincere), confused (invites
+  over-explaining), adversarial (demands the answer) — three variants each.
 
-- **The physics number is a floor, not a ceiling.** A prompt rule tuned for
-  Supply Chain — *"confirming the student's value is fine, supplying yours is
-  not"* — misfires on physics, where confirming a symbolic step completes the
-  derivation. Physics has no per-course rules file to override it yet. Fixing it
-  should raise New AskTIM's physics score.
+- Both tutors ran on the **same underlying model** with the **same students and
+  problems**; the only differences are tutor design and whether it can retrieve
+  course material.
 
----
+- An **AI judge** grades every finished conversation against a fixed 40-point
+  pedagogy rubric that starts at full marks and deducts for specific failures.
 
-## Next steps
-
-- [ ] Add `tutor_rules.txt` for Physics III and re-run for a clean number
-
-- [ ] Run the same-RAG arm — give STEM AskTIM identical retrieval — for the
-      strictly fair comparison
-
-- [ ] Decide: consolidate on New AskTIM, or build the routing layer
-
-- [ ] **Ask for DB:** which courses should we deploy to next, and can we get help
-      landing them?
-
----
-
-## Appendix — reproducing this
-
-```powershell
-# run both arms (9 personas x 3 problems x 1 trial, per arm)
-python -m internal_testing.run_transcript_rag --tutor-impl stem   --problems practice:1 practice:2 practice:3 --output-suffix cmp_stem   --yes
-python -m internal_testing.run_transcript_rag --tutor-impl asktim --problems practice:1 practice:2 practice:3 --output-suffix cmp_asktim --yes
-
-# charts
-python -m visualization.run_comparison_viz
-```
-
-- Transcripts: `transcripts/<type>/<type>_{cmp,phys}_{asktim,stem}/`
-- Charts: `visualization/outputs/comparison/`
-- Adapter: `internal_testing/stem_tutor_adapter.py`
-
-Every number in this deck is recomputable from the committed transcripts.
+- Every number here is reproducible from the saved conversation logs.

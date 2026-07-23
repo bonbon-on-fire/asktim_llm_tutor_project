@@ -75,8 +75,9 @@
   hasn't reached yet.
 
 - **The last 25% of help.** The tutor would carry a student 75% of the way, then
-  refuse the final step — like the exact formula they needed. It now pushes
-  students across the finish line without doing the work for them.
+  refuse the final step — like the exact formula they needed. It now not only
+  brings the student to do most of the 75% themselves, but also pushes them
+  across the finish line without doing the work for them.
 
 - **Tables and images.** Students can attach spreadsheets, tables, PDFs, and
   screenshots — not just text — which is how they actually work in this course.

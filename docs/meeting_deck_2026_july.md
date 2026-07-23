@@ -1,6 +1,6 @@
 # AskTIM — One tutor for every course
 
-- Project review — **June 2026**
+- Project review — **July 2026**
 
 - Nishita Bhakar · Romain Puech · Faizan Siddiqi
 

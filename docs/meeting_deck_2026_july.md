@@ -1,4 +1,4 @@
-# AskTIM — One tutor for every course
+# NewTIM — One tutor for every course
 
 - Project review — **July 2026**
 
@@ -6,25 +6,23 @@
 
 ---
 
-## The headline: AskTIM is a complete package now
+## NewTIM is intended for all courses (STEM + humanities)
 
-- AskTIM is no longer "the humanities version of STEM AskTIM." It is a **complete
-  tutor that works on both STEM and humanities courses** — one system, every
-  course.
+- NewTIM is no longer "the humanities version of STEM AskTIM." It is a complete
+  tutor that works on both STEM and humanities courses.
 
-- The humanities side is proven: thoroughly tested, and **running live today on
-  Faizan's Cities and Climate Change course**.
+- The humanities side is robust: thoroughly tested, and running live today on
+  Faizan's Cities and Climate Change course.
 
-- Since our last meeting, the work has been comprehensive testing and fine-tuning
+- Since our last meeting, the work has been comprehensive testing and adaptations
   to get it working on STEM courses — specifically **CTL.SC2x Supply Chain
-  Design**, where we **launch in two weeks**.
+  Design** (Eva's course), where we **launch in two weeks**.
 
-- **Bottom line: STEM AskTIM can be retired.** There is nothing it does that
-  AskTIM doesn't now do as well or better.
+- Bottom line: we aim at replacing STEM AskTIM on all courses.
 
 ---
 
-## How the two tutors compare
+## Preliminary automated comparison with STEM AskTIM 
 
 ![Judge score by student type](../visualization/outputs/comparison/bare/02_score_by_persona.png)
 
@@ -34,36 +32,23 @@
 - **AskTIM scores as good or better across the board** — every student type, on
   both a quantitative Supply Chain course and Physics III.
 
-- With cooperative students the two are close. The gap opens with confused and
-  answer-seeking students — which is what a real classroom is full of.
-
 ---
 
 ## A caveat on these numbers
 
-- The judge doesn't capture the full picture. A lot of what makes tutoring good
-  or bad — tone, whether the math guidance actually leads to the right answer,
-  how a refusal lands with a frustrated student — lives in intricacies a
-  40-point rubric can't see.
-
-- The rubric and judge were also **built alongside AskTIM**, so the comparison
+- The rubric and judge were also **built alongside NewTIM**, so the comparison
   naturally favors it. Treat the scores as directional, not definitive.
 
-- What we can say firmly: nowhere in the testing does STEM AskTIM come out
-  ahead.
+- The rubric does not capture all differences that are revealed by reading the transcripts. This is a sanity test comparison.
 
 ---
 
-## Supply Chain Design: where this got real
+## Supply Chain Design human testing
 
 - The SC2x course staff had already told us the STEM tutor **wasn't working for
   their course** — that feedback is what kicked off this effort.
 
-- **Even before we changed anything**, AskTIM out of the box performed better on
-  their course than the tutor built for STEM.
-
-- And since our last talk we haven't stood still — we've made a long list of
-  improvements to get it launch-ready.
+- They are now satisfied with how NewTIM behaves on their class and we are ready to launch with them in 2 weeks.
 
 ---
 
@@ -86,8 +71,6 @@
   speaks the course's language, and math symbols now render correctly in every
   response.
 
-**AskTIM is better today than it has ever been — and it's launch-ready.**
-
 ---
 
 ## Cost: a fraction of what it was
@@ -101,12 +84,9 @@
   every message (~0.5% of the corpus per turn, ~17× cheaper), prompt caching,
   and one model call per student message instead of STEM AskTIM's two.
 
-- The scale of everything has come down — per message, per conversation, per
-  course — which is what makes deploying at class size realistic.
-
 ---
 
-## Asks
+## Asks and discussions
 
 1. **Funding.** Who pays for AskTIM's cost — for the Supply Chain Design
    deployment now, and for courses going forward?
@@ -117,5 +97,4 @@
 3. **More courses.** We want to test and deploy on more courses — would you want
    one of your own courses added?
 
-4. **One name.** Going forward we'll refer to AskTIM as **one tutor** — the STEM
-   version is being retired.
+4. **One name.** Going forward we'll refer to AskTIM as **one tutor** — we hide the difference with the STEM version.

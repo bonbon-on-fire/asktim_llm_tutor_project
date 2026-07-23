@@ -2,7 +2,7 @@
 
 - Project review — **July 2026**
 
-- Nishita Bhakar · Romain Puech · Faizan Siddiqi
+- Faizan Siddiqi · Nishita Bhakar · Romain Puech
 
 ---
 

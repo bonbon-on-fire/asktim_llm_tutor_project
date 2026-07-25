@@ -857,15 +857,23 @@ def _anthropic_image_blocks(images):
     return blocks
 
 
-def build_anthropic_request(plan, images=None):
+def build_anthropic_request(plan, images=None, images_by_student=None):
     """Convert a (role, content) plan into (system_blocks, messages) for the raw
     anthropic Messages API. Static system is a cache-marked text block; message-level
     cache_control breakpoints are tail-anchored and bounded (<= _MAX_MSG_BREAKPOINTS).
 
-    *images* (``(bytes, mime)`` tuples) attach to the CURRENT student turn (the last
-    ``student`` step) as base64 image blocks — mirroring the legacy path so pasted
-    tables / screenshots reach the model in cached mode too. Prior turns stay
-    text-only. With no images the output is byte-identical to the text-only path."""
+    Images (``(bytes, mime)`` tuples) attach to student turns as base64 image blocks
+    so pasted tables / screenshots reach the model in cached mode. Two forms:
+
+    - *images_by_student*: a list aligned to the plan's ``student`` steps in order
+      (index 0 = first student turn, ..., last = current turn). Each entry is that
+      turn's image tuples (``[]`` for none). This replays a PRIOR turn's images too,
+      not just the current turn's — so an earlier screenshot stays visible on later
+      turns. Takes precedence when given.
+    - *images* (legacy): a single flat list attached to the CURRENT student turn
+      (the last ``student`` step) only. Used when ``images_by_student`` is None.
+
+    With no images either way the output is byte-identical to the text-only path."""
     static = ""
     steps = []  # (mapped_role, content, is_student)
     for role, content in plan:
@@ -873,12 +881,21 @@ def build_anthropic_request(plan, images=None):
             static = content
         else:
             steps.append((_ROLE_MAP[role], _sanitize_text_for_transport(content), role == "student"))
-    image_blocks = _anthropic_image_blocks(images)
-    # The current turn is the last "student" step (an optional rag step may follow it).
-    last_student_idx = max(
-        (i for i, (_role, _c, is_student) in enumerate(steps) if is_student),
-        default=None,
-    )
+    student_step_indices = [i for i, (_r, _c, is_student) in enumerate(steps) if is_student]
+    # Precompute the image blocks to attach at each step index. `images_by_student`
+    # (per-turn, replays prior turns) wins; else fall back to the legacy flat
+    # `images` on the last student step only.
+    blocks_by_step: dict[int, list] = {}
+    if images_by_student is not None:
+        for k, step_i in enumerate(student_step_indices):
+            turn_images = images_by_student[k] if k < len(images_by_student) else None
+            blocks = _anthropic_image_blocks(turn_images)
+            if blocks:
+                blocks_by_step[step_i] = blocks
+    elif student_step_indices:
+        blocks = _anthropic_image_blocks(images)
+        if blocks:
+            blocks_by_step[student_step_indices[-1]] = blocks
     system_blocks = [{"type": "text", "text": _sanitize_text_for_transport(static),
                       "cache_control": {"type": "ephemeral"}}]
     n = len(steps)
@@ -895,16 +912,16 @@ def build_anthropic_request(plan, images=None):
     messages = []
     for i, (role, content, _is_student) in enumerate(steps):
         marked = i in marks
-        attach_images = image_blocks and i == last_student_idx
-        if not marked and not attach_images:
+        step_images = blocks_by_step.get(i)
+        if not marked and not step_images:
             messages.append({"role": role, "content": content})
             continue
         text_block = {"type": "text", "text": content}
         if marked:
             text_block["cache_control"] = {"type": "ephemeral"}
         content_blocks = [text_block]
-        if attach_images:
-            content_blocks.extend(image_blocks)
+        if step_images:
+            content_blocks.extend(step_images)
         messages.append({"role": role, "content": content_blocks})
     return system_blocks, messages
 
@@ -937,7 +954,7 @@ def _anthropic_usage_message(message) -> AIMessage:
     )
 
 
-def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None):
+def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, images_by_student=None):
     """Stream a cached-mode tutor reply via the raw anthropic SDK (langchain
     rejects the interleaved multi-system structure). Same yield contract as the
     langchain ``stream_tutor_reply``: visible str chunks, then
@@ -945,9 +962,13 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None):
     ``AIMessage`` carrying ``usage_metadata`` / ``response_metadata`` for cost
     accounting (see :func:`_anthropic_usage_message`).
 
-    *images* (``(bytes, mime)`` tuples) attach to the current student turn as
-    base64 image blocks so pasted tables / screenshots reach the model."""
-    system_blocks, messages = build_anthropic_request(plan, images=images)
+    Images (``(bytes, mime)`` tuples) attach to student turns as base64 image
+    blocks so pasted tables / screenshots reach the model — see
+    :func:`build_anthropic_request` for ``images`` (current turn) vs
+    ``images_by_student`` (per-turn, replays prior turns)."""
+    system_blocks, messages = build_anthropic_request(
+        plan, images=images, images_by_student=images_by_student
+    )
     client = anthropic.Anthropic(api_key=api_key)
     extractor = StudentAnswerExtractor()
     final_message = None

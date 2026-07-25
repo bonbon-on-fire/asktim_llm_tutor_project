@@ -211,10 +211,12 @@ def get_history_for_tutor(db: Session, conversation: Any, *, models: Models) -> 
     Shape matches what `tutor_bridge.get_tutor_reply` expects, so callers can
     pass the result straight through. Student-turn ``uploaded_files`` extracted
     text is re-injected into ``content`` here (not stored/displayed) so
-    attachments stay visible to the tutor on later turns. Files are batch
-    loaded via `_files_by_message` (one query for the whole conversation)
-    rather than lazily per message, mirroring how `_images_by_message` avoids
-    N+1 lookups in `get_messages_for_conversation`.
+    attachments stay visible to the tutor on later turns. A student turn that
+    had uploaded images also carries an ``images`` key (``[(bytes, mime), ...]``)
+    so those images are replayed to the tutor too; the key is omitted on
+    image-free turns. Files/images are batch loaded (one query each for the whole
+    conversation) rather than lazily per message, mirroring how
+    `_images_by_message` avoids N+1 lookups in `get_messages_for_conversation`.
     """
     stmt = (
         select(models.Message)
@@ -223,13 +225,21 @@ def get_history_for_tutor(db: Session, conversation: Any, *, models: Models) -> 
     )
     msgs = db.execute(stmt).scalars().all()
     files_by_message = _files_by_message(db, conversation, models=models)
+    images_by_message = _image_tuples_by_message(db, conversation, models=models)
     out: list[dict] = []
     for m in msgs:
         content = m.content
+        entry: dict = {"role": m.role, "content": content}
         if m.role == "student":
             atts = files_by_message.get(m.id, [])
-            content = _content_with_attachments(content, atts)
-        out.append({"role": m.role, "content": content})
+            entry["content"] = _content_with_attachments(content, atts)
+            imgs = images_by_message.get(m.id)
+            if imgs:
+                # Re-attach the turn's uploaded images so the tutor keeps seeing
+                # them on later turns (see `_image_tuples_by_message`). Omitted
+                # when the turn had none, so text-only entries stay `{role, content}`.
+                entry["images"] = imgs
+        out.append(entry)
     return out
 
 
@@ -253,6 +263,37 @@ def _files_by_message(
     out: dict[int, list[Any]] = {}
     for f in db.execute(stmt).scalars().all():
         out.setdefault(f.message_id, []).append(f)
+    return out
+
+
+def _image_tuples_by_message(
+    db: Session, conversation: Any, *, models: Models
+) -> dict[int, list[tuple[bytes, str]]]:
+    """Map message_id -> ``[(data, mime_type), ...]`` for this conversation's images.
+
+    Unlike `_images_by_message` (which selects only id + mime for the browser and
+    never the bytes), this loads the raw image ``data`` so prior-turn images can be
+    replayed to the tutor as multimodal content — the ``(bytes, mime)`` shape
+    `utils.figures.build_multimodal_content` / the Anthropic image blocks expect.
+    One grouped query for the whole conversation, id-ordered, mirroring the other
+    batched helpers here. No-op (returns ``{}``) when the app binds no
+    ``UploadedImage``.
+    """
+    if getattr(models, "UploadedImage", None) is None:
+        return {}
+    stmt = (
+        select(
+            models.UploadedImage.message_id,
+            models.UploadedImage.data,
+            models.UploadedImage.mime_type,
+        )
+        .join(models.Message, models.UploadedImage.message_id == models.Message.id)
+        .where(models.Message.conversation_id == conversation.id)
+        .order_by(models.UploadedImage.id)
+    )
+    out: dict[int, list[tuple[bytes, str]]] = {}
+    for msg_id, data, mime in db.execute(stmt).all():
+        out.setdefault(msg_id, []).append((data, mime))
     return out
 
 
@@ -300,15 +341,18 @@ def get_cached_history_for_tutor(
     db: Session, conversation: Any, *, models: Models
 ) -> list[dict]:
     """Per prior **completed** turn (has both a student and a tutor message):
-    ``{"student_content": str, "rag_text": str, "tutor_json": str}``, chronological.
+    ``{"student_content": str, "rag_text": str, "tutor_json": str, "images": list}``,
+    chronological.
 
     Feeds `tutor.cached_history.build_message_plan` for cache-friendly-history
     mode: each turn is replayed as student -> [rag] -> tutor (verbatim), rather
     than the legacy flattened `[{role, content}, ...]` shape from
     `get_history_for_tutor`. ``student_content`` re-injects attachment text the
-    same way `get_history_for_tutor` does; ``rag_text`` re-renders the tutor
-    message's stored `retrieved_context` records (``""`` when there are none);
-    ``tutor_json`` is the canonical `tutor_output_json(reasoning, answer)`.
+    same way `get_history_for_tutor` does; ``images`` carries that turn's uploaded
+    images as ``(bytes, mime)`` tuples (``[]`` when none) so they're replayed to
+    the tutor alongside the text; ``rag_text`` re-renders the tutor message's
+    stored `retrieved_context` records (``""`` when there are none); ``tutor_json``
+    is the canonical `tutor_output_json(reasoning, answer)`.
 
     A turn missing either half (e.g. the in-flight turn opened by
     `start_exchange_student_only` with no tutor reply yet) is excluded — only
@@ -321,12 +365,16 @@ def get_cached_history_for_tutor(
     )
     msgs = db.execute(stmt).scalars().all()
     files_by_message = _files_by_message(db, conversation, models=models)
+    images_by_message = _image_tuples_by_message(db, conversation, models=models)
     by_turn: dict[int, dict] = {}
     for m in msgs:
         slot = by_turn.setdefault(m.turn, {})
         if m.role == "student":
             atts = files_by_message.get(m.id, [])
             slot["student_content"] = _content_with_attachments(m.content, atts)
+            # This turn's uploaded images (``(bytes, mime)`` tuples), replayed so
+            # the tutor keeps seeing an earlier screenshot on later turns.
+            slot["images"] = images_by_message.get(m.id, [])
         elif m.role == "tutor":
             slot["tutor_json"] = tutor_output_json(m.pedagogical_reasoning, m.content)
             slot["rag_text"] = _rag_text_from_records(
@@ -341,6 +389,7 @@ def get_cached_history_for_tutor(
                     "student_content": slot["student_content"],
                     "rag_text": slot.get("rag_text", ""),
                     "tutor_json": slot["tutor_json"],
+                    "images": slot.get("images", []),
                 }
             )
     return out

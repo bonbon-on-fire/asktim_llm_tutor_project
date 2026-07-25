@@ -90,6 +90,53 @@ def test_build_anthropic_request_attaches_current_turn_images():
     )
 
 
+def test_build_anthropic_request_attaches_prior_and_current_images_by_student():
+    # Images from a PRIOR student turn must be replayed too (not only the current
+    # turn) so the tutor keeps seeing an earlier screenshot on later turns.
+    # `images_by_student` is aligned to the plan's student steps in order:
+    # [prior turn 1, current turn].
+    plan = [
+        ("system_static", "SYS"),
+        ("student", "s1"), ("tutor", "t1"),
+        ("student", "s2"),  # current student turn
+    ]
+    _, messages = build_anthropic_request(
+        plan,
+        images_by_student=[[(b"PRIOR", "image/png")], [(b"CUR", "image/jpeg")]],
+    )
+
+    # First user message (s1) carries the PRIOR image.
+    s1 = messages[0]
+    assert isinstance(s1["content"], list), s1["content"]
+    s1_imgs = [b for b in s1["content"] if b.get("type") == "image"]
+    assert len(s1_imgs) == 1, s1["content"]
+    assert s1_imgs[0]["source"]["media_type"] == "image/png"
+    assert s1_imgs[0]["source"]["data"] == base64.b64encode(b"PRIOR").decode("ascii")
+    assert any(b.get("type") == "text" and b["text"] == "s1" for b in s1["content"])
+
+    # Last user message (s2, current) carries the CURRENT image.
+    last = messages[-1]
+    assert isinstance(last["content"], list), last["content"]
+    last_imgs = [b for b in last["content"] if b.get("type") == "image"]
+    assert len(last_imgs) == 1, last["content"]
+    assert last_imgs[0]["source"]["data"] == base64.b64encode(b"CUR").decode("ascii")
+
+
+def test_build_anthropic_request_images_by_student_skips_empty_turns():
+    # A prior student turn with no images stays a plain-text message; only the
+    # turns whose entry is non-empty get image blocks.
+    plan = [("system_static", "SYS"), ("student", "s1"), ("tutor", "t1"), ("student", "s2")]
+    _, messages = build_anthropic_request(
+        plan, images_by_student=[[], [(b"CUR", "image/png")]]
+    )
+    # s1 (unmarked, image-free) is a plain string.
+    assert messages[0]["content"] == "s1"
+    # s2 (current) carries the image.
+    last = messages[-1]
+    assert isinstance(last["content"], list)
+    assert any(b.get("type") == "image" for b in last["content"])
+
+
 def test_build_anthropic_request_no_images_is_unchanged():
     # When no images are supplied, output shape is byte-identical to before.
     plan = [("system_static", "SYS"), ("student", "s1"), ("tutor", "t1"), ("student", "s2")]

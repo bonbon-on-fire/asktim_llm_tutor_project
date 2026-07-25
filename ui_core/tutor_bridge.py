@@ -360,13 +360,19 @@ class TutorBridge:
     # ------------------------------------------------------------------
 
     def _history_to_langchain(self, history: list[dict]) -> list:
-        """Convert [{role, content}, ...] dicts to LangChain BaseMessage instances."""
+        """Convert [{role, content, images?}, ...] dicts to LangChain BaseMessage instances.
+
+        A student entry carrying ``images`` (``(bytes, mime)`` tuples, from
+        `conversation.get_history_for_tutor`) becomes a multimodal HumanMessage so
+        a prior turn's uploaded screenshot stays visible to the tutor; entries with
+        no images stay plain text (byte-identical to before)."""
         messages: list = []
         for entry in history:
             role = entry["role"]
             content = entry["content"]
             if role == "student":
-                messages.append(HumanMessage(content=content))
+                images = entry.get("images")
+                messages.append(HumanMessage(content=build_multimodal_content(content, images)))
             elif role == "tutor":
                 messages.append(AIMessage(content=content))
             else:
@@ -402,24 +408,36 @@ class TutorBridge:
             return ""
         return f"{RETRIEVED_CONTEXT_HEADER}\n\n{retrieved_context}"
 
-    def _plan_to_langchain(self, plan, images=None):
+    def _plan_to_langchain(self, plan, images=None, images_by_student=None):
         """Convert a (role, content) message plan into langchain messages
         (GPT cached path — langchain accepts interleaved system messages).
 
-        *images* (``(bytes, mime)`` tuples) attach to the CURRENT student turn
-        (the last ``student`` step) as multimodal content, so pasted tables /
-        screenshots reach the model in cached mode. Prior turns stay text-only."""
-        last_student_idx = max(
-            (i for i, (role, _content) in enumerate(plan) if role == "student"),
-            default=None,
-        )
+        Images (``(bytes, mime)`` tuples) attach to student turns as multimodal
+        content so pasted tables / screenshots reach the model in cached mode. Two
+        forms, mirroring :func:`tutor.run_tutor.build_anthropic_request`:
+
+        - *images_by_student*: aligned to the plan's ``student`` steps in order
+          (index 0 = first student turn, ..., last = current). Replays a PRIOR
+          turn's images too, not just the current turn's. Takes precedence.
+        - *images* (legacy): a single flat list on the CURRENT (last) student turn
+          only, used when ``images_by_student`` is None."""
+        student_step_indices = [i for i, (role, _content) in enumerate(plan) if role == "student"]
+        images_by_step: dict[int, list] = {}
+        if images_by_student is not None:
+            for k, step_i in enumerate(student_step_indices):
+                turn_images = images_by_student[k] if k < len(images_by_student) else None
+                if turn_images:
+                    images_by_step[step_i] = turn_images
+        elif images and student_step_indices:
+            images_by_step[student_step_indices[-1]] = images
         out = []
         for i, (role, content) in enumerate(plan):
             if role in ("system_static", "rag"):
                 out.append(SystemMessage(content=content))
             elif role == "student":
-                if images and i == last_student_idx:
-                    out.append(HumanMessage(content=build_multimodal_content(content, images)))
+                turn_images = images_by_step.get(i)
+                if turn_images:
+                    out.append(HumanMessage(content=build_multimodal_content(content, turn_images)))
                 else:
                     out.append(HumanMessage(content=content))
             else:  # tutor
@@ -567,12 +585,19 @@ class TutorBridge:
 
         if history_mode == "cached":
             provider = _resolve_provider(ctx.get("provider"))
+            prior_turns = cached_history or []
             plan = build_message_plan(
                 static_system=system_prompt,
-                prior_turns=cached_history or [],
+                prior_turns=prior_turns,
                 current_student=new_student_message,
                 current_rag=self._retrieved_context_block(rc.text),
             )
+            # Per-student-turn images, aligned to the plan's student steps: each
+            # prior turn's replayed images (from cached_history), then this turn's.
+            # Lets a screenshot uploaded on an earlier turn stay visible now,
+            # instead of only ever riding the turn it was pasted on.
+            images_by_student = [t.get("images") or [] for t in prior_turns]
+            images_by_student.append(images or [])
             full_raw = None
             full_msg = None  # usage-bearing message for cost accounting
             if provider == "claude":
@@ -580,7 +605,7 @@ class TutorBridge:
                     plan,
                     model_name=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5"),
                     api_key=_require_anthropic_api_key(),
-                    images=images,
+                    images_by_student=images_by_student,
                 ):
                     if isinstance(item, tuple) and item and item[0] == "__done__":
                         full_raw = item[1]
@@ -589,7 +614,7 @@ class TutorBridge:
                     if isinstance(item, str) and item:
                         yield {"type": "delta", "text": item}
             else:  # gpt via langchain (accepts interleaved system messages)
-                lc_messages = self._plan_to_langchain(plan, images=images)
+                lc_messages = self._plan_to_langchain(plan, images_by_student=images_by_student)
                 extractor = StudentAnswerExtractor()
                 full_chunk = None
                 for chunk in model.stream(lc_messages):

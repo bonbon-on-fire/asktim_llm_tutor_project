@@ -23,6 +23,11 @@ from typing_extensions import Annotated, TypedDict
 
 import operator
 
+from tutor.json_mode import (
+    TUTOR_TOOL_NAME,
+    anthropic_tool_kwargs,
+    json_mode_enabled,
+)
 from utils.figures import build_multimodal_content
 from utils.parsing import extract_json_object
 
@@ -954,6 +959,20 @@ def _anthropic_usage_message(message) -> AIMessage:
     )
 
 
+def _tool_input_from_message(message) -> dict | None:
+    """Return the forced ``tutor_reply`` tool call's ``input`` dict, or None.
+
+    The raw-SDK final ``Message`` carries content blocks; under tool-forcing the
+    answer lives in the ``tool_use`` block's already-parsed ``input`` (guaranteed
+    valid JSON — no repair needed)."""
+    for block in getattr(message, "content", None) or []:
+        if getattr(block, "type", None) == "tool_use" and getattr(block, "name", None) == TUTOR_TOOL_NAME:
+            inp = getattr(block, "input", None)
+            if isinstance(inp, dict):
+                return inp
+    return None
+
+
 def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, images_by_student=None):
     """Stream a cached-mode tutor reply via the raw anthropic SDK (langchain
     rejects the interleaved multi-system structure). Same yield contract as the
@@ -972,22 +991,39 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, 
     client = anthropic.Anthropic(api_key=api_key)
     extractor = StudentAnswerExtractor()
     final_message = None
-    with client.messages.stream(
+    enforce = json_mode_enabled()
+    stream_kwargs = dict(
         model=model_name, max_tokens=8192, system=system_blocks, messages=messages,
         # Disable extended thinking (mirrors build_tutor_model). Sonnet 5's default
-        # is adaptive thinking; left on, thinking blocks stream separately from
-        # text_stream and can consume the whole max_tokens budget before the
-        # Student-facing-answer is emitted — leaving the visible stream empty and
-        # tripping the "I could not generate a valid response" fallback in
-        # _normalize_tutor_ai_message.
+        # is adaptive thinking; left on it streams thinking blocks separately and can
+        # burn the whole max_tokens budget before the answer is emitted.
         thinking={"type": "disabled"},
-    ) as stream:
-        for text in stream.text_stream:
-            visible = extractor.feed(text)
-            if visible:
-                yield visible
+    )
+    if enforce:
+        # Force a single tutor_reply tool call: the answer arrives as the tool's
+        # input (guaranteed-valid JSON), streamed as input_json deltas.
+        stream_kwargs.update(anthropic_tool_kwargs())
+    with client.messages.stream(**stream_kwargs) as stream:
+        if enforce:
+            for event in stream:
+                if getattr(event, "type", None) == "input_json":
+                    visible = extractor.feed(event.partial_json)
+                    if visible:
+                        yield visible
+        else:
+            for text in stream.text_stream:
+                visible = extractor.feed(text)
+                if visible:
+                    yield visible
         final_message = stream.get_final_message()
+
+    # Recovery: enforced -> authoritative tool_use.input dict (no repair). Otherwise
+    # the accumulated free-text buffer, run through the best-effort normalizer.
     raw = extractor.buffer
+    if enforce:
+        tool_input = _tool_input_from_message(final_message)
+        if tool_input is not None:
+            raw = json.dumps(tool_input, ensure_ascii=False)
     normalized = _normalize_tutor_ai_message(AIMessage(content=raw))
     normalized_text = normalized.content if isinstance(normalized.content, str) else str(normalized.content)
     if not extractor.found_answer:

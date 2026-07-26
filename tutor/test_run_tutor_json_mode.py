@@ -60,6 +60,10 @@ def test_raw_stream_tool_forcing_streams_answer_and_recovers_reasoning(monkeypat
     # Request carried the forced tool.
     assert _FakeClient.captured["tool_choice"] == {"type": "tool", "name": "tutor_reply"}
     assert _FakeClient.captured["tools"][0]["name"] == "tutor_reply"
+    # Extended thinking stays disabled on the enforced (tool-forcing) path too —
+    # otherwise thinking blocks can burn the max_tokens budget before the tool
+    # input is emitted, leaving the stream empty.
+    assert _FakeClient.captured["thinking"] == {"type": "disabled"}
     # Visible stream reconstructs the student answer only (no reasoning leak).
     visible = "".join(x for x in out if isinstance(x, str))
     assert visible == "Try isolating x first."

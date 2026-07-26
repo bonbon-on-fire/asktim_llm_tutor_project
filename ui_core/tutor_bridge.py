@@ -41,6 +41,8 @@ from rag.retrieve import format_context, retrieve_scored_with_usage, to_records
 from tutor.cached_history import build_message_plan
 from tutor.run_tutor import (
     StudentAnswerExtractor,
+    _apply_json_mode,
+    _chunk_json_fragment,
     _normalize_tutor_ai_message,
     _require_anthropic_api_key,
     build_tutor_model,
@@ -617,12 +619,9 @@ class TutorBridge:
                 lc_messages = self._plan_to_langchain(plan, images_by_student=images_by_student)
                 extractor = StudentAnswerExtractor()
                 full_chunk = None
-                for chunk in model.stream(lc_messages):
+                for chunk in _apply_json_mode(model).stream(lc_messages):
                     full_chunk = chunk if full_chunk is None else full_chunk + chunk
-                    piece = chunk.content if hasattr(chunk, "content") else str(chunk)
-                    if not isinstance(piece, str):
-                        piece = str(piece)
-                    visible = extractor.feed(piece)
+                    visible = extractor.feed(_chunk_json_fragment(chunk))
                     if visible:
                         yield {"type": "delta", "text": visible}
                 full_raw = _normalize_tutor_ai_message(AIMessage(content=extractor.buffer)).content

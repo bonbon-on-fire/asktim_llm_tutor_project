@@ -232,3 +232,41 @@ def test_cached_claude_threads_images_by_student_to_raw_sender():
         [],
         [(b"CURRENT", "image/png")],
     ]
+
+
+def test_cached_gpt_binds_response_format_when_json_mode_on(monkeypatch):
+    # _apply_json_mode only binds real ChatOpenAI/ChatAnthropic instances (it
+    # keys off isinstance so the prompt-cache helpers never see a stray
+    # RunnableBinding) — so the fake must subclass ChatOpenAI to exercise the
+    # bind path, unlike the bare stream-only fakes used elsewhere in this file.
+    from langchain_openai import ChatOpenAI
+
+    monkeypatch.setenv("TUTOR_JSON_MODE", "1")
+    bridge = TutorBridge()
+    captured = {}
+
+    class FakeChunk:
+        content = '{"pedagogical-reasoning":"r","Student-facing-answer":"hi"}'
+        tool_call_chunks = []
+
+    class FakeBound:
+        def stream(self, messages, **kw):
+            return iter([FakeChunk()])
+
+    class FakeModel(ChatOpenAI):
+        def bind(self, **kw):
+            captured["response_format"] = kw.get("response_format")
+            return FakeBound()
+
+    fake_model = FakeModel(api_key="test-key")
+
+    with patch.object(bridge, "_get_or_build_stream_context", return_value=(fake_model, "SYS")), \
+         patch.object(bridge, "retrieved_context",
+                      return_value=type("RC", (), {"text": "", "records": [], "embedding_tokens": 0})()), \
+         patch.object(bridge, "_enforce_rag_available"):
+        list(bridge.stream_tutor_reply(
+            course="c", exercise="1", tutor="tutor_07", history=[],
+            new_student_message="hello", provider="gpt",
+            history_mode="cached", cached_history=[]))
+    assert captured["response_format"] is not None
+    assert captured["response_format"]["json_schema"]["name"] == "tutor_reply"

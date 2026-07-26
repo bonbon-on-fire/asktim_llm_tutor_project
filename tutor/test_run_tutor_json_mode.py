@@ -133,3 +133,22 @@ def test_normalize_plain_string_unchanged():
     msg = AIMessage(content=json.dumps({"pedagogical-reasoning": "r", "Student-facing-answer": "a"}))
     out = rt._normalize_tutor_ai_message(msg)
     assert json.loads(out.content)["Student-facing-answer"] == "a"
+
+
+def test_latex_and_newlines_round_trip_through_extractor(monkeypatch):
+    monkeypatch.setenv("TUTOR_JSON_MODE", "1")
+    answer = "Use \\(\\frac{a}{b}\\).\n\n| x | y |\n|---|---|\n| 1 | 2 |"
+    reasoning = "check the fraction reduction"
+    full = json.dumps({"pedagogical-reasoning": reasoning, "Student-facing-answer": answer})
+    frags = [full[i:i + 5] for i in range(0, len(full), 5)]
+    stream = _FakeStream(_input_json_events(frags), _final_with_tool(reasoning, answer))
+    with patch.object(rt.anthropic, "Anthropic", return_value=_FakeClient(stream)):
+        out = list(rt.stream_tutor_reply_anthropic_raw(
+            [("system_static", "SYS"), ("student", "help")],
+            model_name="claude-sonnet-5", api_key="k"))
+    visible = "".join(x for x in out if isinstance(x, str))
+    # KaTeX delimiters survive; the markdown table keeps real newlines.
+    assert "\\(\\frac{a}{b}\\)" in visible
+    assert "| 1 | 2 |" in visible
+    done = out[-1]
+    assert json.loads(done[1])["Student-facing-answer"] == answer

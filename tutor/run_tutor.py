@@ -1015,7 +1015,7 @@ def _tool_input_from_message(message) -> dict | None:
     for block in getattr(message, "content", None) or []:
         if getattr(block, "type", None) == "tool_use" and getattr(block, "name", None) == TUTOR_TOOL_NAME:
             inp = getattr(block, "input", None)
-            if isinstance(inp, dict):
+            if isinstance(inp, dict) and inp:
                 return inp
     return None
 

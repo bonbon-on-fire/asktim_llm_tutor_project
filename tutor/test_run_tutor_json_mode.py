@@ -135,6 +135,23 @@ def test_normalize_plain_string_unchanged():
     assert json.loads(out.content)["Student-facing-answer"] == "a"
 
 
+def test_tool_input_from_message_none_when_input_empty():
+    empty_block = SimpleNamespace(type="tool_use", name=rt.TUTOR_TOOL_NAME, input={})
+    fake_msg = SimpleNamespace(content=[empty_block])
+    assert rt._tool_input_from_message(fake_msg) is None
+
+    nonempty_block = SimpleNamespace(
+        type="tool_use",
+        name=rt.TUTOR_TOOL_NAME,
+        input={"pedagogical-reasoning": "r", "Student-facing-answer": "a"},
+    )
+    fake_msg_ok = SimpleNamespace(content=[nonempty_block])
+    assert rt._tool_input_from_message(fake_msg_ok) == {
+        "pedagogical-reasoning": "r",
+        "Student-facing-answer": "a",
+    }
+
+
 def test_latex_and_newlines_round_trip_through_extractor(monkeypatch):
     monkeypatch.setenv("TUTOR_JSON_MODE", "1")
     answer = "Use \\(\\frac{a}{b}\\).\n\n| x | y |\n|---|---|\n| 1 | 2 |"

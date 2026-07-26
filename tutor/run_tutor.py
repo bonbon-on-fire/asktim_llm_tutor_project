@@ -221,7 +221,7 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt", figures: li
         if figures:
             _attach_figures_to_last_human(messages, figures)
         _cache_last_message(messages, model)
-        response = model.invoke(messages)
+        response = _apply_json_mode(model).invoke(messages)
         response = _normalize_tutor_ai_message(response)
         return {"messages": [response]}
 
@@ -359,7 +359,15 @@ def _normalize_tutor_ai_message(msg: BaseMessage) -> AIMessage:
     - ``pedagogical-reasoning``
     - ``Student-facing-answer``
     """
-    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+    tool_calls = getattr(msg, "tool_calls", None)
+    if tool_calls:
+        args = tool_calls[0].get("args") if isinstance(tool_calls[0], dict) else None
+        if isinstance(args, dict) and args:
+            content = json.dumps(args, ensure_ascii=False)
+        else:
+            content = msg.content if isinstance(msg.content, str) else str(msg.content)
+    else:
+        content = msg.content if isinstance(msg.content, str) else str(msg.content)
     reasoning, answer = parse_tutor_response(content)
     payload = {
         "pedagogical-reasoning": (reasoning or "").strip(),

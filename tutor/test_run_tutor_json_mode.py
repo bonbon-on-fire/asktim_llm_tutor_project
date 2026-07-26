@@ -3,7 +3,7 @@ import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from langchain_core.messages import AIMessageChunk
+from langchain_core.messages import AIMessage, AIMessageChunk
 
 import tutor.run_tutor as rt
 
@@ -112,3 +112,24 @@ def test_apply_json_mode_binds_per_provider(monkeypatch):
     # Gate off -> untouched.
     monkeypatch.setenv("TUTOR_JSON_MODE", "off")
     assert rt._apply_json_mode(claude) is claude
+
+
+def test_normalize_recovers_from_tool_calls():
+    msg = AIMessage(
+        content="",
+        tool_calls=[{
+            "name": "tutor_reply",
+            "args": {"pedagogical-reasoning": "plan", "Student-facing-answer": "Answer here."},
+            "id": "t1",
+        }],
+    )
+    out = rt._normalize_tutor_ai_message(msg)
+    parsed = json.loads(out.content)
+    assert parsed["Student-facing-answer"] == "Answer here."
+    assert parsed["pedagogical-reasoning"] == "plan"
+
+
+def test_normalize_plain_string_unchanged():
+    msg = AIMessage(content=json.dumps({"pedagogical-reasoning": "r", "Student-facing-answer": "a"}))
+    out = rt._normalize_tutor_ai_message(msg)
+    assert json.loads(out.content)["Student-facing-answer"] == "a"

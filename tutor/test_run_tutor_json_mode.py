@@ -3,6 +3,8 @@ import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from langchain_core.messages import AIMessageChunk
+
 import tutor.run_tutor as rt
 
 
@@ -87,3 +89,26 @@ def test_raw_stream_gate_off_uses_text_stream_no_tools(monkeypatch):
     assert "tool_choice" not in _FakeClient.captured
     visible = "".join(x for x in out if isinstance(x, str))
     assert visible == "hello"
+
+
+def test_chunk_json_fragment_prefers_content_then_tool_args():
+    # OpenAI/text path: content carries the JSON.
+    assert rt._chunk_json_fragment(AIMessageChunk(content='{"a":1}')) == '{"a":1}'
+    # Claude tool-forced path: content empty, args carry the JSON fragment.
+    tc = AIMessageChunk(
+        content="",
+        tool_call_chunks=[{"name": "tutor_reply", "args": '{"Student', "id": "1", "index": 0}],
+    )
+    assert rt._chunk_json_fragment(tc) == '{"Student'
+
+
+def test_apply_json_mode_binds_per_provider(monkeypatch):
+    monkeypatch.setenv("TUTOR_JSON_MODE", "1")
+    claude = rt.build_tutor_model("claude")
+    bound = rt._apply_json_mode(claude)
+    assert bound is not claude  # a RunnableBinding wrapping the model
+    # kwargs carry the forced tool.
+    assert bound.kwargs.get("tool_choice") is not None
+    # Gate off -> untouched.
+    monkeypatch.setenv("TUTOR_JSON_MODE", "off")
+    assert rt._apply_json_mode(claude) is claude

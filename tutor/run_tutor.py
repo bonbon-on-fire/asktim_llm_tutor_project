@@ -26,7 +26,9 @@ import operator
 from tutor.json_mode import (
     TUTOR_TOOL_NAME,
     anthropic_tool_kwargs,
+    anthropic_tools,
     json_mode_enabled,
+    openai_response_format,
 )
 from utils.figures import build_multimodal_content
 from utils.parsing import extract_json_object
@@ -586,6 +588,45 @@ def get_tutor_reply(
 # Streaming support
 # ---------------------------------------------------------------------------
 
+def _apply_json_mode(model):
+    """Bind API-level structured-output enforcement to *model* when the gate is on.
+
+    Claude -> force the ``tutor_reply`` tool; OpenAI -> strict ``response_format``.
+    Applied at the call site (not at model-build time) so the cached model stays a
+    plain ``ChatAnthropic``/``ChatOpenAI`` — the prompt-cache helpers key off
+    ``isinstance(model, ChatAnthropic)`` and must not see a ``RunnableBinding``.
+    Gate off, or an unknown model type, returns *model* unchanged.
+    """
+    if not json_mode_enabled():
+        return model
+    if isinstance(model, ChatAnthropic):
+        return model.bind_tools(anthropic_tools(), tool_choice=TUTOR_TOOL_NAME)
+    if isinstance(model, ChatOpenAI):
+        return model.bind(response_format=openai_response_format())
+    return model
+
+
+def _chunk_json_fragment(chunk) -> str:
+    """Return the JSON text fragment carried by a langchain ``AIMessageChunk``.
+
+    OpenAI (text / ``response_format``) puts it in ``.content``; a tool-forced
+    Claude chunk leaves ``.content`` empty and streams the tool input via
+    ``.tool_call_chunks`` args. Either way the fragment has the same
+    ``{"pedagogical-reasoning":…,"Student-facing-answer":…}`` shape the extractor
+    already walks."""
+    piece = getattr(chunk, "content", "")
+    if not isinstance(piece, str):
+        piece = ""
+    if piece:
+        return piece
+    parts: list[str] = []
+    for tcc in getattr(chunk, "tool_call_chunks", None) or []:
+        args = tcc.get("args") if isinstance(tcc, dict) else None
+        if args:
+            parts.append(args)
+    return "".join(parts)
+
+
 class StudentAnswerExtractor:
     """Incrementally pull characters out of the tutor JSON's
     ``Student-facing-answer`` field as raw model tokens arrive.
@@ -803,11 +844,9 @@ def stream_tutor_reply(
     # provider metadata for cost accounting (AIMessageChunk supports +).
     full_chunk = None
     try:
-        for chunk in model.stream(safe_messages):
+        for chunk in _apply_json_mode(model).stream(safe_messages):
             full_chunk = chunk if full_chunk is None else full_chunk + chunk
-            piece = chunk.content if hasattr(chunk, "content") else str(chunk)
-            if not isinstance(piece, str):
-                piece = str(piece)
+            piece = _chunk_json_fragment(chunk)
             visible = extractor.feed(piece)
             if visible:
                 yield visible

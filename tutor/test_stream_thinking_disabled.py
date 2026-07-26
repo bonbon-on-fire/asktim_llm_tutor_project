@@ -37,7 +37,12 @@ class _FakeStream:
 
 
 def _run_and_capture_stream_kwargs() -> dict:
-    """Drive the raw sender with a fake anthropic client; return the stream kwargs."""
+    """Drive the raw sender with a fake anthropic client; return the stream kwargs.
+
+    Pinned to the legacy (gate-off) path: this test only cares about the
+    ``thinking`` kwarg, which is unconditional in both branches, and the fake
+    stream here only implements ``text_stream`` (not event iteration).
+    """
     captured: dict = {}
 
     @contextmanager
@@ -48,7 +53,8 @@ def _run_and_capture_stream_kwargs() -> dict:
     fake_client = mock.Mock()
     fake_client.messages.stream.side_effect = fake_stream
 
-    with mock.patch("tutor.run_tutor.anthropic.Anthropic", return_value=fake_client):
+    with mock.patch("tutor.run_tutor.anthropic.Anthropic", return_value=fake_client), \
+         mock.patch.dict("os.environ", {"TUTOR_JSON_MODE": "off"}):
         plan = [("system_static", "SYS"), ("student", "hi")]
         list(stream_tutor_reply_anthropic_raw(plan, model_name="claude-sonnet-5", api_key="test"))
     return captured

@@ -23,6 +23,13 @@ from typing_extensions import Annotated, TypedDict
 
 import operator
 
+from tutor.json_mode import (
+    TUTOR_TOOL_NAME,
+    anthropic_tool_kwargs,
+    anthropic_tools,
+    json_mode_enabled,
+    openai_response_format,
+)
 from utils.figures import build_multimodal_content
 from utils.parsing import extract_json_object
 
@@ -214,7 +221,7 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt", figures: li
         if figures:
             _attach_figures_to_last_human(messages, figures)
         _cache_last_message(messages, model)
-        response = model.invoke(messages)
+        response = _apply_json_mode(model).invoke(messages)
         response = _normalize_tutor_ai_message(response)
         return {"messages": [response]}
 
@@ -352,7 +359,15 @@ def _normalize_tutor_ai_message(msg: BaseMessage) -> AIMessage:
     - ``pedagogical-reasoning``
     - ``Student-facing-answer``
     """
-    content = msg.content if isinstance(msg.content, str) else str(msg.content)
+    tool_calls = getattr(msg, "tool_calls", None)
+    if tool_calls:
+        args = tool_calls[0].get("args") if isinstance(tool_calls[0], dict) else None
+        if isinstance(args, dict) and args:
+            content = json.dumps(args, ensure_ascii=False)
+        else:
+            content = msg.content if isinstance(msg.content, str) else str(msg.content)
+    else:
+        content = msg.content if isinstance(msg.content, str) else str(msg.content)
     reasoning, answer = parse_tutor_response(content)
     payload = {
         "pedagogical-reasoning": (reasoning or "").strip(),
@@ -581,6 +596,45 @@ def get_tutor_reply(
 # Streaming support
 # ---------------------------------------------------------------------------
 
+def _apply_json_mode(model):
+    """Bind API-level structured-output enforcement to *model* when the gate is on.
+
+    Claude -> force the ``tutor_reply`` tool; OpenAI -> strict ``response_format``.
+    Applied at the call site (not at model-build time) so the cached model stays a
+    plain ``ChatAnthropic``/``ChatOpenAI`` — the prompt-cache helpers key off
+    ``isinstance(model, ChatAnthropic)`` and must not see a ``RunnableBinding``.
+    Gate off, or an unknown model type, returns *model* unchanged.
+    """
+    if not json_mode_enabled():
+        return model
+    if isinstance(model, ChatAnthropic):
+        return model.bind_tools(anthropic_tools(), tool_choice=TUTOR_TOOL_NAME)
+    if isinstance(model, ChatOpenAI):
+        return model.bind(response_format=openai_response_format())
+    return model
+
+
+def _chunk_json_fragment(chunk) -> str:
+    """Return the JSON text fragment carried by a langchain ``AIMessageChunk``.
+
+    OpenAI (text / ``response_format``) puts it in ``.content``; a tool-forced
+    Claude chunk leaves ``.content`` empty and streams the tool input via
+    ``.tool_call_chunks`` args. Either way the fragment has the same
+    ``{"pedagogical-reasoning":…,"Student-facing-answer":…}`` shape the extractor
+    already walks."""
+    piece = getattr(chunk, "content", "")
+    if not isinstance(piece, str):
+        piece = ""
+    if piece:
+        return piece
+    parts: list[str] = []
+    for tcc in getattr(chunk, "tool_call_chunks", None) or []:
+        args = tcc.get("args") if isinstance(tcc, dict) else None
+        if args:
+            parts.append(args)
+    return "".join(parts)
+
+
 class StudentAnswerExtractor:
     """Incrementally pull characters out of the tutor JSON's
     ``Student-facing-answer`` field as raw model tokens arrive.
@@ -798,11 +852,9 @@ def stream_tutor_reply(
     # provider metadata for cost accounting (AIMessageChunk supports +).
     full_chunk = None
     try:
-        for chunk in model.stream(safe_messages):
+        for chunk in _apply_json_mode(model).stream(safe_messages):
             full_chunk = chunk if full_chunk is None else full_chunk + chunk
-            piece = chunk.content if hasattr(chunk, "content") else str(chunk)
-            if not isinstance(piece, str):
-                piece = str(piece)
+            piece = _chunk_json_fragment(chunk)
             visible = extractor.feed(piece)
             if visible:
                 yield visible
@@ -857,15 +909,23 @@ def _anthropic_image_blocks(images):
     return blocks
 
 
-def build_anthropic_request(plan, images=None):
+def build_anthropic_request(plan, images=None, images_by_student=None):
     """Convert a (role, content) plan into (system_blocks, messages) for the raw
     anthropic Messages API. Static system is a cache-marked text block; message-level
     cache_control breakpoints are tail-anchored and bounded (<= _MAX_MSG_BREAKPOINTS).
 
-    *images* (``(bytes, mime)`` tuples) attach to the CURRENT student turn (the last
-    ``student`` step) as base64 image blocks — mirroring the legacy path so pasted
-    tables / screenshots reach the model in cached mode too. Prior turns stay
-    text-only. With no images the output is byte-identical to the text-only path."""
+    Images (``(bytes, mime)`` tuples) attach to student turns as base64 image blocks
+    so pasted tables / screenshots reach the model in cached mode. Two forms:
+
+    - *images_by_student*: a list aligned to the plan's ``student`` steps in order
+      (index 0 = first student turn, ..., last = current turn). Each entry is that
+      turn's image tuples (``[]`` for none). This replays a PRIOR turn's images too,
+      not just the current turn's — so an earlier screenshot stays visible on later
+      turns. Takes precedence when given.
+    - *images* (legacy): a single flat list attached to the CURRENT student turn
+      (the last ``student`` step) only. Used when ``images_by_student`` is None.
+
+    With no images either way the output is byte-identical to the text-only path."""
     static = ""
     steps = []  # (mapped_role, content, is_student)
     for role, content in plan:
@@ -873,12 +933,21 @@ def build_anthropic_request(plan, images=None):
             static = content
         else:
             steps.append((_ROLE_MAP[role], _sanitize_text_for_transport(content), role == "student"))
-    image_blocks = _anthropic_image_blocks(images)
-    # The current turn is the last "student" step (an optional rag step may follow it).
-    last_student_idx = max(
-        (i for i, (_role, _c, is_student) in enumerate(steps) if is_student),
-        default=None,
-    )
+    student_step_indices = [i for i, (_r, _c, is_student) in enumerate(steps) if is_student]
+    # Precompute the image blocks to attach at each step index. `images_by_student`
+    # (per-turn, replays prior turns) wins; else fall back to the legacy flat
+    # `images` on the last student step only.
+    blocks_by_step: dict[int, list] = {}
+    if images_by_student is not None:
+        for k, step_i in enumerate(student_step_indices):
+            turn_images = images_by_student[k] if k < len(images_by_student) else None
+            blocks = _anthropic_image_blocks(turn_images)
+            if blocks:
+                blocks_by_step[step_i] = blocks
+    elif student_step_indices:
+        blocks = _anthropic_image_blocks(images)
+        if blocks:
+            blocks_by_step[student_step_indices[-1]] = blocks
     system_blocks = [{"type": "text", "text": _sanitize_text_for_transport(static),
                       "cache_control": {"type": "ephemeral"}}]
     n = len(steps)
@@ -895,16 +964,16 @@ def build_anthropic_request(plan, images=None):
     messages = []
     for i, (role, content, _is_student) in enumerate(steps):
         marked = i in marks
-        attach_images = image_blocks and i == last_student_idx
-        if not marked and not attach_images:
+        step_images = blocks_by_step.get(i)
+        if not marked and not step_images:
             messages.append({"role": role, "content": content})
             continue
         text_block = {"type": "text", "text": content}
         if marked:
             text_block["cache_control"] = {"type": "ephemeral"}
         content_blocks = [text_block]
-        if attach_images:
-            content_blocks.extend(image_blocks)
+        if step_images:
+            content_blocks.extend(step_images)
         messages.append({"role": role, "content": content_blocks})
     return system_blocks, messages
 
@@ -937,7 +1006,21 @@ def _anthropic_usage_message(message) -> AIMessage:
     )
 
 
-def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None):
+def _tool_input_from_message(message) -> dict | None:
+    """Return the forced ``tutor_reply`` tool call's ``input`` dict, or None.
+
+    The raw-SDK final ``Message`` carries content blocks; under tool-forcing the
+    answer lives in the ``tool_use`` block's already-parsed ``input`` (guaranteed
+    valid JSON — no repair needed)."""
+    for block in getattr(message, "content", None) or []:
+        if getattr(block, "type", None) == "tool_use" and getattr(block, "name", None) == TUTOR_TOOL_NAME:
+            inp = getattr(block, "input", None)
+            if isinstance(inp, dict) and inp:
+                return inp
+    return None
+
+
+def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, images_by_student=None):
     """Stream a cached-mode tutor reply via the raw anthropic SDK (langchain
     rejects the interleaved multi-system structure). Same yield contract as the
     langchain ``stream_tutor_reply``: visible str chunks, then
@@ -945,28 +1028,49 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None):
     ``AIMessage`` carrying ``usage_metadata`` / ``response_metadata`` for cost
     accounting (see :func:`_anthropic_usage_message`).
 
-    *images* (``(bytes, mime)`` tuples) attach to the current student turn as
-    base64 image blocks so pasted tables / screenshots reach the model."""
-    system_blocks, messages = build_anthropic_request(plan, images=images)
+    Images (``(bytes, mime)`` tuples) attach to student turns as base64 image
+    blocks so pasted tables / screenshots reach the model — see
+    :func:`build_anthropic_request` for ``images`` (current turn) vs
+    ``images_by_student`` (per-turn, replays prior turns)."""
+    system_blocks, messages = build_anthropic_request(
+        plan, images=images, images_by_student=images_by_student
+    )
     client = anthropic.Anthropic(api_key=api_key)
     extractor = StudentAnswerExtractor()
     final_message = None
-    with client.messages.stream(
+    enforce = json_mode_enabled()
+    stream_kwargs = dict(
         model=model_name, max_tokens=8192, system=system_blocks, messages=messages,
         # Disable extended thinking (mirrors build_tutor_model). Sonnet 5's default
-        # is adaptive thinking; left on, thinking blocks stream separately from
-        # text_stream and can consume the whole max_tokens budget before the
-        # Student-facing-answer is emitted — leaving the visible stream empty and
-        # tripping the "I could not generate a valid response" fallback in
-        # _normalize_tutor_ai_message.
+        # is adaptive thinking; left on it streams thinking blocks separately and can
+        # burn the whole max_tokens budget before the answer is emitted.
         thinking={"type": "disabled"},
-    ) as stream:
-        for text in stream.text_stream:
-            visible = extractor.feed(text)
-            if visible:
-                yield visible
+    )
+    if enforce:
+        # Force a single tutor_reply tool call: the answer arrives as the tool's
+        # input (guaranteed-valid JSON), streamed as input_json deltas.
+        stream_kwargs.update(anthropic_tool_kwargs())
+    with client.messages.stream(**stream_kwargs) as stream:
+        if enforce:
+            for event in stream:
+                if getattr(event, "type", None) == "input_json":
+                    visible = extractor.feed(event.partial_json)
+                    if visible:
+                        yield visible
+        else:
+            for text in stream.text_stream:
+                visible = extractor.feed(text)
+                if visible:
+                    yield visible
         final_message = stream.get_final_message()
+
+    # Recovery: enforced -> authoritative tool_use.input dict (no repair). Otherwise
+    # the accumulated free-text buffer, run through the best-effort normalizer.
     raw = extractor.buffer
+    if enforce:
+        tool_input = _tool_input_from_message(final_message)
+        if tool_input is not None:
+            raw = json.dumps(tool_input, ensure_ascii=False)
     normalized = _normalize_tutor_ai_message(AIMessage(content=raw))
     normalized_text = normalized.content if isinstance(normalized.content, str) else str(normalized.content)
     if not extractor.found_answer:

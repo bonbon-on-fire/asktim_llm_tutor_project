@@ -776,6 +776,92 @@ def test_complete_exchange_tutor_persists_retrieved_context() -> None:
         tmp.cleanup()
 
 
+def test_history_builders_replay_prior_turn_images() -> None:
+    """Check both history builders re-inject a prior student turn's uploaded
+    images as ``(bytes, mime)`` tuples so the tutor keeps seeing an earlier
+    screenshot on later turns. Image-free turns gain no ``images`` key/entries.
+    """
+    tmp, eng = _new_session()
+    try:
+        with Session(eng) as s:
+            convo = svc.find_or_create_conversation(
+                s,
+                models=_MODELS,
+                session_id="sessImg",
+                conversation_id=None,
+                course="cs101",
+                exercise_number="ex1",
+                tutor_prompt="be nice",
+            )
+            s.flush()
+
+            # Turn 1: a student turn with an uploaded image, then a tutor reply.
+            student1 = svc.start_exchange_student_only(
+                s, models=_MODELS, conversation=convo, student_text="see this"
+            )
+            s.add(
+                UploadedImage(
+                    message_id=student1.id,
+                    filename="p.png",
+                    mime_type="image/png",
+                    size_bytes=4,
+                    data=b"\x89PNG",
+                )
+            )
+            svc.complete_exchange_tutor(
+                s,
+                models=_MODELS,
+                conversation=convo,
+                turn=student1.turn,
+                tutor_text="a1",
+                pedagogical_reasoning=None,
+            )
+            # Turn 2: an image-free student turn + reply.
+            student2 = svc.start_exchange_student_only(
+                s, models=_MODELS, conversation=convo, student_text="follow-up"
+            )
+            svc.complete_exchange_tutor(
+                s,
+                models=_MODELS,
+                conversation=convo,
+                turn=student2.turn,
+                tutor_text="a2",
+                pedagogical_reasoning=None,
+            )
+            s.commit()
+
+            # Cached-history builder (default path).
+            cached = svc.get_cached_history_for_tutor(s, convo, models=_MODELS)
+            _check("two cached-history rows", len(cached) == 2, str(cached))
+            _check(
+                "cached row 1 replays the prior image tuple",
+                cached[0].get("images") == [(b"\x89PNG", "image/png")],
+                str(cached[0].get("images")),
+            )
+            _check(
+                "cached row 2 (image-free) has no images",
+                not cached[1].get("images"),
+                str(cached[1].get("images")),
+            )
+
+            # Legacy history builder.
+            history = svc.get_history_for_tutor(s, convo, models=_MODELS)
+            student_entries = [h for h in history if h["role"] == "student"]
+            _check(
+                "legacy history student turn 1 carries the image tuple",
+                student_entries[0].get("images") == [(b"\x89PNG", "image/png")],
+                str(student_entries[0]),
+            )
+            _check(
+                "legacy history image-free turn stays {role, content}",
+                student_entries[1] == {"role": "student", "content": "follow-up"},
+                str(student_entries[1]),
+            )
+        eng.dispose()
+    finally:
+        tmp.cleanup()
+
+
 def test_cached_history_pairs_student_rag_tutor() -> None:
     """Check `get_cached_history_for_tutor` pairs each prior completed turn's
     student content with its re-rendered RAG block and verbatim tutor JSON.
@@ -847,6 +933,7 @@ def main() -> int:
         test_message_rating_and_message_payload_ids,
         test_cost_persisted_summarized_and_surfaced,
         test_complete_exchange_tutor_persists_retrieved_context,
+        test_history_builders_replay_prior_turn_images,
         test_cached_history_pairs_student_rag_tutor,
     )
     for t in tests:

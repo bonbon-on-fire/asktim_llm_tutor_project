@@ -39,6 +39,11 @@ def main() -> int:
             s, session_id="c", conversation_id=None, course="supply_chain_design",
             exercise_number="3", exercise_kind="exercise", tutor_prompt="tutor_07",
         )
+        # A course without any override -> default exercise label.
+        ccc_ex = svc.find_or_create_conversation(
+            s, session_id="d", conversation_id=None, course="cities_and_climate_change",
+            exercise_number="3", exercise_kind="exercise", tutor_prompt="tutor_07",
+        )
         s.commit()
 
         ok &= _check(
@@ -52,9 +57,14 @@ def main() -> int:
             svc._summarize_extra(ccc),
         )
         ok &= _check(
-            "exercise kind unaffected by practice override",
-            svc._summarize_extra(scd_ex)["label_template"] == "Exercise {n}",
+            "supply_chain_design exercise -> Week Graded template",
+            svc._summarize_extra(scd_ex)["label_template"] == "Week {n} Graded",
             svc._summarize_extra(scd_ex),
+        )
+        ok &= _check(
+            "other course exercise -> default template",
+            svc._summarize_extra(ccc_ex)["label_template"] == "Exercise {n}",
+            svc._summarize_extra(ccc_ex),
         )
         ok &= _check(
             "exercise_kind still present",

@@ -64,7 +64,7 @@ _NUMBERED_RE = re.compile(r"^local:(practice|exercise)_(\d+)$")
 _NAMED_LABELS = {
     "local:course": "Course overview",
     "local:syllabus": "Syllabus",
-    "local:key_concepts": "Key concepts",
+    "local:key_concepts": "Key Concepts Document",
 }
 # Slug tokens that should stay uppercase rather than title-cased (Roic, Milp, ...).
 _ACRONYMS = {

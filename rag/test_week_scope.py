@@ -70,7 +70,7 @@ def test_source_label_practice_named_and_ocw():
     assert _source_label("local:practice_4") == "Practice 4"
     assert _source_label("local:course") == "Course overview"
     assert _source_label("local:syllabus") == "Syllabus"
-    assert _source_label("local:key_concepts") == "Key concepts"
+    assert _source_label("local:key_concepts") == "Key Concepts Document"
     # OCW / unrecognized labels are left intact
     assert _source_label("ocw:https://ocw.mit.edu/x") == "ocw:https://ocw.mit.edu/x"
 

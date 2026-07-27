@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from flask import Blueprint, jsonify, render_template, request
 
+from utils.curriculum import load_ui_labels
+
 from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
     DEFAULT_COURSE,
@@ -40,6 +42,10 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         "exercise": exercise,
         "tutor": tutor,
         "exercise_kind": exercise_kind,
+        # Per-course sidebar/history labels by exercise_kind (e.g. this course
+        # renders practices as "Week N Practice Problems"); chat.js formats the
+        # entry header from this. Defaults to "Exercise N"/"Practice N".
+        "labels": load_ui_labels(course),
     }
     has_email = bool(read_username_cookie(request))
     return render_template(

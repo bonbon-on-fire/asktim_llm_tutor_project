@@ -556,13 +556,17 @@
   }
 
   function formatEntryHeader(c) {
-    // "Exercise 3 · May 19 · 8 messages" (or "Practice 3 ...") — strip leading
-    // zeros from the number; show the most-recent-active date.
+    // "Exercise 3 · May 19 · 8 messages" (or, per this course's config,
+    // "Week 3 Practice Problems · ...") — strip leading zeros from the number;
+    // show the most-recent-active date. The label template comes from the
+    // per-course `labels` map (keyed by exercise_kind, "{n}" = the number).
     const exNumber = parseInt(c.exercise_number, 10);
-    const kindLabel = c.exercise_kind === "practice" ? "Practice" : "Exercise";
-    const parts = [
-      `${kindLabel} ${Number.isFinite(exNumber) ? exNumber : c.exercise_number}`,
-    ];
+    const number = Number.isFinite(exNumber) ? exNumber : c.exercise_number;
+    const labels = config.labels || {};
+    const template =
+      labels[c.exercise_kind] ||
+      (c.exercise_kind === "practice" ? "Practice {n}" : "Exercise {n}");
+    const parts = [template.replace("{n}", number)];
     if (c.last_active_at) {
       const d = new Date(c.last_active_at);
       parts.push(

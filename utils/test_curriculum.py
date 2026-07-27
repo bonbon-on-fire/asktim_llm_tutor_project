@@ -23,6 +23,7 @@ from utils.curriculum import (
     exercise_exists,
     list_archived_courses,
     list_courses,
+    load_ui_labels,
     practice_exists,
     practice_path,
     read_course_tutor_rules,
@@ -334,6 +335,51 @@ def test_archived_course_reachable_by_remaining_helpers() -> None:
         )
 
 
+def test_ui_labels() -> None:
+    """Assert load_ui_labels merges a course's ui_labels.json over the defaults."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        defaults = {"exercise": "Exercise {n}", "practice": "Practice {n}"}
+
+        # No file -> defaults (a copy, safe to mutate).
+        (root / "bare").mkdir(parents=True)
+        got = load_ui_labels("bare", curriculum_root=root)
+        _check("no file -> defaults", got == defaults, f"got {got}")
+
+        # Partial override -> only the named key changes; the rest stay default.
+        (root / "sc").mkdir(parents=True)
+        (root / "sc" / "ui_labels.json").write_text(
+            '{"practice": "Week {n} Practice Problems"}', encoding="utf-8"
+        )
+        got = load_ui_labels("sc", curriculum_root=root)
+        _check(
+            "override -> practice replaced, exercise default",
+            got == {"exercise": "Exercise {n}", "practice": "Week {n} Practice Problems"},
+            f"got {got}",
+        )
+
+        # Invalid JSON -> defaults (label must never break rendering).
+        (root / "broken").mkdir(parents=True)
+        (root / "broken" / "ui_labels.json").write_text("{not json", encoding="utf-8")
+        _check(
+            "invalid json -> defaults",
+            load_ui_labels("broken", curriculum_root=root) == defaults,
+        )
+
+        # Non-string values ignored; empty course -> defaults.
+        (root / "typed").mkdir(parents=True)
+        (root / "typed" / "ui_labels.json").write_text(
+            '{"practice": 7, "exercise": "Ex {n}"}', encoding="utf-8"
+        )
+        got = load_ui_labels("typed", curriculum_root=root)
+        _check(
+            "non-string value ignored, string kept",
+            got == {"exercise": "Ex {n}", "practice": "Practice {n}"},
+            f"got {got}",
+        )
+        _check("empty course -> defaults", load_ui_labels("", curriculum_root=root) == defaults)
+
+
 def main() -> int:
     """Run all tests and return 1 if any failed, else 0."""
     tests = [
@@ -341,6 +387,7 @@ def main() -> int:
         test_practice_path_exists_and_read,
         test_course_tutor_rules,
         test_pinned_context,
+        test_ui_labels,
         test_list_courses_excludes_archive,
         test_list_archived_courses_without_archive_folder,
         test_course_dir_resolves_archived,

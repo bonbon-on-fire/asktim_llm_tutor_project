@@ -9,6 +9,7 @@ knows the layout, so the six call sites that used to duplicate
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -353,6 +354,48 @@ def load_course_name(course: str | None, curriculum_root: Path | str | None = No
         return ""
     path = course_name_path(course, curriculum_root)
     return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+
+
+# Default sidebar/history labels, keyed by exercise_kind. "{n}" is replaced with
+# the item number at render time. A course overrides these by dropping a
+# curriculum/<course>/ui_labels.json with any subset of these keys (e.g.
+# supply_chain_design maps "practice" -> "Week {n} Practice Problems"); every
+# other course keeps these defaults with no file.
+_DEFAULT_UI_LABELS = {"exercise": "Exercise {n}", "practice": "Practice {n}"}
+
+
+def ui_labels_path(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the path to a course's UI-label overrides (``curriculum/<course>/ui_labels.json``)."""
+    return course_dir(course, curriculum_root) / "ui_labels.json"
+
+
+def load_ui_labels(
+    course: str | None, curriculum_root: Path | str | None = None
+) -> dict[str, str]:
+    """Per-course sidebar labels by exercise_kind, merged over the defaults.
+
+    Returns a copy of :data:`_DEFAULT_UI_LABELS` with any string keys from the
+    course's ``ui_labels.json`` layered on top, so a course customizes one kind
+    (or none) without restating the rest. Each value is a template with ``{n}``
+    standing in for the item number. A falsy course, a missing file, or
+    unreadable/invalid JSON all fall back to the defaults — the label is
+    cosmetic and must never break rendering.
+    """
+    labels = dict(_DEFAULT_UI_LABELS)
+    if not course:
+        return labels
+    path = ui_labels_path(course, curriculum_root)
+    if not path.is_file():
+        return labels
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return labels
+    if isinstance(data, dict):
+        for k, v in data.items():
+            if isinstance(k, str) and isinstance(v, str):
+                labels[k] = v
+    return labels
 
 
 def about_asktim_path(curriculum_root: Path | str | None = None) -> Path:

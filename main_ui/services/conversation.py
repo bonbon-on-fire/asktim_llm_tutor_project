@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from main_ui.db.models import Conversation, Message, UploadedFile, UploadedImage
 from ui_core.services import conversation as _shared
 from ui_core.services.conversation import Models, WrongSessionError
+from utils.curriculum import load_ui_labels
 
 _MODELS = Models(
     Conversation=Conversation,
@@ -135,8 +136,17 @@ def count_student_messages(db: Session, conversation: Conversation) -> int:
 
 
 def _summarize_extra(c: Conversation) -> dict:
-    """main_ui summary key: the conversation's exercise_kind (for sidebar labels)."""
-    return {"exercise_kind": c.exercise_kind or "exercise"}
+    """main_ui summary keys for the sidebar label.
+
+    Each row is labelled by *its own* course, so a mixed-course history shows
+    every entry in the format its course defines — the current page's course
+    doesn't override it. ``label_template`` is that course's template for the
+    conversation's kind (``"{n}"`` = the number); the client fills in the
+    number and appends the date/message count.
+    """
+    kind = c.exercise_kind or "exercise"
+    labels = load_ui_labels(c.course)
+    return {"exercise_kind": kind, "label_template": labels.get(kind)}
 
 
 def list_conversations_for_username(db: Session, username: str) -> list[dict]:

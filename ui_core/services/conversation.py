@@ -32,7 +32,11 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from tutor.cached_history import tutor_output_json
-from ui_core.usage import model_from_usage_json, records_from_retrieved_context
+from ui_core.usage import (
+    model_from_usage_json,
+    new_tokens_from_usage_json,
+    records_from_retrieved_context,
+)
 
 
 @dataclass(frozen=True)
@@ -398,7 +402,8 @@ def get_cached_history_for_tutor(
 def count_student_messages(db: Session, conversation: Any, *, models: Models) -> int:
     """Number of student-role messages in this conversation.
 
-    Step 7's username modal triggers when this reaches 3.
+    Used by the forced-login gate: once this reaches the free-message limit and no
+    username is set, the next turn is blocked (see main_ui chat handler).
     """
     stmt = (
         select(func.count(models.Message.id))
@@ -406,6 +411,21 @@ def count_student_messages(db: Session, conversation: Any, *, models: Models) ->
         .where(models.Message.role == "student")
     )
     return int(db.execute(stmt).scalar_one())
+
+
+def sum_conversation_new_tokens(db: Session, conversation: Any, *, models: Models) -> int:
+    """Cumulative cost-relevant tokens across a conversation's tutor rows.
+
+    Sums :func:`ui_core.usage.new_tokens_from_usage_json` over every stored
+    ``usage_json`` for the conversation. Reads only completed turns, so the
+    running total lags the in-flight turn by one (see the caps design spec).
+    """
+    rows = db.execute(
+        select(models.Message.usage_json).where(
+            models.Message.conversation_id == conversation.id
+        )
+    ).scalars().all()
+    return sum(new_tokens_from_usage_json(u) for u in rows)
 
 
 def list_conversations_for_username(

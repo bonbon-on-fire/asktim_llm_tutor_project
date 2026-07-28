@@ -27,6 +27,34 @@ def model_from_usage_json(usage_json: str | None) -> str | None:
         return None
 
 
+def new_tokens_from_usage_json(usage_json: str | None) -> int:
+    """Cost-relevant ("new", non-cached) token count for one stored turn.
+
+    ``usage_json`` is the tutor turn's cost dict: ``{"calls": {name: {input_tokens,
+    output_tokens, cache_read}}}``. Per call, new tokens = ``max(0, input_tokens -
+    cache_read) + output_tokens``; summed across calls. Returns 0 for a missing,
+    empty, unparseable, or shape-unexpected value so a bad row never blocks a chat.
+    """
+    if not usage_json:
+        return 0
+    try:
+        data = json.loads(usage_json)
+    except (ValueError, TypeError):
+        return 0
+    calls = (data or {}).get("calls")
+    if not isinstance(calls, dict):
+        return 0
+    total = 0
+    for call in calls.values():
+        if not isinstance(call, dict):
+            continue
+        inp = call.get("input_tokens") or 0
+        out = call.get("output_tokens") or 0
+        cache = call.get("cache_read") or 0
+        total += max(0, inp - cache) + out
+    return total
+
+
 def records_from_retrieved_context(retrieved_context: str | None) -> list:
     """Parse a tutor message's ``retrieved_context`` JSON into a list of records.
 

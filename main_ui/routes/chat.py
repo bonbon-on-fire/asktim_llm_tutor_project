@@ -16,7 +16,8 @@ Success response: ``text/event-stream`` with these events, in order:
     ...
     event: done\n
     data: {"conversation_id": "...", "reply": "...", "student_message_count": N,
-           "tutor_message_id": <int>}\n\n
+           "tutor_message_id": <int>, "conversation_tokens": N,
+           "conversation_limit_reached": bool}\n\n
 
 Mid-stream failure:
     event: error\n
@@ -24,7 +25,9 @@ Mid-stream failure:
 
 Pre-stream failures still return JSON: 400 bad text or bad conversation_id;
 404 bad course/exercise/tutor; 403 conversation_id not owned by the current
-session.
+session, forced login past the free-message threshold
+(``{"error":"login_required","trigger":"message_count"}``), or the
+per-conversation token ceiling reached (``{"error":"conversation_limit", ...}``).
 """
 
 from __future__ import annotations
@@ -34,6 +37,7 @@ from uuid import UUID
 
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
+from main_ui.config import load_config
 from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
     DEFAULT_TUTOR,
@@ -52,6 +56,7 @@ from main_ui.services.conversation import (
     get_cached_history_for_tutor,
     get_history_for_tutor,
     start_exchange_student_only,
+    sum_conversation_new_tokens,
 )
 from ui_core.tutor_bridge import cached_history_enabled
 from utils.attachments import (
@@ -59,6 +64,7 @@ from utils.attachments import (
     AttachmentValidationError,
     EmptyExtractionError,
 )
+from utils.tokens import estimate_message_tokens
 from utils.uploads import UploadValidationError, enforce_combined_cap, images_to_tuples
 
 
@@ -73,6 +79,11 @@ def _bad_param(err: dict):
 def _bad_request(reason: str, error_code: str = "bad_request"):
     """Build a 400 JSON response with the given error code and reason."""
     return jsonify({"error": error_code, "reason": reason}), 400
+
+
+def _login_required(trigger: str):
+    """403 JSON telling the client to open the (mandatory) username modal."""
+    return jsonify({"error": "login_required", "trigger": trigger}), 403
 
 
 def _wrong_session():
@@ -137,10 +148,28 @@ def chat():
         return _bad_request(str(exc), "too_many_attachments")
 
     if not text and not images and not attachments:
-        return _bad_request("text or an attachment is required", "missing_text")
+        return _bad_request("Text or an attachment is required", "missing_text")
     # Image/file-only turns get a placeholder so the bubble/history read cleanly
     # and the non-student-like guard (which checks the text portion) doesn't fire.
     student_text = text or ("(File attached.)" if attachments else "(Image attached.)")
+
+    config = load_config()
+
+    # Per-message token cap (text + extracted file text + images). Estimated —
+    # no tokenizer — and enforced before any DB work so a huge paste fails fast.
+    est_tokens = estimate_message_tokens(
+        text, [a.extracted_text for a in attachments], len(images)
+    )
+    if est_tokens >= config.max_message_tokens:
+        return _bad_request(
+            "Message is too long, shorten it or split it across multiple messages",
+            "message_too_long",
+        )
+
+    # Uploads require a logged-in username, regardless of message count.
+    username = read_username_cookie(request)
+    if (images or attachments) and not username:
+        return _login_required("attachment")
 
     course = src.get("course")
     exercise = src.get("exercise")
@@ -175,7 +204,6 @@ def chat():
     # well before the streaming generator runs its INSERTs. We commit
     # explicitly inside the generator instead.
     db = g.pop("db")
-    username = read_username_cookie(request)
 
     def _abort_with(json_response):
         """Roll back and close the manually-owned DB session, then return *json_response*."""
@@ -200,6 +228,25 @@ def chat():
         )
     except WrongSessionError:
         return _abort_with(_wrong_session())
+
+    # Forced login: first N student messages free, then a username is required.
+    prior_student_count = count_student_messages(db, convo)
+    if not username and prior_student_count >= config.free_messages_before_login:
+        return _abort_with(_login_required("message_count"))
+
+    # Per-conversation token ceiling (post-hoc: reflects completed turns only).
+    if sum_conversation_new_tokens(db, convo) >= config.max_conversation_tokens:
+        return _abort_with(
+            (
+                jsonify(
+                    {
+                        "error": "conversation_limit",
+                        "reason": "This chat reached its length limit — start a new chat to continue.",
+                    }
+                ),
+                403,
+            )
+        )
 
     # Snapshot the prior turns BEFORE we insert this turn's student message,
     # so the tutor gets the same shape of history it always has.
@@ -343,6 +390,7 @@ def chat():
                 # so the client can rate this message via POST /api/message/<id>/rating.
                 tutor_message_id = tutor_msg.id
                 student_count = count_student_messages(db, convo_obj)
+                conversation_tokens = sum_conversation_new_tokens(db, convo_obj)
                 db.commit()
             except Exception as exc:
                 db.rollback()
@@ -360,6 +408,8 @@ def chat():
                     "student_message_count": student_count,
                     # Message id of this tutor turn, so the client can thumb it.
                     "tutor_message_id": tutor_message_id,
+                    "conversation_tokens": conversation_tokens,
+                    "conversation_limit_reached": conversation_tokens >= config.max_conversation_tokens,
                 },
             )
         finally:

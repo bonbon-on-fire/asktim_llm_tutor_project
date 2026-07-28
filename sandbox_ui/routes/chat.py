@@ -136,7 +136,7 @@ def chat():
         return _bad_request(str(exc), "too_many_attachments")
 
     if not text and not images and not attachments:
-        return _bad_request("text or an attachment is required", "missing_text")
+        return _bad_request("Text or an attachment is required", "missing_text")
     # Image/file-only turns get a placeholder so the bubble/history read cleanly
     # and the non-student-like guard (which checks the text portion) doesn't fire.
     student_text = text or ("(File attached.)" if attachments else "(Image attached.)")

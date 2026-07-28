@@ -135,6 +135,11 @@ def count_student_messages(db: Session, conversation: Conversation) -> int:
     return _shared.count_student_messages(db, conversation, models=_MODELS)
 
 
+def sum_conversation_new_tokens(db: Session, conversation: Conversation) -> int:
+    """Cumulative cost-relevant tokens across this conversation's tutor rows."""
+    return _shared.sum_conversation_new_tokens(db, conversation, models=_MODELS)
+
+
 def _summarize_extra(c: Conversation) -> dict:
     """main_ui summary keys for the sidebar label.
 

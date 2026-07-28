@@ -22,6 +22,20 @@
   // Images + non-image files combined, per message — mirrors
   // utils/uploads.py's enforce_combined_cap.
   const MAX_ATTACHMENTS_PER_MESSAGE = 3;
+
+  // Mirror of utils/tokens.py — keep these constants identical to the
+  // server's per-message token estimate. The server re-validates on every
+  // send; this only gives fast, friendly feedback before the request goes out.
+  const CHARS_PER_TOKEN = 4;
+  const TOKENS_PER_IMAGE = 1600;
+  const MAX_MESSAGE_TOKENS = 10000; // mirror of config default MAX_MESSAGE_TOKENS
+  function estimateMessageTokens(text, extractedChars, nImages) {
+    const chars = (text ? text.length : 0) + (extractedChars || 0);
+    return (
+      Math.ceil(chars / CHARS_PER_TOKEN) + Math.max(0, nImages) * TOKENS_PER_IMAGE
+    );
+  }
+
   // Staged uploads for the next send: { file, url } (url is an object URL for
   // the preview thumbnail, revoked when cleared).
   let stagedImages = [];
@@ -32,6 +46,7 @@
   const errorDismiss = document.getElementById("error-dismiss");
 
   const emailModal = document.getElementById("email-modal");
+  const emailModalBody = document.getElementById("email-modal-body");
   const emailForm = document.getElementById("email-form");
   const emailInput = document.getElementById("email-input");
   const passwordInput = document.getElementById("password-input");
@@ -42,6 +57,9 @@
   const emailSubmit = document.getElementById("email-submit");
   const emailSkip = document.getElementById("email-skip");
   const emailError = document.getElementById("email-error");
+  // The template's default copy, restored whenever the modal opens for a
+  // reason other than a mandatory login gate (which overrides it below).
+  const DEFAULT_MODAL_BODY = emailModalBody ? emailModalBody.textContent : "";
 
   const MIN_PASSWORD_LENGTH = 6;
 
@@ -51,6 +69,9 @@
   let modalStage = "email"; // "email" | "password"
   let modalEmailExists = null; // null until probed; then true|false
   let modalConfirmedEmail = ""; // the email we advanced past stage 1 with
+  // True while the modal is a mandatory login gate (no Skip, no
+  // backdrop-close) rather than the old dismissible nudge.
+  let modalMandatory = false;
 
   const historyToggle = document.getElementById("history-toggle");
   const sidebar = document.getElementById("sidebar");
@@ -67,6 +88,10 @@
   let conversationId = null;
   let isSending = false;
   let studentMessageCount = 0;
+  // True once a `done` event (or a 403 conversation_limit fallback) reports
+  // the per-conversation token ceiling reached; disables the composer until
+  // "New chat".
+  let conversationLocked = false;
   let modalOpen = false;
   let sidebarOpen = false;
   // AbortController for the in-flight POST /api/chat — set when sending,
@@ -76,14 +101,37 @@
   function updateSendButton() {
     const hasText = composerInput.value.trim().length > 0;
     sendButton.disabled =
+      conversationLocked ||
       isSending ||
       (!hasText && stagedImages.length === 0 && stagedFiles.length === 0);
   }
 
   function setSending(sending) {
     isSending = sending;
-    composerInput.disabled = sending;
-    if (attachButton) attachButton.disabled = sending;
+    composerInput.disabled = sending || conversationLocked;
+    if (attachButton) attachButton.disabled = sending || conversationLocked;
+    updateSendButton();
+  }
+
+  // ---- Conversation-length ceiling (Step 4: conversation-limit lockout) ----
+
+  function lockConversation(reason) {
+    // Idempotent — the streamed `done` event and a 403 conversation_limit
+    // fallback on the next send can both call this for the same conversation.
+    conversationLocked = true;
+    composerInput.disabled = true;
+    if (attachButton) attachButton.disabled = true;
+    updateSendButton();
+    showError(
+      reason ||
+        "This chat reached its length limit — start a new chat to continue.",
+    );
+  }
+
+  function unlockConversation() {
+    conversationLocked = false;
+    composerInput.disabled = isSending;
+    if (attachButton) attachButton.disabled = isSending;
     updateSendButton();
   }
 
@@ -216,6 +264,14 @@
 
   function addStagedFiles(fileList) {
     const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+    // Attachments require a logged-in username (mirrors the server's
+    // `_login_required("attachment")` 403) — gate here before staging
+    // anything, and cancel the attach entirely.
+    if (!hasEmailSet()) {
+      openEmailModal({ mandatory: true, trigger: "attachment" });
+      return;
+    }
     for (const file of files) {
       if (stagedImages.length + stagedFiles.length >= MAX_ATTACHMENTS_PER_MESSAGE) {
         showError(
@@ -408,18 +464,44 @@
     }
   }
 
-  function openEmailModal({ manual = false } = {}) {
-    if (modalOpen) return;
+  // trigger: "attachment" | "message_count" | null — only used to tailor the
+  // mandatory-mode copy (which action is gated).
+  function mandatoryModalCopy(trigger) {
+    return trigger === "attachment"
+      ? "Log in to attach files or images."
+      : "Log in to keep chatting.";
+  }
+
+  function openEmailModal({ manual = false, mandatory = false, trigger = null } = {}) {
+    if (modalOpen) {
+      // Already open (e.g. the count-based gate and an attach attempt raced) —
+      // let a mandatory request upgrade a still-open dismissible modal.
+      if (mandatory && !modalMandatory) {
+        modalMandatory = true;
+        emailSkip.hidden = true;
+        if (emailModalBody) emailModalBody.textContent = mandatoryModalCopy(trigger);
+      }
+      return;
+    }
     modalOpen = true;
+    modalMandatory = mandatory;
     emailError.hidden = true;
     emailError.textContent = "";
     emailInput.value = "";
     passwordInput.value = "";
     modalEmailExists = null;
     modalConfirmedEmail = "";
-    // Manual open (the "Add username" button) is dismissible as "Cancel"; the
-    // automatic prompt after each message reads "Skip".
-    emailSkip.textContent = manual ? "Cancel" : "Skip";
+    if (mandatory) {
+      // Login is required to proceed — no Skip/Cancel, no backdrop-close.
+      emailSkip.hidden = true;
+      if (emailModalBody) emailModalBody.textContent = mandatoryModalCopy(trigger);
+    } else {
+      // Manual open (the "Add username" button) is dismissible as "Cancel";
+      // the automatic prompt after each message reads "Skip".
+      emailSkip.hidden = false;
+      emailSkip.textContent = manual ? "Cancel" : "Skip";
+      if (emailModalBody) emailModalBody.textContent = DEFAULT_MODAL_BODY;
+    }
     setModalStage("email");
     emailModal.hidden = false;
     emailInput.focus();
@@ -428,6 +510,7 @@
   function closeEmailModal() {
     if (!modalOpen) return;
     modalOpen = false;
+    modalMandatory = false;
     emailModal.hidden = true;
     composerInput.focus();
   }
@@ -493,13 +576,17 @@
     li.insertAdjacentElement("afterend", bar);
   }
 
+  // Login is mandatory once the free-message threshold is passed — mirrors
+  // the server's config.free_messages_before_login (default 3, see
+  // main_ui/config.py FREE_MESSAGES_BEFORE_LOGIN). Once `count` reaches that
+  // threshold the *next* send would be rejected server-side
+  // (403 login_required), so gate it here first with a non-dismissible modal.
+  const FREE_MESSAGES_BEFORE_LOGIN = 3;
+
   function maybeShowEmailModal(count) {
-    // Nudge after every message until the student signs up — intentionally
-    // persistent: dismissing it (Skip) doesn't suppress it, so it reappears
-    // on the next turn until a username is linked.
     if (hasEmailSet()) return;
-    if (count < 1) return;
-    openEmailModal();
+    if (count < FREE_MESSAGES_BEFORE_LOGIN) return;
+    openEmailModal({ mandatory: true, trigger: "message_count" });
   }
 
   // ---- Step 8: history sidebar + read-only detail view ------------------
@@ -652,6 +739,10 @@
     // Optimistically clear the live chat. Composer draft stays.
     messageList.innerHTML = "";
     hideError();
+    // The lockout is per-conversation and this endpoint doesn't report the
+    // loaded conversation's token total; optimistically unlock and let a
+    // 403 conversation_limit on the next send re-lock if it's already full.
+    unlockConversation();
 
     try {
       const response = await fetch(
@@ -693,6 +784,7 @@
     conversationId = null;
     studentMessageCount = 0;
     hideError();
+    unlockConversation(); // "New chat" is the escape from a length-limit lockout
     highlightActiveEntry();
     composerInput.focus();
   }
@@ -845,6 +937,11 @@
   }
 
   async function sendMessage() {
+    if (conversationLocked) return;
+    // Belt-and-braces: the mandatory modal's overlay already blocks the
+    // composer visually, but guard the entry point too.
+    if (modalOpen && modalMandatory) return;
+
     const text = composerInput.value.trim();
     const outgoingImages = stagedImages.slice();
     const outgoingFiles = stagedFiles.slice();
@@ -853,6 +950,23 @@
       isSending
     )
       return;
+
+    // Per-message token cap (Step 2) — mirrors the server's check in
+    // main_ui/routes/chat.py so an oversized paste fails fast, without a
+    // round trip, and WITHOUT clearing the composer.
+    const extractedCharsProxy = outgoingFiles.reduce(
+      (sum, item) => sum + item.file.size,
+      0,
+    );
+    const estimatedTokens = estimateMessageTokens(
+      text,
+      extractedCharsProxy,
+      outgoingImages.length,
+    );
+    if (estimatedTokens >= MAX_MESSAGE_TOKENS) {
+      showError("That message is too long. Shorten it or split it across turns.");
+      return;
+    }
 
     hideError();
     // Optimistically render the student bubble (with any attached image
@@ -913,6 +1027,7 @@
     currentChatController = controller;
     let sawDone = false;
     let streamError = null;
+    let conversationLimitReached = false;
 
     try {
       const response = await fetch("/api/chat", {
@@ -927,7 +1042,29 @@
         studentBubble.remove();
         revokeOutgoing();
         composerInput.value = originalText;
-        showError("Something went wrong, please try again");
+        // Pre-stream JSON errors (Step 3 / Step 4 fallbacks): message_too_long,
+        // login_required (with `trigger`), conversation_limit. The server is
+        // authoritative here — this is the fallback path when our client-side
+        // pre-checks didn't already catch it (e.g. stale login state).
+        let errorBody = null;
+        try {
+          errorBody = await response.json();
+        } catch (_) {
+          /* not JSON — fall through to the generic message below */
+        }
+        const errorCode = errorBody && errorBody.error;
+        if (errorCode === "login_required") {
+          openEmailModal({ mandatory: true, trigger: errorBody.trigger });
+        } else if (errorCode === "conversation_limit") {
+          lockConversation(errorBody.reason);
+        } else if (errorCode === "message_too_long") {
+          showError(
+            (errorBody && errorBody.reason) ||
+              "That message is too long. Shorten it or split it across turns.",
+          );
+        } else {
+          showError("Something went wrong, please try again");
+        }
         return;
       }
 
@@ -986,6 +1123,12 @@
             ) {
               studentMessageCount = parsed.data.student_message_count;
             }
+            // `conversation_tokens` (running total) rides along for parity
+            // with the server; `conversation_limit_reached` is what actually
+            // drives the lockout below.
+            if (parsed.data && parsed.data.conversation_limit_reached === true) {
+              conversationLimitReached = true;
+            }
           } else if (parsed.event === "error") {
             streamError =
               (parsed.data && parsed.data.reason) ||
@@ -1012,7 +1155,13 @@
         return;
       }
 
-      maybeShowEmailModal(studentMessageCount);
+      if (conversationLimitReached) {
+        // Step 4: length-ceiling lockout takes priority over the login gate —
+        // a locked composer makes further sends moot either way.
+        lockConversation();
+      } else {
+        maybeShowEmailModal(studentMessageCount);
+      }
       // If the sidebar is open, silently re-fetch so the conversation
       // that just got a new message floats to the top of the list.
       if (sidebarOpen) {
@@ -1057,7 +1206,16 @@
 
   // Image attach: paperclip opens the file picker; selecting files stages them.
   if (attachButton && imageInput) {
-    attachButton.addEventListener("click", () => imageInput.click());
+    attachButton.addEventListener("click", () => {
+      // Check login before even opening the file picker — addStagedFiles()
+      // re-checks too (it also covers drag-drop and paste), but this avoids
+      // popping the OS file dialog just to reject the selection.
+      if (!hasEmailSet()) {
+        openEmailModal({ mandatory: true, trigger: "attachment" });
+        return;
+      }
+      imageInput.click();
+    });
     imageInput.addEventListener("change", () => {
       addStagedFiles(imageInput.files);
       imageInput.value = ""; // reset so the same file can be re-picked
@@ -1111,10 +1269,15 @@
   passwordInput.addEventListener("input", updateEmailSubmit);
   emailForm.addEventListener("submit", submitEmail);
   emailChangeBtn.addEventListener("click", backToEmailStage);
-  emailSkip.addEventListener("click", () => closeEmailModal());
+  emailSkip.addEventListener("click", () => {
+    // Skip is hidden in mandatory mode, but guard anyway in case of a race.
+    if (modalMandatory) return;
+    closeEmailModal();
+  });
   emailModal.addEventListener("click", (event) => {
-    // Backdrop click = skip; clicks inside the card are ignored
-    if (event.target === emailModal) {
+    // Backdrop click = skip; clicks inside the card are ignored. Disabled
+    // entirely while the modal is a mandatory login gate.
+    if (event.target === emailModal && !modalMandatory) {
       closeEmailModal();
     }
   });
@@ -1132,7 +1295,7 @@
     if (!detailView.hidden) {
       closeDetailView();
     } else if (modalOpen) {
-      closeEmailModal();
+      if (!modalMandatory) closeEmailModal();
     } else if (sidebarOpen) {
       closeSidebar();
     }

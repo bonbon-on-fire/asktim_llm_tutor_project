@@ -17,7 +17,7 @@ What works today:
 - Sanitized-markdown rendering of tutor replies — tables, lists, and bold display cleanly (`marked` → `DOMPurify`, vendored locally under `static/js/`; rendered on stream completion; falls back to plain text if the libs don't load)
 - Postgres-backed persistence (Conversation / Message / Student tables, Alembic migrations)
 - Two-stage username + password identity (`/api/identity/check` → `/api/identity`) with bcrypt hashing
-- Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats
+- Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats; opens by default on wider screens (>480px) and stays closed on narrow/mobile screens (where it covers the full chat) until the toggle is tapped
 - "Log in" sidebar entry point (button text + tooltip) so students who skipped the modal can come back later
 - MIT crimson branding, AskTIM Beta+ header, "MIT 11.270x Cities and Climate Change" course banner
 - Per-course lecture transcripts (`curriculum/<course>/lectures/*.txt`) auto-folded into tutor context when present (text-only, no-op until a course adds them) — via [`utils.lectures`](../utils/lectures.py)

@@ -18,7 +18,7 @@ Branding is deliberately distinct from production: the accent is teal-blue
 - iframe-style chat at `/embed?course=...&exercise=...&tutor=...` (and a bare `/` that uses defaults)
 - Server-Sent Events streaming — tutor replies token-by-token, `pedagogical-reasoning` hidden server-side
 - Sanitized-markdown rendering of tutor replies (tables/lists/bold) — `marked` → `DOMPurify`, same `setMessageContent()` path as `main_ui`
-- Conversation / Message / Student tables; username + password identity (bcrypt), cross-browser history sidebar
+- Conversation / Message / Student tables; username + password identity (bcrypt), cross-browser history sidebar (opens by default on wider screens >480px; stays closed on narrow/mobile screens until the toggle is tapped)
 - The same tutor pipeline via `tutor.run_tutor` (through `services/tutor_bridge.py`)
 - **Paired solution as tutor-only reference** — when the current problem has a matching solution file, `build_assignment_text` injects it (via [`utils.curriculum.read_solution`](../utils/curriculum.py)) right after the exercise as a "correct answer & worked solution" block. It's deterministic (keyed by problem number), given to the tutor but **never** the student, and never retrieved via RAG. Skipped only for problems with no solution file yet
 - **Curriculum figures** auto-attached to the tutor — figures matching the exercise (`curriculum/<course>/figures/exercise_<NN>_*`) are sent as multimodal input on every turn via [`utils.figures.discover_figures`](../utils/figures.py)

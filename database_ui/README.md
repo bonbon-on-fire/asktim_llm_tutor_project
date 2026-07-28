@@ -11,10 +11,12 @@ the Sandbox surfaces: the model + estimated cost (e.g. `gpt-5.4 ($0.0338)`), the
 pedagogical reasoning, a collapsible "RAG retrieval" list of the chunks pulled
 that turn, and **display-only** thumbs reflecting the student's stored rating
 (read-only tool — the rating is shown highlighted, never editable). Any uploaded
-images are rendered inline. Each sidebar entry leads with the student's username
-in the crimson accent (anonymous rows read "Anonymous", italicized), then the
-full course name, then the exercise header with the conversation's running total
-cost appended.
+images are rendered inline. The sidebar opens by default on wider screens
+(>480px) and stays closed on narrow/mobile screens (where it covers the full
+transcript) until the toggle is tapped. Each sidebar entry leads with the
+student's username in the crimson accent (anonymous rows read "Anonymous",
+italicized), then the full course name, then the exercise header with the
+conversation's running total cost appended.
 
 Built to review **`main_ui`**'s production database. See the full design +
 checklist in [`PLANNING.md`](PLANNING.md).

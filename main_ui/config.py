@@ -23,6 +23,9 @@ class Config:
     port: int
     cookie_secure: bool
     cookie_max_age_seconds: int
+    max_message_tokens: int
+    max_conversation_tokens: int
+    free_messages_before_login: int
 
 
 def load_config() -> Config:
@@ -34,10 +37,16 @@ def load_config() -> Config:
     cookie_max_age_seconds = int(
         os.environ.get("MAIN_UI_COOKIE_MAX_AGE", str(_DEFAULT_COOKIE_MAX_AGE_SECONDS))
     )
+    max_message_tokens = int(os.environ.get("MAX_MESSAGE_TOKENS", "10000"))
+    max_conversation_tokens = int(os.environ.get("MAX_CONVERSATION_TOKENS", "225000"))
+    free_messages_before_login = int(os.environ.get("FREE_MESSAGES_BEFORE_LOGIN", "3"))
     return Config(
         secret_key=secret_key,
         database_url=database_url,
         port=port,
         cookie_secure=cookie_secure,
         cookie_max_age_seconds=cookie_max_age_seconds,
+        max_message_tokens=max_message_tokens,
+        max_conversation_tokens=max_conversation_tokens,
+        free_messages_before_login=free_messages_before_login,
     )

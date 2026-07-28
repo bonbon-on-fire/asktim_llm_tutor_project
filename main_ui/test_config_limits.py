@@ -20,7 +20,7 @@ def main() -> int:
         os.environ.pop(k, None)
     c = load_config()
     ok &= _check("default max_message_tokens", c.max_message_tokens == 10000, c.max_message_tokens)
-    ok &= _check("default max_conversation_tokens", c.max_conversation_tokens == 225000, c.max_conversation_tokens)
+    ok &= _check("default max_conversation_tokens", c.max_conversation_tokens == 450000, c.max_conversation_tokens)
     ok &= _check("default free_messages_before_login", c.free_messages_before_login == 3, c.free_messages_before_login)
 
     os.environ["MAX_MESSAGE_TOKENS"] = "5000"

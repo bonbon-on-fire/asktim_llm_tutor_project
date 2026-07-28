@@ -344,4 +344,10 @@
   }
 
   refreshSidebar();
+
+  // Open the sidebar by default on wider screens (mirrors the student app).
+  // Narrow screens (≤480px, where it covers the full transcript) stay closed.
+  if (window.matchMedia("(min-width: 481px)").matches) {
+    setSidebar(true);
+  }
 })();

@@ -1305,6 +1305,13 @@
   // the body's data-has-email attribute the server stamps each render).
   refreshAddEmailVisibility();
 
+  // Open the history sidebar by default on wider screens so returning users see
+  // their past conversations immediately. Narrow screens (≤480px, where the
+  // sidebar covers the full chat) stay closed until the toggle is tapped.
+  if (window.matchMedia("(min-width: 481px)").matches) {
+    openSidebar();
+  }
+
   // Auto-focus the composer so an embedded iframe is immediately typable
   // (works once the iframe has focus; harmless on first paint otherwise).
   composerInput.focus();

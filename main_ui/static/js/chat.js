@@ -281,7 +281,7 @@
       }
       if (ALLOWED_IMAGE_TYPES.includes(file.type)) {
         if (file.size > MAX_IMAGE_BYTES) {
-          showError("Images must be 10 MB or smaller.");
+          showError("Images must be 10 MB or smaller");
           continue;
         }
         stagedImages.push({ file: file, url: URL.createObjectURL(file) });
@@ -289,7 +289,7 @@
       }
       if (ALLOWED_FILE_EXTS.includes(fileExtension(file.name))) {
         if (file.size > MAX_FILE_BYTES) {
-          showError("Files must be 5 MB or smaller.");
+          showError("Files must be 5 MB or smaller");
           continue;
         }
         stagedFiles.push({ file: file });
@@ -298,7 +298,7 @@
       showError(
         "Only PNG/JPEG images or " +
           ALLOWED_FILE_EXTS.join(", ") +
-          " files are supported.",
+          " files are supported",
       );
     }
     renderStagedPreviews();
@@ -824,7 +824,7 @@
       passwordInput.focus();
     } catch (err) {
       emailError.textContent =
-        "Cannot reach AskTIM. Check your connection and try again.";
+        "Cannot reach AskTIM, check your connection and try again";
       emailError.hidden = false;
       emailSubmit.disabled = false;
     }
@@ -848,7 +848,7 @@
       });
 
       if (!response.ok) {
-        let reason = "Could not save your details. Please try again.";
+        let reason = "Could not save your details, please try again";
         let errorCode = "";
         try {
           const body = await response.json();
@@ -881,7 +881,7 @@
       }
     } catch (err) {
       emailError.textContent =
-        "Cannot reach AskTIM. Check your connection and try again.";
+        "Cannot reach AskTIM, check your connection and try again";
       emailError.hidden = false;
       emailSubmit.disabled = false;
     }
@@ -964,7 +964,7 @@
       outgoingImages.length,
     );
     if (estimatedTokens >= MAX_MESSAGE_TOKENS) {
-      showError("That message is too long. Shorten it or split it across turns.");
+      showError("Message is too long, shorten it or split it across multiple messages");
       return;
     }
 
@@ -1060,7 +1060,7 @@
         } else if (errorCode === "message_too_long") {
           showError(
             (errorBody && errorBody.reason) ||
-              "That message is too long. Shorten it or split it across turns.",
+              "Message is too long, shorten it or split it across multiple messages",
           );
         } else {
           showError("Something went wrong, please try again");

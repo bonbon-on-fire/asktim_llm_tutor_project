@@ -241,7 +241,7 @@ def chat():
                 jsonify(
                     {
                         "error": "conversation_limit",
-                        "reason": "This chat reached its length limit — start a new chat to continue.",
+                        "reason": "This chat reached its length limit, start a new chat to continue",
                     }
                 ),
                 403,

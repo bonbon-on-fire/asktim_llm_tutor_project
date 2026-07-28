@@ -124,7 +124,7 @@
     updateSendButton();
     showError(
       reason ||
-        "This chat reached its length limit — start a new chat to continue.",
+        "This chat reached its length limit, start a new chat to continue",
     );
   }
 

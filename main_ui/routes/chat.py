@@ -34,6 +34,7 @@ from uuid import UUID
 
 from flask import Blueprint, Response, g, jsonify, request, stream_with_context
 
+from main_ui.config import load_config
 from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
     DEFAULT_TUTOR,
@@ -59,6 +60,7 @@ from utils.attachments import (
     AttachmentValidationError,
     EmptyExtractionError,
 )
+from utils.tokens import estimate_message_tokens
 from utils.uploads import UploadValidationError, enforce_combined_cap, images_to_tuples
 
 
@@ -73,6 +75,11 @@ def _bad_param(err: dict):
 def _bad_request(reason: str, error_code: str = "bad_request"):
     """Build a 400 JSON response with the given error code and reason."""
     return jsonify({"error": error_code, "reason": reason}), 400
+
+
+def _login_required(trigger: str):
+    """403 JSON telling the client to open the (mandatory) username modal."""
+    return jsonify({"error": "login_required", "trigger": trigger}), 403
 
 
 def _wrong_session():
@@ -142,6 +149,24 @@ def chat():
     # and the non-student-like guard (which checks the text portion) doesn't fire.
     student_text = text or ("(File attached.)" if attachments else "(Image attached.)")
 
+    config = load_config()
+
+    # Per-message token cap (text + extracted file text + images). Estimated —
+    # no tokenizer — and enforced before any DB work so a huge paste fails fast.
+    est_tokens = estimate_message_tokens(
+        text, [a.extracted_text for a in attachments], len(images)
+    )
+    if est_tokens >= config.max_message_tokens:
+        return _bad_request(
+            "That message is too long. Shorten it or split it across turns.",
+            "message_too_long",
+        )
+
+    # Uploads require a logged-in username, regardless of message count.
+    username = read_username_cookie(request)
+    if (images or attachments) and not username:
+        return _login_required("attachment")
+
     course = src.get("course")
     exercise = src.get("exercise")
     raw_kind = src.get("exercise_kind")
@@ -175,7 +200,6 @@ def chat():
     # well before the streaming generator runs its INSERTs. We commit
     # explicitly inside the generator instead.
     db = g.pop("db")
-    username = read_username_cookie(request)
 
     def _abort_with(json_response):
         """Roll back and close the manually-owned DB session, then return *json_response*."""

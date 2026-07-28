@@ -96,7 +96,7 @@ inside Railway).
 | `DATABASE_UI_PASSWORD` | Yes (deploy) | Shared password for the login gate. Unset ⇒ open (local dev only); the deploy entrypoint refuses to start without it. |
 | `DATABASE_UI_SECRET_KEY` | Recommended | Flask session signing key. Has an insecure dev default. |
 | `DATABASE_UI_TITLE` | No | Browser-tab + login-page title. Default `AskTIM Database`. (The sidebar heading is a fixed `AskTIM · Database Beta+`.) |
-| `DATABASE_UI_ACCENT` | No | Accent color. Default `#8c1a1b` (MIT crimson, = main_ui). |
+| `DATABASE_UI_ACCENT` | No | Accent color. Default `#126f9a` (teal-blue, = sandbox_ui). |
 | `DATABASE_UI_COOKIE_MAX_AGE` | No | Login-session cookie lifetime, in seconds. Default 30 days. |
 | `PORT` | No | Default `5003`. |
 

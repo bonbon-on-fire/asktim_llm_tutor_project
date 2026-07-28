@@ -2,7 +2,15 @@
    Only the review-specific bits live here; the base look comes from chat.css. */
 
 :root {
-  --accent: #8c1a1b; /* MIT crimson; overridden inline from DATABASE_UI_ACCENT */
+  /* sandbox_ui's teal-blue palette (matches sandbox_ui) instead of main_ui's
+     crimson. --accent is also injected inline from DATABASE_UI_ACCENT; the rest
+     flip chat.css's crimson base (student bubbles, buttons/links, focus ring)
+     to the same blue. */
+  --accent: #126f9a;
+  --student-bg: #126f9a;
+  --send-bg: #126f9a;
+  --send-bg-hover: #0e587b;
+  --focus-ring: #126f9a;
 }
 
 /* The top bar is an intentionally empty thin strip — chat.css already styles
@@ -41,10 +49,17 @@
   font-weight: 500;
 }
 
-/* Selected/hover states for sidebar entries come from chat.css and match
-   main_ui: the active conversation is a light crimson tint (#fbeaea), a
-   non-selected entry greys on hover (#f5f5f5), and the active entry deepens
-   to #f8dada on hover. No overrides needed here. */
+/* Selected-chat highlight in sandbox_ui's blue accent (matches the base
+   chat.css 3-state behavior, just blue instead of crimson): light blue tint at
+   rest, deeper blue on hover. Non-selected entries still grey on hover (#f5f5f5,
+   inherited from chat.css); the active entry's border-left follows --send-bg,
+   now blue. */
+.sidebar-entry-active {
+  background: #e3eff5;
+}
+.sidebar-entry-active:hover {
+  background: #d3e6f0;
+}
 
 /* --- Transcript pane ----------------------------------------------------- */
 .review-chat { position: relative; }

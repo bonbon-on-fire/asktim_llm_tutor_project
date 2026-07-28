@@ -1,7 +1,7 @@
 """Environment-driven configuration for database_ui.
 
 A single read-only dashboard for reviewing ``main_ui``'s conversation data,
-styled to match ``main_ui`` (MIT crimson). Env vars cover which database to read,
+styled with sandbox_ui's teal-blue accent. Env vars cover which database to read,
 the title shown in the header / browser tab, and an optional accent override.
 See ``docs/database_ui_plan.md``.
 """
@@ -40,8 +40,8 @@ def load_config() -> Config:
     )
     # Title shown in the header and the browser tab.
     title = os.environ.get("DATABASE_UI_TITLE", "AskTIM Database")
-    # Match main_ui's look: MIT crimson. Override with DATABASE_UI_ACCENT if needed.
-    accent = os.environ.get("DATABASE_UI_ACCENT", "#8c1a1b")
+    # Match sandbox_ui's look: teal-blue accent. Override with DATABASE_UI_ACCENT if needed.
+    accent = os.environ.get("DATABASE_UI_ACCENT", "#126f9a")
     # Shared-password gate. None = no gate (local dev only); deployments MUST set
     # this since the tool exposes every student's conversations and images.
     password = os.environ.get("DATABASE_UI_PASSWORD") or None

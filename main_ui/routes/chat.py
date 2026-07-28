@@ -16,7 +16,8 @@ Success response: ``text/event-stream`` with these events, in order:
     ...
     event: done\n
     data: {"conversation_id": "...", "reply": "...", "student_message_count": N,
-           "tutor_message_id": <int>}\n\n
+           "tutor_message_id": <int>, "conversation_tokens": N,
+           "conversation_limit_reached": bool}\n\n
 
 Mid-stream failure:
     event: error\n
@@ -24,7 +25,9 @@ Mid-stream failure:
 
 Pre-stream failures still return JSON: 400 bad text or bad conversation_id;
 404 bad course/exercise/tutor; 403 conversation_id not owned by the current
-session.
+session, forced login past the free-message threshold
+(``{"error":"login_required","trigger":"message_count"}``), or the
+per-conversation token ceiling reached (``{"error":"conversation_limit", ...}``).
 """
 
 from __future__ import annotations
@@ -53,6 +56,7 @@ from main_ui.services.conversation import (
     get_cached_history_for_tutor,
     get_history_for_tutor,
     start_exchange_student_only,
+    sum_conversation_new_tokens,
 )
 from ui_core.tutor_bridge import cached_history_enabled
 from utils.attachments import (
@@ -225,6 +229,25 @@ def chat():
     except WrongSessionError:
         return _abort_with(_wrong_session())
 
+    # Forced login: first N student messages free, then a username is required.
+    prior_student_count = count_student_messages(db, convo)
+    if not username and prior_student_count >= config.free_messages_before_login:
+        return _abort_with(_login_required("message_count"))
+
+    # Per-conversation token ceiling (post-hoc: reflects completed turns only).
+    if sum_conversation_new_tokens(db, convo) >= config.max_conversation_tokens:
+        return _abort_with(
+            (
+                jsonify(
+                    {
+                        "error": "conversation_limit",
+                        "reason": "This chat reached its length limit — start a new chat to continue.",
+                    }
+                ),
+                403,
+            )
+        )
+
     # Snapshot the prior turns BEFORE we insert this turn's student message,
     # so the tutor gets the same shape of history it always has.
     history = get_history_for_tutor(db, convo)
@@ -367,6 +390,7 @@ def chat():
                 # so the client can rate this message via POST /api/message/<id>/rating.
                 tutor_message_id = tutor_msg.id
                 student_count = count_student_messages(db, convo_obj)
+                conversation_tokens = sum_conversation_new_tokens(db, convo_obj)
                 db.commit()
             except Exception as exc:
                 db.rollback()
@@ -384,6 +408,8 @@ def chat():
                     "student_message_count": student_count,
                     # Message id of this tutor turn, so the client can thumb it.
                     "tutor_message_id": tutor_message_id,
+                    "conversation_tokens": conversation_tokens,
+                    "conversation_limit_reached": conversation_tokens >= config.max_conversation_tokens,
                 },
             )
         finally:

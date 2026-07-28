@@ -469,7 +469,7 @@
   function mandatoryModalCopy(trigger) {
     return trigger === "attachment"
       ? "Log in to attach files or images and save your chats to help AskTIM provide better and more consistent help."
-      : "Log in to keep chatting.";
+      : "Log in to keep chatting and save your chats to help AskTIM provide better and more consistent help.";
   }
 
   function openEmailModal({ manual = false, mandatory = false, trigger = null } = {}) {

@@ -40,9 +40,13 @@ def _check(label, ok, detail=""):
 def _fake_stream(new_tokens):
     def _gen(**kwargs):
         yield {"type": "delta", "text": "ok"}
+        # Mirror the REAL bridge cost shape: per-call records at the top level
+        # (keyed by call name), NOT nested under a "calls" wrapper. Using the
+        # true shape here is what makes this a real regression guard for the
+        # conversation ceiling — the wrapped shape silently summed to 0.
         yield {"type": "done", "reply": "ok", "reasoning": None, "retrieved": None,
-               "cost": {"usd": 0.0, "calls": {"tutor": {
-                   "input_tokens": new_tokens, "output_tokens": 0, "cache_read": 0}}}}
+               "cost": {"model": "m", "usd": 0.0, "tutor": {
+                   "input_tokens": new_tokens, "output_tokens": 0, "cache_read": 0}}}
     return _gen
 
 

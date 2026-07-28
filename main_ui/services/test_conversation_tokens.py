@@ -20,21 +20,51 @@ def _check(label, ok, detail=""):
 
 
 def _usage(**calls) -> str:
+    """Real bridge shape: per-call records at the top level (no ``calls`` wrapper)."""
+    return json.dumps({"model": "m", "usd": 0.0, **calls})
+
+
+def _usage_wrapped(**calls) -> str:
+    """Legacy ``{"calls": {...}}`` shape — still accepted for back-compat."""
     return json.dumps({"usd": 0.0, "calls": calls})
 
 
 def main() -> int:
     ok = True
     # Pure parser: new = max(0, input-cache_read)+output, summed across calls.
+    # Exercise the REAL bridge shape (top-level call records) — the shape
+    # production actually writes; a prior version only tested the wrapped shape
+    # and so silently returned 0 for every real row.
     u = _usage(
         tutor={"input_tokens": 30000, "output_tokens": 300, "cache_read": 28000},
         student={"input_tokens": 1000, "output_tokens": 20, "cache_read": 900},
     )
-    ok &= _check("parser sums new tokens", new_tokens_from_usage_json(u) == (2000 + 300) + (100 + 20),
+    ok &= _check("parser sums new tokens (real shape)",
+                 new_tokens_from_usage_json(u) == (2000 + 300) + (100 + 20),
                  new_tokens_from_usage_json(u))
+
+    # A verbatim production row (tutor + embedding, plus scalar model/usd) must
+    # count both calls and ignore the scalars — not return 0.
+    real = ('{"model":"claude-sonnet-5","usd":0.020064,'
+            '"tutor":{"model":"claude-sonnet-5","input_tokens":21906,"output_tokens":288,'
+            '"cache_read":19243,"cache_write":2643,"usd":0.020064},'
+            '"embedding":{"model":"text-embedding-3-small","input_tokens":14,"usd":0.0}}')
+    ok &= _check("parser counts real production row",
+                 new_tokens_from_usage_json(real) == (2663 + 288) + 14,
+                 new_tokens_from_usage_json(real))
+
+    # Back-compat: the legacy wrapped shape still parses.
+    ok &= _check("parser sums new tokens (wrapped shape)",
+                 new_tokens_from_usage_json(_usage_wrapped(
+                     tutor={"input_tokens": 5000, "output_tokens": 10, "cache_read": 4000})) == 1010,
+                 new_tokens_from_usage_json(_usage_wrapped(
+                     tutor={"input_tokens": 5000, "output_tokens": 10, "cache_read": 4000})))
+
     ok &= _check("parser null -> 0", new_tokens_from_usage_json(None) == 0)
     ok &= _check("parser malformed -> 0", new_tokens_from_usage_json("{not json") == 0)
     ok &= _check("parser missing keys -> 0", new_tokens_from_usage_json(json.dumps({"calls": {"t": {}}})) == 0)
+    ok &= _check("parser scalar-only usage -> 0",
+                 new_tokens_from_usage_json(json.dumps({"model": "m", "usd": 0.02})) == 0)
 
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)

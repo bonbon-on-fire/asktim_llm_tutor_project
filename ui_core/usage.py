@@ -30,10 +30,18 @@ def model_from_usage_json(usage_json: str | None) -> str | None:
 def new_tokens_from_usage_json(usage_json: str | None) -> int:
     """Cost-relevant ("new", non-cached) token count for one stored turn.
 
-    ``usage_json`` is the tutor turn's cost dict: ``{"calls": {name: {input_tokens,
-    output_tokens, cache_read}}}``. Per call, new tokens = ``max(0, input_tokens -
-    cache_read) + output_tokens``; summed across calls. Returns 0 for a missing,
-    empty, unparseable, or shape-unexpected value so a bad row never blocks a chat.
+    ``usage_json`` is the tutor turn's cost dict as emitted by the bridge, where
+    each per-call record sits at the **top level** keyed by call name::
+
+        {"model": ..., "usd": ..., "tutor": {input_tokens, output_tokens,
+         cache_read, ...}, "embedding": {...}}
+
+    (A legacy ``{"calls": {name: {...}}}`` wrapper is also accepted.) Per call,
+    new tokens = ``max(0, input_tokens - cache_read) + output_tokens``; summed
+    across calls. Scalar top-level fields (``model``, ``usd``) and any dict that
+    carries neither ``input_tokens`` nor ``output_tokens`` are ignored, so only
+    real call records count. Returns 0 for a missing, empty, unparseable, or
+    shape-unexpected value so a bad row never blocks a chat.
     """
     if not usage_json:
         return 0
@@ -41,17 +49,23 @@ def new_tokens_from_usage_json(usage_json: str | None) -> int:
         data = json.loads(usage_json)
     except (ValueError, TypeError):
         return 0
-    calls = (data or {}).get("calls")
-    if not isinstance(calls, dict):
+    if not isinstance(data, dict):
         return 0
+    calls = data.get("calls")
+    # Real bridge output keys call records at the top level; the legacy
+    # ``{"calls": {...}}`` shape nests them one level down.
+    call_records = calls.values() if isinstance(calls, dict) else data.values()
     total = 0
-    for call in calls.values():
+    for call in call_records:
         if not isinstance(call, dict):
             continue
-        inp = call.get("input_tokens") or 0
-        out = call.get("output_tokens") or 0
+        inp = call.get("input_tokens")
+        out = call.get("output_tokens")
+        if inp is None and out is None:
+            # Not a call record (e.g. a nested config/metadata dict).
+            continue
         cache = call.get("cache_read") or 0
-        total += max(0, inp - cache) + out
+        total += max(0, (inp or 0) - cache) + (out or 0)
     return total
 
 

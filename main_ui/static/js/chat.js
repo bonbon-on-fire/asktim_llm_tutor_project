@@ -468,7 +468,7 @@
   // mandatory-mode copy (which action is gated).
   function mandatoryModalCopy(trigger) {
     return trigger === "attachment"
-      ? "Log in to attach files or images."
+      ? "Log in to attach files or images and save your chats to help AskTIM provide better and more consistent help."
       : "Log in to keep chatting.";
   }
 

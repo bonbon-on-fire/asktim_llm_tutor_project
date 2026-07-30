@@ -43,6 +43,7 @@
   let stagedFiles = [];
   const errorBanner = document.getElementById("error-banner");
   const errorText = document.getElementById("error-text");
+  const errorRetry = document.getElementById("error-retry");
   const errorDismiss = document.getElementById("error-dismiss");
 
   const emailModal = document.getElementById("email-modal");
@@ -393,14 +394,41 @@
     return li;
   }
 
-  function showError(reason) {
+  function friendlyStreamError(reason) {
+    const r = String(reason || "");
+    if (/RateLimitError|429|InternalServerError|529|overloaded/i.test(r)) {
+      return "The tutor is busy right now. Give it a moment, then press Retry.";
+    }
+    if (/APITimeoutError|APIConnectionError|timeout|Connection error/i.test(r)) {
+      return "Couldn't reach the tutor. Check your connection, then press Retry.";
+    }
+    return "Something went wrong. Press Retry to try again.";
+  }
+
+  function showError(reason, onRetry) {
     errorText.textContent = reason;
+    if (errorRetry) {
+      if (onRetry) {
+        errorRetry.hidden = false;
+        errorRetry.onclick = () => {
+          hideError();
+          onRetry();
+        };
+      } else {
+        errorRetry.hidden = true;
+        errorRetry.onclick = null;
+      }
+    }
     errorBanner.hidden = false;
   }
 
   function hideError() {
     errorBanner.hidden = true;
     errorText.textContent = "";
+    if (errorRetry) {
+      errorRetry.hidden = true;
+      errorRetry.onclick = null;
+    }
   }
 
   function hasEmailSet() {
@@ -1138,11 +1166,20 @@
       }
 
       if (streamError) {
+        // Keep the student bubble so the message stays visible — deleting it and
+        // silently restoring the composer text (old behavior) caused blind resends.
+        // Replace only the tutor placeholder with a reason-specific banner + Retry
+        // that re-sends this exact turn (text + attachments).
         tutorBubble.remove();
-        studentBubble.remove();
-        revokeOutgoing();
-        composerInput.value = originalText;
-        showError("Something went wrong, please try again");
+        const retry = () => {
+          studentBubble.remove();
+          composerInput.value = originalText;
+          stagedImages = outgoingImages.slice();
+          stagedFiles = outgoingFiles.slice();
+          renderStagedPreviews();
+          sendMessage();
+        };
+        showError(friendlyStreamError(streamError), retry);
         return;
       }
 

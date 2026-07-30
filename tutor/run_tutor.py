@@ -12,6 +12,7 @@ import base64
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -893,6 +894,23 @@ _ROLE_MAP = {"student": "user", "tutor": "assistant", "rag": "system"}
 _CACHE_EVERY = 15  # keep the incremental read within Anthropic's 20-block lookback
 _MAX_MSG_BREAKPOINTS = 3  # Anthropic allows 4 cache_control blocks/request; the static system block uses 1
 
+# Transient Anthropic failures worth retrying BEFORE the first visible delta:
+# rate limits (429), overloaded / 5xx (InternalServerError, incl. 529), and
+# connection-level blips. Retried only pre-stream — see stream_tutor_reply_anthropic_raw.
+_RETRYABLE_ANTHROPIC_ERRORS = (
+    anthropic.RateLimitError,
+    anthropic.InternalServerError,
+    anthropic.APITimeoutError,
+    anthropic.APIConnectionError,
+)
+_MAX_STREAM_RETRIES = 2
+_RETRY_BASE_DELAY = 0.5  # seconds; exponential: 0.5s, then 1.0s
+
+
+def _retry_backoff_seconds(attempt: int) -> float:
+    """Backoff before retry ``attempt`` (1-indexed): 0.5s, 1.0s, ..."""
+    return _RETRY_BASE_DELAY * (2 ** (attempt - 1))
+
 
 def _anthropic_image_blocks(images):
     """Convert ``(bytes, mime)`` image tuples into Anthropic base64 image blocks."""
@@ -1036,8 +1054,6 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, 
         plan, images=images, images_by_student=images_by_student
     )
     client = anthropic.Anthropic(api_key=api_key)
-    extractor = StudentAnswerExtractor()
-    final_message = None
     enforce = json_mode_enabled()
     stream_kwargs = dict(
         model=model_name, max_tokens=8192, system=system_blocks, messages=messages,
@@ -1050,19 +1066,40 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, 
         # Force a single tutor_reply tool call: the answer arrives as the tool's
         # input (guaranteed-valid JSON), streamed as input_json deltas.
         stream_kwargs.update(anthropic_tool_kwargs())
-    with client.messages.stream(**stream_kwargs) as stream:
-        if enforce:
-            for event in stream:
-                if getattr(event, "type", None) == "input_json":
-                    visible = extractor.feed(event.partial_json)
-                    if visible:
-                        yield visible
-        else:
-            for text in stream.text_stream:
-                visible = extractor.feed(text)
-                if visible:
-                    yield visible
-        final_message = stream.get_final_message()
+
+    extractor = None
+    final_message = None
+    attempt = 0
+    while True:
+        # Fresh extractor per attempt so a partially-fed buffer never leaks across retries.
+        extractor = StudentAnswerExtractor()
+        final_message = None
+        yielded_any = False
+        try:
+            with client.messages.stream(**stream_kwargs) as stream:
+                if enforce:
+                    for event in stream:
+                        if getattr(event, "type", None) == "input_json":
+                            visible = extractor.feed(event.partial_json)
+                            if visible:
+                                yielded_any = True
+                                yield visible
+                else:
+                    for text in stream.text_stream:
+                        visible = extractor.feed(text)
+                        if visible:
+                            yielded_any = True
+                            yield visible
+                final_message = stream.get_final_message()
+            break  # streamed cleanly
+        except _RETRYABLE_ANTHROPIC_ERRORS:
+            # Only safe to retry before any bytes reached the client, and only
+            # up to the bounded cap; otherwise let it propagate (chat.py logs it
+            # and emits the SSE error frame).
+            if yielded_any or attempt >= _MAX_STREAM_RETRIES:
+                raise
+            attempt += 1
+            time.sleep(_retry_backoff_seconds(attempt))
 
     # Recovery: enforced -> authoritative tool_use.input dict (no repair). Otherwise
     # the accumulated free-text buffer, run through the best-effort normalizer.

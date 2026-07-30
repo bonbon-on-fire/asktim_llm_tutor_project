@@ -35,7 +35,7 @@ from __future__ import annotations
 import json
 from uuid import UUID
 
-from flask import Blueprint, Response, g, jsonify, request, stream_with_context
+from flask import Blueprint, Response, current_app, g, jsonify, request, stream_with_context
 
 from main_ui.config import load_config
 from main_ui.cookies import read_username_cookie
@@ -361,6 +361,7 @@ def chat():
                         cost = ev.get("cost") or None
                         break
             except Exception as exc:
+                current_app.logger.exception("tutor stream failed: %s", exc)
                 yield _sse_event(
                     "error", {"reason": f"{type(exc).__name__}: {exc}"}
                 )

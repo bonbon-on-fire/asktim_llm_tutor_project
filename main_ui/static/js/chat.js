@@ -43,7 +43,6 @@
   let stagedFiles = [];
   const errorBanner = document.getElementById("error-banner");
   const errorText = document.getElementById("error-text");
-  const errorRetry = document.getElementById("error-retry");
   const errorDismiss = document.getElementById("error-dismiss");
 
   const emailModal = document.getElementById("email-modal");
@@ -394,30 +393,31 @@
     return li;
   }
 
-  function showError(reason, onRetry) {
+  function renderRetryStatus(afterBubble, onRetry) {
+    // A sibling <li> placed right after the student bubble (mirrors the
+    // appendRating pattern), styled as small red "tap to retry" text. The
+    // inner <button> keeps it keyboard-focusable and tappable.
+    const li = document.createElement("li");
+    li.className = "msg-retry";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "msg-retry-btn";
+    button.textContent = "Not sent, tap to retry";
+    button.addEventListener("click", onRetry);
+    li.appendChild(button);
+    afterBubble.after(li);
+    messageList.scrollTop = messageList.scrollHeight;
+    return li;
+  }
+
+  function showError(reason) {
     errorText.textContent = reason;
-    if (errorRetry) {
-      if (onRetry) {
-        errorRetry.hidden = false;
-        errorRetry.onclick = () => {
-          hideError();
-          onRetry();
-        };
-      } else {
-        errorRetry.hidden = true;
-        errorRetry.onclick = null;
-      }
-    }
     errorBanner.hidden = false;
   }
 
   function hideError() {
     errorBanner.hidden = true;
     errorText.textContent = "";
-    if (errorRetry) {
-      errorRetry.hidden = true;
-      errorRetry.onclick = null;
-    }
   }
 
   function hasEmailSet() {
@@ -1157,18 +1157,20 @@
       if (streamError) {
         // Keep the student bubble so the message stays visible — deleting it and
         // silently restoring the composer text (old behavior) caused blind resends.
-        // Replace only the tutor placeholder with a generic error banner + Retry
-        // that re-sends this exact turn (text + attachments).
+        // Drop the tutor placeholder, show the generic banner, and mark the
+        // student message failed with an inline "Not sent, tap to retry" affordance
+        // under the bubble that re-sends this exact turn (text + attachments).
         tutorBubble.remove();
-        const retry = () => {
+        const retryStatus = renderRetryStatus(studentBubble, () => {
+          retryStatus.remove();
           studentBubble.remove();
           composerInput.value = originalText;
           stagedImages = outgoingImages.slice();
           stagedFiles = outgoingFiles.slice();
           renderStagedPreviews();
           sendMessage();
-        };
-        showError("Something went wrong, please try again", retry);
+        });
+        showError("Something went wrong, please try again");
         return;
       }
 

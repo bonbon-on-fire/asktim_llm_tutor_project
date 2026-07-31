@@ -349,7 +349,18 @@
     li.appendChild(wrap);
   }
 
-  function renderMessage(role, content, imageSrcs, attachmentNames, messageId, rating) {
+  function placeInList(li, insertBefore) {
+    // Normally messages append to the bottom. On retry we pass the node the
+    // failed message currently sits before, so the re-sent bubble slots back
+    // into its original position instead of jumping to the end of the list.
+    if (insertBefore && insertBefore.parentNode === messageList) {
+      messageList.insertBefore(li, insertBefore);
+    } else {
+      messageList.appendChild(li);
+    }
+  }
+
+  function renderMessage(role, content, imageSrcs, attachmentNames, messageId, rating, insertBefore) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
     if (imageSrcs && imageSrcs.length) {
@@ -367,7 +378,7 @@
       setMessageContent(li, role, content);
     }
     appendFileChips(li, attachmentNames);
-    messageList.appendChild(li);
+    placeInList(li, insertBefore);
     if (role === "tutor") {
       // After the bubble is in the DOM, drop the thumbs in as the next sibling.
       appendRating(li, messageId, rating);
@@ -377,7 +388,7 @@
     return li;
   }
 
-  function renderThinking() {
+  function renderThinking(insertBefore) {
     const li = document.createElement("li");
     li.className = "message message-thinking";
     li.appendChild(document.createTextNode("AskTIM is thinking"));
@@ -388,7 +399,7 @@
       dot.textContent = ".";
       li.appendChild(dot);
     }
-    messageList.appendChild(li);
+    placeInList(li, insertBefore);
     messageList.scrollTop = messageList.scrollHeight;
     return li;
   }
@@ -953,7 +964,7 @@
     return { event: eventName, data: payload };
   }
 
-  async function sendMessage() {
+  async function sendMessage(insertBefore) {
     if (conversationLocked) return;
     // Belt-and-braces: the mandatory modal's overlay already blocks the
     // composer visually, but guard the entry point too.
@@ -992,8 +1003,8 @@
     // tutor bubble.
     const previewSrcs = outgoingImages.map((item) => item.url);
     const attachmentNames = outgoingFiles.map((item) => item.file.name);
-    const studentBubble = renderMessage("student", text, previewSrcs, attachmentNames);
-    const tutorBubble = renderThinking();
+    const studentBubble = renderMessage("student", text, previewSrcs, attachmentNames, undefined, undefined, insertBefore);
+    const tutorBubble = renderThinking(insertBefore);
     let tutorBubbleActive = false; // false until first delta lands
     const originalText = composerInput.value;
     composerInput.value = "";
@@ -1038,6 +1049,28 @@
 
     const revokeOutgoing = () => {
       for (const item of outgoingImages) URL.revokeObjectURL(item.url);
+    };
+
+    // Shared failure handling for both stream-error and no-done-frame exits:
+    // keep the student bubble visible and offer an inline "Tap to retry" that
+    // re-sends this exact turn. The retry re-sends IN PLACE — it captures the
+    // node the failed message currently sits before and hands it to
+    // sendMessage so the bubble slots back into its original position rather
+    // than jumping to the bottom (matches iMessage/WhatsApp retry behavior).
+    const markTurnFailed = () => {
+      tutorBubble.remove();
+      const retryStatus = renderRetryStatus(studentBubble, () => {
+        if (isSending) return; // don't disturb an in-flight send
+        const anchor = retryStatus.nextSibling;
+        retryStatus.remove();
+        studentBubble.remove();
+        composerInput.value = originalText;
+        stagedImages = outgoingImages.slice();
+        stagedFiles = outgoingFiles.slice();
+        renderStagedPreviews();
+        sendMessage(anchor);
+      });
+      showError("Something went wrong, please try again");
     };
 
     const controller = new AbortController();
@@ -1155,31 +1188,15 @@
       }
 
       if (streamError) {
-        // Keep the student bubble so the message stays visible — deleting it and
-        // silently restoring the composer text (old behavior) caused blind resends.
-        // Drop the tutor placeholder, show the generic banner, and mark the
-        // student message failed with an inline "Tap to retry" affordance under
-        // the bubble that re-sends this exact turn (text + attachments).
-        tutorBubble.remove();
-        const retryStatus = renderRetryStatus(studentBubble, () => {
-          retryStatus.remove();
-          studentBubble.remove();
-          composerInput.value = originalText;
-          stagedImages = outgoingImages.slice();
-          stagedFiles = outgoingFiles.slice();
-          renderStagedPreviews();
-          sendMessage();
-        });
-        showError("Something went wrong, please try again");
+        // Explicit error frame from the server: keep the bubble, offer retry.
+        markTurnFailed();
         return;
       }
 
       if (!sawDone) {
-        tutorBubble.remove();
-        studentBubble.remove();
-        revokeOutgoing();
-        composerInput.value = originalText;
-        showError("Something went wrong, please try again");
+        // Stream closed with no done/error frame — same failure to the student
+        // as an explicit error frame, so handle it identically.
+        markTurnFailed();
         return;
       }
 

@@ -394,17 +394,6 @@
     return li;
   }
 
-  function friendlyStreamError(reason) {
-    const r = String(reason || "");
-    if (/RateLimitError|429|InternalServerError|529|overloaded/i.test(r)) {
-      return "The tutor is busy right now. Give it a moment, then press Retry.";
-    }
-    if (/APITimeoutError|APIConnectionError|timeout|Connection error/i.test(r)) {
-      return "Couldn't reach the tutor. Check your connection, then press Retry.";
-    }
-    return "Something went wrong. Press Retry to try again.";
-  }
-
   function showError(reason, onRetry) {
     errorText.textContent = reason;
     if (errorRetry) {
@@ -1168,7 +1157,7 @@
       if (streamError) {
         // Keep the student bubble so the message stays visible — deleting it and
         // silently restoring the composer text (old behavior) caused blind resends.
-        // Replace only the tutor placeholder with a reason-specific banner + Retry
+        // Replace only the tutor placeholder with a generic error banner + Retry
         // that re-sends this exact turn (text + attachments).
         tutorBubble.remove();
         const retry = () => {
@@ -1179,7 +1168,7 @@
           renderStagedPreviews();
           sendMessage();
         };
-        showError(friendlyStreamError(streamError), retry);
+        showError("Something went wrong, please try again", retry);
         return;
       }
 

@@ -402,7 +402,7 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = "msg-retry-btn";
-    button.textContent = "Not sent, tap to retry";
+    button.textContent = "Tap to retry";
     button.addEventListener("click", onRetry);
     li.appendChild(button);
     afterBubble.after(li);
@@ -1158,8 +1158,8 @@
         // Keep the student bubble so the message stays visible — deleting it and
         // silently restoring the composer text (old behavior) caused blind resends.
         // Drop the tutor placeholder, show the generic banner, and mark the
-        // student message failed with an inline "Not sent, tap to retry" affordance
-        // under the bubble that re-sends this exact turn (text + attachments).
+        // student message failed with an inline "Tap to retry" affordance under
+        // the bubble that re-sends this exact turn (text + attachments).
         tutorBubble.remove();
         const retryStatus = renderRetryStatus(studentBubble, () => {
           retryStatus.remove();

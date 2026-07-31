@@ -237,6 +237,73 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt", figures: li
 # Response parsing
 # ---------------------------------------------------------------------------
 
+# Tool-invoke / envelope scaffolding the model sometimes hallucinates *inside* the
+# answer string value (e.g. a trailing ``</Student-facing-answer>`` or ``</invoke>``
+# it appends after the reply). These are never part of a real student-facing answer,
+# so we strip them wherever they appear. Covers Anthropic's ``antml:``-namespaced
+# tags too.
+_ENVELOPE_TAG_RE = re.compile(
+    r"</?\s*(?:antml:)?"
+    r"(?:invoke|parameter|function_calls|function_results|"
+    r"student-facing-answer|pedagogical-reasoning)"
+    r"(?:\s[^>]*)?/?>",
+    re.IGNORECASE,
+)
+
+# Substrings that mark a raw two-field envelope having leaked into a field value —
+# used to fail closed (blank the answer -> canned fallback) rather than show it.
+_ENVELOPE_KEY_MARKERS = ("pedagogical-reasoning", "student-facing-answer")
+
+
+def _looks_like_envelope(text: str | None) -> bool:
+    """True if *text* still carries raw two-field envelope scaffolding.
+
+    Matches the leaked-JSON shapes seen in the DB: either the quoted JSON keys
+    (``"pedagogical-reasoning"`` / ``"Student-facing-answer"``) or their
+    tool-invoke tag form. Used to keep the hidden reasoning out of the student
+    reply on the parse-failure fallback path.
+    """
+    if not text:
+        return False
+    low = text.lower()
+    return any(m in low for m in _ENVELOPE_KEY_MARKERS)
+
+
+def _sanitize_student_answer(answer: str | None) -> str | None:
+    """Strip leaked envelope scaffolding from a recovered student answer.
+
+    Two cleanups, in order:
+
+    1. Remove any tool-invoke / envelope tags (``</Student-facing-answer>``,
+       ``</invoke>``, ``</parameter>``, ...) the model appended inside the answer
+       value, then trim surrounding whitespace (Mode B leakage).
+    2. If the result *still* looks like a raw envelope — e.g. a double-encoded
+       ``{"pedagogical-reasoning":...}`` nested in the answer value — try one
+       inner parse to recover the true answer; if that fails, return ``""`` so the
+       caller falls back to the canned recovery message rather than leaking the
+       hidden reasoning (Mode A leakage).
+
+    ``None`` in -> ``None`` out (a genuine parse miss stays a miss).
+    """
+    if answer is None:
+        return None
+    cleaned = _ENVELOPE_TAG_RE.sub("", answer).strip()
+    if _looks_like_envelope(cleaned):
+        for candidate in (cleaned, _fenced_json(cleaned), extract_json_object(cleaned)):
+            if candidate is None:
+                continue
+            try:
+                inner = json.loads(candidate, strict=False).get("Student-facing-answer")
+            except (json.JSONDecodeError, TypeError, AttributeError):
+                continue
+            if isinstance(inner, str):
+                inner = _ENVELOPE_TAG_RE.sub("", inner).strip()
+                return "" if _looks_like_envelope(inner) else inner
+        # Couldn't recover a clean inner answer — fail closed.
+        return ""
+    return cleaned
+
+
 def parse_tutor_response(content: str) -> tuple[str | None, str | None]:
     """
     Extract ``pedagogical-reasoning`` and ``Student-facing-answer`` from
@@ -270,6 +337,7 @@ def parse_tutor_response(content: str) -> tuple[str | None, str | None]:
             answer = data.get("Student-facing-answer")
             if isinstance(answer, str):
                 answer = _collapse_over_escaped_newlines(answer)
+                answer = _sanitize_student_answer(answer)
             return (data.get("pedagogical-reasoning"), answer)
         except (json.JSONDecodeError, TypeError):
             continue
@@ -370,9 +438,16 @@ def _normalize_tutor_ai_message(msg: BaseMessage) -> AIMessage:
     else:
         content = msg.content if isinstance(msg.content, str) else str(msg.content)
     reasoning, answer = parse_tutor_response(content)
+    # On a parse miss, only fall back to the raw model text when it isn't itself a
+    # leaked envelope — otherwise the hidden reasoning would be shown to the student
+    # (Mode A). Envelope content is dropped here and picked up by the canned-reply
+    # fallback below.
+    safe_answer = (answer or "").strip()
+    if not safe_answer and not _looks_like_envelope(content):
+        safe_answer = _ENVELOPE_TAG_RE.sub("", content).strip()
     payload = {
         "pedagogical-reasoning": (reasoning or "").strip(),
-        "Student-facing-answer": (answer or content).strip(),
+        "Student-facing-answer": safe_answer,
     }
     if not payload["pedagogical-reasoning"]:
         payload["pedagogical-reasoning"] = (

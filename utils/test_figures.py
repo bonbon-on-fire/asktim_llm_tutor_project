@@ -16,6 +16,7 @@ from pathlib import Path
 from utils.figures import (
     build_multimodal_content,
     discover_figures,
+    discover_figures_for_sources,
     figure_filenames,
     image_to_data_url,
     resolve_figure_filenames,
@@ -99,6 +100,103 @@ def test_discovery_filters_and_isolates_by_exercise() -> None:
         )
         names2 = figure_filenames(discover_figures("demo", "2", curriculum_root=root))
         _check("isolates exercise 2", names2 == ["exercise_2_other.jpeg"], f"got {names2}")
+
+
+# ---------------------------------------------------------------------------
+# discover_figures_for_sources (lectures + practices)
+# ---------------------------------------------------------------------------
+
+def test_discover_for_sources_matches_lecture_and_practice() -> None:
+    """Assert source labels map to their sibling lecture/practice figures."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        figdir = root / "demo" / "figures"
+        figdir.mkdir(parents=True)
+        (figdir / "lecture_5_two_cities.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_5_extra.jpg").write_bytes(b"\xff\xd8\xff")
+        (figdir / "practice_3_diagram.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_6_unrelated.png").write_bytes(b"\x89PNG\r\n")
+
+        # A retrieved chunk from lecture 5 pulls both of lecture 5's figures.
+        names = figure_filenames(
+            discover_figures_for_sources(
+                "demo", ["local:lecture_5_introducing_the_cities"], curriculum_root=root
+            )
+        )
+        _check(
+            "lecture source -> sorted sibling figures",
+            names == ["lecture_5_extra.jpg", "lecture_5_two_cities.png"],
+            f"got {names}",
+        )
+
+        # Multiple sources (lecture + practice) union their figures.
+        names2 = figure_filenames(
+            discover_figures_for_sources(
+                "demo",
+                ["local:lecture_5_intro", "local:practice_3_x", "local:key_concepts"],
+                curriculum_root=root,
+            )
+        )
+        _check(
+            "lecture+practice sources union; key_concepts contributes nothing",
+            names2 == ["lecture_5_extra.jpg", "lecture_5_two_cities.png", "practice_3_diagram.png"],
+            f"got {names2}",
+        )
+
+
+def test_discover_for_sources_dedupes_repeated_sources() -> None:
+    """Assert the same lecture retrieved twice yields each figure once."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        figdir = root / "demo" / "figures"
+        figdir.mkdir(parents=True)
+        (figdir / "lecture_5_a.png").write_bytes(b"\x89PNG\r\n")
+        names = figure_filenames(
+            discover_figures_for_sources(
+                "demo",
+                ["local:lecture_5_intro", "local:lecture_5_intro"],
+                curriculum_root=root,
+            )
+        )
+        _check("repeated source dedupes figures", names == ["lecture_5_a.png"], f"got {names}")
+
+
+def test_discover_for_sources_empty_and_nonitem_sources() -> None:
+    """Assert non-item sources and a missing figures dir yield []."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        figdir = root / "demo" / "figures"
+        figdir.mkdir(parents=True)
+        (figdir / "lecture_5_a.png").write_bytes(b"\x89PNG\r\n")
+        _check(
+            "non-item sources -> []",
+            discover_figures_for_sources("demo", ["local:key_concepts", ""], curriculum_root=root) == [],
+        )
+        _check(
+            "empty source list -> []",
+            discover_figures_for_sources("demo", [], curriculum_root=root) == [],
+        )
+        _check(
+            "missing figures dir -> []",
+            discover_figures_for_sources("no_such_course", ["local:lecture_1_x"], curriculum_root=root) == [],
+        )
+
+
+def test_discover_figures_ignores_non_exercise_kinds() -> None:
+    """Assert exercise-only discover_figures never returns lecture/practice figures."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        figdir = root / "demo" / "figures"
+        figdir.mkdir(parents=True)
+        (figdir / "exercise_5_ex.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_5_lec.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "practice_5_prac.png").write_bytes(b"\x89PNG\r\n")
+        names = figure_filenames(discover_figures("demo", "5", curriculum_root=root))
+        _check(
+            "discover_figures stays exercise-only",
+            names == ["exercise_5_ex.png"],
+            f"got {names}",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -216,6 +314,10 @@ def main() -> int:
         test_exercise_number_is_normalized,
         test_missing_exercise_and_course_return_empty,
         test_discovery_filters_and_isolates_by_exercise,
+        test_discover_for_sources_matches_lecture_and_practice,
+        test_discover_for_sources_dedupes_repeated_sources,
+        test_discover_for_sources_empty_and_nonitem_sources,
+        test_discover_figures_ignores_non_exercise_kinds,
         test_data_url_round_trip_from_path,
         test_data_url_from_bytes_requires_mime,
         test_unsupported_extension_raises,

@@ -8,10 +8,11 @@ the real figure instead of a secondhand prose description.
 
 Mirrors the small, dependency-free style of :mod:`utils.parsing`.
 
-Naming convention (strict): ``exercise_<N>_<slug>.<ext>`` where ``<N>`` is a
-non-padded exercise number and ``<ext>`` is one of ``png``, ``jpg``, ``jpeg``
-(case-insensitive). Multiple figures per exercise are allowed and returned
-sorted by filename. A figure serves exactly one exercise.
+Naming convention (strict): ``<kind>_<id>_<slug>.<ext>`` where ``<kind>`` is one
+of ``exercise``, ``lecture``, ``practice``; ``<id>`` is the non-padded number in
+the sibling ``.txt`` stem; and ``<ext>`` is one of ``png``, ``jpg``, ``jpeg``
+(case-insensitive). Multiple figures per item are allowed and returned sorted by
+filename. A figure serves exactly one content item.
 """
 
 from __future__ import annotations
@@ -22,8 +23,16 @@ from pathlib import Path
 
 from utils.curriculum import course_dir
 
-# exercise_<N>_<slug>.<png|jpg|jpeg>, extension case-insensitive.
-_FIGURE_NAME_RE = re.compile(r"^exercise_(\d+)_.+\.(png|jpe?g)$", re.IGNORECASE)
+# <kind>_<id>_<slug>.<png|jpg|jpeg>; kind in exercise|lecture|practice; ext case-insensitive.
+_FIGURE_NAME_RE = re.compile(
+    r"^(exercise|lecture|practice)_(\d+)_.+\.(png|jpe?g)$", re.IGNORECASE
+)
+
+# Retrieved RAG chunk labels look like "local:lecture_5_intro" (or a bare
+# "lecture_5_intro" stem). Captures (kind, id) for the item the chunk came from.
+_SOURCE_ITEM_RE = re.compile(
+    r"^(?:local:)?(exercise|lecture|practice)_(\d+)_", re.IGNORECASE
+)
 
 _MIME_BY_SUFFIX = {
     ".png": "image/png",
@@ -60,7 +69,47 @@ def discover_figures(
         if not path.is_file():
             continue
         m = _FIGURE_NAME_RE.match(path.name)
-        if m and m.group(1) == target:
+        if m and m.group(1).lower() == "exercise" and m.group(2) == target:
+            matches.append(path)
+    return sorted(matches, key=lambda p: p.name)
+
+
+def discover_figures_for_sources(
+    course: str,
+    sources,
+    curriculum_root: Path | str | None = None,
+) -> list[Path]:
+    """Return figures for the content items named by retrieved RAG *sources*.
+
+    Each source is a chunk label like ``local:lecture_5_intro`` (or a bare
+    ``lecture_5_intro`` stem). For every source that names an exercise, lecture,
+    or practice item, this returns the sibling figures under
+    ``<course>/figures/`` whose ``<kind>_<id>_`` prefix matches. Deduplicated and
+    sorted by filename; empty when nothing matches or the folder is absent.
+
+    This is how per-turn lecture/practice figures are attached: a figure is sent
+    to the model only on turns where its item's chunk was actually retrieved.
+    Sources that don't name an item (e.g. ``local:key_concepts``) contribute
+    nothing.
+    """
+    wanted: set[tuple[str, str]] = set()
+    for source in sources or []:
+        m = _SOURCE_ITEM_RE.match(str(source).strip())
+        if m:
+            wanted.add((m.group(1).lower(), m.group(2)))
+    if not wanted:
+        return []
+
+    figures_dir = course_dir(course, curriculum_root) / "figures"
+    if not figures_dir.is_dir():
+        return []
+
+    matches: list[Path] = []
+    for path in figures_dir.iterdir():
+        if not path.is_file():
+            continue
+        m = _FIGURE_NAME_RE.match(path.name)
+        if m and (m.group(1).lower(), m.group(2)) in wanted:
             matches.append(path)
     return sorted(matches, key=lambda p: p.name)
 

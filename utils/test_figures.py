@@ -106,79 +106,83 @@ def test_discovery_filters_and_isolates_by_exercise() -> None:
 # discover_figures_for_sources (lectures + practices)
 # ---------------------------------------------------------------------------
 
-def test_discover_for_sources_matches_lecture_and_practice() -> None:
-    """Assert source labels map to their sibling lecture/practice figures."""
+def test_discover_for_sources_matches_real_lecture_and_practice_stems() -> None:
+    """Assert real RAG stems (lecture_10_6, lecture_3a, santiago_*, practice_4) match."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         figdir = root / "demo" / "figures"
         figdir.mkdir(parents=True)
-        (figdir / "lecture_5_two_cities.png").write_bytes(b"\x89PNG\r\n")
-        (figdir / "lecture_5_extra.jpg").write_bytes(b"\xff\xd8\xff")
-        (figdir / "practice_3_diagram.png").write_bytes(b"\x89PNG\r\n")
-        (figdir / "lecture_6_unrelated.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_10_6__dupont_tree.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_10_6__extra.jpg").write_bytes(b"\xff\xd8\xff")
+        (figdir / "lecture_10_10__other.png").write_bytes(b"\x89PNG\r\n")  # must NOT match 10_6
+        (figdir / "lecture_3a__induced_demand.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "santiago_lecture_1a__land_use.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "practice_4__flow_map.png").write_bytes(b"\x89PNG\r\n")
 
-        # A retrieved chunk from lecture 5 pulls both of lecture 5's figures.
-        names = figure_filenames(
-            discover_figures_for_sources(
-                "demo", ["local:lecture_5_introducing_the_cities"], curriculum_root=root
-            )
-        )
+        got = figure_filenames(discover_figures_for_sources(
+            "demo", ["local:lecture_10_6_dupont_analysis"], curriculum_root=root))
         _check(
-            "lecture source -> sorted sibling figures",
-            names == ["lecture_5_extra.jpg", "lecture_5_two_cities.png"],
-            f"got {names}",
+            "lecture_10_6 stem -> its two figures, not lecture_10_10",
+            got == ["lecture_10_6__dupont_tree.png", "lecture_10_6__extra.jpg"],
+            f"got {got}",
         )
-
-        # Multiple sources (lecture + practice) union their figures.
-        names2 = figure_filenames(
-            discover_figures_for_sources(
-                "demo",
-                ["local:lecture_5_intro", "local:practice_3_x", "local:key_concepts"],
-                curriculum_root=root,
-            )
-        )
-        _check(
-            "lecture+practice sources union; key_concepts contributes nothing",
-            names2 == ["lecture_5_extra.jpg", "lecture_5_two_cities.png", "practice_3_diagram.png"],
-            f"got {names2}",
-        )
+        got_3a = figure_filenames(discover_figures_for_sources(
+            "demo", ["local:lecture_3a_transportation_strategies_options"], curriculum_root=root))
+        _check("letter-suffixed lecture_3a matches", got_3a == ["lecture_3a__induced_demand.png"], f"got {got_3a}")
+        got_sant = figure_filenames(discover_figures_for_sources(
+            "demo", ["local:santiago_lecture_1a_santiago_metropolitan_area"], curriculum_root=root))
+        _check("prefixed santiago_lecture_1a matches", got_sant == ["santiago_lecture_1a__land_use.png"], f"got {got_sant}")
+        got_prac = figure_filenames(discover_figures_for_sources(
+            "demo", ["local:practice_4"], curriculum_root=root))
+        _check("bare practice_4 matches", got_prac == ["practice_4__flow_map.png"], f"got {got_prac}")
 
 
-def test_discover_for_sources_dedupes_repeated_sources() -> None:
-    """Assert the same lecture retrieved twice yields each figure once."""
+def test_discover_for_sources_union_and_nonitem() -> None:
+    """Assert multiple sources union their figures; non-item sources add nothing."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         figdir = root / "demo" / "figures"
         figdir.mkdir(parents=True)
-        (figdir / "lecture_5_a.png").write_bytes(b"\x89PNG\r\n")
-        names = figure_filenames(
-            discover_figures_for_sources(
-                "demo",
-                ["local:lecture_5_intro", "local:lecture_5_intro"],
-                curriculum_root=root,
-            )
+        (figdir / "lecture_3a__induced_demand.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "practice_4__flow_map.png").write_bytes(b"\x89PNG\r\n")
+        got = figure_filenames(discover_figures_for_sources(
+            "demo",
+            ["local:lecture_3a_x", "local:practice_4", "local:key_concepts"],
+            curriculum_root=root,
+        ))
+        _check(
+            "lecture+practice union; key_concepts contributes nothing",
+            got == ["lecture_3a__induced_demand.png", "practice_4__flow_map.png"],
+            f"got {got}",
         )
-        _check("repeated source dedupes figures", names == ["lecture_5_a.png"], f"got {names}")
 
 
-def test_discover_for_sources_empty_and_nonitem_sources() -> None:
-    """Assert non-item sources and a missing figures dir yield []."""
+def test_discover_for_sources_boundary_and_dedupe() -> None:
+    """Assert prefix boundary is enforced and a repeated source yields each figure once."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         figdir = root / "demo" / "figures"
         figdir.mkdir(parents=True)
-        (figdir / "lecture_5_a.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_1__a.png").write_bytes(b"\x89PNG\r\n")
+        # lecture_1 prefix must NOT match lecture_10_* (boundary is an underscore).
+        got = figure_filenames(discover_figures_for_sources(
+            "demo", ["local:lecture_10_6_dupont_analysis"], curriculum_root=root))
+        _check("lecture_1 prefix does not bleed into lecture_10", got == [], f"got {got}")
+        # Repeated source -> figure appears once.
+        got2 = figure_filenames(discover_figures_for_sources(
+            "demo", ["local:lecture_1_intro", "local:lecture_1_intro"], curriculum_root=root))
+        _check("repeated source dedupes", got2 == ["lecture_1__a.png"], f"got {got2}")
+
+
+def test_discover_for_sources_empty_and_missing() -> None:
+    """Assert empty source list / missing figures dir -> []."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "demo" / "figures").mkdir(parents=True)
+        _check("empty sources -> []", discover_figures_for_sources("demo", [], curriculum_root=root) == [])
         _check(
-            "non-item sources -> []",
-            discover_figures_for_sources("demo", ["local:key_concepts", ""], curriculum_root=root) == [],
-        )
-        _check(
-            "empty source list -> []",
-            discover_figures_for_sources("demo", [], curriculum_root=root) == [],
-        )
-        _check(
-            "missing figures dir -> []",
-            discover_figures_for_sources("no_such_course", ["local:lecture_1_x"], curriculum_root=root) == [],
+            "missing course -> []",
+            discover_figures_for_sources("no_such", ["local:lecture_1_x"], curriculum_root=root) == [],
         )
 
 
@@ -314,9 +318,10 @@ def main() -> int:
         test_exercise_number_is_normalized,
         test_missing_exercise_and_course_return_empty,
         test_discovery_filters_and_isolates_by_exercise,
-        test_discover_for_sources_matches_lecture_and_practice,
-        test_discover_for_sources_dedupes_repeated_sources,
-        test_discover_for_sources_empty_and_nonitem_sources,
+        test_discover_for_sources_matches_real_lecture_and_practice_stems,
+        test_discover_for_sources_union_and_nonitem,
+        test_discover_for_sources_boundary_and_dedupe,
+        test_discover_for_sources_empty_and_missing,
         test_discover_figures_ignores_non_exercise_kinds,
         test_data_url_round_trip_from_path,
         test_data_url_from_bytes_requires_mime,

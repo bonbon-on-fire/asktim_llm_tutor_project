@@ -53,17 +53,17 @@ def test_union_exercise_and_retrieved_figures() -> None:
         figdir = root / "demo" / "figures"
         figdir.mkdir(parents=True)
         (figdir / "exercise_5_ex.png").write_bytes(b"\x89PNG\r\n")
-        (figdir / "lecture_5_two_cities.png").write_bytes(b"\x89PNG\r\n")
-        (figdir / "lecture_6_other.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_5__two_cities.png").write_bytes(b"\x89PNG\r\n")
+        (figdir / "lecture_6__other.png").write_bytes(b"\x89PNG\r\n")
 
         exchanges = [
-            {"retrieved": [{"source": "local:lecture_5_intro"}, {"source": "local:key_concepts"}]},
-            {"retrieved": [{"source": "local:lecture_5_intro"}]},  # dup across turns
+            {"retrieved": [{"source": "local:lecture_5_introducing_the_cities"}, {"source": "local:key_concepts"}]},
+            {"retrieved": [{"source": "local:lecture_5_introducing_the_cities"}]},  # dup across turns
         ]
         names = _figures_for_transcript("demo", "5", exchanges, curriculum_root=root)
         _check(
             "exercise first, then retrieved lecture, deduped; unretrieved lecture_6 absent",
-            names == ["exercise_5_ex.png", "lecture_5_two_cities.png"],
+            names == ["exercise_5_ex.png", "lecture_5__two_cities.png"],
             f"got {names}",
         )
 

@@ -52,10 +52,22 @@ figure shared across items) is YAGNI now.
 
 ### 1. Naming convention
 
-`<kind>_<id>_<slug>.<png|jpg|jpeg>`, where `kind ∈ {exercise, lecture, practice}`
-and `id` is the number in the sibling `.txt` stem (e.g. `lecture_5_...` →
-`figures/lecture_5_two_cities.png`). Existing exercise figures
-(`exercise_4_power_actors_map.png`) are unchanged.
+Two conventions, one per discovery path:
+
+- **Exercise (number-keyed, unchanged):** `exercise_<id>_<slug>.<png|jpg|jpeg>`,
+  where `id` is the number in the sibling `.txt` stem (e.g.
+  `exercise_4_power_actors_map.png`). Matched by `discover_figures`.
+- **Source-driven (lecture/practice, matched against retrieved RAG source
+  labels):** `<item_stem_prefix>__<slug>.<png|jpg|jpeg>` — a DOUBLE underscore
+  separates a leading, underscore-delimited prefix of the target file's stem
+  from the descriptive slug. `<item_stem_prefix>` need not be a bare number:
+  real stems include letter suffixes (`lecture_3a`), multi-part week/day ids
+  (`lecture_10_6`), and course-prefixed ids (`santiago_lecture_1a`). A figure
+  matches a retrieved source whose bare stem `S` equals the prefix `P` or
+  starts with `P + "_"` (an underscore boundary, so `lecture_10_6` does not
+  match `lecture_10_60`). Examples: `lecture_10_6__dupont_tree.png` serves
+  `local:lecture_10_6_dupont_analysis`; `practice_4__flow_map.png` serves
+  `local:practice_4`. Matched by `discover_figures_for_sources`.
 
 ### 2. `utils/figures.py`
 

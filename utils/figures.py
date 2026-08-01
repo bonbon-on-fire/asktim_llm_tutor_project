@@ -8,10 +8,19 @@ the real figure instead of a secondhand prose description.
 
 Mirrors the small, dependency-free style of :mod:`utils.parsing`.
 
-Naming convention (strict): ``<kind>_<id>_<slug>.<ext>`` where ``<kind>`` is one
-of ``exercise``, ``lecture``, ``practice``; ``<id>`` is the non-padded number in
-the sibling ``.txt`` stem; and ``<ext>`` is one of ``png``, ``jpg``, ``jpeg``
-(case-insensitive). Multiple figures per item are allowed and returned sorted by
+Naming convention: two conventions, one per discovery path.
+
+- Exercise (number-keyed, unchanged): ``exercise_<id>_<slug>.<ext>`` where
+  ``<id>`` is the non-padded number in the sibling ``.txt`` stem.
+- Source-driven (lecture/practice, matched against retrieved RAG source
+  labels): ``<item_stem_prefix>__<slug>.<ext>`` — a DOUBLE underscore
+  separates a leading, underscore-delimited prefix of the target file's stem
+  from the descriptive slug (e.g. ``lecture_10_6__dupont_tree.png`` serves
+  ``local:lecture_10_6_dupont_analysis``; ``practice_4__flow_map.png`` serves
+  ``local:practice_4``).
+
+``<ext>`` is one of ``png``, ``jpg``, ``jpeg`` (case-insensitive) in both
+conventions. Multiple figures per item are allowed and returned sorted by
 filename. A figure serves exactly one content item.
 """
 
@@ -28,11 +37,21 @@ _FIGURE_NAME_RE = re.compile(
     r"^(exercise|lecture|practice)_(\d+)_.+\.(png|jpe?g)$", re.IGNORECASE
 )
 
-# Retrieved RAG chunk labels look like "local:lecture_5_intro" (or a bare
-# "lecture_5_intro" stem). Captures (kind, id) for the item the chunk came from.
-_SOURCE_ITEM_RE = re.compile(
-    r"^(?:local:)?(exercise|lecture|practice)_(\d+)_", re.IGNORECASE
-)
+# Source-driven figures (lectures/practices) name the item they belong to, a
+# double underscore, then a descriptive slug:  <item_stem_prefix>__<slug>.<ext>
+# where <item_stem_prefix> is a leading, underscore-delimited prefix of the
+# target file's stem (e.g. "lecture_3a", "lecture_10_6", "santiago_lecture_1a",
+# "practice_4"). Split on the FIRST double underscore.
+_SOURCE_FIGURE_RE = re.compile(r"^(?P<stem>.+?)__(?P<slug>.+)\.(png|jpe?g)$", re.IGNORECASE)
+
+
+def _source_stem(source) -> str:
+    """Bare file stem for a RAG source label ('local:lecture_5_x' -> 'lecture_5_x')."""
+    s = str(source).strip()
+    if s.lower().startswith("local:"):
+        s = s[len("local:"):]
+    return s
+
 
 _MIME_BY_SUFFIX = {
     ".png": "image/png",
@@ -81,23 +100,20 @@ def discover_figures_for_sources(
 ) -> list[Path]:
     """Return figures for the content items named by retrieved RAG *sources*.
 
-    Each source is a chunk label like ``local:lecture_5_intro`` (or a bare
-    ``lecture_5_intro`` stem). For every source that names an exercise, lecture,
-    or practice item, this returns the sibling figures under
-    ``<course>/figures/`` whose ``<kind>_<id>_`` prefix matches. Deduplicated and
-    sorted by filename; empty when nothing matches or the folder is absent.
+    Each source is a chunk label like ``local:lecture_10_6_dupont_analysis`` (or a
+    bare stem). A figure named ``<item_stem_prefix>__<slug>.<ext>`` matches a source
+    whose bare stem ``S`` equals the prefix or begins with ``prefix + "_"`` (an
+    underscore boundary, so ``lecture_10_6`` does not match ``lecture_10_60``).
+    Deduplicated (each figure file at most once) and sorted by filename; empty when
+    nothing matches or the folder is absent.
 
-    This is how per-turn lecture/practice figures are attached: a figure is sent
-    to the model only on turns where its item's chunk was actually retrieved.
-    Sources that don't name an item (e.g. ``local:key_concepts``) contribute
-    nothing.
+    This is how per-turn lecture/practice figures are attached: a figure is sent to
+    the model only on turns where its item's chunk was actually retrieved. Sources
+    that name no figure (e.g. ``local:key_concepts``) contribute nothing. Exercise
+    figures are number-keyed via :func:`discover_figures`, not this path.
     """
-    wanted: set[tuple[str, str]] = set()
-    for source in sources or []:
-        m = _SOURCE_ITEM_RE.match(str(source).strip())
-        if m:
-            wanted.add((m.group(1).lower(), m.group(2)))
-    if not wanted:
+    stems = [s for s in (_source_stem(x) for x in (sources or [])) if s]
+    if not stems:
         return []
 
     figures_dir = course_dir(course, curriculum_root) / "figures"
@@ -108,8 +124,12 @@ def discover_figures_for_sources(
     for path in figures_dir.iterdir():
         if not path.is_file():
             continue
-        m = _FIGURE_NAME_RE.match(path.name)
-        if m and (m.group(1).lower(), m.group(2)) in wanted:
+        m = _SOURCE_FIGURE_RE.match(path.name)
+        if not m:
+            continue
+        prefix = m.group("stem")
+        boundary = prefix + "_"
+        if any(s == prefix or s.startswith(boundary) for s in stems):
             matches.append(path)
     return sorted(matches, key=lambda p: p.name)
 

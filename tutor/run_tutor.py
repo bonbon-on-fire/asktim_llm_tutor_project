@@ -109,10 +109,14 @@ class TutorState(TypedDict, total=False):
 
     ``retrieved_context`` (optional) is the per-turn RAG grounding folded into the
     system message by ``tutor_node``; absent/empty outside RAG mode.
+    ``turn_figures`` (optional) are figures for items retrieved THIS turn (lecture/
+    practice), attached to the latest student message in addition to the graph-bound
+    exercise ``figures``; absent/empty outside RAG mode.
     """
 
     messages: Annotated[list, operator.add]
     retrieved_context: str
+    turn_figures: list
 
 
 def _looks_non_student_like(text: str) -> bool:
@@ -219,8 +223,10 @@ def create_tutor_graph(system_prompt: str, *, provider: str = "gpt", figures: li
             last_text = _content_text(last.content)
             if _looks_non_student_like(last_text):
                 return {"messages": [_build_invalid_input_reply()]}
-        if figures:
-            _attach_figures_to_last_human(messages, figures)
+        turn_figures = state.get("turn_figures") or []
+        all_figures = list(dict.fromkeys([*(figures or []), *turn_figures]))
+        if all_figures:
+            _attach_figures_to_last_human(messages, all_figures)
         _cache_last_message(messages, model)
         response = _apply_json_mode(model).invoke(messages)
         response = _normalize_tutor_ai_message(response)
@@ -641,6 +647,7 @@ def get_tutor_reply(
     prompt_name: str = "tutor_01",
     figures: list | None = None,
     retrieved_context: str = "",
+    turn_figures: list | None = None,
 ) -> tuple[list, str]:
     """
     Invoke the tutor with the given conversation history.
@@ -652,11 +659,20 @@ def get_tutor_reply(
 
     *retrieved_context* is this turn's RAG grounding; it rides in the graph state
     and ``tutor_node`` folds it into the system message (empty outside RAG mode).
+
+    *turn_figures* are figures for items retrieved this turn (lecture/practice),
+    attached alongside any graph-bound exercise figures.
     """
     if graph is None:
         system_prompt = load_system_prompt(prompt_name, assignment_override)
         graph = create_tutor_graph(system_prompt, figures=figures)
-    result = graph.invoke({"messages": messages, "retrieved_context": retrieved_context})
+    result = graph.invoke(
+        {
+            "messages": messages,
+            "retrieved_context": retrieved_context,
+            "turn_figures": turn_figures or [],
+        }
+    )
     out_messages = result["messages"]
     last = out_messages[-1] if out_messages else None
     if isinstance(last, AIMessage):

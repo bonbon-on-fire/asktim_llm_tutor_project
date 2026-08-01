@@ -65,7 +65,7 @@ from utils.curriculum import (  # noqa: E402
     read_pinned_context,
     read_solution,
 )
-from utils.figures import discover_figures, figure_filenames  # noqa: E402
+from utils.figures import discover_figures, discover_figures_for_sources, figure_filenames  # noqa: E402
 from utils.pricing import model_from_message, priced, usage_from_message  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -199,16 +199,20 @@ def _retrieved_context(course: str, query: str, max_week: int | None = None) -> 
         return RetrievedContext()
 
 
-def _tutor_reply_with_retry(tutor_messages: list, tutor_graph, rebuild, retrieved_context=""):
+def _tutor_reply_with_retry(tutor_messages, tutor_graph, rebuild, retrieved_context="", turn_figures=None):
     """Call the tutor, retrying transient failures (rate limits, payload parse)
     with linear backoff. Rebuilds the graph between attempts in case client
     state is corrupted. *retrieved_context* is this turn's RAG grounding, folded
-    into the system message by the tutor graph."""
+    into the system message by the tutor graph; *turn_figures* are figures for
+    items retrieved this turn, attached to the student message."""
     last_error: Exception | None = None
     for attempt in range(1, _TUTOR_CALL_MAX_RETRIES + 1):
         try:
             return upstream_get_tutor_reply(
-                tutor_messages, graph=tutor_graph, retrieved_context=retrieved_context
+                tutor_messages,
+                graph=tutor_graph,
+                retrieved_context=retrieved_context,
+                turn_figures=turn_figures or [],
             )
         except Exception as error:  # noqa: BLE001
             last_error = error
@@ -300,6 +304,12 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
         # was retrieved (source/score/text) for the transcript.
         rc = RetrievedContext() if is_stem else _retrieved_context(config.course, student_text, max_week)
         rag_block = f"{RETRIEVED_CONTEXT_HEADER}\n\n{rc.text}" if rc.text else ""
+        # Lecture/practice figures ride in only on turns where their item's chunk
+        # was retrieved (rc.records carry the source labels). Exercise figures are
+        # already bound into the graph. STEM arm doesn't retrieve -> stays empty.
+        turn_figures = discover_figures_for_sources(
+            config.course, [r.get("source", "") for r in rc.records]
+        )
         tutor_messages.append(HumanMessage(content=student_text))
 
         if is_stem:
@@ -310,7 +320,8 @@ def _run_conversation(config: RunConfig) -> list[dict[str, object]]:
             last_msg = stem_adapter.last_reply_message
         else:
             tutor_messages, tutor_text = _tutor_reply_with_retry(
-                tutor_messages, tutor_graph, _build_graph, retrieved_context=rag_block
+                tutor_messages, tutor_graph, _build_graph,
+                retrieved_context=rag_block, turn_figures=turn_figures,
             )
             tutor_reasoning = ""
             last_msg = tutor_messages[-1] if tutor_messages else None

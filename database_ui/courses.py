@@ -17,6 +17,7 @@ from __future__ import annotations
 # Mirror of curriculum/<key>/course_name.txt. Keep in sync when courses are added.
 COURSE_DISPLAY_NAMES: dict[str, str] = {
     "cities_and_climate_change": "MIT 11.270x Cities and Climate Change",
+    "economic_development_planning": "MIT 11.438 Economic Development Planning",
     "intro_to_international_development_planning": (
         "MIT 11.701 Introduction to International Development Planning"
     ),
@@ -24,6 +25,9 @@ COURSE_DISPLAY_NAMES: dict[str, str] = {
     "meaning_of_life": "MIT 21A.157 The Meaning of Life",
     "physics_iii_vibrations_and_waves": "MIT 8.03SC Physics III: Vibrations and Waves",
     "supply_chain_design": "MIT CTL.SC2x Supply Chain Design",
+    "urban_transportation": (
+        "MIT 11.943J Urban Transportation, Land Use, and the Environment"
+    ),
 }
 
 

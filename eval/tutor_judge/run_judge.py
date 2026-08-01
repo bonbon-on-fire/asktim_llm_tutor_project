@@ -731,12 +731,16 @@ def _judge_transcript(
     if isinstance(recorded, list):
         figure_names.extend(str(n) for n in recorded)
     if course:
-        retrieved_sources = [
-            str(rec.get("source", ""))
-            for ex in exchanges
-            if isinstance(ex, dict)
-            for rec in (ex.get("retrieved") or [])
-        ]
+        retrieved_sources = []
+        for ex in exchanges:
+            if not isinstance(ex, dict):
+                continue
+            recs = ex.get("retrieved")
+            if not isinstance(recs, list):
+                continue
+            for rec in recs:
+                if isinstance(rec, dict):
+                    retrieved_sources.append(str(rec.get("source", "")))
         figure_names.extend(
             figure_filenames(discover_figures_for_sources(course, retrieved_sources))
         )

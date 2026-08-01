@@ -34,8 +34,14 @@ def _figures_for_transcript(course, exercise_number, exchanges, curriculum_root=
     names = figure_filenames(discover_figures(course, exercise_number, curriculum_root))
     sources = []
     for ex in exchanges or []:
-        for rec in ex.get("retrieved") or []:
-            sources.append(rec.get("source", ""))
+        if not isinstance(ex, dict):
+            continue
+        recs = ex.get("retrieved")
+        if not isinstance(recs, list):
+            continue
+        for rec in recs:
+            if isinstance(rec, dict):
+                sources.append(rec.get("source", ""))
     names += figure_filenames(discover_figures_for_sources(course, sources, curriculum_root))
     return list(dict.fromkeys(names))
 
@@ -62,8 +68,26 @@ def test_union_exercise_and_retrieved_figures() -> None:
         )
 
 
+def test_malformed_exchanges_do_not_crash() -> None:
+    """Assert non-dict exchanges / non-dict retrieved records are skipped, not fatal."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        figdir = root / "demo" / "figures"
+        figdir.mkdir(parents=True)
+        (figdir / "exercise_5_ex.png").write_bytes(b"\x89PNG\r\n")
+        exchanges = [
+            "not_a_dict",
+            {"retrieved": "not_a_list"},
+            {"retrieved": ["not_a_dict", {"source": "local:lecture_9_x"}]},
+            {},
+        ]
+        names = _figures_for_transcript("demo", "5", exchanges, curriculum_root=root)
+        # lecture_9 has no figure on disk; only the exercise figure survives, no crash.
+        _check("malformed exchanges skipped, no crash", names == ["exercise_5_ex.png"], f"got {names}")
+
+
 def main() -> int:
-    tests = [test_union_exercise_and_retrieved_figures]
+    tests = [test_union_exercise_and_retrieved_figures, test_malformed_exchanges_do_not_crash]
     for t in tests:
         print(t.__name__)
         t()

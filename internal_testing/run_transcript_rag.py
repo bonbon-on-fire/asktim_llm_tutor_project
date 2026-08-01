@@ -440,10 +440,24 @@ def _save_transcript(
         + "\n\nRun configuration:\n- Planned conversation length: "
         + f"{config.turn_size} student+tutor exchanges."
     )
+    # Figures the tutor actually saw: the exercise's figures (bound into the
+    # graph) plus every lecture/practice figure whose chunk was retrieved on any
+    # turn. Persisted by filename so the judge replays the same images.
     figure_names = (
         figure_filenames(discover_figures(config.course, config.number))
         if config.kind == "exercise"
         else []
+    )
+    _retrieved_sources = [
+        rec.get("source", "")
+        for ex in exchanges
+        for rec in (ex.get("retrieved") or [])
+    ]
+    figure_names = list(
+        dict.fromkeys(
+            figure_names
+            + figure_filenames(discover_figures_for_sources(config.course, _retrieved_sources))
+        )
     )
 
     with _SAVE_LOCK:

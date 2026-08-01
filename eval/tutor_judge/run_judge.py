@@ -23,7 +23,12 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 load_dotenv(_REPO_ROOT / ".env")
 
-from utils.figures import build_multimodal_content, resolve_figure_filenames
+from utils.figures import (
+    build_multimodal_content,
+    discover_figures_for_sources,
+    figure_filenames,
+    resolve_figure_filenames,
+)
 from utils.pricing import model_from_message, priced, usage_from_message
 
 Provider = Literal["gpt", "claude"]
@@ -716,14 +721,29 @@ def _judge_transcript(
     system_prompt = load_judge_prompt(prompt_name=prompt_name, rubric_name=rubric_name)
     conversation_text = _format_conversation_for_judge(transcript)
 
-    # Re-attach any curriculum figures recorded on the transcript so the judge
-    # grades against the same image the tutor saw. Absent/empty field = none.
-    figure_names = transcript.get("figures")
-    figures: list = []
-    if isinstance(figure_names, list) and figure_names:
-        course = _sanitize_text(transcript.get("course")).strip()
-        if course:
-            figures = resolve_figure_filenames(course, [str(n) for n in figure_names])
+    # Re-attach the images the tutor saw so the judge grades against them.
+    # Two sources, unioned: the transcript's recorded ``figures`` (filenames) and
+    # the lecture/practice figures for items retrieved on any turn (reconstructed
+    # from each exchange's ``retrieved`` records). Absent/empty fields = none.
+    course = _sanitize_text(transcript.get("course")).strip()
+    figure_names: list[str] = []
+    recorded = transcript.get("figures")
+    if isinstance(recorded, list):
+        figure_names.extend(str(n) for n in recorded)
+    if course:
+        retrieved_sources = [
+            str(rec.get("source", ""))
+            for ex in exchanges
+            if isinstance(ex, dict)
+            for rec in (ex.get("retrieved") or [])
+        ]
+        figure_names.extend(
+            figure_filenames(discover_figures_for_sources(course, retrieved_sources))
+        )
+    figure_names = list(dict.fromkeys(figure_names))
+    figures: list = (
+        resolve_figure_filenames(course, figure_names) if (course and figure_names) else []
+    )
 
     result = graph.invoke(
         {

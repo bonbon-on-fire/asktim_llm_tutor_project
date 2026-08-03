@@ -1034,16 +1034,12 @@
   // re-expanding or re-selecting a previously seen assignment is instant.
   const exercisePreviewCache = {};
 
-  // Under the exercise dropdown: a muted title line (always shown once loaded)
-  // plus a "Read full prompt" disclosure that expands the full assignment text.
+  // Under the exercise dropdown: an "Expand" disclosure that opens the full
+  // assignment text, with its title as a heading at the top of the panel.
   // The title/text come from GET /api/context/exercise, fetched lazily and cached.
   function attachExercisePreview(sel, course) {
     const wrap = document.createElement("div");
     wrap.className = "exercise-preview";
-
-    const subtitle = document.createElement("p");
-    subtitle.className = "exercise-preview-title";
-    subtitle.hidden = true;
 
     const toggle = document.createElement("button");
     toggle.type = "button";
@@ -1054,7 +1050,7 @@
     caret.setAttribute("aria-hidden", "true");
     caret.innerHTML = CHEVRON_SVG;
     const toggleText = document.createElement("span");
-    toggleText.textContent = "Read full prompt";
+    toggleText.textContent = "Expand";
     toggle.appendChild(caret);
     toggle.appendChild(toggleText);
 
@@ -1062,7 +1058,6 @@
     panel.className = "exercise-preview-panel";
     panel.hidden = true;
 
-    wrap.appendChild(subtitle);
     wrap.appendChild(toggle);
     wrap.appendChild(panel);
     createStepBody.appendChild(wrap);
@@ -1085,34 +1080,41 @@
     }
 
     function paintPanel(data) {
+      panel.innerHTML = "";
+      panel.classList.remove("message-rich");
+
+      if (data.title) {
+        const heading = document.createElement("p");
+        heading.className = "exercise-preview-panel-title";
+        heading.textContent = data.title;
+        panel.appendChild(heading);
+      }
+
       const text = data.text || "";
       const rich =
         typeof window.renderTutorMarkdown === "function"
           ? window.renderTutorMarkdown(text)
           : null;
+      const body = document.createElement("div");
       if (rich !== null) {
         panel.classList.add("message-rich");
-        panel.innerHTML = rich;
+        body.innerHTML = rich;
       } else {
-        panel.textContent = text; // libs missing: plain text, never raw innerHTML
+        body.textContent = text; // libs missing: plain text, never raw innerHTML
       }
+      panel.appendChild(body);
     }
 
-    // Load the title (and body, cached for expand) for the current selection.
+    // Load the title + body for the current selection and repaint the panel.
     async function refresh(value) {
-      subtitle.hidden = true;
-      subtitle.textContent = "";
-      if (expanded) panel.textContent = "Loading…";
+      if (!expanded) return;
+      panel.textContent = "Loading…";
       try {
         const data = await load(value);
         if (sel.value !== value) return; // selection moved on while fetching
-        if (data.title) {
-          subtitle.textContent = data.title;
-          subtitle.hidden = false;
-        }
-        if (expanded) paintPanel(data);
+        paintPanel(data);
       } catch (e) {
-        if (expanded) panel.textContent = "Couldn't load the exercise text.";
+        panel.textContent = "Couldn't load the exercise text.";
       }
     }
 
@@ -1125,7 +1127,6 @@
     });
 
     sel.addEventListener("change", () => refresh(sel.value));
-    refresh(sel.value); // populate the subtitle as soon as the step opens
   }
 
   function renderCreateStep() {

@@ -31,6 +31,7 @@ exercise, tutor, history, new_student_message)`` to a tutor reply.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -59,6 +60,7 @@ from utils.curriculum import (
     exercise_path,
     load_about_asktim,
     practice_path,
+    read_exercise,
     read_pinned_context,
     read_solution,
 )
@@ -198,17 +200,41 @@ def _cost_for_turn(tutor_msg, *, provider: str | None, embedding_tokens: int = 0
     }
 
 
-def _week_for_exercise(exercise) -> int | None:
+# Matches an exercise that declares its own due session, e.g.
+# "Due at the beginning of Session 17." or "Final project due ... Session 23".
+# The declared session is the last course week the student has reached when the
+# assignment is due, so it — not the exercise number — is the retrieval cutoff.
+_DUE_SESSION_RE = re.compile(r"due\b[^.]*?\bsession\s+(\d+)", re.IGNORECASE)
+
+
+def _due_session_for_exercise(course: str, exercise: str) -> int | None:
+    """Week declared by an exercise's "Due ... Session N" line, or None.
+
+    Some courses number their assignments independently of the week they're due
+    (e.g. four cumulative memos/papers due at Sessions 7, 17, 12, 23). For those,
+    the exercise *number* is not the week, so the declared due session is the
+    correct retrieval cutoff. Returns None when the exercise carries no such line.
+    """
+    text = read_exercise(course, str(exercise).strip())
+    m = _DUE_SESSION_RE.search(text) if text else None
+    return int(m.group(1)) if m else None
+
+
+def _week_for_exercise(course: str, exercise) -> int | None:
     """The course week for the current problem, or None if not numeric.
 
-    Exercise / practice numbers share the lecture week number, so a problem
-    numbered ``4`` caps retrieval at week 4. Custom / non-numeric exercises have no
-    week, so retrieval is left unscoped.
+    When the exercise file declares its own due session (see
+    :func:`_due_session_for_exercise`), that session is the cutoff — for courses
+    whose assignments are numbered independently of the week they're due.
+    Otherwise exercise / practice numbers share the lecture week number, so a
+    problem numbered ``4`` caps retrieval at week 4. Custom / non-numeric
+    exercises have no week, so retrieval is left unscoped.
     """
     try:
-        return int(str(exercise).strip())
+        number = int(str(exercise).strip())
     except (TypeError, ValueError):
         return None
+    return _due_session_for_exercise(course, exercise) or number
 
 
 class TutorBridge:
@@ -331,7 +357,7 @@ class TutorBridge:
             return RetrievedContext()
         try:
             scored, embed_tokens = retrieve_scored_with_usage(
-                course, query, max_week=_week_for_exercise(ctx.get("exercise"))
+                course, query, max_week=_week_for_exercise(course, ctx.get("exercise"))
             )
             chunks = [c for c, _ in scored]
             return RetrievedContext(

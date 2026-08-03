@@ -70,9 +70,25 @@ def _test_mode_resolution():
         if prev is not None:
             os.environ["TUTOR_CONTEXT_MODE"] = prev
 
-    _check("numeric exercise -> week int", _week_for_exercise("4") == 4)
-    _check("non-numeric exercise -> None", _week_for_exercise("custom") is None)
-    _check("None exercise -> None", _week_for_exercise(None) is None)
+    # No due-session line on disk -> exercise number is the week.
+    _check("numeric exercise -> week int", _week_for_exercise("no_such_course", "4") == 4)
+    _check("non-numeric exercise -> None", _week_for_exercise("no_such_course", "custom") is None)
+    _check("None exercise -> None", _week_for_exercise("no_such_course", None) is None)
+    # A course whose exercise files declare "Due ... Session N" uses that session,
+    # not the exercise number (its memos/papers are numbered independently of week).
+    _check(
+        "declared due session overrides exercise number",
+        _week_for_exercise("economic_development_planning", "1") == 7,
+    )
+    _check(
+        "final project due session parsed",
+        _week_for_exercise("economic_development_planning", "4") == 23,
+    )
+    # Non-numeric exercise stays unscoped even for a due-session course.
+    _check(
+        "non-numeric exercise -> None (due-session course)",
+        _week_for_exercise("economic_development_planning", "custom") is None,
+    )
 
 
 def _text_of(content):

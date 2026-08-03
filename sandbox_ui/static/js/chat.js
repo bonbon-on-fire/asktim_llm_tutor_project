@@ -879,7 +879,7 @@
   const CREATE_LABELS = ["Course", "Exercise", "Tutor", "Lectures"];
   const STEP_LABELS = {
     course: "Course",
-    exercise: "Exercise",
+    exercise: "Assignment",
     tutor: "Tutor",
     lectures: "Lectures",
   };
@@ -1049,8 +1049,7 @@
     caret.className = "exercise-preview-caret";
     caret.setAttribute("aria-hidden", "true");
     caret.innerHTML = CHEVRON_SVG;
-    const toggleText = document.createElement("span");
-    toggleText.textContent = "View exercise";
+    const toggleText = document.createElement("span"); // label set by updateToggleLabel()
     toggle.appendChild(caret);
     toggle.appendChild(toggleText);
 
@@ -1118,16 +1117,28 @@
       }
     }
 
+    // Toggle label tracks the selected item's kind: "View/Hide exercise" for
+    // an exercise:* value, "View/Hide practice" for a practice:* one.
+    function updateToggleLabel() {
+      const kind = (sel.value || "").split(":")[0] === "practice" ? "practice" : "exercise";
+      toggleText.textContent = (expanded ? "Hide " : "View ") + kind;
+    }
+
     toggle.addEventListener("click", () => {
       expanded = !expanded;
       toggle.setAttribute("aria-expanded", String(expanded));
-      toggleText.textContent = expanded ? "Hide exercise" : "View exercise";
+      updateToggleLabel();
       wrap.classList.toggle("open", expanded);
       panel.hidden = !expanded;
       if (expanded) refresh(sel.value);
     });
 
-    sel.addEventListener("change", () => refresh(sel.value));
+    sel.addEventListener("change", () => {
+      updateToggleLabel();
+      refresh(sel.value);
+    });
+
+    updateToggleLabel(); // set the initial label from the current selection
   }
 
   function renderCreateStep() {

@@ -1050,7 +1050,7 @@
     caret.setAttribute("aria-hidden", "true");
     caret.innerHTML = CHEVRON_SVG;
     const toggleText = document.createElement("span");
-    toggleText.textContent = "Expand";
+    toggleText.textContent = "View exercise";
     toggle.appendChild(caret);
     toggle.appendChild(toggleText);
 
@@ -1121,6 +1121,7 @@
     toggle.addEventListener("click", () => {
       expanded = !expanded;
       toggle.setAttribute("aria-expanded", String(expanded));
+      toggleText.textContent = expanded ? "Hide exercise" : "View exercise";
       wrap.classList.toggle("open", expanded);
       panel.hidden = !expanded;
       if (expanded) refresh(sel.value);

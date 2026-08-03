@@ -1030,6 +1030,104 @@
     return root;
   }
 
+  // Cache of fetched exercise/practice previews, keyed by "course|kind:num", so
+  // re-expanding or re-selecting a previously seen assignment is instant.
+  const exercisePreviewCache = {};
+
+  // Under the exercise dropdown: a muted title line (always shown once loaded)
+  // plus a "Read full prompt" disclosure that expands the full assignment text.
+  // The title/text come from GET /api/context/exercise, fetched lazily and cached.
+  function attachExercisePreview(sel, course) {
+    const wrap = document.createElement("div");
+    wrap.className = "exercise-preview";
+
+    const subtitle = document.createElement("p");
+    subtitle.className = "exercise-preview-title";
+    subtitle.hidden = true;
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "exercise-preview-toggle";
+    toggle.setAttribute("aria-expanded", "false");
+    const caret = document.createElement("span");
+    caret.className = "exercise-preview-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.innerHTML = CHEVRON_SVG;
+    const toggleText = document.createElement("span");
+    toggleText.textContent = "Read full prompt";
+    toggle.appendChild(caret);
+    toggle.appendChild(toggleText);
+
+    const panel = document.createElement("div");
+    panel.className = "exercise-preview-panel";
+    panel.hidden = true;
+
+    wrap.appendChild(subtitle);
+    wrap.appendChild(toggle);
+    wrap.appendChild(panel);
+    createStepBody.appendChild(wrap);
+
+    let expanded = false;
+
+    async function load(value) {
+      const key = course + "|" + value;
+      if (exercisePreviewCache[key]) return exercisePreviewCache[key];
+      const [kind, number] = value.split(":");
+      const url =
+        "/api/context/exercise?course=" + encodeURIComponent(course) +
+        "&kind=" + encodeURIComponent(kind) +
+        "&number=" + encodeURIComponent(number);
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("preview fetch failed");
+      const data = await resp.json();
+      exercisePreviewCache[key] = data;
+      return data;
+    }
+
+    function paintPanel(data) {
+      const text = data.text || "";
+      const rich =
+        typeof window.renderTutorMarkdown === "function"
+          ? window.renderTutorMarkdown(text)
+          : null;
+      if (rich !== null) {
+        panel.classList.add("message-rich");
+        panel.innerHTML = rich;
+      } else {
+        panel.textContent = text; // libs missing: plain text, never raw innerHTML
+      }
+    }
+
+    // Load the title (and body, cached for expand) for the current selection.
+    async function refresh(value) {
+      subtitle.hidden = true;
+      subtitle.textContent = "";
+      if (expanded) panel.textContent = "Loading…";
+      try {
+        const data = await load(value);
+        if (sel.value !== value) return; // selection moved on while fetching
+        if (data.title) {
+          subtitle.textContent = data.title;
+          subtitle.hidden = false;
+        }
+        if (expanded) paintPanel(data);
+      } catch (e) {
+        if (expanded) panel.textContent = "Couldn't load the exercise text.";
+      }
+    }
+
+    toggle.addEventListener("click", () => {
+      expanded = !expanded;
+      toggle.setAttribute("aria-expanded", String(expanded));
+      wrap.classList.toggle("open", expanded);
+      panel.hidden = !expanded;
+      if (expanded) refresh(sel.value);
+    });
+
+    sel.addEventListener("change", () => refresh(sel.value));
+    refresh(sel.value); // populate the subtitle as soon as the step opens
+  }
+
   function renderCreateStep() {
     createError.hidden = true;
     const steps = activeSteps();
@@ -1102,6 +1200,10 @@
     const sel = buildSelect(options, currentValue);
     if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_07
     createStepBody.appendChild(sel);
+
+    // Exercise step: show the selected assignment's title + an expandable full
+    // prompt beneath the dropdown, so testers can see what they're picking.
+    if (step === "exercise") attachExercisePreview(sel, createDraft.course.existing);
 
     // sandbox_ui tutor-model toggle: the tutor *prompt* is locked, but the LLM
     // *provider* is selectable here — Claude Sonnet 5 (sandbox default) or OpenAI gpt-5.4.

@@ -16,6 +16,8 @@ from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import practice_exists as _practice_exists
 from utils.curriculum import load_course_name as _load_course_name
 from utils.curriculum import list_courses as _list_active_courses
+from utils.curriculum import read_exercise as _read_exercise
+from utils.curriculum import read_practice as _read_practice
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -179,6 +181,33 @@ def validate_selection(course, number, kind) -> dict | None:
     if kind == "practice":
         return validate_practice(course, number)
     return validate_exercise(course, number)
+
+
+def _split_title(raw: str) -> tuple[str, str]:
+    """Split an assignment file into (title, body).
+
+    Assignment files start with a ``TITLE: ...`` line; that line becomes the
+    title and the rest becomes the body. Files without one return ``("", text)``.
+    """
+    text = (raw or "").strip("\n")
+    if not text:
+        return "", ""
+    lines = text.split("\n")
+    first = lines[0].strip()
+    if first.upper().startswith("TITLE:"):
+        return first.split(":", 1)[1].strip(), "\n".join(lines[1:]).strip("\n")
+    return "", text
+
+
+def load_selection_preview(course, number, kind) -> dict:
+    """Return ``{title, text}`` for an exercise/practice, both ``""`` when absent.
+
+    Used by the Create-context wizard's exercise-preview step; callers validate
+    the selection first (see :func:`validate_selection`).
+    """
+    raw = _read_practice(course, number) if kind == "practice" else _read_exercise(course, number)
+    title, body = _split_title(raw)
+    return {"title": title, "text": body}
 
 
 def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise):

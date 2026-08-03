@@ -20,8 +20,10 @@ from sandbox_ui.routes._validation import (
     DEFAULT_TUTOR,
     list_context_options,
     load_course_name,
+    load_selection_preview,
     resolve_embed_selection,
     validate_course,
+    validate_selection,
     validate_tutor,
 )
 
@@ -59,6 +61,29 @@ def context_options():
     """Courses (+ their exercises and lecture/RAG availability) and tutor prompts,
     used to populate the sandbox_ui Change-context switcher."""
     return jsonify(list_context_options())
+
+
+@embed_bp.get("/api/context/exercise")
+def context_exercise():
+    """Title + full prompt text for one exercise/practice (the wizard's preview).
+
+    Params: ``course``, ``number``, and ``kind`` (``exercise`` default, or
+    ``practice``). The selection is validated the same way the embed route
+    validates it, so an unknown course/number 404s.
+    """
+    course = request.args.get("course") or ""
+    number = request.args.get("number") or ""
+    kind = "practice" if request.args.get("kind") == "practice" else "exercise"
+
+    err = validate_course(course)
+    if err:
+        return _bad_param(err)
+    err = validate_selection(course, number, kind)
+    if err:
+        return _bad_param(err)
+
+    preview = load_selection_preview(course, number, kind)
+    return jsonify({"course": course, "number": number, "kind": kind, **preview})
 
 
 @embed_bp.get("/")

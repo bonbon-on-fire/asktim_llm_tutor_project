@@ -5,6 +5,7 @@ Run:
 """
 from __future__ import annotations
 
+from main_ui.routes._validation import validate_problem
 from main_ui.run_app import app
 from utils.curriculum import list_subproblems
 
@@ -47,6 +48,15 @@ def main() -> int:
         "exercise_kind": "practice", "problem": "999",
     })
     ok &= _check("chat bad problem -> 404", bad.status_code == 404, bad.status_code)
+
+    ok &= _check("validate_problem accepts int (JSON payload shape)",
+                 validate_problem(COURSE, "1", "practice", n) is None, n)
+    ok &= _check("validate_problem accepts digit string",
+                 validate_problem(COURSE, "1", "practice", str(n)) is None, str(n))
+    ok &= _check("validate_problem rejects non-digit",
+                 validate_problem(COURSE, "1", "practice", "abc") is not None)
+    ok &= _check("validate_problem out-of-range -> failure",
+                 validate_problem(COURSE, "1", "practice", 999) is not None)
 
     return 0 if ok else 1
 

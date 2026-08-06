@@ -96,14 +96,16 @@ def validate_selection(course, number, kind) -> dict | None:
 def validate_problem(course, number, kind, problem) -> dict | None:
     """None when problem is absent (no focus) or valid; else a failure dict.
 
-    Empty/None problem is a no-op (focus is optional). Otherwise it must be a
-    positive-integer string naming an existing sub-problem in the resolved file.
+    Empty/None problem is a no-op (focus is optional). Otherwise it must name an
+    existing sub-problem in the resolved file. Accepts an int (JSON payload) or a
+    digit string (query param / multipart form) — both normalize via str().
     """
     if not problem:
         return None
-    if not (isinstance(problem, str) and problem.isdigit()):
+    text = str(problem)
+    if not text.isdigit():
         return _err("problem", problem, "must be a positive integer (e.g. 2)")
-    if subproblem_label(course, number, kind, problem) is None:
+    if subproblem_label(course, number, kind, text) is None:
         return _err("problem", problem, f"no sub-problem {problem} in {kind} {number} of {course}")
     return None
 

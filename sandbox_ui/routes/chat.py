@@ -247,7 +247,10 @@ def chat():
             course=course,
             exercise_number=exercise,
             exercise_kind=exercise_kind,
-            focus_problem=int(problem) if problem else None,
+            # `problem` is validated above only for new conversations; on a
+            # continuation it is unvalidated AND ignored (the stored focus wins),
+            # so guard the int() against a malformed value to avoid a 500.
+            focus_problem=int(problem) if (problem and str(problem).isdigit()) else None,
             tutor_prompt=tutor,
             username=username,
             lectures_enabled=lectures_enabled,

@@ -15,6 +15,7 @@ from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import practice_exists as _practice_exists
 from utils.curriculum import list_courses as _list_active_courses
+from utils.curriculum import subproblem_label
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -90,6 +91,21 @@ def validate_selection(course, number, kind) -> dict | None:
     if kind == "practice":
         return validate_practice(course, number)
     return validate_exercise(course, number)
+
+
+def validate_problem(course, number, kind, problem) -> dict | None:
+    """None when problem is absent (no focus) or valid; else a failure dict.
+
+    Empty/None problem is a no-op (focus is optional). Otherwise it must be a
+    positive-integer string naming an existing sub-problem in the resolved file.
+    """
+    if not problem:
+        return None
+    if not (isinstance(problem, str) and problem.isdigit()):
+        return _err("problem", problem, "must be a positive integer (e.g. 2)")
+    if subproblem_label(course, number, kind, problem) is None:
+        return _err("problem", problem, f"no sub-problem {problem} in {kind} {number} of {course}")
+    return None
 
 
 def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise):

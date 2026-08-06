@@ -27,6 +27,7 @@ from main_ui.routes._validation import (
     resolve_embed_selection,
     role_default_prompt,
     validate_course,
+    validate_problem,
     validate_role,
     validate_tutor,
 )
@@ -40,8 +41,8 @@ def _bad_param(err: dict):
     return jsonify({"error": "invalid_param", **err}), 404
 
 
-def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise", role: str = DEFAULT_ROLE):
-    """Render ``embed.html`` for the given course/exercise|practice/tutor/role context."""
+def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise", role: str = DEFAULT_ROLE, problem: str | None = None):
+    """Render ``embed.html`` for the given course/exercise|practice/tutor/role/problem context."""
     tutor_config = {
         "course": course,
         "exercise": exercise,
@@ -53,6 +54,10 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         # entry header from this. Defaults to "Exercise N"/"Practice N".
         "labels": load_ui_labels(course),
     }
+    if problem:
+        # Focus sub-problem (optional). Omitted when absent so no-focus config
+        # stays byte-identical to today. Stored as an int for the frontend echo.
+        tutor_config["problem"] = int(problem)
     has_email = bool(read_username_cookie(request))
     return render_template(
         "embed.html",
@@ -101,8 +106,13 @@ def embed():
     if err:
         return _bad_param(err)
 
+    problem = request.args.get("problem")
+    err = validate_problem(course, number, kind, problem)
+    if err:
+        return _bad_param(err)
+
     err = validate_tutor(tutor)
     if err:
         return _bad_param(err)
 
-    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind, role=role)
+    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind, role=role, problem=problem)

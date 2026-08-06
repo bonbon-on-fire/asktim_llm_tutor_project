@@ -44,6 +44,7 @@ from main_ui.routes._validation import (
     DEFAULT_TUTOR,
     role_default_prompt,
     validate_course,
+    validate_problem,
     validate_role,
     validate_selection,
     validate_tutor,
@@ -192,6 +193,10 @@ def chat():
     err = validate_selection(course, exercise, exercise_kind)
     if err:
         return _bad_param(err)
+    problem = src.get("problem")
+    err = validate_problem(course, exercise, exercise_kind, problem)
+    if err:
+        return _bad_param(err)
     err = validate_tutor(tutor)
     if err:
         return _bad_param(err)
@@ -230,6 +235,7 @@ def chat():
             course=course,
             exercise_number=exercise,
             exercise_kind=exercise_kind,
+            focus_problem=int(problem) if problem else None,
             tutor_prompt=tutor,
             username=username,
         )
@@ -317,6 +323,7 @@ def chat():
     stream_exercise = convo.exercise_number
     stream_tutor = convo.tutor_prompt
     stream_exercise_kind = convo.exercise_kind or "exercise"
+    stream_focus_problem = convo.focus_problem
 
     try:
         db.commit()
@@ -334,6 +341,7 @@ def chat():
         course=stream_course,
         exercise=stream_exercise,
         exercise_kind=stream_exercise_kind,
+        focus_problem=stream_focus_problem,
         tutor=stream_tutor,
         history=history,
         new_student_message=student_text + files_service.files_to_text(attachments),

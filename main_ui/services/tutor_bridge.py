@@ -34,6 +34,7 @@ def get_tutor_reply(
     new_student_message: str,
     images: list | None = None,
     exercise_kind: str = "exercise",
+    focus_problem: int | None = None,
 ) -> dict:
     """Return one tutor reply for the given conversation state.
 
@@ -44,6 +45,7 @@ def get_tutor_reply(
         history: prior conversation as ``[{"role": "student"|"tutor", "content": str}, ...]``
         new_student_message: the latest student turn to respond to
         images: optional ``(bytes, mime)`` tuples attached to this student turn
+        focus_problem: optional sub-problem number the student is focused on
 
     Returns:
         ``{"reply": str, "reasoning": str | None}`` — reasoning is the
@@ -58,6 +60,7 @@ def get_tutor_reply(
         new_student_message=new_student_message,
         images=images,
         exercise_kind=exercise_kind,
+        focus_problem=focus_problem,
     )
 
 
@@ -70,6 +73,7 @@ def stream_tutor_reply(
     new_student_message: str,
     images: list | None = None,
     exercise_kind: str = "exercise",
+    focus_problem: int | None = None,
     history_mode: str = "legacy",
     cached_history: list[dict] | None = None,
 ):
@@ -97,6 +101,7 @@ def stream_tutor_reply(
         new_student_message=new_student_message,
         images=images,
         exercise_kind=exercise_kind,
+        focus_problem=focus_problem,
         history_mode=history_mode,
         cached_history=cached_history,
     )

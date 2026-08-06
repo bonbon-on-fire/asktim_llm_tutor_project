@@ -1026,6 +1026,7 @@
       form.append("tutor", config.tutor);
       form.append("role", config.role);
       form.append("exercise_kind", config.exercise_kind || "exercise");
+      if (config.problem) form.append("problem", config.problem);
       if (conversationId) form.append("conversation_id", conversationId);
       for (const item of outgoingImages) {
         form.append("images", item.file, item.file.name);
@@ -1044,6 +1045,7 @@
         role: config.role,
         exercise_kind: config.exercise_kind || "exercise",
       };
+      if (config.problem) payload.problem = config.problem;
       if (conversationId) payload.conversation_id = conversationId;
       body = JSON.stringify(payload);
       headers = { "Content-Type": "application/json" };

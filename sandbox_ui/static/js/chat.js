@@ -1572,6 +1572,7 @@
       exercise: config.exercise,
       exercise_kind: config.exerciseKind,
       tutor: config.tutor,
+      role: config.role,
       lectures: config.lectures,
     };
     if (config.contextMode != null) fields.context_mode = config.contextMode;

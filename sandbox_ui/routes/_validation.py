@@ -18,6 +18,7 @@ from utils.curriculum import load_course_name as _load_course_name
 from utils.curriculum import list_courses as _list_active_courses
 from utils.curriculum import read_exercise as _read_exercise
 from utils.curriculum import read_practice as _read_practice
+from tutor.roles import DEFAULT_ROLE, get_role
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -95,6 +96,21 @@ def validate_tutor(tutor) -> dict | None:
     if not _tutor_prompt_exists(tutor):
         return _err("tutor", tutor, "no such tutor prompt")
     return None
+
+
+def validate_role(role) -> dict | None:
+    """Return None if *role* names a registered role, else a failure dict."""
+    if not role:
+        return _err("role", role, "missing")
+    if get_role(role) is None:
+        return _err("role", role, "no such role")
+    return None
+
+
+def role_default_prompt(role) -> str | None:
+    """Return the default prompt name for *role* (e.g. 'tutor' -> 'tutor_07')."""
+    r = get_role(role)
+    return r.default_prompt if r else None
 
 
 def load_course_name(course) -> str:

@@ -20,12 +20,14 @@ from flask import Blueprint, jsonify, render_template, request
 from sandbox_ui.cookies import read_username_cookie
 from sandbox_ui.routes._validation import (
     DEFAULT_EXERCISE,
-    DEFAULT_TUTOR,
+    DEFAULT_ROLE,
     list_context_options,
     load_course_name,
     load_selection_preview,
     resolve_embed_selection,
+    role_default_prompt,
     validate_course,
+    validate_role,
     validate_selection,
     validate_tutor,
 )
@@ -39,12 +41,13 @@ def _bad_param(err: dict):
     return jsonify({"error": "invalid_param", **err}), 404
 
 
-def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise"):
-    """Render the embed.html chat widget for the given course/exercise|practice/tutor context."""
+def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise", role: str = DEFAULT_ROLE):
+    """Render the embed.html chat widget for the given course/exercise|practice/tutor/role context."""
     tutor_config = {
         "course": course,
         "exercise": exercise,
         "tutor": tutor,
+        "role": role,
         "exerciseKind": exercise_kind,
     }
     has_email = bool(read_username_cookie(request))
@@ -93,25 +96,26 @@ def context_exercise():
 def index():
     """Default entry point for bare host URLs (e.g. Railway public domain).
 
-    No default course: render an empty course context so the page loads but the
-    first chat send surfaces the error (see module docstring). Matches main_ui.
+    No default course: render an empty course context (page loads, first send
+    404s). Role defaults to tutor. Matches main_ui.
     """
-    return _render_embed(course="", exercise="", tutor=DEFAULT_TUTOR)
+    return _render_embed(
+        course="", exercise="", tutor=role_default_prompt(DEFAULT_ROLE), role=DEFAULT_ROLE
+    )
 
 
 @embed_bp.get("/embed")
 def embed():
-    """Render the chat widget from query params (exercise XOR practice), validating the resolved value.
-
-    A missing `course` has no default: render an empty course context so the
-    page loads and the first send surfaces the error, rather than falling back
-    to a default course. Matches main_ui.
-    """
-    tutor = DEFAULT_TUTOR  # sandbox is locked to a single tutor prompt
+    """Render the chat widget from query params (exercise XOR practice), validating the resolved value."""
+    role = request.args.get("role") or DEFAULT_ROLE
+    err = validate_role(role)
+    if err:
+        return _bad_param(err)
+    tutor = role_default_prompt(role)
 
     course = request.args.get("course")
     if not course:
-        return _render_embed(course="", exercise="", tutor=tutor)
+        return _render_embed(course="", exercise="", tutor=tutor, role=role)
 
     err = validate_course(course)
     if err:
@@ -127,4 +131,4 @@ def embed():
     if err:
         return _bad_param(err)
 
-    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind)
+    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind, role=role)

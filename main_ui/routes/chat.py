@@ -7,6 +7,7 @@ JSON request:
       "course": "...",                  required
       "exercise": "N",                  required, non-padded integer
       "tutor": "tutor_07",              optional, defaults to tutor_07
+      "problem": "N",                   optional; focus sub-problem in the file
       "conversation_id": "<uuid>"       optional; absent = create new
     }
 

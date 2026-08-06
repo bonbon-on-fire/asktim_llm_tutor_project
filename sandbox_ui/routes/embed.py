@@ -7,10 +7,11 @@ error banner (see `routes/chat.py`) — better than silently falling back to a
 default course that may have been archived. This matches main_ui. `exercise`
 still falls back to the module default when a course IS given. A `practice=<n>`
 param selects a practice problem instead of an exercise; supplying both
-`exercise` and `practice` is rejected (404). Supplied values are validated
-against the on-disk curriculum and tutor folders (via shared validators in
-`_validation`); an invalid explicit value 404s. Then renders the `embed.html`
-chat page.
+`exercise` and `practice` is rejected (404). An optional `problem=<n>` param
+marks a single sub-problem as the student's focus; an invalid value
+(non-integer or out-of-range) 404s. Supplied values are validated against the
+on-disk curriculum and tutor folders (via shared validators in `_validation`);
+an invalid explicit value 404s. Then renders the `embed.html` chat page.
 """
 
 from __future__ import annotations

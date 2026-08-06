@@ -150,6 +150,8 @@ Binds to `127.0.0.1:5000` by default. Override with the `PORT` env var.
 http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_06
 ```
 
+Add `&problem=<n>` *(optional)* to focus a single sub-problem within the selected week file (`Practice Problem N:` / `Graded Assignment N:`). The whole file still loads; the tutor is told the student is working on problem `n` and treats the rest as reference. The focus is persisted per conversation. An unknown `n` (or a non-integer) returns 404.
+
 Health check:
 
 ```powershell

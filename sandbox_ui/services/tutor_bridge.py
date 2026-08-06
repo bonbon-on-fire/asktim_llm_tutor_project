@@ -102,18 +102,18 @@ def build_assignment_text(
     )
     resolved_exercise = _path.read_text(encoding="utf-8").strip()
 
-    # Optional focus directive: names the one sub-problem the student is currently
-    # working on (parity with ui_core / main_ui). The whole file still loads below; the
-    # directive only marks the focus. Absent/unresolvable -> byte-identical to
-    # no-focus output.
+    # Optional focus directive: names the one sub-problem AskTIM was placed on
+    # (the embed's problem= param; parity with ui_core / main_ui). The whole file
+    # still loads below; the directive only marks the focus. Absent/unresolvable
+    # -> byte-identical to no-focus output.
     if focus_problem:
         label = subproblem_label(course, exercise, exercise_kind, focus_problem)
         if label:
             parts.append(
-                f'Focus: the student is currently working on "{label}".\n'
-                "The full set of this week's problems is included below; help "
-                "with the focus problem first, and treat the others as reference "
-                "unless the student asks about them."
+                f'You\'re assisting with "{label}" from this week\'s problems. '
+                "Focus your help on this problem; the full set is included below "
+                "as reference — only help with the others if the student brings "
+                "them up."
             )
 
     parts.append("Exercise:\n" + resolved_exercise)

@@ -1024,6 +1024,7 @@
       form.append("course", config.course);
       form.append("exercise", config.exercise);
       form.append("tutor", config.tutor);
+      form.append("role", config.role);
       form.append("exercise_kind", config.exercise_kind || "exercise");
       if (conversationId) form.append("conversation_id", conversationId);
       for (const item of outgoingImages) {
@@ -1040,6 +1041,7 @@
         course: config.course,
         exercise: config.exercise,
         tutor: config.tutor,
+        role: config.role,
         exercise_kind: config.exercise_kind || "exercise",
       };
       if (conversationId) payload.conversation_id = conversationId;

@@ -21,10 +21,13 @@ from utils.curriculum import load_ui_labels
 from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
     DEFAULT_EXERCISE,
+    DEFAULT_ROLE,
     DEFAULT_TUTOR,
     load_course_name,
     resolve_embed_selection,
+    role_default_prompt,
     validate_course,
+    validate_role,
     validate_tutor,
 )
 
@@ -37,12 +40,13 @@ def _bad_param(err: dict):
     return jsonify({"error": "invalid_param", **err}), 404
 
 
-def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise"):
-    """Render ``embed.html`` for the given course/exercise|practice/tutor context."""
+def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise", role: str = DEFAULT_ROLE):
+    """Render ``embed.html`` for the given course/exercise|practice/tutor/role context."""
     tutor_config = {
         "course": course,
         "exercise": exercise,
         "tutor": tutor,
+        "role": role,
         "exercise_kind": exercise_kind,
         # Per-course sidebar/history labels by exercise_kind (e.g. this course
         # renders practices as "Week N Practice Problems"); chat.js formats the
@@ -66,26 +70,26 @@ def index():
     """Default entry point for bare host URLs (e.g. Railway public domain).
 
     No default course: render an empty course context so the page loads but the
-    first chat send surfaces the error (see module docstring).
+    first chat send surfaces the error (see module docstring). Role defaults to
+    tutor.
     """
-    return _render_embed(course="", exercise="", tutor=DEFAULT_TUTOR)
+    return _render_embed(
+        course="", exercise="", tutor=role_default_prompt(DEFAULT_ROLE), role=DEFAULT_ROLE
+    )
 
 
 @embed_bp.get("/embed")
 def embed():
-    """Resolve course + exercise|practice from query params, validate, and render.
-
-    A missing `course` has no default: render an empty course context so the
-    page loads and the first send surfaces the error, rather than falling back
-    to a default course. `exercise` and `practice` are mutually exclusive;
-    supplying both 404s. A missing number falls back to the default exercise; an
-    explicitly invalid value 404s.
-    """
-    tutor = DEFAULT_TUTOR  # production is locked to a single tutor prompt
+    """Resolve role + course + exercise|practice from query params, validate, and render."""
+    role = request.args.get("role") or DEFAULT_ROLE
+    err = validate_role(role)
+    if err:
+        return _bad_param(err)
+    tutor = role_default_prompt(role)
 
     course = request.args.get("course")
     if not course:
-        return _render_embed(course="", exercise="", tutor=tutor)
+        return _render_embed(course="", exercise="", tutor=tutor, role=role)
 
     err = validate_course(course)
     if err:
@@ -101,4 +105,4 @@ def embed():
     if err:
         return _bad_param(err)
 
-    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind)
+    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind, role=role)

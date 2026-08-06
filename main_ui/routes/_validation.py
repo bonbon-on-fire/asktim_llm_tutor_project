@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tutor.roles import DEFAULT_ROLE, get_role
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import practice_exists as _practice_exists
@@ -123,6 +124,21 @@ def validate_tutor(tutor) -> dict | None:
     if not _tutor_prompt_exists(tutor):
         return _err("tutor", tutor, "no such tutor prompt")
     return None
+
+
+def validate_role(role) -> dict | None:
+    """Return None if *role* names a registered role, else a failure dict."""
+    if not role:
+        return _err("role", role, "missing")
+    if get_role(role) is None:
+        return _err("role", role, "no such role")
+    return None
+
+
+def role_default_prompt(role) -> str | None:
+    """Return the default prompt name for *role* (e.g. 'tutor' -> 'tutor_07')."""
+    r = get_role(role)
+    return r.default_prompt if r else None
 
 
 def load_course_name(course) -> str:

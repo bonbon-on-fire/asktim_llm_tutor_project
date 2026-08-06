@@ -40,8 +40,11 @@ from flask import Blueprint, Response, current_app, g, jsonify, request, stream_
 from main_ui.config import load_config
 from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
+    DEFAULT_ROLE,
     DEFAULT_TUTOR,
+    role_default_prompt,
     validate_course,
+    validate_role,
     validate_selection,
     validate_tutor,
 )
@@ -175,9 +178,13 @@ def chat():
     exercise = src.get("exercise")
     raw_kind = src.get("exercise_kind")
     exercise_kind = "practice" if str(raw_kind).strip().lower() == "practice" else "exercise"
-    # Production is locked to a single tutor prompt: ignore any client-supplied
-    # tutor and always use DEFAULT_TUTOR.
-    tutor = DEFAULT_TUTOR
+    # The role selects the prompt family; each role is locked to its default
+    # prompt (production keeps its single-prompt lock). Unknown role -> 404.
+    role = src.get("role") or DEFAULT_ROLE
+    err = validate_role(role)
+    if err:
+        return _bad_param(err)
+    tutor = role_default_prompt(role)
 
     err = validate_course(course)
     if err:

@@ -28,9 +28,11 @@ def main() -> int:
     ok &= _check("graded headers found", len(ga) >= 2, len(ga))
     ok &= _check("graded first is (1, title)", ga and ga[0][0] == 1, ga[:1])
 
-    # A practice file must NOT match the graded prefix (kind isolation).
+    # Kind isolation: practice parse and graded parse yield different, non-overlapping
+    # header sets — a practice file must never surface "Graded Assignment" headers.
     ok &= _check("practice kind ignores graded headers",
-                 all(True for _ in pp) and list_subproblems(COURSE, "1", "practice") == pp)
+                 pp != ga and {t for _, t in pp}.isdisjoint({t for _, t in ga}),
+                 (pp[:1], ga[:1]))
 
     # subproblem_label
     lbl = subproblem_label(COURSE, "1", "practice", "2")

@@ -26,6 +26,25 @@ tutor/
   - **Anti-leakage** — never expose the retrieval plumbing or its own citation rules to the student (no "retrieved material", "the lectures shown here", "I can't verify", etc.).
 - `stream_tutor_reply()` exposes a token-streaming entry point used by [`main_ui/`](../main_ui/README.md). It yields visible answer characters as they arrive, hiding the JSON envelope and the `pedagogical-reasoning` field server-side via the `StudentAnswerExtractor` state machine.
 
+### Roles
+
+A *role* selects which prompt family the web apps (`main_ui`, `sandbox_ui`)
+use, via a `role` URL query param (default `tutor`). Roles are declared in
+`tutor/roles.py`:
+
+- `role=tutor` → `tutor/prompts/`, default prompt `tutor_07` (the deployed
+  default; both apps stay locked to their role's default prompt).
+- `role=ta` → a future `ta/prompts/` folder — **not shipped**; requesting it
+  404s until added.
+
+**Adding a role** (e.g. `ta`):
+1. Create `ta/prompts/ta_01.txt` (and any variants).
+2. Register it in `tutor/roles.py`:
+   `"ta": Role("ta", _REPO_ROOT / "ta" / "prompts", "ta_01")`.
+
+Prompt names are unique per role (`tutor_*` vs `ta_*`); the web bridge resolves
+a prompt's folder from its name, so no per-conversation role is stored.
+
 ### Multimodal figures (non-streaming path)
 
 When an exercise ships figures under `curriculum/<course>/figures/` (see [`curriculum/README.md`](../curriculum/README.md)), the tutor can reason over the real image. Pass them via the `figures=` kwarg — a list of figure paths from [`utils.figures.discover_figures`](../utils/figures.py):

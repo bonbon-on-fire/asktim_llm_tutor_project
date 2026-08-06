@@ -28,14 +28,14 @@ def main() -> int:
     focused = build_assignment_text(COURSE, "1", exercise_kind="practice", focus_problem=n)
 
     label = subproblem_label(COURSE, "1", "practice", n)
-    ok &= _check("focus directive present", "You're assisting with" in focused)
+    ok &= _check("focus directive present", "The student was assigned" in focused)
     ok &= _check("focus names the sub-problem label", label and label in focused, label)
     ok &= _check("no-focus output byte-identical to today",
                  build_assignment_text(COURSE, "1", exercise_kind="practice") == base)
     ok &= _check("focus differs from no-focus", focused != base)
     # Directive sits immediately before the Exercise block.
     ok &= _check("directive precedes Exercise block",
-                 focused.index("You're assisting with") < focused.index("Exercise:\n"))
+                 focused.index("The student was assigned") < focused.index("Exercise:\n"))
 
     return 0 if ok else 1
 

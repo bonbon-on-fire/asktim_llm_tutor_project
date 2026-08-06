@@ -27,7 +27,7 @@ def main() -> int:
     ok &= _check("no focus_problem -> unchanged text",
                  b.build_assignment_text(COURSE, "1", exercise_kind="practice",
                                          context_mode="full_context", focus_problem=None) == base)
-    ok &= _check("focus text prepends directive", "You're assisting with" in focused)
+    ok &= _check("focus text prepends directive", "The student was assigned" in focused)
     ok &= _check("focus text names the sub-problem", "Practice Problem 2:" in focused)
     ok &= _check("focus text still contains full file", "Exercise:\n" in focused and base.split("Exercise:\n", 1)[1] in focused)
     ok &= _check("unresolvable focus -> unchanged text",

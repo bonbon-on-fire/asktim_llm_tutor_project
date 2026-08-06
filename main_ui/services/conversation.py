@@ -37,6 +37,7 @@ def find_or_create_conversation(
     exercise_number: str,
     tutor_prompt: str,
     exercise_kind: str = "exercise",
+    focus_problem: int | None = None,
     username: str | None = None,
 ) -> Conversation:
     """Resolve to an existing conversation or insert a new one.
@@ -54,7 +55,7 @@ def find_or_create_conversation(
         exercise_number=exercise_number,
         tutor_prompt=tutor_prompt,
         username=username,
-        extra_fields={"exercise_kind": exercise_kind},
+        extra_fields={"exercise_kind": exercise_kind, "focus_problem": focus_problem},
     )
 
 

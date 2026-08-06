@@ -37,6 +37,7 @@ def find_or_create_conversation(
     exercise_number: str,
     exercise_kind: str = "exercise",
     tutor_prompt: str,
+    focus_problem: int | None = None,
     username: str | None = None,
     lectures_enabled: bool = True,
     context_mode: str | None = None,
@@ -59,6 +60,7 @@ def find_or_create_conversation(
         username=username,
         extra_fields={
             "exercise_kind": exercise_kind,
+            "focus_problem": focus_problem,
             "lectures_enabled": lectures_enabled,
             "context_mode": context_mode,
             "provider": provider,

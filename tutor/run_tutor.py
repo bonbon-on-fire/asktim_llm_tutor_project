@@ -71,16 +71,20 @@ def _require_anthropic_api_key() -> str:
 def load_system_prompt(
     prompt_name: str = "tutor_01",
     assignment_override: str | None = None,
+    prompts_dir: "Path | None" = None,
 ) -> str:
     """
-    Load a tutor system prompt from ``tutor/prompts/<prompt_name>.txt``.
+    Load a tutor system prompt from ``<prompts_dir>/<prompt_name>.txt``.
 
+    *prompts_dir* defaults to ``tutor/prompts/`` (``PROMPTS_DIR``); pass a
+    different folder to load a non-tutor role's prompt (see ``tutor.roles``).
     If *assignment_override* is provided, the ``<Assignment>...</Assignment>``
     block inside the prompt is replaced with the override text.
     """
-    path = PROMPTS_DIR / f"{prompt_name}.txt"
+    base_dir = prompts_dir if prompts_dir is not None else PROMPTS_DIR
+    path = base_dir / f"{prompt_name}.txt"
     if not path.exists():
-        available = sorted(p.stem for p in PROMPTS_DIR.glob("*.txt"))
+        available = sorted(p.stem for p in base_dir.glob("*.txt"))
         raise FileNotFoundError(
             f"Tutor prompt '{prompt_name}' not found at {path}.\n"
             f"Available prompts: {available}"

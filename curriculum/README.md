@@ -84,7 +84,7 @@ The four courses beyond Cities and Climate Change (Development Planning, Mathema
 5. If an exercise references diagrams or maps, drop them in `figures/` with the `exercise_<N>_<slug>.<ext>` naming convention.
 6. If the course has lecture transcripts, drop plain `.txt` files into `lectures/`; they are included in the tutor context for every exercise in the course.
 7. Optionally add `online_link.txt` with the course's MIT OpenCourseWare URL — the source link for RAG ingestion of fuller course materials (see Phase 11 in the root [PLANNING.md](../PLANNING.md)).
-8. Optionally add `tutor_rules.txt` with course-specific tutor rules — they're appended to the base prompt for this course only (no per-course prompt fork).
+8. Optionally add `tutor_rules.txt` with course-specific tutor rules — they're appended to the base prompt for this course only (no per-course prompt fork). Include a **"Problem shorthand:"** bullet that maps how students abbreviate this course's problems (e.g. `PP2` → Practice Problem 2, `A2` → Assignment 2) to the numbered `exercises/`/`practices/` files. Every course uses this same bullet shape — anchored to the `exercise_N` / `practice_N` numbering rather than the (per-course-varying) title words — so the tutor resolves student shorthand consistently across courses.
 
 ## Archiving a course
 

@@ -1,13 +1,13 @@
-# Design: `role` param for the main UI
+# Design: `role` param for the web UIs (main_ui + sandbox_ui)
 
 Date: 2026-08-06
 Status: Approved (design), pending implementation plan
 
 ## Problem
 
-The main UI is hard-locked to a single tutor prompt: both `embed.py` and
-`chat.py` force `tutor = DEFAULT_TUTOR` (`"tutor_07"`) and ignore any
-client-supplied value. There is no way to select a *different kind* of
+Both web apps (`main_ui` and `sandbox_ui`) are hard-locked to a single tutor
+prompt: each app's `embed.py` and `chat.py` force `tutor = DEFAULT_TUTOR`
+(`"tutor_07"`) and ignore any client-supplied value. There is no way to select a *different kind* of
 assistant persona — e.g. a teaching assistant ("TA") with its own prompt
 family — from the URL.
 
@@ -22,9 +22,15 @@ role.
 
 ## Scope
 
-- **main_ui only.** `sandbox_ui` is intentionally NOT given a `role` param.
-- The shared `tutor.load_system_prompt` change is backward-compatible, so
-  `sandbox_ui` and the `tutor/` CLI are unaffected.
+- **Both `main_ui` and `sandbox_ui`.** The two web apps stay at full parity:
+  each gets the same `role` param, validation, and default-prompt resolution.
+- The role registry (`tutor/roles.py`) is a single shared source of truth both
+  apps import from.
+- The shared `tutor.load_system_prompt` change is backward-compatible, so the
+  `tutor/` CLI is unaffected.
+- **Out of scope:** wiring `role` into sandbox_ui's context-switcher
+  (`/api/context/*`) UI — the switcher keeps listing prompts as today. Only the
+  URL `role` param + validation + prompt resolution are added.
 - No database migration.
 
 ## Current architecture (as-is)
@@ -112,7 +118,10 @@ behavior for any prompt name not owned by a registered role). This is what lets
 an existing conversation resolve its folder from the stored `tutor_prompt`
 alone — no persisted `role`, no migration.
 
-### 4. Web layer (`main_ui`)
+### 4. Web layer (`main_ui` AND `sandbox_ui`)
+
+Apply the identical set of changes below to **both** apps' route packages
+(`main_ui/routes/` and `sandbox_ui/routes/`), which already mirror each other.
 
 **`_validation.py`:**
 - Import `DEFAULT_ROLE`, `get_role` from `tutor.roles`.
@@ -137,10 +146,11 @@ alone — no persisted `role`, no migration.
   hardcoded `DEFAULT_TUTOR`. For an **existing** conversation, keep using the
   stored `convo.tutor_prompt` (unchanged guarantee).
 
-**`chat.js`:**
+**`chat.js` (both apps):**
 - Send `config.role` in both the multipart and JSON payloads.
-- Bump the `?v=` cache-buster on the `chat.js` include in
-  `main_ui/templates/embed.html`.
+- Bump the `?v=` cache-buster on the `chat.js` include in each app's
+  `templates/embed.html` (`main_ui/templates/embed.html` and
+  `sandbox_ui/templates/embed.html`).
 
 ### 5. URL behavior
 
@@ -164,27 +174,30 @@ No code changes beyond that.
 - `tutor/README.md` — introduce the role concept, the folder-per-role layout
   (`tutor/prompts/`, future `ta/prompts/`), and "how to add a role".
 - Top-level `README.md` — where it describes prompt selection / the
-  `DEFAULT_TUTOR` lock, note the new `role` param (main_ui only) and that each
-  role is locked to its default prompt.
-- Route docstrings in `embed.py` / `chat.py`.
+  `DEFAULT_TUTOR` lock, note the new `role` param (both `main_ui` and
+  `sandbox_ui`) and that each role is locked to its default prompt.
+- Route docstrings in each app's `embed.py` / `chat.py`.
 
 ## Testing
 
+Registry / loader (shared, tested once):
+- `load_system_prompt` works with no `prompts_dir` (default folder) and with an
+  explicit `prompts_dir`.
+- `roles.prompts_dir_for_prompt("tutor_07")` returns the tutor folder;
+  unknown name returns None.
+
+Per app — run the same suite against **both** `main_ui` and `sandbox_ui`:
 - `role` defaults to `tutor` → resolves `tutor_07`.
 - `/embed` with no role, `role=tutor` → 200.
 - `/embed?role=ta` and `?role=bogus` → 404.
 - `POST /api/chat` with `role=bogus` → 404; with `role=tutor` (new
   conversation) stores `tutor_prompt = "tutor_07"`.
-- `load_system_prompt` works with no `prompts_dir` (default folder) and with an
-  explicit `prompts_dir`.
-- `roles.prompts_dir_for_prompt("tutor_07")` returns the tutor folder;
-  unknown name returns None.
 - Regression: empty-course behavior still holds under a role.
 
 ## Non-goals
 
 - No `ta` prompt content shipped.
-- No `role` param for `sandbox_ui` (and no change to sandbox's existing params).
+- No `role` wiring into sandbox_ui's context-switcher UI (`/api/context/*`).
 - No DB migration / persisted `role` column.
 - Per-role prompt *variant* selection from the client stays locked (each role
   uses its single default prompt), matching today's production lock.

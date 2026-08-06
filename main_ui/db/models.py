@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, Text, Uuid
+from sqlalchemy import DateTime, Index, Integer, Text, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from ui_core.db.models_common import (
@@ -44,6 +44,11 @@ class Conversation(Base):
     exercise_kind: Mapped[str] = mapped_column(
         Text, nullable=False, default="exercise", server_default="exercise"
     )
+    # Optional focus: the one sub-problem (Practice Problem N / Graded Assignment
+    # N header) in exercise_number's file the student is working on. NULL = no
+    # focus (whole file, today's behavior). Set at conversation creation and
+    # replayed on later turns (mid-switch defense, like exercise_kind).
+    focus_problem: Mapped[int | None] = mapped_column(Integer, nullable=True)
     tutor_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow

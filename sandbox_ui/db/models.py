@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Index, Text, Uuid
+from sqlalchemy import Boolean, DateTime, Index, Integer, Text, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from ui_core.db.models_common import (
@@ -46,6 +46,9 @@ class Conversation(Base):
     exercise_kind: Mapped[str] = mapped_column(
         Text, nullable=False, default="exercise"
     )
+    # Optional focus sub-problem in exercise_number's file (see main_ui). NULL =
+    # no focus. _reconcile_columns() adds this nullable column on boot; no Alembic.
+    focus_problem: Mapped[int | None] = mapped_column(Integer, nullable=True)
     tutor_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     # sandbox_ui-only: whether the course lectures/*.txt transcripts were folded
     # into the tutor context (toggled via the Create-context wizard "Lectures"

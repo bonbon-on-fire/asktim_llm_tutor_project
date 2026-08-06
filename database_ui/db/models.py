@@ -51,6 +51,9 @@ class Conversation(Base):
     exercise_kind: Mapped[str] = mapped_column(
         Text, nullable=False, server_default="exercise"
     )
+    # Optional focus sub-problem in exercise_number's file (see main_ui/sandbox_ui).
+    # Present in both live schemas; NULL for pre-feature / no-focus rows. Read-only.
+    focus_problem: Mapped[int | None] = mapped_column(Integer, nullable=True)
     tutor_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

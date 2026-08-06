@@ -144,7 +144,7 @@ def _install_stubs(module, recorder: _Recorder, canned_raw: str) -> dict:
         """Return a sentinel model string instead of building a real chat model."""
         return "FAKE_MODEL"
 
-    def fake_load_system_prompt(tutor, assignment_override=None):
+    def fake_load_system_prompt(tutor, assignment_override=None, prompts_dir=None):
         """Return a synthetic system prompt echoing *tutor* and *assignment_override*."""
         return f"SYSTEM[{tutor}]::{assignment_override}"
 

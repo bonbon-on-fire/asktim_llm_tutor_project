@@ -64,6 +64,7 @@ from utils.curriculum import (
     read_exercise,
     read_pinned_context,
     read_solution,
+    subproblem_label,
 )
 from utils.figures import build_multimodal_content, discover_figures
 from utils.lectures import load_lecture_transcripts
@@ -283,6 +284,7 @@ class TutorBridge:
             ctx.get("exercise_kind", "exercise"),
             ctx.get("context_mode", "full_context"),
             _resolve_provider(ctx.get("provider")),
+            ctx.get("focus_problem"),
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
@@ -325,6 +327,20 @@ class TutorBridge:
             lectures = load_lecture_transcripts(course)
             if lectures:
                 parts.append("Lecture transcripts:\n" + lectures)
+
+        # Optional focus directive: names the one sub-problem the student is
+        # working on. The whole file still loads below; the directive only marks
+        # the focus. Absent/unresolvable -> byte-identical to no-focus output.
+        focus_problem = ctx.get("focus_problem")
+        if focus_problem:
+            label = subproblem_label(course, exercise, kind, focus_problem)
+            if label:
+                parts.append(
+                    f'Focus: the student is currently working on "{label}".\n'
+                    "The full set of this week's problems is included below; help "
+                    "with the focus problem first, and treat the others as reference "
+                    "unless the student asks about them."
+                )
 
         parts.append("Exercise:\n" + exercise_text)
 

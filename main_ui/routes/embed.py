@@ -1,12 +1,15 @@
 """GET /embed — main iframe entry point.
 
-`course`, `exercise`, and `tutor` are optional query params — any absent one
-falls back to the module defaults, so partial URLs still load. A `practice=<n>`
-param selects a practice problem instead of an exercise; supplying both
-`exercise` and `practice` is rejected (404). Supplied values are validated
-against the on-disk curriculum and tutor folders (via shared validators in
-`_validation`); an invalid explicit value 404s. Then renders the `embed.html`
-chat page.
+There is no default course: with no `course` query param there's nothing to
+load, so the page renders with an empty course context. It still loads
+normally, but the first chat send fails course validation and surfaces the
+error banner (see `routes/chat.py`) — better than silently falling back to a
+default course that may have been archived. `exercise` still falls back to the
+module default when a course IS given. A `practice=<n>` param selects a
+practice problem instead of an exercise; supplying both `exercise` and
+`practice` is rejected (404). Supplied values are validated against the on-disk
+curriculum and tutor folders (via shared validators in `_validation`); an
+invalid explicit value 404s. Then renders the `embed.html` chat page.
 """
 
 from __future__ import annotations
@@ -17,7 +20,6 @@ from utils.curriculum import load_ui_labels
 
 from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
-    DEFAULT_COURSE,
     DEFAULT_EXERCISE,
     DEFAULT_TUTOR,
     load_course_name,
@@ -61,24 +63,29 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
 
 @embed_bp.get("/")
 def index():
-    """Default entry point for bare host URLs (e.g. Railway public domain)."""
-    return _render_embed(
-        course=DEFAULT_COURSE,
-        exercise=DEFAULT_EXERCISE,
-        tutor=DEFAULT_TUTOR,
-    )
+    """Default entry point for bare host URLs (e.g. Railway public domain).
+
+    No default course: render an empty course context so the page loads but the
+    first chat send surfaces the error (see module docstring).
+    """
+    return _render_embed(course="", exercise="", tutor=DEFAULT_TUTOR)
 
 
 @embed_bp.get("/embed")
 def embed():
     """Resolve course + exercise|practice from query params, validate, and render.
 
-    `exercise` and `practice` are mutually exclusive; supplying both 404s. A
-    missing number falls back to the default exercise; an explicitly invalid
-    value 404s.
+    A missing `course` has no default: render an empty course context so the
+    page loads and the first send surfaces the error, rather than falling back
+    to a default course. `exercise` and `practice` are mutually exclusive;
+    supplying both 404s. A missing number falls back to the default exercise; an
+    explicitly invalid value 404s.
     """
-    course = request.args.get("course") or DEFAULT_COURSE
     tutor = DEFAULT_TUTOR  # production is locked to a single tutor prompt
+
+    course = request.args.get("course")
+    if not course:
+        return _render_embed(course="", exercise="", tutor=tutor)
 
     err = validate_course(course)
     if err:

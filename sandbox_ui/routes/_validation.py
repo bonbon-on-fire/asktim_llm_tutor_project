@@ -18,6 +18,7 @@ from utils.curriculum import load_course_name as _load_course_name
 from utils.curriculum import list_courses as _list_active_courses
 from utils.curriculum import read_exercise as _read_exercise
 from utils.curriculum import read_practice as _read_practice
+from utils.curriculum import subproblem_label
 from tutor.roles import DEFAULT_ROLE, get_role
 
 
@@ -86,6 +87,23 @@ def validate_practice(course, practice) -> dict | None:
             "practice", practice,
             f"no practice_{practice}.txt under curriculum/{course}/practices/",
         )
+    return None
+
+
+def validate_problem(course, number, kind, problem) -> dict | None:
+    """None when problem is absent (no focus) or valid; else a failure dict.
+
+    Empty/None problem is a no-op (focus is optional). Otherwise it must name an
+    existing sub-problem in the resolved file. Accepts an int (JSON payload) or a
+    digit string (query param / multipart form) — both normalize via str().
+    """
+    if not problem:
+        return None
+    text = str(problem)
+    if not text.isdigit():
+        return _err("problem", problem, "must be a positive integer (e.g. 2)")
+    if subproblem_label(course, number, kind, text) is None:
+        return _err("problem", problem, f"no sub-problem {problem} in {kind} {number} of {course}")
     return None
 
 

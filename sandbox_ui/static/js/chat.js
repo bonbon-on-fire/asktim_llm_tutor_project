@@ -1577,6 +1577,7 @@
     };
     if (config.contextMode != null) fields.context_mode = config.contextMode;
     if (config.provider) fields.provider = config.provider;
+    if (config.problem) fields.problem = config.problem;
     if (conversationId) fields.conversation_id = conversationId;
 
     let body;

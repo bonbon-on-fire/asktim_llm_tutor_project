@@ -29,6 +29,7 @@ from utils.curriculum import (
     practice_path,
     read_pinned_context,
     read_solution,
+    subproblem_label,
 )
 from utils.lectures import load_lecture_transcripts
 
@@ -44,6 +45,7 @@ def build_assignment_text(
     exercise_kind: str = "exercise",
     include_lectures: bool = True,
     context_mode: str = "full_context",
+    focus_problem: int | None = None,
 ) -> str:
     """Concatenate about_asktim.txt + pinned reference docs + optional lectures + exercise_<NN>.txt.
 
@@ -99,6 +101,21 @@ def build_assignment_text(
         else exercise_path(course, exercise)
     )
     resolved_exercise = _path.read_text(encoding="utf-8").strip()
+
+    # Optional focus directive: names the one sub-problem the student is currently
+    # working on (parity with ui_core / main_ui). The whole file still loads below; the
+    # directive only marks the focus. Absent/unresolvable -> byte-identical to
+    # no-focus output.
+    if focus_problem:
+        label = subproblem_label(course, exercise, exercise_kind, focus_problem)
+        if label:
+            parts.append(
+                f'Focus: the student is currently working on "{label}".\n'
+                "The full set of this week's problems is included below; help "
+                "with the focus problem first, and treat the others as reference "
+                "unless the student asks about them."
+            )
+
     parts.append("Exercise:\n" + resolved_exercise)
 
     # Tutor-only correct-answer reference, paired directly to the current problem
@@ -124,6 +141,7 @@ class SandboxTutorBridge(TutorBridge):
             ctx.get("exercise_kind", "exercise"),
             ctx.get("context_mode", "full_context"),
             _resolve_provider(ctx.get("provider")),
+            ctx.get("focus_problem"),
         )
 
     def build_assignment_text(self, course: str, exercise: str, **ctx) -> str:
@@ -134,6 +152,7 @@ class SandboxTutorBridge(TutorBridge):
             exercise_kind=ctx.get("exercise_kind", "exercise"),
             include_lectures=ctx.get("include_lectures", True),
             context_mode=ctx.get("context_mode", "full_context"),
+            focus_problem=ctx.get("focus_problem"),
         )
 
 
@@ -149,6 +168,7 @@ def get_tutor_reply(
     new_student_message: str,
     images: list | None = None,
     exercise_kind: str = "exercise",
+    focus_problem: int | None = None,
     include_lectures: bool = True,
     context_mode: str | None = None,
     provider: str | None = None,
@@ -176,6 +196,7 @@ def get_tutor_reply(
         new_student_message=new_student_message,
         images=images,
         exercise_kind=exercise_kind,
+        focus_problem=focus_problem,
         include_lectures=include_lectures,
         context_mode=context_mode,
         provider=provider,
@@ -191,6 +212,7 @@ def stream_tutor_reply(
     new_student_message: str,
     images: list | None = None,
     exercise_kind: str = "exercise",
+    focus_problem: int | None = None,
     include_lectures: bool = True,
     context_mode: str | None = None,
     provider: str | None = None,
@@ -219,6 +241,7 @@ def stream_tutor_reply(
         new_student_message=new_student_message,
         images=images,
         exercise_kind=exercise_kind,
+        focus_problem=focus_problem,
         include_lectures=include_lectures,
         context_mode=context_mode,
         provider=provider,

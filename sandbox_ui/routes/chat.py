@@ -40,6 +40,7 @@ from sandbox_ui.routes._validation import (
     DEFAULT_TUTOR,
     role_default_prompt,
     validate_course,
+    validate_problem,
     validate_role,
     validate_selection,
     validate_tutor,
@@ -148,6 +149,7 @@ def chat():
     exercise = src.get("exercise")
     raw_kind = src.get("exercise_kind")
     exercise_kind = "practice" if str(raw_kind).strip().lower() == "practice" else "exercise"
+    problem = src.get("problem")
     # The role selects the prompt family; each role is locked to its default
     # prompt (mirrors main_ui). Unknown role -> 404 (validated below, new
     # conversations only).
@@ -211,6 +213,10 @@ def chat():
         if err:
             return _bad_param(err)
 
+        err = validate_problem(course, exercise, exercise_kind, problem)
+        if err:
+            return _bad_param(err)
+
         err = validate_tutor(tutor)
         if err:
             return _bad_param(err)
@@ -240,6 +246,7 @@ def chat():
             course=course,
             exercise_number=exercise,
             exercise_kind=exercise_kind,
+            focus_problem=int(problem) if problem else None,
             tutor_prompt=tutor,
             username=username,
             lectures_enabled=lectures_enabled,
@@ -312,6 +319,7 @@ def chat():
     stream_exercise = convo.exercise_number
     # Legacy rows predating this column read back NULL; treat as "exercise".
     stream_exercise_kind = convo.exercise_kind or "exercise"
+    stream_focus_problem = convo.focus_problem
     stream_tutor = convo.tutor_prompt
     # Legacy rows predating this column read back NULL; treat as ON.
     stream_lectures = convo.lectures_enabled is None or bool(convo.lectures_enabled)
@@ -337,6 +345,7 @@ def chat():
         course=stream_course,
         exercise=stream_exercise,
         exercise_kind=stream_exercise_kind,
+        focus_problem=stream_focus_problem,
         tutor=stream_tutor,
         history=history,
         new_student_message=student_text + files_service.files_to_text(attachments),

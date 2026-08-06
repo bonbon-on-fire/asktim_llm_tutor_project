@@ -40,6 +40,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from rag.embeddings import EMBEDDING_MODEL
 from rag.retrieve import format_context, retrieve_scored_with_usage, to_records
 from tutor.cached_history import build_message_plan
+from tutor.roles import prompts_dir_for_prompt
 from tutor.run_tutor import (
     StudentAnswerExtractor,
     _apply_json_mode,
@@ -338,12 +339,17 @@ class TutorBridge:
     def build_system_prompt(self, tutor: str, assignment_text: str, course: str = "", **ctx) -> str:
         """Wrap *assignment_text* into the full system prompt for *tutor*.
 
+        The prompt's folder is resolved from the role registry by prompt name
+        (``tutor_*`` -> tutor/prompts, future ``ta_*`` -> ta/prompts). An
+        unrecognized prompt name falls back to the default tutor folder.
+
         When *course* ships a ``curriculum/<course>/tutor_rules.txt``, its
         course-specific rules are appended to the base prompt (see
         ``utils.curriculum.append_course_tutor_rules``); otherwise the base prompt
         is returned unchanged.
         """
-        base = load_system_prompt(tutor, assignment_override=assignment_text)
+        prompts_dir = prompts_dir_for_prompt(tutor)  # None -> load_system_prompt uses tutor/prompts
+        base = load_system_prompt(tutor, assignment_override=assignment_text, prompts_dir=prompts_dir)
         return append_course_tutor_rules(base, course)
 
     def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:

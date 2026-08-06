@@ -278,6 +278,46 @@ def read_solution(
     return path.read_text(encoding="utf-8") if path.is_file() else ""
 
 
+# A sub-problem header line: "Practice Problem 2: SteelCo" / "Graded Assignment 1: ...".
+# The prefix is chosen by kind so a practice file never matches a graded header.
+_SUBPROBLEM_PREFIX = {"practice": "Practice Problem", "exercise": "Graded Assignment"}
+_SUBPROBLEM_RE_TMPL = r"^{prefix}\s+(\d+)\s*:\s*(.*)$"
+
+
+def list_subproblems(course, number, kind="exercise", curriculum_root=None):
+    """Ordered ``[(n, title), ...]`` sub-problems in a week's file.
+
+    Scans the resolved practice_N/exercise_N file for header lines matching the
+    kind's prefix ("Practice Problem N:" or "Graded Assignment N:"). Returns
+    ``[]`` when the file is missing or has no such headers (e.g. a single-problem
+    file with no header).
+    """
+    path = (practice_path if kind == "practice" else exercise_path)(course, number, curriculum_root)
+    if not path.is_file():
+        return []
+    prefix = _SUBPROBLEM_PREFIX["practice" if kind == "practice" else "exercise"]
+    rx = re.compile(_SUBPROBLEM_RE_TMPL.format(prefix=re.escape(prefix)))
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = rx.match(line.strip())
+        if m:
+            out.append((int(m.group(1)), m.group(2).strip()))
+    return out
+
+
+def subproblem_label(course, number, kind, problem, curriculum_root=None):
+    """``"Practice Problem 2: SteelCo"`` for the focus number, or ``None`` if absent.
+
+    ``problem`` may be an int or a digit string; it is matched against the
+    labeled header number. Title-less headers degrade to just the prefix + n.
+    """
+    for n, title in list_subproblems(course, number, kind, curriculum_root):
+        if n == int(problem):
+            prefix = _SUBPROBLEM_PREFIX["practice" if kind == "practice" else "exercise"]
+            return f"{prefix} {n}: {title}" if title else f"{prefix} {n}"
+    return None
+
+
 def discover_practice(
     course: str,
     curriculum_root: Path | str | None = None,

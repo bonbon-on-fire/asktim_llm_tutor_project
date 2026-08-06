@@ -1,7 +1,11 @@
 """GET /embed — main iframe entry point.
 
-`course`, `exercise`, and `tutor` are optional query params — any absent one
-falls back to the module defaults, so partial URLs still load. A `practice=<n>`
+There is no default course: with no `course` query param there's nothing to
+load, so the page renders with an empty course context. It still loads
+normally, but the first chat send fails course validation and surfaces the
+error banner (see `routes/chat.py`) — better than silently falling back to a
+default course that may have been archived. This matches main_ui. `exercise`
+still falls back to the module default when a course IS given. A `practice=<n>`
 param selects a practice problem instead of an exercise; supplying both
 `exercise` and `practice` is rejected (404). Supplied values are validated
 against the on-disk curriculum and tutor folders (via shared validators in
@@ -15,7 +19,6 @@ from flask import Blueprint, jsonify, render_template, request
 
 from sandbox_ui.cookies import read_username_cookie
 from sandbox_ui.routes._validation import (
-    DEFAULT_COURSE,
     DEFAULT_EXERCISE,
     DEFAULT_TUTOR,
     list_context_options,
@@ -88,19 +91,27 @@ def context_exercise():
 
 @embed_bp.get("/")
 def index():
-    """Default entry point for bare host URLs (e.g. Railway public domain)."""
-    return _render_embed(
-        course=DEFAULT_COURSE,
-        exercise=DEFAULT_EXERCISE,
-        tutor=DEFAULT_TUTOR,
-    )
+    """Default entry point for bare host URLs (e.g. Railway public domain).
+
+    No default course: render an empty course context so the page loads but the
+    first chat send surfaces the error (see module docstring). Matches main_ui.
+    """
+    return _render_embed(course="", exercise="", tutor=DEFAULT_TUTOR)
 
 
 @embed_bp.get("/embed")
 def embed():
-    """Render the chat widget from query params (exercise XOR practice), validating the resolved value."""
-    course = request.args.get("course") or DEFAULT_COURSE
+    """Render the chat widget from query params (exercise XOR practice), validating the resolved value.
+
+    A missing `course` has no default: render an empty course context so the
+    page loads and the first send surfaces the error, rather than falling back
+    to a default course. Matches main_ui.
+    """
     tutor = DEFAULT_TUTOR  # sandbox is locked to a single tutor prompt
+
+    course = request.args.get("course")
+    if not course:
+        return _render_embed(course="", exercise="", tutor=tutor)
 
     err = validate_course(course)
     if err:

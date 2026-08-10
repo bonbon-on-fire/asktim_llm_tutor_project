@@ -39,6 +39,7 @@ from internal_testing.cli_utils import (
     prompt_single_selection,
 )
 from utils.curriculum import append_course_tutor_rules
+from utils.curriculum import append_language_directive
 from utils.curriculum import discover_exercises as _discover_course_exercises
 from utils.curriculum import exercise_path, read_course_description, read_pinned_context
 from utils.curriculum import list_courses as _list_active_courses
@@ -254,6 +255,7 @@ def _run_conversation(
     # Append the course's per-course tutor rules (curriculum/<course>/tutor_rules.txt),
     # if any, so judged transcripts reflect the exact deployed prompt.
     system_prompt = append_course_tutor_rules(system_prompt, config.course)
+    system_prompt = append_language_directive(system_prompt)
     tutor_graph = create_tutor_graph(system_prompt, provider=config.provider, figures=figures)
     student_graph = build_student_graph(prompt_name=config.student_persona)
 

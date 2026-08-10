@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from database_ui.courses import course_display_name
@@ -216,3 +216,57 @@ def _images_by_message(db: Session, message_ids: list[int]) -> dict[int, list[di
     for img_id, msg_id, mime in db.execute(stmt).all():
         out.setdefault(msg_id, []).append({"id": img_id, "mime_type": mime})
     return out
+
+
+# --- export -----------------------------------------------------------------
+
+# Single source of truth for the export CSV's columns and their order. The route
+# feeds this to csv.DictWriter as fieldnames; iter_export_rows yields dicts keyed
+# by exactly these names.
+EXPORT_COLUMNS = [
+    "conversation_id", "course", "course_name", "exercise_number",
+    "exercise_kind", "focus_problem", "username", "started_at",
+    "last_active_at", "turn", "role", "content", "pedagogical_reasoning",
+    "rating", "model", "cost_usd", "usage_json", "retrieved_context",
+    "image_count", "created_at",
+]
+
+
+def _assignment_sort_key(exercise_number: str):
+    """Sort assignments numerically when possible ("2" < "10"), else lexically."""
+    try:
+        return (0, float(exercise_number), "")
+    except (TypeError, ValueError):
+        return (1, 0.0, str(exercise_number))
+
+
+def list_export_filters(db: Session) -> list[dict]:
+    """Return the export picker's options: each course with its distinct assignments.
+
+    Shape: ``[{"course", "course_name", "assignments": [{"exercise_number",
+    "exercise_kind"}]}]``. Courses are sorted by display name; assignments are
+    de-duplicated by ``exercise_number`` and sorted numerically-then-lexically.
+    """
+    stmt = select(
+        Conversation.course,
+        Conversation.exercise_number,
+        Conversation.exercise_kind,
+    ).distinct()
+    kinds_by_course: dict[str, dict[str, str]] = {}
+    for course, exercise_number, exercise_kind in db.execute(stmt).all():
+        by_ex = kinds_by_course.setdefault(course, {})
+        by_ex[exercise_number] = exercise_kind or "exercise"
+
+    result: list[dict] = []
+    for course in sorted(kinds_by_course, key=lambda k: course_display_name(k).lower()):
+        by_ex = kinds_by_course[course]
+        assignments = [
+            {"exercise_number": ex, "exercise_kind": by_ex[ex]}
+            for ex in sorted(by_ex, key=_assignment_sort_key)
+        ]
+        result.append({
+            "course": course,
+            "course_name": course_display_name(course),
+            "assignments": assignments,
+        })
+    return result

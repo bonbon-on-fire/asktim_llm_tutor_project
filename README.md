@@ -121,6 +121,19 @@ flowchart TD
 - **Multimodal:** built-in curriculum figures and student-uploaded PNG/JPEGs attach to the turn as image content.
 - **Non-image attachments:** student-uploaded CSV/TSV/XLSX/PDF/DOCX/TXT files are extracted to plain text (not sent as images) and folded into the turn as `[Attachment: <name>]` text; the same text is re-injected into every later turn's history, so file content persists across the whole conversation.
 
+### Conversation language
+
+AskTIM auto-detects the language a student writes in and replies in that same
+language, following mid-conversation language switches. Internal
+`pedagogical-reasoning`, the JSON field names, citation labels, and LaTeX stay in
+English; technical terms are given in the student's language with the English term
+in parentheses on first use. UI copy and course content remain English.
+
+The behavior is driven by `curriculum/language_directive.txt`, appended to the
+tutor system prompt. Disable it (revert to English-only) with
+`TUTOR_MULTILINGUAL=0` (also accepts `false`/`no`/`off`); unset or any other value
+leaves it on.
+
 ### Key Components
 
 **Tutor Agent (`tutor/run_tutor.py`):** A LangGraph graph with a single node that calls the configured LLM (Claude Sonnet 5 by default in both chat apps; OpenAI `gpt-5.4` selectable per conversation in the Sandbox) and returns a two-field JSON response — internal pedagogical reasoning (hidden from students) and a student-facing answer. The system prompt is loaded from a versioned `.txt` file and can be overridden with an assignment block at runtime. The deployed default in both chat apps is `tutor_07`, and both apps are **locked** to it (the client can't override the prompt). Both web apps also accept a `role` query param (default `tutor`) that selects the prompt family — `role=tutor` uses `tutor/prompts/` (`tutor_07`); other roles (e.g. a future `ta`) 404 until registered in `tutor/roles.py`. Each role stays locked to its default prompt. `tutor_07` layers on `tutor_05` and adds a math-formatting rule (write math as `\(...\)` / `\[...\]`, never `$`, which is reserved for currency) so replies render as real equations client-side, plus **grounded Week/Lesson/Video lecture citations** and **anti-leakage** rules. A repair step in response parsing tolerates the model's occasional single-backslash LaTeX escapes so replies with math never fail to parse. On Anthropic, **by default** (cache-friendly interleaved history, gated by `TUTOR_CACHED_HISTORY`) the whole conversation — past student/RAG/tutor turns replayed verbatim, including the tutor's own past pedagogical reasoning — is prompt-cached via `cache_control` breakpoints, so each later turn re-reads that growing prefix at a fraction of full input cost rather than just the static system prompt; the saving grows the longer the conversation runs. Setting `TUTOR_CACHED_HISTORY=0` falls back to the legacy scheme, where only the static system prompt is cache-marked and the growing history is re-billed at full price every turn. OpenAI auto-caches long prefixes either way, so no marking is needed there.

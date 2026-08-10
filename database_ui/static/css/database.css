@@ -149,69 +149,37 @@
    .modal-title / .modal-body / .email-input / .modal-submit) from chat.css, so
    no login-specific styles are needed here. */
 
-/* --- Download data button + modal ---------------------------------------- */
-/* Sidebar action button under the header — full-width, accent-outlined, with a
-   download glyph + label. Sits above the conversation list. */
-.sidebar-download {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  width: 100%;
-  margin: 0 0 0.5rem;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--accent);
-  background: transparent;
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  cursor: pointer;
-}
-.sidebar-download:hover {
-  background: #e3eff5;
-}
-.sidebar-download-icon {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-}
-
-/* Export picker: a scrollable list of course blocks, each with its assignment
-   checkboxes. Reuses chat.css's .modal-overlay/.modal-card for the shell. */
-.download-fields {
-  max-height: 50vh;
-  overflow-y: auto;
-  margin: 0.5rem 0;
-  text-align: left;
-}
-.download-course {
-  margin-bottom: 0.6rem;
-}
-.download-course-head {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.download-assignments {
-  margin: 0.25rem 0 0 1.25rem;
+/* --- Download data wizard ------------------------------------------------- */
+/* The sidebar "Download data" button reuses chat.css's .sidebar-cta /
+   .sidebar-cta-primary (the same solid-accent CTA sandbox_ui uses for "Edit
+   context"). The modal reuses chat.css's .modal-* shell (whose .modal-actions
+   is already right-aligned); the two wizard layout rules below are ported from
+   sandbox_ui's sandbox-extra.css so the Course/Assignment walkthrough lays out
+   identically. */
+.create-step-body {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.5rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  text-align: left;
 }
-.download-assignments.is-disabled {
-  opacity: 0.4;
+.create-actions-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
-.download-assignment {
+
+/* One selectable row (a course, or an assignment within a course). */
+.download-option {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
 }
-.download-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+/* Course name heading atop each per-course Assignment step. */
+.download-course-title {
+  margin: 0 0 0.15rem;
+  font-weight: 600;
 }

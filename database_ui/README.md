@@ -18,6 +18,14 @@ student's username in the crimson accent (anonymous rows read "Anonymous",
 italicized), then the full course name, then the exercise header with the
 conversation's running total cost appended.
 
+A **Download data** button in the sidebar (the same solid-accent CTA sandbox_ui
+uses for "Edit context") opens a stepped wizard that mirrors that walkthrough:
+step 1 multi-selects courses, then one "Assignment" step per selected course
+multi-selects that course's exercises, and the final step downloads the matching
+conversations as a single CSV (one row per message: content, pedagogical
+reasoning, rating, model, cost, raw `usage_json` / `retrieved_context`, and an
+image count). Read-only like the rest of the app — the export is pure `SELECT`.
+
 Built to review **`main_ui`**'s production database. See the full design +
 checklist in [`PLANNING.md`](PLANNING.md).
 
@@ -127,4 +135,6 @@ reading the same Postgres as **askTIM-main**. To reproduce:
 | `GET /api/conversations?sort=date\|student&limit=&offset=` | list all conversations |
 | `GET /api/conversation/<uuid>` | one conversation's full transcript |
 | `GET /api/image/<int>` | serve an uploaded image's bytes |
+| `GET /api/export/filters` | list courses + their assignments for the download wizard |
+| `GET /api/export.csv?assignment=<course>::<exercise>&…` | download selected conversations as a one-row-per-message CSV |
 | `GET /health` | liveness (open, no auth) |

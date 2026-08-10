@@ -270,3 +270,66 @@ def list_export_filters(db: Session) -> list[dict]:
             "assignments": assignments,
         })
     return result
+
+
+def _export_image_counts(db: Session, message_ids: list[int]) -> dict[int, int]:
+    """Map message_id -> count of attached uploaded images (one grouped query)."""
+    if not message_ids:
+        return {}
+    stmt = (
+        select(UploadedImage.message_id, func.count(UploadedImage.id))
+        .where(UploadedImage.message_id.in_(message_ids))
+        .group_by(UploadedImage.message_id)
+    )
+    return {mid: int(n) for mid, n in db.execute(stmt).all()}
+
+
+def _export_row(m: Message, c: Conversation, image_counts: dict[int, int]) -> dict:
+    """Build one export CSV row (dict keyed by EXPORT_COLUMNS) from a message+convo."""
+    return {
+        "conversation_id": str(c.id),
+        "course": c.course,
+        "course_name": course_display_name(c.course),
+        "exercise_number": c.exercise_number,
+        "exercise_kind": c.exercise_kind or "exercise",
+        "focus_problem": "" if c.focus_problem is None else c.focus_problem,
+        "username": c.username or "",
+        "started_at": c.started_at.isoformat() if c.started_at else "",
+        "last_active_at": c.last_active_at.isoformat() if c.last_active_at else "",
+        "turn": m.turn,
+        "role": m.role,
+        "content": m.content or "",
+        "pedagogical_reasoning": m.pedagogical_reasoning or "",
+        "rating": getattr(m, "rating", 0) or 0,
+        "model": model_from_usage_json(getattr(m, "usage_json", None)) or "",
+        "cost_usd": "" if getattr(m, "cost_usd", None) is None else m.cost_usd,
+        "usage_json": getattr(m, "usage_json", None) or "",
+        "retrieved_context": getattr(m, "retrieved_context", None) or "",
+        "image_count": image_counts.get(m.id, 0),
+        "created_at": m.created_at.isoformat() if m.created_at else "",
+    }
+
+
+def iter_export_rows(db: Session, pairs: set[tuple[str, str]]):
+    """Yield one export row per message across conversations matching *pairs*.
+
+    *pairs* is a set of ``(course_key, exercise_number)`` tuples. Rows are ordered
+    by ``last_active_at`` (newest first), then ``turn``, then ``message.id`` — the
+    same order the transcript view uses. Empty *pairs* yields nothing.
+    """
+    if not pairs:
+        return
+    conditions = [
+        and_(Conversation.course == course, Conversation.exercise_number == exercise)
+        for course, exercise in pairs
+    ]
+    stmt = (
+        select(Message, Conversation)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(or_(*conditions))
+        .order_by(Conversation.last_active_at.desc(), Message.turn, Message.id)
+    )
+    result = db.execute(stmt).all()
+    image_counts = _export_image_counts(db, [m.id for m, _ in result])
+    for m, c in result:
+        yield _export_row(m, c, image_counts)

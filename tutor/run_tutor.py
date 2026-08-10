@@ -430,6 +430,16 @@ def _repair_latex_json(s: str) -> str:
     return "".join(out)
 
 
+# Canned student-facing answer substituted when the model's reply can't be
+# parsed into valid tutor JSON. Exported so the streaming layer and the web
+# bridge can recognize a failed turn (and surface "Tap to retry") instead of
+# rendering this text as if it were a real answer.
+INVALID_RESPONSE_ANSWER = (
+    "I could not generate a valid response. Please restate your last "
+    "message in one or two sentences so I can help."
+)
+
+
 def _normalize_tutor_ai_message(msg: BaseMessage) -> AIMessage:
     """
     Force tutor output into a strict two-field JSON object.
@@ -465,10 +475,7 @@ def _normalize_tutor_ai_message(msg: BaseMessage) -> AIMessage:
             "valid tutor JSON."
         )
     if not payload["Student-facing-answer"]:
-        payload["Student-facing-answer"] = (
-            "I could not generate a valid response. Please restate your last "
-            "message in one or two sentences so I can help."
-        )
+        payload["Student-facing-answer"] = INVALID_RESPONSE_ANSWER
     normalized = json.dumps(payload, ensure_ascii=False)
     # Preserve token-usage and provider metadata from the raw model response — the
     # normalized message replaces it in the graph output, and cost accounting reads
@@ -979,7 +986,9 @@ def stream_tutor_reply(
     # student-facing answer now so the client still sees something.
     if not extractor.found_answer:
         _, answer = parse_tutor_response(normalized_text)
-        if answer:
+        # Don't stream the parse-failure fallback as a visible bubble — the
+        # bridge flags the turn as failed and the client shows "Tap to retry".
+        if answer and answer != INVALID_RESPONSE_ANSWER:
             yield answer
 
     yield ("__done__", normalized_text, normalized)
@@ -1207,6 +1216,8 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, 
     normalized_text = normalized.content if isinstance(normalized.content, str) else str(normalized.content)
     if not extractor.found_answer:
         _, answer = parse_tutor_response(normalized_text)
-        if answer:
+        # Don't stream the parse-failure fallback as a visible bubble — the
+        # bridge flags the turn as failed and the client shows "Tap to retry".
+        if answer and answer != INVALID_RESPONSE_ANSWER:
             yield answer
     yield ("__done__", normalized_text, _anthropic_usage_message(final_message))

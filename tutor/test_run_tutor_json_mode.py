@@ -91,6 +91,38 @@ def test_raw_stream_gate_off_uses_text_stream_no_tools(monkeypatch):
     assert visible == "hello"
 
 
+def test_raw_stream_unparseable_reply_not_yielded_as_visible_delta(monkeypatch):
+    # Gate off, model returns free text that isn't valid tutor JSON. The
+    # normalizer substitutes INVALID_RESPONSE_ANSWER, but the streaming layer
+    # must NOT emit it as a visible delta — the bridge flags the turn failed and
+    # the client shows "Tap to retry" instead of a fake bubble.
+    monkeypatch.setenv("TUTOR_JSON_MODE", "off")
+    # A leaked envelope whose answer field is empty: parse yields no student
+    # answer, so the normalizer substitutes the canned INVALID_RESPONSE_ANSWER.
+    leaked = json.dumps({"pedagogical-reasoning": "hidden plan", "Student-facing-answer": ""})
+    text_events = [SimpleNamespace(type="text", text=leaked)]
+    stream = _FakeStream(text_events, SimpleNamespace(content=[], usage=None, model="claude-sonnet-5"))
+    with patch.object(rt.anthropic, "Anthropic", return_value=_FakeClient(stream)):
+        out = list(rt.stream_tutor_reply_anthropic_raw(
+            [("system_static", "SYS"), ("student", "hi")],
+            model_name="claude-sonnet-5", api_key="k"))
+    visible = "".join(x for x in out if isinstance(x, str))
+    assert rt.INVALID_RESPONSE_ANSWER not in visible
+    assert visible == ""  # nothing streamed on a parse failure
+    # The done payload still carries the canned answer (bridge keys `failed` off it).
+    done = out[-1]
+    assert done[0] == "__done__"
+    assert json.loads(done[1])["Student-facing-answer"] == rt.INVALID_RESPONSE_ANSWER
+
+
+def test_normalize_substitutes_sentinel_on_empty_answer():
+    # Missing/empty Student-facing-answer -> the shared sentinel, so the bridge
+    # and streaming layer have a single string to recognize a failed turn by.
+    msg = AIMessage(content=json.dumps({"pedagogical-reasoning": "r", "Student-facing-answer": ""}))
+    out = rt._normalize_tutor_ai_message(msg)
+    assert json.loads(out.content)["Student-facing-answer"] == rt.INVALID_RESPONSE_ANSWER
+
+
 def test_chunk_json_fragment_prefers_content_then_tool_args():
     # OpenAI/text path: content carries the JSON.
     assert rt._chunk_json_fragment(AIMessageChunk(content='{"a":1}')) == '{"a":1}'

@@ -32,6 +32,14 @@
                     </svg>
                 </button>
             </div>
+            <button type="button" class="sidebar-download" id="download-open" title="Download conversation data as CSV">
+                <svg class="sidebar-download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Download data</span>
+            </button>
             <div class="sidebar-empty" id="sidebar-empty" hidden></div>
             <ul class="sidebar-list" id="sidebar-list"></ul>
         </div>
@@ -48,6 +56,20 @@
     </main>
     </div>
 
+    <div class="modal-overlay" id="download-modal" role="dialog" aria-modal="true"
+         aria-labelledby="download-modal-title" hidden>
+        <div class="modal-card download-card">
+            <h2 id="download-modal-title" class="modal-title">Download data</h2>
+            <p class="modal-body">Select courses and assignments to export as CSV (one row per message).</p>
+            <div class="download-fields" id="download-fields"></div>
+            <div class="modal-error" id="download-error" role="alert" hidden></div>
+            <div class="modal-actions download-actions">
+                <button type="button" id="download-cancel" class="modal-skip">Cancel</button>
+                <button type="button" id="download-submit" class="modal-submit">Download CSV</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Markdown rendering for tutor messages: marked parses GFM (incl. tables),
          DOMPurify sanitizes the HTML. Vendored locally; loaded before database.js. -->
     <script src="{{ url_for('ui_core.static', filename='js/katex.min.js') }}" defer></script>
@@ -55,5 +77,6 @@
     <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/database.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/download.js') }}" defer></script>
 </body>
 </html>

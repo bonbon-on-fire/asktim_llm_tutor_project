@@ -17,6 +17,8 @@ viewer's session/email — the whole point is to review everyone's conversations
 
 from __future__ import annotations
 
+import csv
+import io
 from uuid import UUID
 
 from flask import (
@@ -135,6 +137,66 @@ def api_conversations():
     return jsonify({"sort": sort, "conversations": conversations})
 
 
+@database_bp.get("/api/export/filters")
+def api_export_filters():
+    """Return the export picker's course/assignment options as JSON."""
+    try:
+        courses = svc.list_export_filters(g.db)
+    except SQLAlchemyError as exc:
+        g.db.rollback()
+        if _is_schema_drift(exc):
+            current_app.logger.error("export filters failed on schema drift: %s", exc)
+            return (
+                jsonify({"error": "schema_outdated",
+                         "message": "Redeploy askTIM-main to run migrations"}),
+                503,
+            )
+        current_app.logger.exception("export filters query failed")
+        return jsonify({"error": "query_failed", "message": "Could not load filters"}), 500
+    return jsonify({"courses": courses})
+
+
+@database_bp.get("/api/export.csv")
+def api_export_csv():
+    """Stream a CSV (one row per message) for the selected course/assignment pairs.
+
+    Selection arrives as repeated ``assignment=<course>::<exercise>`` query args.
+    Returns 400 when no valid pair is supplied; a valid-but-empty match returns a
+    header-only CSV (not an error).
+    """
+    pairs = _parse_assignment_pairs(request.args.getlist("assignment"))
+    if not pairs:
+        return jsonify({"error": "bad_selection",
+                        "message": "Select at least one assignment"}), 400
+    try:
+        rows = list(svc.iter_export_rows(g.db, pairs))
+    except SQLAlchemyError as exc:
+        g.db.rollback()
+        if _is_schema_drift(exc):
+            current_app.logger.error("export query failed on schema drift: %s", exc)
+            return (
+                jsonify({"error": "schema_outdated",
+                         "message": "Redeploy askTIM-main to run migrations"}),
+                503,
+            )
+        current_app.logger.exception("export query failed")
+        return jsonify({"error": "query_failed", "message": "Could not export data"}), 500
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=svc.EXPORT_COLUMNS, extrasaction="ignore")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(row)
+    # Leading BOM so Excel opens the UTF-8 file with correct encoding.
+    body = "﻿" + buf.getvalue()
+    filename = f"asktim-export-{len(rows)}-msgs.csv"
+    return Response(
+        body,
+        content_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @database_bp.get("/api/conversation/<conversation_id>")
 def api_conversation(conversation_id: str):
     """Return one conversation's metadata and full transcript as JSON.
@@ -192,3 +254,20 @@ def _clamp_int(raw, *, default, lo, hi):
     if hi is not None:
         val = min(hi, val)
     return val
+
+
+def _parse_assignment_pairs(raw_values: list[str]) -> set[tuple[str, str]]:
+    """Parse ``course::exercise`` query args into a set of (course, exercise) pairs.
+
+    Values without a ``::`` separator, or with an empty side, are skipped — an
+    all-skipped selection yields an empty set (the route turns that into a 400).
+    """
+    pairs: set[tuple[str, str]] = set()
+    for raw in raw_values:
+        if not raw or "::" not in raw:
+            continue
+        course, exercise = raw.split("::", 1)
+        course, exercise = course.strip(), exercise.strip()
+        if course and exercise:
+            pairs.add((course, exercise))
+    return pairs

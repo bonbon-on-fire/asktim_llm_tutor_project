@@ -58,10 +58,23 @@ def test_unknown_password_is_rejected():
 
 
 @pytest.mark.parametrize("password", [MASTER, SC_PW, MOL_PW])
-def test_index_never_shows_scope_label(password):
-    # No viewer -- master or scoped -- should be able to tell the view is filtered.
+def test_index_scope_marker_is_hidden_styling(password):
+    # The scope marker lives in the banner but is rendered as background-colored
+    # (hidden) text -- a scoped reviewer shouldn't be able to tell the view is
+    # filtered without deliberately selecting the header text.
     body = _login(_app(), password).get("/").get_data(as_text=True)
-    assert "Viewing:" not in body
+    assert "scope-hidden" in body
+
+
+def test_index_master_marker_reads_master():
+    body = _login(_app(), MASTER).get("/").get_data(as_text=True)
+    assert "Master" in body
+
+
+def test_index_scoped_marker_reads_course_name():
+    # supply_chain_design -> its display name, present (but hidden) in the banner.
+    body = _login(_app(), SC_PW).get("/").get_data(as_text=True)
+    assert "MIT CTL.SC2x Supply Chain Design" in body
 
 
 def test_scoped_list_shows_only_own_course(seeded):

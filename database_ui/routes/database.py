@@ -36,7 +36,7 @@ from flask import (
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from database_ui.auth import check_password, clear_auth, mark_authed
+from database_ui.auth import allowed_courses, clear_auth, mark_authed, resolve_scope
 from database_ui.services import conversations as svc
 from ui_core.web.blueprints.history import content_disposition_attachment
 
@@ -88,8 +88,9 @@ def login():
 def login_submit():
     """Verify the submitted password and start a session, or re-render with an error."""
     candidate = request.form.get("password", "")
-    if check_password(candidate):
-        mark_authed()
+    scope = resolve_scope(candidate)
+    if scope is not None:
+        mark_authed(scope)
         return redirect(url_for("database.index"))
     return (
         render_template(

@@ -153,15 +153,16 @@
 /* The sidebar "Download data" button reuses chat.css's .sidebar-cta /
    .sidebar-cta-primary (the same solid-accent CTA sandbox_ui uses for "Edit
    context"). The modal reuses chat.css's .modal-* shell (whose .modal-actions
-   is already right-aligned); the two wizard layout rules below are ported from
-   sandbox_ui's sandbox-extra.css so the Course/Assignment walkthrough lays out
-   identically. */
+   is already right-aligned). Step 1 multi-selects courses (plain checkboxes);
+   Step 2 gives each selected course a sandbox-style multi-select dropdown of
+   its exercises. The dropdown styles below are ported from sandbox_ui's
+   sandbox-extra.css so the walkthrough looks identical. No overflow clip on
+   .create-step-body: an open dropdown list is absolutely positioned and must
+   be able to extend past the step body (the .modal-card has no clip). */
 .create-step-body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: 50vh;
-  overflow-y: auto;
   text-align: left;
 }
 .create-actions-right {
@@ -170,7 +171,7 @@
   gap: 0.5rem;
 }
 
-/* One selectable row (a course, or an assignment within a course). */
+/* One selectable course row in Step 1. */
 .download-option {
   display: flex;
   align-items: center;
@@ -178,8 +179,109 @@
   font-size: 0.9rem;
   cursor: pointer;
 }
-/* Course name heading atop each per-course Assignment step. */
+/* Course name heading atop each per-course dropdown in Step 2. */
 .download-course-title {
-  margin: 0 0 0.15rem;
+  margin: 0.25rem 0 0.15rem;
   font-weight: 600;
+}
+.download-empty-note {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted, #888);
+}
+
+/* Sandbox-style dropdown (ported from sandbox-extra.css). The list opens
+   DOWNWARD with a scroll — a native <select> flips its list up when the
+   control sits low on a centered modal. Here it's a multi-select variant:
+   each option carries a checkbox and toggling keeps the list open. */
+.context-dropdown {
+  position: relative;
+  width: 100%;
+}
+.context-dropdown-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--text, #2a2a2a);
+  background: #ffffff;
+  cursor: pointer;
+}
+.context-dropdown-trigger:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.context-dropdown-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.context-dropdown-caret {
+  flex: none;
+  display: inline-flex;
+  opacity: 0.6;
+  transition: transform 0.12s ease;
+}
+.context-dropdown-caret svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.context-dropdown.open .context-dropdown-caret {
+  transform: rotate(180deg);
+}
+.context-dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0.25rem;
+  background: #ffffff;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.context-dropdown-list[hidden] {
+  display: none;
+}
+.context-dropdown-option {
+  padding: 0.45rem 0.6rem;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.context-dropdown-option:hover {
+  background: #f0f1f3;
+}
+
+/* Multi-select rows: the checkbox conveys state, so skip the sandbox
+   single-select blue highlight. Defined after .context-dropdown-option so
+   this wins the equal-specificity aria-selected rule. */
+.download-ms-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: normal;
+}
+.download-ms-option[aria-selected="true"] {
+  background: none;
+  color: inherit;
+}
+.download-ms-option:hover {
+  background: #f0f1f3;
+}
+.download-ms-cb {
+  flex: none;
+  cursor: pointer;
 }

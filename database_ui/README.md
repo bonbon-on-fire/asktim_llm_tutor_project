@@ -19,12 +19,13 @@ italicized), then the full course name, then the exercise header with the
 conversation's running total cost appended.
 
 A **Download data** button in the sidebar (the same solid-accent CTA sandbox_ui
-uses for "Edit context") opens a stepped wizard that mirrors that walkthrough:
-step 1 multi-selects courses, then one "Assignment" step per selected course
-multi-selects that course's exercises, and the final step downloads the matching
-conversations as a single CSV (one row per message: content, pedagogical
-reasoning, rating, model, cost, raw `usage_json` / `retrieved_context`, and an
-image count). Read-only like the rest of the app — the export is pure `SELECT`.
+uses for "Edit context") opens a two-step wizard: step 1 multi-selects courses,
+then step 2 gives each selected course its own sandbox-style multi-select
+dropdown of that course's exercises/practice. The final step downloads the
+matching conversations as a single CSV (one row per message: content,
+pedagogical reasoning, rating, model, cost, raw `usage_json` /
+`retrieved_context`, and an image count). Read-only like the rest of the app —
+the export is pure `SELECT`.
 
 Built to review **`main_ui`**'s production database. See the full design +
 checklist in [`PLANNING.md`](PLANNING.md).

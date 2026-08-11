@@ -1,8 +1,9 @@
 "use strict";
-// database_ui — "Download data" wizard. Mirrors the sandbox "Edit context"
-// walkthrough: Step 1 multi-selects courses, then one Assignment step per
-// selected course multi-selects that course's exercises. The final step
-// downloads a CSV (one row per message) via /api/export.csv.
+// database_ui — "Download data" wizard. Two steps, mirroring the sandbox
+// "Edit context" walkthrough: Step 1 multi-selects courses, then Step 2
+// multi-selects each selected course's exercises via one sandbox-style
+// dropdown per course. The final step downloads a CSV (one row per message)
+// via /api/export.csv.
 (function () {
   const openBtn = document.getElementById("download-open");
   const modal = document.getElementById("download-modal");
@@ -15,11 +16,17 @@
   const nextBtn = document.getElementById("download-next");
   if (!openBtn || !modal) return;
 
+  const TOTAL_STEPS = 2; // 0 = Course, 1 = Assignment.
+
+  // Downward chevron caret for the dropdown trigger (matches sandbox's wizard).
+  const CHEVRON_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
   // Wizard state, rebuilt each time the modal opens.
   let courses = []; // [{course, course_name, assignments:[{exercise_number, exercise_kind}]}]
   let courseChecked = {}; // {courseKey: bool} — Step 1 selection
   let assignChecked = {}; // {"course::exercise": bool} — per-course selection
-  let step = 0; // 0 = Course step; 1..N = Assignment step for selectedCourses[step-1]
+  let step = 0;
 
   function showError(msg) {
     errorBox.textContent = msg;
@@ -33,42 +40,118 @@
     modal.hidden = true;
   }
 
-  // Courses picked in Step 1, in their fetched order — each gets its own
-  // Assignment step, so this drives the dynamic total step count.
+  // Courses picked in Step 1, in their fetched order.
   function selectedCourses() {
     return courses.filter((c) => courseChecked[c.course]);
-  }
-  function totalSteps() {
-    // 1 (Course) + one Assignment step per selected course.
-    return 1 + selectedCourses().length;
   }
 
   function pairKey(courseKey, exercise) {
     return courseKey + "::" + exercise;
   }
 
-  // Read the current step's checkboxes back into state before navigating away
-  // (the step body is rebuilt on every render, so state must persist here).
-  function saveStep() {
-    if (step === 0) {
-      for (const cb of stepBody.querySelectorAll(".download-course-cb")) {
-        courseChecked[cb.dataset.course] = cb.checked;
-      }
-    } else {
-      for (const cb of stepBody.querySelectorAll(".download-assignment-cb")) {
-        assignChecked[pairKey(cb.dataset.course, cb.dataset.exercise)] = cb.checked;
-      }
+  // A sandbox-style dropdown that lets you check multiple options. The list
+  // opens DOWNWARD (a native <select> flips up when low on a centered modal)
+  // and stays open while you toggle items. `checkedSet` is mutated in place;
+  // `onChange` fires after every toggle so callers can persist selection.
+  function buildMultiSelect(options, checkedSet, onChange) {
+    const root = document.createElement("div");
+    root.className = "context-dropdown download-multiselect";
+    let isOpen = false;
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "context-dropdown-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "context-dropdown-label";
+    const caret = document.createElement("span");
+    caret.className = "context-dropdown-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.innerHTML = CHEVRON_SVG;
+    trigger.appendChild(labelSpan);
+    trigger.appendChild(caret);
+
+    const list = document.createElement("div");
+    list.className = "context-dropdown-list";
+    list.setAttribute("role", "listbox");
+    list.setAttribute("aria-multiselectable", "true");
+    list.hidden = true;
+
+    function summary() {
+      const checked = options.filter((o) => checkedSet.has(o.value));
+      if (checked.length === 0) return "None selected";
+      if (checked.length === 1) return checked[0].label;
+      if (checked.length === options.length) return "All (" + checked.length + ")";
+      return checked.length + " selected";
     }
+    function paintLabel() {
+      labelSpan.textContent = summary();
+    }
+
+    for (const o of options) {
+      const item = document.createElement("label");
+      item.className = "context-dropdown-option download-ms-option";
+      item.setAttribute("role", "option");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.className = "download-ms-cb";
+      cb.checked = checkedSet.has(o.value);
+      item.setAttribute("aria-selected", cb.checked ? "true" : "false");
+      const span = document.createElement("span");
+      span.textContent = o.label;
+      cb.addEventListener("change", () => {
+        if (cb.checked) checkedSet.add(o.value);
+        else checkedSet.delete(o.value);
+        item.setAttribute("aria-selected", cb.checked ? "true" : "false");
+        paintLabel();
+        if (onChange) onChange();
+      });
+      // Clicking a row toggles its checkbox; keep the click from closing the list.
+      item.addEventListener("click", (e) => e.stopPropagation());
+      item.appendChild(cb);
+      item.appendChild(span);
+      list.appendChild(item);
+    }
+
+    function onDocClick(e) {
+      if (!root.contains(e.target)) close();
+    }
+    function open() {
+      if (isOpen) return;
+      isOpen = true;
+      list.hidden = false;
+      root.classList.add("open");
+      setTimeout(() => document.addEventListener("click", onDocClick), 0);
+    }
+    function close() {
+      if (!isOpen) return;
+      isOpen = false;
+      list.hidden = true;
+      root.classList.remove("open");
+      document.removeEventListener("click", onDocClick);
+    }
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      isOpen ? close() : open();
+    });
+    trigger.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+    });
+
+    paintLabel();
+    root.appendChild(trigger);
+    root.appendChild(list);
+    return root;
   }
 
-  function makeOption(labelText, cbClass, dataset, checked) {
+  function makeCourseOption(labelText, courseKey, checked) {
     const row = document.createElement("label");
     row.className = "download-option";
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.className = cbClass;
+    cb.className = "download-course-cb";
     cb.checked = checked;
-    for (const k in dataset) cb.dataset[k] = dataset[k];
+    cb.dataset.course = courseKey;
     const span = document.createElement("span");
     span.textContent = labelText;
     row.appendChild(cb);
@@ -76,51 +159,72 @@
     return { row: row, cb: cb };
   }
 
+  // Read the Course step's checkboxes back into state before navigating away.
+  // The Assignment step's dropdowns persist into assignChecked as they change,
+  // so no save is needed there.
+  function saveStep() {
+    if (step === 0) {
+      for (const cb of stepBody.querySelectorAll(".download-course-cb")) {
+        courseChecked[cb.dataset.course] = cb.checked;
+      }
+    }
+  }
+
   function renderCourseStep() {
     for (const c of courses) {
-      const opt = makeOption(
+      const opt = makeCourseOption(
         c.course_name || c.course,
-        "download-course-cb",
-        { course: c.course },
+        c.course,
         courseChecked[c.course] !== false
       );
-      // Re-checking/unchecking a course changes the total step count, so keep
-      // the "Step X of N" label and the button label honest as it changes.
       opt.cb.addEventListener("change", () => {
         courseChecked[c.course] = opt.cb.checked;
-        updateChrome();
       });
       stepBody.appendChild(opt.row);
     }
   }
 
   function renderAssignmentStep() {
-    const course = selectedCourses()[step - 1];
-    if (!course) return; // selection changed out from under us; guarded by nav
-    const title = document.createElement("p");
-    title.className = "download-course-title";
-    title.textContent = course.course_name || course.course;
-    stepBody.appendChild(title);
-    for (const a of course.assignments) {
-      const kind = a.exercise_kind === "practice" ? "Practice" : "Exercise";
-      const key = pairKey(course.course, a.exercise_number);
-      const opt = makeOption(
-        kind + " " + a.exercise_number,
-        "download-assignment-cb",
-        { course: course.course, exercise: a.exercise_number },
-        assignChecked[key] !== false
+    const chosen = selectedCourses();
+    if (!chosen.length) return; // selection changed out from under us; guarded by nav
+    for (const course of chosen) {
+      const title = document.createElement("p");
+      title.className = "download-course-title";
+      title.textContent = course.course_name || course.course;
+      stepBody.appendChild(title);
+
+      if (!course.assignments.length) {
+        const none = document.createElement("p");
+        none.className = "download-empty-note";
+        none.textContent = "No assignments.";
+        stepBody.appendChild(none);
+        continue;
+      }
+
+      const options = course.assignments.map((a) => ({
+        value: pairKey(course.course, a.exercise_number),
+        label:
+          (a.exercise_kind === "practice" ? "Practice " : "Exercise ") +
+          a.exercise_number,
+      }));
+      const checkedSet = new Set(
+        options.filter((o) => assignChecked[o.value] !== false).map((o) => o.value)
       );
-      stepBody.appendChild(opt.row);
+      const dd = buildMultiSelect(options, checkedSet, () => {
+        for (const o of options) assignChecked[o.value] = checkedSet.has(o.value);
+        clearError();
+      });
+      stepBody.appendChild(dd);
     }
   }
 
   // Refresh the step label + Back/Next button text for the current step.
   function updateChrome() {
-    const total = totalSteps();
     const kind = step === 0 ? "Course" : "Assignment";
-    stepLabel.textContent = "Step " + (step + 1) + " of " + total + ": " + kind;
+    stepLabel.textContent = "Step " + (step + 1) + " of " + TOTAL_STEPS + ": " + kind;
     backBtn.hidden = step === 0;
-    nextBtn.textContent = step === total - 1 ? "Create & download file" : "Continue";
+    nextBtn.textContent =
+      step === TOTAL_STEPS - 1 ? "Create & download file" : "Continue";
   }
 
   function renderStep() {
@@ -213,7 +317,7 @@
       showError("Select at least one course.");
       return;
     }
-    if (step < totalSteps() - 1) {
+    if (step < TOTAL_STEPS - 1) {
       step += 1;
       renderStep();
     } else {

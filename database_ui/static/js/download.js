@@ -241,11 +241,13 @@
       }
       const data = await r.json();
       courses = (data && data.courses) || [];
-      // Everything checked by default: all courses, all assignments.
+      // Courses start unselected — the reviewer opts in to what they want.
+      // A course's assignments default to selected, so picking a course pulls
+      // in all its work (trim individual ones in Step 2 if needed).
       courseChecked = {};
       assignChecked = {};
       for (const c of courses) {
-        courseChecked[c.course] = true;
+        courseChecked[c.course] = false;
         for (const a of c.assignments) {
           assignChecked[pairKey(c.course, a.exercise_number)] = true;
         }
@@ -275,7 +277,7 @@
   function finish() {
     const pairs = selectedPairs();
     if (pairs.length === 0) {
-      showError("Select at least one assignment to download.");
+      showError("Select at least one assignment to download");
       return;
     }
     const qs = pairs.map((p) => "assignment=" + encodeURIComponent(p)).join("&");
@@ -289,7 +291,7 @@
     if (event) event.preventDefault();
     saveStep();
     if (step === 0 && selectedCourses().length === 0) {
-      showError("Select at least one course.");
+      showError("Select at least one course");
       return;
     }
     if (step < TOTAL_STEPS - 1) {

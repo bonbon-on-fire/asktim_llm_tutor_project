@@ -26,8 +26,8 @@ def main() -> int:
 
     tutor = get_role("tutor")
     ok &= _check("tutor role registered", tutor is not None)
-    ok &= _check("tutor default prompt is tutor_07",
-                 tutor is not None and tutor.default_prompt == "tutor_07")
+    ok &= _check("tutor default prompt is tutor_09",
+                 tutor is not None and tutor.default_prompt == "tutor_09")
     ok &= _check("tutor prompts_dir exists",
                  tutor is not None and tutor.prompts_dir.is_dir(), tutor.prompts_dir)
 

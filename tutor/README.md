@@ -16,14 +16,14 @@ tutor/
     tutor_05.txt            — refined Socratic guidance
     tutor_06.txt            — Socratic guidance variant
     tutor_07.txt            — tutor_05 guidance + math formatting + grounded lecture citations + anti-leakage
-    tutor_08.txt            — tutor_07 + a ## Language section (reply in the student's language) baked in (present in repo; NOT the deployed default on this branch — see below)
-    tutor_09.txt            — tutor_08 with a more concise ## Language section (same rules, trimmed wording); not deployed
+    tutor_08.txt            — tutor_07 + a ## Language section (reply in the student's language) baked in; superseded as default by tutor_09
+    tutor_09.txt            — deployed default: tutor_08 with a more concise ## Language section (same rules, trimmed wording); main_ui + sandbox_ui locked to this
 ```
 
 - `run_tutor.py` builds the LangGraph, invokes the LLM, and parses structured JSON response fields (pedagogical reasoning + student-facing answer).
-- Prompt versions are selected by name (for example `tutor_03`, `tutor_08`) and loaded from `tutor/prompts/`. **On this branch (`prod-beta-plus`) the deployed default is `tutor_07`** (English-only), set in `tutor/roles.py` (with `DEFAULT_TUTOR` in both `main_ui` and `sandbox_ui`, and both apps **locked** to it — the client can't override it). `tutor_08` (the same prompt plus a baked-in language directive) ships in the repo but is not the default here; switch the default to `tutor_08` to enable the multilingual behavior.
+- Prompt versions are selected by name (for example `tutor_03`, `tutor_09`) and loaded from `tutor/prompts/`. **`tutor_09` is the deployed default** (`DEFAULT_TUTOR` in both `main_ui` and `sandbox_ui`, and both apps are **locked** to it — the client can't override it). To revert to English-only, switch the default back to `tutor_07`.
 - **`tutor_08`** is `tutor_07` with a **`## Language` section** baked in — the tutor detects the language of the student's latest message and writes its student-facing answer in that language (following mid-conversation switches), while keeping `pedagogical-reasoning`, the JSON field names, citation labels, and LaTeX in English.
-- **`tutor_09`** is `tutor_08` with the same `## Language` section reworded to be **more concise** — the language rules are unchanged (reply in the student's language; keep JSON field names, `pedagogical-reasoning`, citation labels, and LaTeX in English; give English technical terms in parentheses on first use), just trimmed of the explanatory padding. Not deployed.
+- **`tutor_09`** is `tutor_08` with the same `## Language` section reworded to be **more concise** — the language rules are unchanged (reply in the student's language; keep JSON field names, `pedagogical-reasoning`, citation labels, and LaTeX in English; give English technical terms in parentheses on first use), just trimmed of the explanatory padding. It is the deployed default.
 - **`tutor_07`** layers on `tutor_05`'s Socratic guidance and adds:
   - **Math formatting** — write math as `\(...\)` (inline) / `\[...\]` (display) LaTeX, never `$`/`$$` (those stay literal currency), doubling every backslash (`\\(`, `\\frac{}{}`) so the JSON response stays valid.
   - **Grounded lecture citations** — when pointing a student to course material, cite the real **Week / Lesson / Video** coordinate (e.g. *"…in **Week 10, Lesson 1**, in the **DuPont Analysis** video"*), woven into a sentence. Labels come from `curriculum/<course>/lecture_index.json` via [`rag/retrieve.py`](../rag/README.md); the tutor may only cite a label present in the retrieved block, so it can't invent a lecture.
@@ -36,8 +36,8 @@ A *role* selects which prompt family the web apps (`main_ui`, `sandbox_ui`)
 use, via a `role` URL query param (default `tutor`). Roles are declared in
 `tutor/roles.py`:
 
-- `role=tutor` → `tutor/prompts/`, default prompt `tutor_07` (the deployed
-  default on this branch; both apps stay locked to their role's default prompt).
+- `role=tutor` → `tutor/prompts/`, default prompt `tutor_09` (the deployed
+  default; both apps stay locked to their role's default prompt).
 - `role=ta` → a future `ta/prompts/` folder — **not shipped**; requesting it
   404s until added.
 

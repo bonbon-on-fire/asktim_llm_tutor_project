@@ -915,7 +915,7 @@
       ? CREATE_STEPS.filter((s) => s !== "lectures")
       : CREATE_STEPS;
   }
-  const LOCKED_TUTOR = "tutor_07"; // the tutor prompt is locked to this in the wizard
+  const LOCKED_TUTOR = "tutor_09"; // the tutor prompt is locked to this in the wizard
 
   // Custom dropdown that replaces the native <select> in the Create-context
   // wizard. A native <select> flips its option list UPWARD when the control sits
@@ -1206,7 +1206,7 @@
       currentValue = d.existing ? d.kind + ":" + d.existing : firstExisting;
     } else if (step === "tutor") {
       // All tutor built-ins are listed for visibility, but the step is locked to
-      // tutor_07 (disabled dropdown + lock icon); testers can't pick another. The
+      // tutor_09 (disabled dropdown + lock icon); testers can't pick another. The
       // backend also ignores any client tutor.
       options = contextOptions.tutors
         .map((t) => ({ value: t, label: tutorLabel(t) }))
@@ -1236,7 +1236,7 @@
     }
 
     const sel = buildSelect(options, currentValue);
-    if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_07
+    if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_09
     createStepBody.appendChild(sel);
 
     // Exercise step: show the selected assignment's title + an expandable full

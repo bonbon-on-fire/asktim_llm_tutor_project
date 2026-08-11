@@ -57,14 +57,10 @@ def test_unknown_password_is_rejected():
     assert resp.status_code == 401
 
 
-def test_index_shows_scope_label():
-    body = _login(_app(), SC_PW).get("/").get_data(as_text=True)
-    assert "MIT CTL.SC2x Supply Chain Design" in body
-
-
-def test_index_master_omits_scope_label():
-    # The all-courses (master) scope shows no "Viewing:" line in the header.
-    body = _login(_app(), MASTER).get("/").get_data(as_text=True)
+@pytest.mark.parametrize("password", [MASTER, SC_PW, MOL_PW])
+def test_index_never_shows_scope_label(password):
+    # No viewer -- master or scoped -- should be able to tell the view is filtered.
+    body = _login(_app(), password).get("/").get_data(as_text=True)
     assert "Viewing:" not in body
 
 

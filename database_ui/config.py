@@ -8,6 +8,7 @@ See ``docs/database_ui_plan.md``.
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
 
@@ -24,6 +25,41 @@ class Config:
     secret_key: str
     port: int
     cookie_max_age_seconds: int
+    course_passwords: dict[str, tuple[str, ...]]
+
+
+def parse_course_passwords(raw: str | None) -> dict[str, tuple[str, ...]]:
+    """Parse DATABASE_UI_COURSE_PASSWORDS into a ``{password: (course, ...)}`` map.
+
+    The env value is a JSON list of ``{"password": str, "courses": [str, ...]}``
+    entries. Anything malformed fails safe to an **empty** map (no course access
+    granted) rather than raising — a bad config must never widen access. Entries
+    missing a non-empty password or with no non-empty course keys are skipped;
+    empty course strings within an entry are dropped.
+    """
+    if not raw or not raw.strip():
+        return {}
+    try:
+        entries = json.loads(raw)
+    except (ValueError, TypeError):
+        return {}
+    if not isinstance(entries, list):
+        return {}
+    result: dict[str, tuple[str, ...]] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        password = entry.get("password")
+        courses = entry.get("courses")
+        if not isinstance(password, str) or not password:
+            continue
+        if not isinstance(courses, list):
+            continue
+        keys = tuple(c for c in courses if isinstance(c, str) and c)
+        if not keys:
+            continue
+        result[password] = keys
+    return result
 
 
 def load_config() -> Config:
@@ -45,6 +81,11 @@ def load_config() -> Config:
     # Shared-password gate. None = no gate (local dev only); deployments MUST set
     # this since the tool exposes every student's conversations and images.
     password = os.environ.get("DATABASE_UI_PASSWORD") or None
+    # Per-course passwords: {password: (course_key, ...)}. Empty/malformed -> {}
+    # (no course access granted; the master password still works).
+    course_passwords = parse_course_passwords(
+        os.environ.get("DATABASE_UI_COURSE_PASSWORDS")
+    )
     secret_key = os.environ.get("DATABASE_UI_SECRET_KEY", "dev-insecure-review-key")
     port = int(os.environ.get("PORT", "5002"))
     cookie_max_age_seconds = int(
@@ -58,4 +99,5 @@ def load_config() -> Config:
         secret_key=secret_key,
         port=port,
         cookie_max_age_seconds=cookie_max_age_seconds,
+        course_passwords=course_passwords,
     )

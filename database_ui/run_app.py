@@ -29,6 +29,9 @@ def create_app() -> Flask:
     app.config["DATABASE_UI_ACCENT"] = config.accent
     # Read by the auth gate; None => open (local dev only).
     app.config["DATABASE_UI_PASSWORD"] = config.password
+    # {password: (course_key, ...)} for scoped logins; {} => only the master
+    # password (or open dev) is active. Read by the auth gate.
+    app.config["DATABASE_UI_COURSE_PASSWORDS"] = config.course_passwords
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(
         seconds=config.cookie_max_age_seconds
     )

@@ -37,6 +37,7 @@ from flask import (
 from sqlalchemy.exc import SQLAlchemyError
 
 from database_ui.auth import allowed_courses, clear_auth, mark_authed, resolve_scope
+from database_ui.courses import course_display_name
 from database_ui.services import conversations as svc
 from ui_core.web.blueprints.history import content_disposition_attachment
 
@@ -63,6 +64,14 @@ def _is_schema_drift(exc: Exception) -> bool:
     return any(marker in message for marker in _SCHEMA_DRIFT_MARKERS)
 
 
+def _scope_label() -> str:
+    """Human-readable label for the current session's scope (for the header)."""
+    courses = allowed_courses()
+    if courses is None:
+        return "All courses"
+    return ", ".join(course_display_name(c) for c in courses)
+
+
 @database_bp.get("/")
 def index():
     """Render the review shell (sidebar plus transcript view)."""
@@ -70,6 +79,7 @@ def index():
         "index.html",
         title=current_app.config["DATABASE_UI_TITLE"],
         accent=current_app.config["DATABASE_UI_ACCENT"],
+        scope_label=_scope_label(),
     )
 
 

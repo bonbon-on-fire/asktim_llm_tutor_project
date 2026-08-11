@@ -61,9 +61,22 @@ checklist in [`PLANNING.md`](PLANNING.md).
   so both readers of the `messages` table parse them the same way.
 - No `create_all`, no migrations. The per-request session (`run_app.py`) always
   rolls back, never commits.
-- Every route is behind a shared-password gate (`auth.py`'s `init_auth`
+- Every route is behind a password gate (`auth.py`'s `init_auth`
   before-request guard + `_PUBLIC_ENDPOINTS`); the API endpoints intentionally
-  drop the per-viewer ownership checks the live apps use (review sees everyone).
+  drop the per-viewer ownership checks the live apps use (review sees everyone
+  in its scope).
+- **Per-course access scoping.** Two kinds of password log in: the **master**
+  password (`DATABASE_UI_PASSWORD`) sees every course, and any **course
+  password** (`DATABASE_UI_COURSE_PASSWORDS`) is scoped to just the course(s) it
+  maps to. Login resolves a `Scope`; `allowed_courses()` returns `None` (no
+  filter) for master or the allowed course-key list for a scoped login, and
+  every data route (list, transcript, image/file, export filters + rows) filters
+  by it — a scoped viewer can't list, open, or export another course's data.
+  The scope is **invisible in the UI**: the header shows no "viewing X" signpost,
+  so a scoped reviewer can't tell the view is filtered. Passwords are compared
+  with `hmac.compare_digest`; malformed `DATABASE_UI_COURSE_PASSWORDS` fails
+  closed to "no course access" (the master password still works) — a bad config
+  never widens access.
 
 ## Architecture: what's shared with `main_ui` / `sandbox_ui`, what isn't
 
@@ -112,8 +125,9 @@ inside Railway).
 | Variable | Required | Description |
 | -------- | -------- | ----------- |
 | `DATABASE_UI_DATABASE_URL` | Yes (prod) | DB to read. Falls back to `DATABASE_URL`, then local SQLite. |
-| `DATABASE_UI_PASSWORD` | Yes (deploy) | Shared password for the login gate. Unset ⇒ open (local dev only); the deploy entrypoint refuses to start without it. |
-| `DATABASE_UI_SECRET_KEY` | Recommended | Flask session signing key. Has an insecure dev default. |
+| `DATABASE_UI_PASSWORD` | Yes (deploy) | **Master** password — sees every course. Unset ⇒ open (local dev only); the deploy entrypoint refuses to start without it. |
+| `DATABASE_UI_COURSE_PASSWORDS` | No | Per-course scoped logins. JSON list of `{"password": str, "courses": [course_key, …]}` entries; each password sees only its listed course(s). Empty/malformed ⇒ no scoped access (master still works). |
+| `DATABASE_UI_SECRET_KEY` | Recommended | Flask session signing key (signs the scope into the login cookie). Has an insecure dev default. |
 | `DATABASE_UI_TITLE` | No | Browser-tab + login-page title. Default `AskTIM Database`. (The sidebar heading is a fixed `AskTIM · Database Beta+`.) |
 | `DATABASE_UI_ACCENT` | No | Accent color. Default `#126f9a` (teal-blue, = sandbox_ui). |
 | `DATABASE_UI_COOKIE_MAX_AGE` | No | Login-session cookie lifetime, in seconds. Default 30 days. |
@@ -131,7 +145,10 @@ reading the same Postgres as **askTIM-main**. To reproduce:
    - `DATABASE_URL = ${{<main Postgres>.DATABASE_URL}}` (reference askTIM-main's
      Postgres — shares it over the private network; `DATABASE_UI_DATABASE_URL`
      also works and takes precedence).
-   - `DATABASE_UI_PASSWORD` and `DATABASE_UI_SECRET_KEY` (secrets).
+   - `DATABASE_UI_PASSWORD` (master) and `DATABASE_UI_SECRET_KEY` (secrets).
+   - Optional `DATABASE_UI_COURSE_PASSWORDS` (JSON) to hand course staff a
+     password scoped to only their own course, e.g.
+     `[{"password": "…", "courses": ["supply_chain_design"]}]`.
 3. Generate a domain. The entrypoint fails closed if `DATABASE_UI_PASSWORD` is unset,
    so the dashboard is never exposed ungated.
 
@@ -140,7 +157,7 @@ reading the same Postgres as **askTIM-main**. To reproduce:
 | Route | Purpose |
 | ----- | ------- |
 | `GET /` | review shell (sidebar + transcript); redirects to `/login` if not authed |
-| `GET/POST /login`, `GET /logout` | shared-password gate |
+| `GET/POST /login`, `GET /logout` | password gate (master or per-course scoped) |
 | `GET /api/conversations?sort=date\|student&limit=&offset=` | list all conversations |
 | `GET /api/conversation/<uuid>` | one conversation's full transcript |
 | `GET /api/image/<int>` | serve an uploaded image's bytes |

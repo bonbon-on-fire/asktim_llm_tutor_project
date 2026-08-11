@@ -247,7 +247,7 @@ def api_conversation(conversation_id: str):
 @database_bp.get("/api/image/<int:image_id>")
 def api_image(image_id: int):
     """Serve an uploaded image's bytes, or 404 if the image is not found."""
-    img = svc.get_image(g.db, image_id)
+    img = svc.get_image(g.db, image_id, allowed_courses())
     if img is None:
         return jsonify({"error": "not_found"}), 404
     return Response(
@@ -261,10 +261,11 @@ def api_image(image_id: int):
 def api_file(file_id: int):
     """Serve an uploaded non-image file's bytes as a download, or 404 if not found.
 
-    Unscoped like the rest of this review tool — no ownership check. The bytes
-    are served as an attachment under the original filename (safely encoded).
+    Restricted to the caller's course scope (``allowed_courses()``); a
+    cross-course id 404s the same as a nonexistent one. The bytes are served
+    as an attachment under the original filename (safely encoded).
     """
-    row = svc.get_file(g.db, file_id)
+    row = svc.get_file(g.db, file_id, allowed_courses())
     if row is None:
         return jsonify({"error": "not_found"}), 404
     return Response(

@@ -105,3 +105,25 @@ def test_master_export_rows_include_supply_chain(seeded):
     body = resp.get_data(as_text=True).lstrip("﻿")
     lines = [ln for ln in body.splitlines() if ln.strip()]
     assert len(lines) >= 3  # header + 2 message rows
+
+
+def test_scoped_user_cannot_fetch_other_course_image(seeded):
+    # image belongs to supply_chain_design; a meaning_of_life user must get 404.
+    client = _login(_app(), MOL_PW)
+    assert client.get(f"/api/image/{seeded['image_id']}").status_code == 404
+
+
+def test_scoped_user_can_fetch_own_course_image(seeded):
+    client = _login(_app(), SC_PW)
+    assert client.get(f"/api/image/{seeded['image_id']}").status_code == 200
+
+
+def test_scoped_user_cannot_fetch_other_course_file(seeded):
+    client = _login(_app(), MOL_PW)
+    assert client.get(f"/api/file/{seeded['file_id']}").status_code == 404
+
+
+def test_master_can_fetch_image_and_file(seeded):
+    client = _login(_app(), MASTER)
+    assert client.get(f"/api/image/{seeded['image_id']}").status_code == 200
+    assert client.get(f"/api/file/{seeded['file_id']}").status_code == 200

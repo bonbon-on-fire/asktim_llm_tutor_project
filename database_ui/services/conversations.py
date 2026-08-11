@@ -117,14 +117,42 @@ def _message_dict(
     return entry
 
 
-def get_image(db: Session, image_id: int) -> UploadedImage | None:
-    """Fetch one uploaded image by id (no ownership check — review sees all)."""
-    return db.get(UploadedImage, image_id)
+def get_image(
+    db: Session, image_id: int, courses: list[str] | None = None
+) -> UploadedImage | None:
+    """Fetch one uploaded image by id, restricted to *courses* when not ``None``.
+
+    ``courses is None`` -> review sees all (master/dev). Otherwise the image is
+    returned only if its owning conversation's course is in scope; a
+    cross-course id yields ``None`` (the route turns that into a 404).
+    """
+    if courses is None:
+        return db.get(UploadedImage, image_id)
+    stmt = (
+        select(UploadedImage)
+        .join(Message, UploadedImage.message_id == Message.id)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(UploadedImage.id == image_id, Conversation.course.in_(courses))
+    )
+    return db.execute(stmt).scalars().first()
 
 
-def get_file(db: Session, file_id: int) -> UploadedFile | None:
-    """Fetch one uploaded non-image file by id (no ownership check — review sees all)."""
-    return db.get(UploadedFile, file_id)
+def get_file(
+    db: Session, file_id: int, courses: list[str] | None = None
+) -> UploadedFile | None:
+    """Fetch one uploaded non-image file by id, restricted to *courses* when set.
+
+    Same scoping rule as :func:`get_image`: a cross-course id yields ``None``.
+    """
+    if courses is None:
+        return db.get(UploadedFile, file_id)
+    stmt = (
+        select(UploadedFile)
+        .join(Message, UploadedFile.message_id == Message.id)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .where(UploadedFile.id == file_id, Conversation.course.in_(courses))
+    )
+    return db.execute(stmt).scalars().first()
 
 
 # --- internals ---------------------------------------------------------------

@@ -1,9 +1,9 @@
 "use strict";
-// database_ui — "Download data" wizard. Two steps, mirroring the sandbox
-// "Edit context" walkthrough: Step 1 multi-selects courses, then Step 2
-// multi-selects each selected course's exercises via one sandbox-style
-// dropdown per course. The final step downloads a CSV (one row per message)
-// via /api/export.csv.
+// database_ui — "Download data" wizard, mirroring the sandbox "Edit context"
+// walkthrough. Page 1 multi-selects courses; then each selected course gets its
+// OWN page with a sandbox-style multi-select dropdown of its exercises. Total
+// pages = 1 + (number of selected courses). The final page downloads a CSV (one
+// row per message) via /api/export.csv.
 (function () {
   const openBtn = document.getElementById("download-open");
   const modal = document.getElementById("download-modal");
@@ -16,7 +16,10 @@
   const nextBtn = document.getElementById("download-next");
   if (!openBtn || !modal) return;
 
-  const TOTAL_STEPS = 2; // 0 = Course, 1 = Assignment.
+  // Total pages: the course-selection page plus one page per selected course.
+  function totalSteps() {
+    return 1 + selectedCourses().length;
+  }
 
   // Downward chevron caret for the dropdown trigger (matches sandbox's wizard).
   const CHEVRON_SVG =
@@ -155,51 +158,53 @@
     const dd = buildMultiSelect(options, checkedSet, () => {
       for (const o of options) courseChecked[o.value] = checkedSet.has(o.value);
       clearError();
+      // Picking/unpicking courses changes the page count, so refresh the chrome.
+      updateChrome();
     });
     stepBody.appendChild(dd);
   }
 
-  function renderAssignmentStep() {
-    const chosen = selectedCourses();
-    if (!chosen.length) return; // selection changed out from under us; guarded by nav
-    for (const course of chosen) {
-      const title = document.createElement("p");
-      title.className = "download-course-title";
-      title.textContent = course.course_name || course.course;
-      stepBody.appendChild(title);
+  // Render one selected course's own page: its name as a muted subtitle plus a
+  // dropdown of its exercises. Called once per per-course page (step >= 1).
+  function renderCoursePage(course) {
+    const title = document.createElement("p");
+    title.className = "download-course-title";
+    title.textContent = course.course_name || course.course;
+    stepBody.appendChild(title);
 
-      if (!course.assignments.length) {
-        const none = document.createElement("p");
-        none.className = "download-empty-note";
-        none.textContent = "No assignments.";
-        stepBody.appendChild(none);
-        continue;
-      }
-
-      const options = course.assignments.map((a) => ({
-        value: pairKey(course.course, a.exercise_number),
-        label:
-          (a.exercise_kind === "practice" ? "Practice " : "Exercise ") +
-          a.exercise_number,
-      }));
-      const checkedSet = new Set(
-        options.filter((o) => assignChecked[o.value] !== false).map((o) => o.value)
-      );
-      const dd = buildMultiSelect(options, checkedSet, () => {
-        for (const o of options) assignChecked[o.value] = checkedSet.has(o.value);
-        clearError();
-      });
-      stepBody.appendChild(dd);
+    if (!course.assignments.length) {
+      const none = document.createElement("p");
+      none.className = "download-empty-note";
+      none.textContent = "No assignments.";
+      stepBody.appendChild(none);
+      return;
     }
+
+    const options = course.assignments.map((a) => ({
+      value: pairKey(course.course, a.exercise_number),
+      label:
+        (a.exercise_kind === "practice" ? "Practice " : "Exercise ") +
+        a.exercise_number,
+    }));
+    const checkedSet = new Set(
+      options.filter((o) => assignChecked[o.value] !== false).map((o) => o.value)
+    );
+    const dd = buildMultiSelect(options, checkedSet, () => {
+      for (const o of options) assignChecked[o.value] = checkedSet.has(o.value);
+      clearError();
+    });
+    stepBody.appendChild(dd);
   }
 
   // Refresh the step label + Back/Next button text for the current step.
   function updateChrome() {
+    const total = totalSteps();
     const kind = step === 0 ? "Course" : "Assignment";
-    stepLabel.textContent = "Step " + (step + 1) + " of " + TOTAL_STEPS + ": " + kind;
+    stepLabel.textContent = "Step " + (step + 1) + " of " + total + ": " + kind;
     backBtn.hidden = step === 0;
-    nextBtn.textContent =
-      step === TOTAL_STEPS - 1 ? "Download CSV File" : "Continue";
+    // "Download" only on the last per-course page; the course page always
+    // continues (selecting a course always adds at least one page after it).
+    nextBtn.textContent = step > 0 && step === total - 1 ? "Download CSV File" : "Continue";
   }
 
   function renderStep() {
@@ -215,7 +220,15 @@
       }
       renderCourseStep();
     } else {
-      renderAssignmentStep();
+      // Per-course page: the (step-1)-th selected course. If the selection
+      // shrank out from under us, fall back to the course page.
+      const course = selectedCourses()[step - 1];
+      if (!course) {
+        step = 0;
+        renderCourseStep();
+      } else {
+        renderCoursePage(course);
+      }
     }
     updateChrome();
   }
@@ -294,7 +307,7 @@
       showError("Select at least one course");
       return;
     }
-    if (step < TOTAL_STEPS - 1) {
+    if (step < totalSteps() - 1) {
       step += 1;
       renderStep();
     } else {

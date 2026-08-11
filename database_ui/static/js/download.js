@@ -224,7 +224,7 @@
     stepLabel.textContent = "Step " + (step + 1) + " of " + TOTAL_STEPS + ": " + kind;
     backBtn.hidden = step === 0;
     nextBtn.textContent =
-      step === TOTAL_STEPS - 1 ? "Create & download file" : "Continue";
+      step === TOTAL_STEPS - 1 ? "Download CSV File" : "Continue";
   }
 
   function renderStep() {

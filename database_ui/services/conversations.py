@@ -16,7 +16,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from database_ui.courses import course_display_name
-from database_ui.db.models import Conversation, Message, UploadedImage
+from database_ui.db.models import Conversation, Message, UploadedFile, UploadedImage
 from ui_core.usage import model_from_usage_json, records_from_retrieved_context
 
 
@@ -60,7 +60,8 @@ def get_messages_for_conversation(db: Session, conversation: Conversation) -> li
 
     Includes ``pedagogical_reasoning`` (the tutor's hidden reasoning) — reviewers
     are explicitly allowed to see it, unlike the student-facing chat endpoints.
-    Image metadata (id + mime, never bytes) is attached for thumbnail rendering.
+    Image metadata (id + mime, never bytes) is attached for thumbnail rendering;
+    non-image attachments carry their filename for read-only file chips.
     """
     stmt = (
         select(Message)
@@ -68,11 +69,19 @@ def get_messages_for_conversation(db: Session, conversation: Conversation) -> li
         .order_by(Message.turn, Message.id)
     )
     messages = db.execute(stmt).scalars().all()
-    images_by_message = _images_by_message(db, [m.id for m in messages])
-    return [_message_dict(m, images_by_message) for m in messages]
+    message_ids = [m.id for m in messages]
+    images_by_message = _images_by_message(db, message_ids)
+    files_by_message = _attachments_by_message(db, message_ids)
+    return [
+        _message_dict(m, images_by_message, files_by_message) for m in messages
+    ]
 
 
-def _message_dict(m: Message, images_by_message: dict[int, list[dict]]) -> dict:
+def _message_dict(
+    m: Message,
+    images_by_message: dict[int, list[dict]],
+    files_by_message: dict[int, list[dict]],
+) -> dict:
     """One message as a JSON-friendly dict for the transcript view.
 
     Beyond the base fields, tutor rows carry the review metadata the sandbox
@@ -88,6 +97,8 @@ def _message_dict(m: Message, images_by_message: dict[int, list[dict]]) -> dict:
         # Per-message thumb (-1/0/1); legacy rows read back NULL -> 0.
         "rating": getattr(m, "rating", 0) or 0,
         "images": images_by_message.get(m.id, []),
+        # Non-image attachments (filename + kind only) for read-only file chips.
+        "attachments": files_by_message.get(m.id, []),
     }
     cost = getattr(m, "cost_usd", None)
     if cost is not None:
@@ -104,6 +115,11 @@ def _message_dict(m: Message, images_by_message: dict[int, list[dict]]) -> dict:
 def get_image(db: Session, image_id: int) -> UploadedImage | None:
     """Fetch one uploaded image by id (no ownership check — review sees all)."""
     return db.get(UploadedImage, image_id)
+
+
+def get_file(db: Session, file_id: int) -> UploadedFile | None:
+    """Fetch one uploaded non-image file by id (no ownership check — review sees all)."""
+    return db.get(UploadedFile, file_id)
 
 
 # --- internals ---------------------------------------------------------------
@@ -218,6 +234,28 @@ def _images_by_message(db: Session, message_ids: list[int]) -> dict[int, list[di
     return out
 
 
+def _attachments_by_message(db: Session, message_ids: list[int]) -> dict[int, list[dict]]:
+    """Map message_id -> [{"id", "filename", "kind"}, ...] (one query, no bytes)."""
+    if not message_ids:
+        return {}
+    stmt = (
+        select(
+            UploadedFile.id,
+            UploadedFile.message_id,
+            UploadedFile.filename,
+            UploadedFile.kind,
+        )
+        .where(UploadedFile.message_id.in_(message_ids))
+        .order_by(UploadedFile.id)
+    )
+    out: dict[int, list[dict]] = {}
+    for file_id, msg_id, filename, kind in db.execute(stmt).all():
+        out.setdefault(msg_id, []).append(
+            {"id": file_id, "filename": filename, "kind": kind}
+        )
+    return out
+
+
 # --- export -----------------------------------------------------------------
 
 # Single source of truth for the export CSV's columns and their order. The route
@@ -228,7 +266,7 @@ EXPORT_COLUMNS = [
     "exercise_kind", "focus_problem", "username", "started_at",
     "last_active_at", "turn", "role", "content", "pedagogical_reasoning",
     "rating", "model", "cost_usd", "usage_json", "retrieved_context",
-    "image_count", "created_at",
+    "image_count", "file_count", "created_at",
 ]
 
 
@@ -284,7 +322,24 @@ def _export_image_counts(db: Session, message_ids: list[int]) -> dict[int, int]:
     return {mid: int(n) for mid, n in db.execute(stmt).all()}
 
 
-def _export_row(m: Message, c: Conversation, image_counts: dict[int, int]) -> dict:
+def _export_file_counts(db: Session, message_ids: list[int]) -> dict[int, int]:
+    """Map message_id -> count of attached (non-image) files (one grouped query)."""
+    if not message_ids:
+        return {}
+    stmt = (
+        select(UploadedFile.message_id, func.count(UploadedFile.id))
+        .where(UploadedFile.message_id.in_(message_ids))
+        .group_by(UploadedFile.message_id)
+    )
+    return {mid: int(n) for mid, n in db.execute(stmt).all()}
+
+
+def _export_row(
+    m: Message,
+    c: Conversation,
+    image_counts: dict[int, int],
+    file_counts: dict[int, int],
+) -> dict:
     """Build one export CSV row (dict keyed by EXPORT_COLUMNS) from a message+convo."""
     return {
         "conversation_id": str(c.id),
@@ -306,6 +361,7 @@ def _export_row(m: Message, c: Conversation, image_counts: dict[int, int]) -> di
         "usage_json": getattr(m, "usage_json", None) or "",
         "retrieved_context": getattr(m, "retrieved_context", None) or "",
         "image_count": image_counts.get(m.id, 0),
+        "file_count": file_counts.get(m.id, 0),
         "created_at": m.created_at.isoformat() if m.created_at else "",
     }
 
@@ -330,6 +386,8 @@ def iter_export_rows(db: Session, pairs: set[tuple[str, str]]):
         .order_by(Conversation.last_active_at.desc(), Message.turn, Message.id)
     )
     result = db.execute(stmt).all()
-    image_counts = _export_image_counts(db, [m.id for m, _ in result])
+    message_ids = [m.id for m, _ in result]
+    image_counts = _export_image_counts(db, message_ids)
+    file_counts = _export_file_counts(db, message_ids)
     for m, c in result:
-        yield _export_row(m, c, image_counts)
+        yield _export_row(m, c, image_counts, file_counts)

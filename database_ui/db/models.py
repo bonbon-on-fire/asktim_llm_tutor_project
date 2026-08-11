@@ -102,6 +102,9 @@ class Message(Base):
     uploaded_images: Mapped[list["UploadedImage"]] = relationship(
         back_populates="message", viewonly=True
     )
+    uploaded_files: Mapped[list["UploadedFile"]] = relationship(
+        back_populates="message", viewonly=True
+    )
 
 
 class UploadedImage(Base):
@@ -121,4 +124,34 @@ class UploadedImage(Base):
 
     message: Mapped["Message"] = relationship(
         back_populates="uploaded_images", viewonly=True
+    )
+
+
+class UploadedFile(Base):
+    """Non-image attachment (PDF/CSV/XLSX/DOCX/TXT) linked to a message.
+
+    Read-only mirror of the live apps' ``uploaded_files`` table
+    (``ui_core.db.models_common.UploadedFileMixin``). Files are identified by a
+    ``kind`` string (e.g. ``"pdf"``) rather than a MIME type. ``extracted_text``
+    (what the tutor actually read) and the raw ``data`` bytes are both stored;
+    the review UI only surfaces the filename, so it never reads the bytes.
+    """
+
+    __tablename__ = "uploaded_files"
+
+    id: Mapped[int] = mapped_column(_BigIntPk, primary_key=True)
+    message_id: Mapped[int] = mapped_column(
+        _BigIntPk, ForeignKey("messages.id"), nullable=False
+    )
+    filename: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    extracted_text: Mapped[str] = mapped_column(Text, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(nullable=False)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    created_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    message: Mapped["Message"] = relationship(
+        back_populates="uploaded_files", viewonly=True
     )

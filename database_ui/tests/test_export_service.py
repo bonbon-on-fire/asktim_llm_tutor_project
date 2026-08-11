@@ -40,7 +40,9 @@ def test_iter_export_rows_filters_and_columns(db_session):
     assert student["conversation_id"] == str(ids["sc_id"])
     assert student["course_name"] == "MIT CTL.SC2x Supply Chain Design"
     assert student["image_count"] == 1
+    assert student["file_count"] == 1  # one CSV attachment on the student turn
     assert tutor["image_count"] == 0
+    assert tutor["file_count"] == 0
     assert tutor["rating"] == 1
     assert tutor["model"] == "gpt-5.4-2026-03-05"  # parsed from usage_json
     assert tutor["cost_usd"] == 0.0123

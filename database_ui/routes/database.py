@@ -10,6 +10,7 @@ API (all read-only, all behind the auth gate except where noted):
 - GET /api/conversations            list ALL conversations (sort=date|student)
 - GET /api/conversation/<uuid>      one conversation's full transcript
 - GET /api/image/<int>              serve an uploaded image's bytes
+- GET /api/file/<int>               download an uploaded non-image file's bytes
 
 Unlike the live apps' history endpoints, these are intentionally NOT scoped to a
 viewer's session/email — the whole point is to review everyone's conversations.
@@ -37,6 +38,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from database_ui.auth import check_password, clear_auth, mark_authed
 from database_ui.services import conversations as svc
+from ui_core.web.blueprints.history import content_disposition_attachment
 
 database_bp = Blueprint("database", __name__)
 
@@ -238,6 +240,26 @@ def api_image(image_id: int):
         img.data,
         mimetype=img.mime_type,
         headers={"Cache-Control": "private, max-age=86400"},
+    )
+
+
+@database_bp.get("/api/file/<int:file_id>")
+def api_file(file_id: int):
+    """Serve an uploaded non-image file's bytes as a download, or 404 if not found.
+
+    Unscoped like the rest of this review tool — no ownership check. The bytes
+    are served as an attachment under the original filename (safely encoded).
+    """
+    row = svc.get_file(g.db, file_id)
+    if row is None:
+        return jsonify({"error": "not_found"}), 404
+    return Response(
+        row.data,
+        mimetype="application/octet-stream",
+        headers={
+            "Content-Disposition": content_disposition_attachment(row.filename),
+            "Cache-Control": "private, max-age=86400",
+        },
     )
 
 

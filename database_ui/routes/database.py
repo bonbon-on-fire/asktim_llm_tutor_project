@@ -154,7 +154,7 @@ def api_conversations():
 def api_export_filters():
     """Return the export picker's course/assignment options as JSON."""
     try:
-        courses = svc.list_export_filters(g.db)
+        courses = svc.list_export_filters(g.db, allowed_courses())
     except SQLAlchemyError as exc:
         g.db.rollback()
         if _is_schema_drift(exc):
@@ -182,7 +182,7 @@ def api_export_csv():
         return jsonify({"error": "bad_selection",
                         "message": "Select at least one assignment"}), 400
     try:
-        rows = list(svc.iter_export_rows(g.db, pairs))
+        rows = list(svc.iter_export_rows(g.db, pairs, allowed_courses()))
     except SQLAlchemyError as exc:
         g.db.rollback()
         if _is_schema_drift(exc):

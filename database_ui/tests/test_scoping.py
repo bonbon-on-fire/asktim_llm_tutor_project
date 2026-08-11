@@ -80,3 +80,28 @@ def test_scoped_view_blocks_other_course_conversation(seeded):
     client = _login(_app(), SC_PW)
     assert client.get(f"/api/conversation/{seeded['mol_id']}").status_code == 404
     assert client.get(f"/api/conversation/{seeded['sc_id']}").status_code == 200
+
+
+def test_scoped_export_filters_show_only_own_course(seeded):
+    client = _login(_app(), MOL_PW)
+    data = client.get("/api/export/filters").get_json()
+    assert [c["course"] for c in data["courses"]] == ["meaning_of_life"]
+
+
+def test_scoped_export_rows_cannot_pull_other_course(seeded):
+    # Scoped to meaning_of_life, request supply_chain_design's rows (which DO
+    # exist) -> the scope filter drops them, leaving a header-only CSV.
+    client = _login(_app(), MOL_PW)
+    resp = client.get("/api/export.csv?assignment=supply_chain_design::1")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True).lstrip("﻿")
+    lines = [ln for ln in body.splitlines() if ln.strip()]
+    assert len(lines) == 1  # header only, no supply_chain rows
+
+
+def test_master_export_rows_include_supply_chain(seeded):
+    client = _login(_app(), MASTER)
+    resp = client.get("/api/export.csv?assignment=supply_chain_design::1")
+    body = resp.get_data(as_text=True).lstrip("﻿")
+    lines = [ln for ln in body.splitlines() if ln.strip()]
+    assert len(lines) >= 3  # header + 2 message rows

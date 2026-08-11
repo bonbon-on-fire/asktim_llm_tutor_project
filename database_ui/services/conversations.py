@@ -283,18 +283,22 @@ def _assignment_sort_key(exercise_number: str):
         return (1, 0.0, str(exercise_number))
 
 
-def list_export_filters(db: Session) -> list[dict]:
+def list_export_filters(db: Session, courses: list[str] | None = None) -> list[dict]:
     """Return the export picker's options: each course with its distinct assignments.
 
     Shape: ``[{"course", "course_name", "assignments": [{"exercise_number",
     "exercise_kind"}]}]``. Courses are sorted by display name; assignments are
     de-duplicated by ``exercise_number`` and sorted numerically-then-lexically.
+    ``courses`` restricts the options to those course keys; ``None`` returns
+    every course.
     """
     stmt = select(
         Conversation.course,
         Conversation.exercise_number,
         Conversation.exercise_kind,
     ).distinct()
+    if courses is not None:
+        stmt = stmt.where(Conversation.course.in_(courses))
     kinds_by_course: dict[str, dict[str, str]] = {}
     for course, exercise_number, exercise_kind in db.execute(stmt).all():
         by_ex = kinds_by_course.setdefault(course, {})
@@ -371,15 +375,24 @@ def _export_row(
     }
 
 
-def iter_export_rows(db: Session, pairs: set[tuple[str, str]]):
+def iter_export_rows(
+    db: Session, pairs: set[tuple[str, str]], courses: list[str] | None = None
+):
     """Yield one export row per message across conversations matching *pairs*.
 
     *pairs* is a set of ``(course_key, exercise_number)`` tuples. Rows are ordered
     by ``last_active_at`` (newest first), then ``turn``, then ``message.id`` — the
-    same order the transcript view uses. Empty *pairs* yields nothing.
+    same order the transcript view uses. Empty *pairs* yields nothing. ``courses``
+    intersects *pairs* down to those course keys before querying; ``None`` applies
+    no restriction.
     """
     if not pairs:
         return
+    if courses is not None:
+        allowed = set(courses)
+        pairs = {(course, ex) for course, ex in pairs if course in allowed}
+        if not pairs:
+            return
     conditions = [
         and_(Conversation.course == course, Conversation.exercise_number == exercise)
         for course, exercise in pairs

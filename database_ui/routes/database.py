@@ -37,6 +37,7 @@ from flask import (
 from sqlalchemy.exc import SQLAlchemyError
 
 from database_ui.auth import allowed_courses, clear_auth, mark_authed, resolve_scope
+from database_ui.courses import course_display_name
 from database_ui.services import conversations as svc
 from ui_core.web.blueprints.history import content_disposition_attachment
 
@@ -63,17 +64,35 @@ def _is_schema_drift(exc: Exception) -> bool:
     return any(marker in message for marker in _SCHEMA_DRIFT_MARKERS)
 
 
+def _scope_label() -> str:
+    """Human-readable label for the current session's access scope.
+
+    All-access (master password or open dev) -> ``"Master"``; a scoped login ->
+    its course display name, or the names joined with a middot for a login scoped
+    to several courses. Rendered as background-colored text in the banner, so a
+    scoped reviewer can't tell the view is filtered (they should believe they see
+    everything) while an admin can reveal it by selecting the header text.
+    """
+    courses = allowed_courses()
+    if courses is None:
+        return "Master"
+    names = [course_display_name(c) for c in courses if c]
+    return " · ".join(name for name in names if name) or "Master"
+
+
 @database_bp.get("/")
 def index():
     """Render the review shell (sidebar plus transcript view).
 
-    The header shows no scope indicator: a scoped viewer should not be able to
-    tell their view is filtered.
+    The scope label is rendered as background-colored text in the top banner:
+    invisible in normal viewing (a scoped reviewer should not be able to tell
+    their view is filtered), but revealable by selecting the header text.
     """
     return render_template(
         "index.html",
         title=current_app.config["DATABASE_UI_TITLE"],
         accent=current_app.config["DATABASE_UI_ACCENT"],
+        scope_label=_scope_label(),
     )
 
 

@@ -17,9 +17,25 @@
   --error-text: #0e587b;
 }
 
-/* The top bar is an intentionally empty thin strip — chat.css already styles
+/* The top bar looks like an intentionally empty thin strip — chat.css styles
    .course-banner as a thin white bar with a bottom border (same height as the
-   student app's course banner). No content, no sign-out. */
+   student app's course banner). It doubles as a hidden scope marker: the current
+   login's access scope (a course name, or "Master") is rendered in the banner's
+   own white so it reads as a blank bar. A scoped course reviewer — who should
+   believe they see everything — can't tell the view is filtered; an admin
+   reveals it by selecting the header text (the browser's selection colors
+   override the white). */
+.course-name.scope-hidden {
+  color: #ffffff;                 /* == .course-banner background (chat.css) */
+  cursor: default;                /* no text-cursor hint that there's text here */
+}
+/* Left as default (selectable) text: a deliberate drag or triple-click reveals
+   it, but a casual single click on the bar does not -- so a scoped reviewer is
+   unlikely to trip over it by accident. */
+.course-name.scope-hidden::selection {
+  color: #0e587b;                 /* revealed dark-teal when highlighted */
+  background: #b7dced;
+}
 
 /* Course eyebrow: a compact, muted label above the identity line. Uppercased
    and letter-spaced so it reads as a quiet section tag, not a heading; truncated

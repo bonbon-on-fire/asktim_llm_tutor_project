@@ -72,8 +72,12 @@ checklist in [`PLANNING.md`](PLANNING.md).
   filter) for master or the allowed course-key list for a scoped login, and
   every data route (list, transcript, image/file, export filters + rows) filters
   by it — a scoped viewer can't list, open, or export another course's data.
-  The scope is **invisible in the UI**: the header shows no "viewing X" signpost,
-  so a scoped reviewer can't tell the view is filtered. Passwords are compared
+  A login scoped to several courses sees the union of just those courses. The
+  scope is **invisible to the reviewer**: the current login's access (the course
+  name, or `Master`) is written into the top banner in the banner's own white,
+  so it reads as an empty bar and a scoped reviewer can't tell the view is
+  filtered — an admin reveals it by selecting/highlighting the header text.
+  Passwords are compared
   with `hmac.compare_digest`; malformed `DATABASE_UI_COURSE_PASSWORDS` fails
   closed to "no course access" (the master password still works) — a bad config
   never widens access.

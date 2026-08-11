@@ -315,4 +315,4 @@ This yields one batch of visible characters per LLM token batch, then a final `(
 | `OPENAI_API_KEY` | For GPT | OpenAI API key. Required for the default `gpt` provider. |
 | `OPENAI_MODEL` | No | OpenAI model name (default: `gpt-5.4`). |
 | `ANTHROPIC_API_KEY` | For Claude | Anthropic API key. Required only when `build_tutor_model(provider="claude")` is used. |
-| `ANTHROPIC_MODEL` | No | Anthropic model name (default: `claude-sonnet-4-6`). |
+| `ANTHROPIC_MODEL` | No | Anthropic model name (default: `claude-sonnet-5`). |

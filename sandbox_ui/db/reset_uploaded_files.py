@@ -15,6 +15,7 @@ from sandbox_ui.db.session import engine
 
 
 def main() -> None:
+    """Drop and rebuild the `uploaded_files` table on the Sandbox's DB."""
     print(f"Target DB: {engine.url}")
     UploadedFile.__table__.drop(engine, checkfirst=True)
     UploadedFile.__table__.create(engine)

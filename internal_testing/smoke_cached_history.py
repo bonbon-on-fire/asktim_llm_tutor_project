@@ -10,6 +10,7 @@ client = anthropic.Anthropic(api_key=_require_anthropic_api_key())
 sysprompt = load_system_prompt("tutor_07", assignment_override="Exercise: intro.")
 
 def run(plan, label):
+    """Send *plan* to Claude and print its cache-read, cache-write, and input token usage under *label*."""
     system_blocks, messages = build_anthropic_request(plan)
     r = client.messages.create(model="claude-sonnet-5", max_tokens=64, system=system_blocks, messages=messages)
     u = r.usage

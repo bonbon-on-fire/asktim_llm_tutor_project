@@ -43,6 +43,7 @@ _RULE = "=" * 78
 
 
 def _parse_args() -> argparse.Namespace:
+    """Parse the command-line options for the STEM AskTIM adapter smoke test."""
     p = argparse.ArgumentParser(description="Smoke-test the STEM AskTIM adapter")
     p.add_argument("--course", default="supply_chain_design")
     p.add_argument("--kind", choices=["exercise", "practice"], default="exercise")
@@ -59,6 +60,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Run one simulated conversation against the STEM adapter and print a per-turn transcript and verdict."""
     args = _parse_args()
 
     problem_text = _problem_text(args.course, args.kind, args.number)

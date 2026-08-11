@@ -82,6 +82,7 @@ def _migrate_email_to_username() -> None:
     tables = set(inspector.get_table_names())
 
     def _cols(table_name: str) -> set[str]:
+        """Return the set of column names on the given table."""
         return {c["name"] for c in inspector.get_columns(table_name)}
 
     # students: email is the legacy NOT NULL primary key; username was added

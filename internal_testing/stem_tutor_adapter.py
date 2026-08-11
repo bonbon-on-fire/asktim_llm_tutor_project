@@ -86,16 +86,20 @@ class _AnthropicCompatClient:
     """
 
     def __init__(self, inner) -> None:
+        """Wrap the *inner* model client so its prompts are translated for Anthropic."""
         self._inner = inner
 
     def bind_tools(self, tools):
+        """Bind *tools* to the inner client, skipping the no-op bind when the list is empty."""
         inner = self._inner.bind_tools(tools) if tools else self._inner
         return _AnthropicCompatClient(inner)
 
     def invoke(self, messages, *args, **kwargs):
+        """Invoke the inner client after merging system messages into one leading message."""
         return self._inner.invoke(_merge_system_messages(messages), *args, **kwargs)
 
     def __getattr__(self, name):
+        """Delegate any other attribute access to the wrapped inner client."""
         return getattr(self._inner, name)
 
 
@@ -131,6 +135,7 @@ class StemTutorAdapter:
         tools: list | None = None,
         include_solution: bool = True,
     ) -> None:
+        """Set up the model client, threaded histories, and per-turn metadata slots for one conversation."""
         self.course = course
         self.kind = kind
         self.number = number

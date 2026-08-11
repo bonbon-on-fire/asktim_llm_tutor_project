@@ -19,6 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the add-focus_problem migration."""
     op.add_column(
         "conversations",
         sa.Column("focus_problem", sa.Integer(), nullable=True),
@@ -26,4 +27,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Revert the add-focus_problem migration."""
     op.drop_column("conversations", "focus_problem")

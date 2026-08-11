@@ -7,6 +7,7 @@ from langgraph.prebuilt import ToolNode
 
 class Tutor:
     def __init__(self, client, tools=None) -> None:
+        """Bind the tools to the client and build the LangGraph agent/tools workflow."""
         if tools is None:
             # LOCAL PATCH (diverges from upstream): this import was at module
             # scope, which made `langchain_experimental` a hard dependency even
@@ -21,6 +22,7 @@ class Tutor:
         self.client = client
 
         def should_continue(state: MessagesState) -> Literal["tools", END]:
+            """Route to the tools node if the last message has tool calls, otherwise end."""
             messages = state["messages"]
             last_message = messages[-1]
             # If the LLM makes a tool call, then we route to the "tools" node
@@ -30,6 +32,7 @@ class Tutor:
             return END
 
         def call_model(state: MessagesState):
+            """Invoke the client on the current messages and return the response to append to the state."""
             messages = state["messages"]
             response = self.client.invoke(messages)
             # We return a list, because this will get added to the existing list
@@ -53,9 +56,11 @@ class Tutor:
         self.app = app
 
     def get_response(self, prompt):
+        """Run the workflow on the prompt and return the final state."""
         return self.app.invoke({"messages": prompt})
 
     def get_streaming_response(self, prompt):
+        """Run the workflow on the prompt and return an async stream of messages and values."""
         return self.app.astream(
             {"messages": prompt}, stream_mode=["messages", "values"]
         )

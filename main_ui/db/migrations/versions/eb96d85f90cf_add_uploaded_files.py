@@ -25,6 +25,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the add-uploaded_files migration."""
     op.create_table(
         'uploaded_files',
         sa.Column('id', sa.BigInteger().with_variant(sa.Integer(), 'sqlite'), autoincrement=True, nullable=False),
@@ -43,6 +44,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Revert the add-uploaded_files migration."""
     with op.batch_alter_table('uploaded_files', schema=None) as batch_op:
         batch_op.drop_index('idx_uploaded_files_message')
     op.drop_table('uploaded_files')

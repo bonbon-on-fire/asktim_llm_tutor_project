@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def extract_assessment_codes(assessment):
+    """Parse the selected assessment codes from an assessment JSON string, defaulting to the concepts code on decode failure."""
     try:
         json_data = json.loads(assessment)
         selection = json_data["selection"]
@@ -20,6 +21,7 @@ def extract_assessment_codes(assessment):
 
 
 def get_intent(assessment, previous_intent):
+    """Derive the list of tutor intents from the assessment codes and the previous intent."""
     assessment_codes = extract_assessment_codes(assessment)
 
     intents = []

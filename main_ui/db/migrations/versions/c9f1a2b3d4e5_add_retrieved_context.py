@@ -17,10 +17,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the messages retrieved_context migration."""
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.add_column(sa.Column('retrieved_context', sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
+    """Revert the messages retrieved_context migration."""
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.drop_column('retrieved_context')

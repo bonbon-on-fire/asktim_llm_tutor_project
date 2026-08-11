@@ -48,6 +48,7 @@ _ZERO_USAGE = {"input_tokens": 0, "output_tokens": 0, "cache_read": 0, "cache_wr
 
 
 def _load_transcript(stem: str) -> tuple[dict[str, Any], Path]:
+    """Read a transcript JSON by stem and return its data plus path, requiring a non-empty 'exchanges' list."""
     path = TRANSCRIPTS_DIR / f"{stem}.json"
     if not path.exists():
         raise JudgeError(f"Transcript not found: {path}")
@@ -59,6 +60,7 @@ def _load_transcript(stem: str) -> tuple[dict[str, Any], Path]:
 
 
 def _has_figures(transcript: dict[str, Any]) -> bool:
+    """Return whether the transcript carries a non-empty 'figures' list."""
     figs = transcript.get("figures")
     return isinstance(figs, list) and bool(figs)
 
@@ -117,6 +119,7 @@ def _validate_text(raw_text: str) -> dict[str, Any]:
 
 
 def _anthropic_batch(reqs: dict[str, tuple[str, str]], *, model: str, api_key: str, log: Callable[[str], None]) -> dict[str, tuple[str, dict]]:
+    """Submit one Anthropic message batch, poll to completion, and return {custom_id: (raw_text, usage_dict)} for succeeded results."""
     import anthropic
 
     client = anthropic.Anthropic(api_key=api_key)
@@ -164,6 +167,7 @@ def _anthropic_batch(reqs: dict[str, tuple[str, str]], *, model: str, api_key: s
 
 
 def _openai_batch(reqs: dict[str, tuple[str, str]], *, model: str, reasoning: str, api_key: str, log: Callable[[str], None]) -> dict[str, tuple[str, dict]]:
+    """Submit one OpenAI JSONL batch, poll to completion, and return {custom_id: (raw_text, usage_dict)} for succeeded results."""
     from openai import OpenAI
 
     client = OpenAI(api_key=api_key)

@@ -50,14 +50,17 @@ class ValidatedAttachment:
 
     @property
     def size_bytes(self) -> int:
+        """Size of the raw upload in bytes."""
         return len(self.data)
 
 
 def _kind_for(filename: str) -> str | None:
+    """Map a filename's extension to its kind, or None if unsupported."""
     return ALLOWED_FILE_EXTS.get(Path(filename or "").suffix.lower())
 
 
 def _extract_delimited(data: bytes, delimiter: str) -> str:
+    """Extract CSV/TSV rows as comma-joined lines."""
     text = data.decode("utf-8", errors="replace")
     try:
         reader = csv.reader(io.StringIO(text), delimiter=delimiter)
@@ -67,10 +70,12 @@ def _extract_delimited(data: bytes, delimiter: str) -> str:
 
 
 def _extract_txt(data: bytes) -> str:
+    """Decode raw bytes as UTF-8 text."""
     return data.decode("utf-8", errors="replace")
 
 
 def _extract_xlsx(data: bytes) -> str:
+    """Extract non-empty spreadsheet rows as comma-joined lines via openpyxl."""
     try:
         import openpyxl
     except ImportError as exc:  # pragma: no cover
@@ -89,6 +94,7 @@ def _extract_xlsx(data: bytes) -> str:
 
 
 def _extract_docx(data: bytes) -> str:
+    """Extract document paragraphs as newline-joined text via python-docx."""
     try:
         import docx
     except ImportError as exc:  # pragma: no cover
@@ -101,6 +107,7 @@ def _extract_docx(data: bytes) -> str:
 
 
 def _extract_pdf(data: bytes) -> str:
+    """Extract text from each PDF page as newline-joined text via pypdf."""
     try:
         import pypdf
     except ImportError as exc:  # pragma: no cover

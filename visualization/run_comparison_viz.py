@@ -227,6 +227,7 @@ def _grouped(ax, categories, series, *, fmt="{:.1f}", width=0.3, gap=0.02):
 # --------------------------------------------------------------------------- #
 
 def chart_score_by_course(rows: list[Row], plt, *, bare: bool = False) -> Path:
+    """Grouped bars of mean judge score per course for both tutors."""
     courses = list(_ROUNDS)
     series = {arm: [_mean(rows, arm=arm, round_key=c) for c in courses]
               for arm in _ARMS}
@@ -254,6 +255,7 @@ def chart_score_by_course(rows: list[Row], plt, *, bare: bool = False) -> Path:
 # --------------------------------------------------------------------------- #
 
 def chart_score_by_persona(rows: list[Row], plt, *, bare: bool = False) -> Path:
+    """Grouped bars of mean judge score per student type, one panel per course."""
     courses = list(_ROUNDS)
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 5.4), sharey=True)
 
@@ -280,6 +282,7 @@ def chart_score_by_persona(rows: list[Row], plt, *, bare: bool = False) -> Path:
 # --------------------------------------------------------------------------- #
 
 def chart_integrity_cliff(rows: list[Row], plt, *, bare: bool = False) -> Path:
+    """Grouped counts of answer-giving-cliff conversations per student type, one panel per course."""
     courses = list(_ROUNDS)
     fig, axes = plt.subplots(1, 2, figsize=(11.5, 5.4), sharey=True)
 
@@ -384,6 +387,7 @@ def chart_cost(rows: list[Row], plt, *, bare: bool = False) -> Path:
 
 
 def main() -> int:
+    """Load the comparison rows and write every chart in titled and bare variants."""
     rows = _load()
     if not rows:
         print("No graded comparison transcripts found under transcripts/*/*_{cmp,phys}_*/.")

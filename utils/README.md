@@ -46,7 +46,7 @@ resolvers normalize any input to that form.
 
 - Directory resolvers: `course_dir`, `exercises_dir`, `practices_dir`
 - Exercises: `exercise_path`, `exercise_exists`, `read_exercise` (missing →
-  `""`), `discover_exercises` (sorted `["01", "02", …]`)
+  `""`), `discover_exercises` (sorted `["1", "2", …]`)
 - Practice problems (parallel set): `practice_path`, `practice_exists`,
   `read_practice`, `discover_practice`
 - Solutions (tutor-only correct answers): `solution_path`, `read_solution` (both
@@ -135,8 +135,8 @@ existing `pypdf` dependency.
 
 Best-effort USD cost estimation for model calls. Token **counts** come from
 LangChain `usage_metadata` (exact); only the dollar conversion uses a small rate
-table (`$`/1M tokens, verified 2026-07). Rates cover `claude-sonnet-4-6`,
-`gpt-5.4`, and `text-embedding-3-small`, are cache-aware (`cache_read` /
+table (`$`/1M tokens, verified 2026-07). Rates cover `claude-sonnet-5`,
+`claude-sonnet-4-6`, `gpt-5.4`, and `text-embedding-3-small`, are cache-aware (`cache_read` /
 `cache_write`), and any rate can be overridden with a `PRICE_<MODEL>_<KEY>` env
 var. Date-stamped model ids (e.g. `gpt-5.4-2026-03-05`) normalize to their base key.
 

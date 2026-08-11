@@ -24,10 +24,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the uploaded_images data-column migration."""
     with op.batch_alter_table('uploaded_images', schema=None) as batch_op:
         batch_op.add_column(sa.Column('data', sa.LargeBinary(), nullable=False))
 
 
 def downgrade() -> None:
+    """Revert the uploaded_images data-column migration."""
     with op.batch_alter_table('uploaded_images', schema=None) as batch_op:
         batch_op.drop_column('data')

@@ -23,6 +23,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the messages rating-column migration."""
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.add_column(
             sa.Column('rating', sa.Integer(), nullable=False, server_default='0')
@@ -33,6 +34,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Revert the messages rating-column migration."""
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.drop_constraint('ck_messages_rating', type_='check')
         batch_op.drop_column('rating')

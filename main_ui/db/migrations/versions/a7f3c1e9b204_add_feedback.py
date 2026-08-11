@@ -22,6 +22,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the add-feedback-table migration."""
     op.create_table(
         'feedback',
         sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
@@ -38,6 +39,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Revert the add-feedback-table migration."""
     with op.batch_alter_table('feedback', schema=None) as batch_op:
         batch_op.drop_index('idx_feedback_conversation')
     op.drop_table('feedback')

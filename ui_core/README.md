@@ -102,12 +102,16 @@ uses them too.
 
 ### `usage.py`
 
-Two dependency-light pure parsers for a tutor message's stored review JSON,
+Three dependency-light pure parsers for a tutor message's stored review JSON,
 shared by every reader of the `messages` table:
 
 - `model_from_usage_json(usage_json)` — pull the `model` id out of the JSON
   written beside `cost_usd` (model id + token counts); `None` on missing/empty/
   unparseable input
+- `new_tokens_from_usage_json(usage_json)` — sum the cost-relevant ("new",
+  non-cached) token count across the turn's stored per-call usage records
+  (`max(0, input_tokens - cache_read) + output_tokens` per call); `0` on
+  missing/empty/unparseable/shape-unexpected input
 - `records_from_retrieved_context(retrieved_context)` — parse the turn's RAG
   JSON into a `[{source, score, chars, text}]` list; `[]` on missing/empty/
   non-list input
@@ -136,6 +140,11 @@ attachments (csv/tsv/xlsx/pdf/docx/txt):
 - `files_to_text(files)` — render validated attachments as labeled text
   blocks (via `utils.attachments.attachments_to_text_block`) for folding into
   the current turn's tutor message
+- `get_file_for_viewer(db, file_id, session_id, username, *, uploaded_file_cls, message_cls, conversation_cls)`
+  — return the file only if the viewer owns its parent conversation (by
+  `session_id` or matching `username`), else `None`; mirrors
+  `images.get_image_for_viewer` so the download route 404s without leaking
+  existence
 
 **`services/images.py`**
 - `read_and_validate(files)` — Flask `FileStorage` list → validated images via
@@ -192,7 +201,7 @@ attachments (csv/tsv/xlsx/pdf/docx/txt):
 - `get_message_for_viewer(db, message_id, session_id, username, *, models)` —
   return a `Message` only if the viewer owns its parent conversation (by
   `session_id` or matching `username`), else `None`; mirrors
-  `get_conversation_for_viewer` so rating routes 404 without leaking existence
+  `get_conversation_for_viewer` so rating routes 403 without leaking existence
 - `set_message_rating(db, message, rating)` — set a message's `rating` to
   `-1`/`0`/`1` (used by the message-rating blueprint)
 - `backfill_username_for_session(db, session_id, username, *, models)` —
@@ -260,8 +269,9 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
 
 Public API:
 - `get_tutor_reply(*, course, exercise, tutor, history, new_student_message, images=None, **ctx)`
-  → `{"reply": str, "reasoning": str | None, "retrieved": list}` (`retrieved` is
-  the `RetrievedContext.records` for the turn — `[]` outside RAG mode)
+  → `{"reply": str, "reasoning": str | None, "retrieved": list, "cost": dict}`
+  (`retrieved` is the `RetrievedContext.records` for the turn — `[]` outside RAG
+  mode; `cost` is the turn's priced token breakdown)
 - `stream_tutor_reply(..., history_mode="legacy", cached_history=None)` — generator
   yielding `{"type": "delta", "text": ...}` events, then one terminal
   `{"type": "done", "reply": ..., "reasoning": ..., "retrieved": ..., "cost": ...}`.
@@ -357,7 +367,7 @@ database_ui). Exposes a browser global (and CommonJS export for
 Blueprint factories, byte-identical in body across `main_ui`/`sandbox_ui`
 apart from import paths — each app injects its own `cookies` /
 `services.conversation` / `services.students` / `services.images` /
-`services.feedback` modules (passed as plain modules, not classes) so the
+`services.files` / `services.feedback` modules (passed as plain modules, not classes) so the
 shared route bodies stay app-agnostic. Blueprint names are preserved as
 `identity`, `history`, `feedback`, and `message_rating`.
 
@@ -370,13 +380,15 @@ shared route bodies stay app-agnostic. Blueprint names are preserved as
   student on first use, verifies password thereafter, 401 on mismatch); sets
   the `tutor_username` cookie and backfills prior anonymous conversations
 
-**`make_history_bp(*, cookies, conversation, images)`** → blueprint named
+**`make_history_bp(*, cookies, conversation, images, files)`** → blueprint named
 `history`, all read-only:
 - `GET /api/history` — conversations linked to the current `tutor_username`
 - `GET /api/conversation/<uuid>` — message log for one conversation (owned by
   session_id or username; 404, not 403, on mismatch/absence)
 - `GET /api/image/<int:image_id>` — serve one uploaded image's bytes (same
   ownership check)
+- `GET /api/file/<int:file_id>` — serve one uploaded non-image file's bytes as a
+  download (`Content-Disposition: attachment`; same ownership check)
 
 **`make_feedback_bp(*, cookies, conversation, feedback)`** → blueprint named
 `feedback` (**dormant** — kept registered but the star toast UI that drove it
@@ -392,7 +404,7 @@ was removed; superseded by `make_message_rating_bp`):
 `message_rating`:
 - `POST /api/message/<id>/rating` — set the thumbs rating on a single message.
   Body: `{"rating": -1|0|1}`. Owner-only (via `get_message_for_viewer`, so a
-  message the caller doesn't own 404s) and **tutor-only** (only the tutor's
+  message the caller doesn't own 403s with `wrong_session`) and **tutor-only** (only the tutor's
   messages are rateable). Persists via `set_message_rating`.
 
 ### `templates/base_chat.html`

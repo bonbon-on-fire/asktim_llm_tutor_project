@@ -60,3 +60,23 @@ def test_unknown_password_is_rejected():
 def test_index_shows_scope_label():
     body = _login(_app(), SC_PW).get("/").get_data(as_text=True)
     assert "MIT CTL.SC2x Supply Chain Design" in body
+
+
+def test_scoped_list_shows_only_own_course(seeded):
+    client = _login(_app(), SC_PW)
+    data = client.get("/api/conversations").get_json()
+    courses = {c["course"] for c in data["conversations"]}
+    assert courses == {"supply_chain_design"}
+
+
+def test_master_list_shows_all_courses(seeded):
+    client = _login(_app(), MASTER)
+    data = client.get("/api/conversations").get_json()
+    courses = {c["course"] for c in data["conversations"]}
+    assert courses == {"supply_chain_design", "meaning_of_life"}
+
+
+def test_scoped_view_blocks_other_course_conversation(seeded):
+    client = _login(_app(), SC_PW)
+    assert client.get(f"/api/conversation/{seeded['mol_id']}").status_code == 404
+    assert client.get(f"/api/conversation/{seeded['sc_id']}").status_code == 200

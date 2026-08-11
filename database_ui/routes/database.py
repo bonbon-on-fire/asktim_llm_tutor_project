@@ -130,7 +130,7 @@ def api_conversations():
     offset = _clamp_int(request.args.get("offset"), default=0, lo=0, hi=None)
     try:
         conversations = svc.list_all_conversations(
-            g.db, sort=sort, limit=limit, offset=offset
+            g.db, sort=sort, limit=limit, offset=offset, courses=allowed_courses()
         )
     except SQLAlchemyError as exc:
         g.db.rollback()
@@ -222,6 +222,9 @@ def api_conversation(conversation_id: str):
         return jsonify({"error": "bad_conversation_id"}), 400
     convo = svc.get_conversation(g.db, convo_id)
     if convo is None:
+        return jsonify({"error": "not_found"}), 404
+    courses = allowed_courses()
+    if courses is not None and convo.course not in courses:
         return jsonify({"error": "not_found"}), 404
     return jsonify(
         {

@@ -26,6 +26,7 @@ def list_all_conversations(
     sort: str = "date",
     limit: int | None = None,
     offset: int = 0,
+    courses: list[str] | None = None,
 ) -> list[dict]:
     """Return summaries for all conversations.
 
@@ -36,9 +37,13 @@ def list_all_conversations(
 
     ``limit`` / ``offset`` paginate the conversation list (counts/snippets are
     fetched only for the page returned, so this stays cheap on large tables).
+    ``courses`` restricts the list to those course keys; ``None`` returns every
+    course.
     """
     order = _order_by(sort)
     stmt = select(Conversation).order_by(*order)
+    if courses is not None:
+        stmt = stmt.where(Conversation.course.in_(courses))
     if limit is not None:
         stmt = stmt.limit(limit).offset(offset)
     convos = db.execute(stmt).scalars().all()

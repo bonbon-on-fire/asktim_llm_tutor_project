@@ -144,44 +144,23 @@
     return root;
   }
 
-  function makeCourseOption(labelText, courseKey, checked) {
-    const row = document.createElement("label");
-    row.className = "download-option";
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.className = "download-course-cb";
-    cb.checked = checked;
-    cb.dataset.course = courseKey;
-    const span = document.createElement("span");
-    span.textContent = labelText;
-    row.appendChild(cb);
-    row.appendChild(span);
-    return { row: row, cb: cb };
-  }
-
-  // Read the Course step's checkboxes back into state before navigating away.
-  // The Assignment step's dropdowns persist into assignChecked as they change,
-  // so no save is needed there.
-  function saveStep() {
-    if (step === 0) {
-      for (const cb of stepBody.querySelectorAll(".download-course-cb")) {
-        courseChecked[cb.dataset.course] = cb.checked;
-      }
-    }
-  }
+  // Both steps' dropdowns persist their selection into state as they change
+  // (courseChecked / assignChecked), so navigating away needs no explicit save.
+  function saveStep() {}
 
   function renderCourseStep() {
-    for (const c of courses) {
-      const opt = makeCourseOption(
-        c.course_name || c.course,
-        c.course,
-        courseChecked[c.course] !== false
-      );
-      opt.cb.addEventListener("change", () => {
-        courseChecked[c.course] = opt.cb.checked;
-      });
-      stepBody.appendChild(opt.row);
-    }
+    const options = courses.map((c) => ({
+      value: c.course,
+      label: c.course_name || c.course,
+    }));
+    const checkedSet = new Set(
+      options.filter((o) => courseChecked[o.value] !== false).map((o) => o.value)
+    );
+    const dd = buildMultiSelect(options, checkedSet, () => {
+      for (const o of options) courseChecked[o.value] = checkedSet.has(o.value);
+      clearError();
+    });
+    stepBody.appendChild(dd);
   }
 
   function renderAssignmentStep() {

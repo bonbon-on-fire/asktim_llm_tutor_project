@@ -312,7 +312,7 @@ asktim_llm_tutor_project_2026/
 │
 ├── tutor/
 │   ├── run_tutor.py         # LangGraph engine + prompt loading + response parsing
-│   └── prompts/             # tutor_01.txt .. tutor_08.txt (versioned prompts; tutor_08 is the deployed default, both apps locked to it — tutor_07 guidance + baked-in language directive)
+│   └── prompts/             # tutor_01.txt .. tutor_09.txt (versioned prompts; tutor_08 is the deployed default, both apps locked to it — tutor_07 guidance + baked-in language directive; tutor_09 is tutor_08 with a more concise language section, not deployed)
 │
 ├── internal_testing/
 │   ├── run_transcript.py            # Generate raw transcripts in bulk (--output-suffix, --yes)

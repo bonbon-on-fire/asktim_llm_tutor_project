@@ -17,11 +17,13 @@ tutor/
     tutor_06.txt            — Socratic guidance variant
     tutor_07.txt            — tutor_05 guidance + math formatting + grounded lecture citations + anti-leakage
     tutor_08.txt            — deployed default: tutor_07 + a ## Language section (reply in the student's language) baked in (main_ui + sandbox_ui locked to this)
+    tutor_09.txt            — tutor_08 with a more concise ## Language section (same rules, trimmed wording); not deployed
 ```
 
 - `run_tutor.py` builds the LangGraph, invokes the LLM, and parses structured JSON response fields (pedagogical reasoning + student-facing answer).
 - Prompt versions are selected by name (for example `tutor_03`, `tutor_08`) and loaded from `tutor/prompts/`. **`tutor_08` is the deployed default** (`DEFAULT_TUTOR` in both `main_ui` and `sandbox_ui`, and both apps are **locked** to it — the client can't override it). To revert to English-only, switch the default back to `tutor_07`.
 - **`tutor_08`** is `tutor_07` with a **`## Language` section** baked in — the tutor detects the language of the student's latest message and writes its student-facing answer in that language (following mid-conversation switches), while keeping `pedagogical-reasoning`, the JSON field names, citation labels, and LaTeX in English.
+- **`tutor_09`** is `tutor_08` with the same `## Language` section reworded to be **more concise** — the language rules are unchanged (reply in the student's language; keep JSON field names, `pedagogical-reasoning`, citation labels, and LaTeX in English; give English technical terms in parentheses on first use), just trimmed of the explanatory padding. Not deployed.
 - **`tutor_07`** layers on `tutor_05`'s Socratic guidance and adds:
   - **Math formatting** — write math as `\(...\)` (inline) / `\[...\]` (display) LaTeX, never `$`/`$$` (those stay literal currency), doubling every backslash (`\\(`, `\\frac{}{}`) so the JSON response stays valid.
   - **Grounded lecture citations** — when pointing a student to course material, cite the real **Week / Lesson / Video** coordinate (e.g. *"…in **Week 10, Lesson 1**, in the **DuPont Analysis** video"*), woven into a sentence. Labels come from `curriculum/<course>/lecture_index.json` via [`rag/retrieve.py`](../rag/README.md); the tutor may only cite a label present in the retrieved block, so it can't invent a lecture.

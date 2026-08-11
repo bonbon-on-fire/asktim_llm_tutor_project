@@ -154,7 +154,7 @@ def validate_role(role) -> dict | None:
 
 
 def role_default_prompt(role) -> str | None:
-    """Return the default prompt name for *role* (e.g. 'tutor' -> 'tutor_07')."""
+    """Return the default prompt name for *role* (e.g. 'tutor' -> 'tutor_09')."""
     r = get_role(role)
     return r.default_prompt if r else None
 

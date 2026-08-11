@@ -1,24 +1,26 @@
-"""Single shared-password gate for database_ui.
+"""Password gate for database_ui, with optional per-course scoping.
 
-The review tool exposes every student's conversations and uploaded images, so it
-must not be open. This is a deliberately small gate: one shared password
-(``DATABASE_UI_PASSWORD``) unlocks the whole tool for the browser session via a
-signed Flask session cookie. Not per-user auth — sufficient for a small internal
-review tool, and easy to swap for SSO later.
+The review tool exposes every student's conversations and uploaded files, so it
+must not be open. A submitted password resolves to a *Scope*:
 
-If ``DATABASE_UI_PASSWORD`` is unset (local dev only), the gate is open.
+- the master ``DATABASE_UI_PASSWORD`` -> all-access (sees every course), or
+- a per-course password (``DATABASE_UI_COURSE_PASSWORDS``) -> only its courses.
+
+The resolved scope is stored in the signed Flask session cookie. If neither is
+configured (local dev only), the gate is open and every request is all-access.
 """
 
 from __future__ import annotations
 
+import hmac
+from dataclasses import dataclass
+
 from flask import Flask, current_app, redirect, request, session, url_for
 
 _SESSION_KEY = "database_authed"
+_SESSION_ALL_ACCESS = "all_access"
+_SESSION_COURSES = "allowed_courses"
 
-# Endpoints reachable without auth: the login form/submit and the health check.
-# Both this app's own static endpoint (database.css) and the shared
-# ui_core.static endpoint (chat.css) are also allowed so the login page can
-# load all of its CSS.
 _PUBLIC_ENDPOINTS = {
     "database.login",
     "database.login_submit",
@@ -28,9 +30,22 @@ _PUBLIC_ENDPOINTS = {
 }
 
 
+@dataclass(frozen=True)
+class Scope:
+    """What a logged-in session may see.
+
+    ``all_access`` -> every course (master password or open dev). Otherwise
+    ``courses`` lists the curriculum keys this session is restricted to.
+    """
+
+    all_access: bool
+    courses: tuple[str, ...]
+
+
 def password_required() -> bool:
-    """True if a password is configured (i.e. the gate is active)."""
-    return bool(current_app.config.get("DATABASE_UI_PASSWORD"))
+    """True if any password is configured (i.e. the gate is active)."""
+    cfg = current_app.config
+    return bool(cfg.get("DATABASE_UI_PASSWORD") or cfg.get("DATABASE_UI_COURSE_PASSWORDS"))
 
 
 def is_authed() -> bool:
@@ -40,21 +55,50 @@ def is_authed() -> bool:
     return bool(session.get(_SESSION_KEY))
 
 
-def check_password(candidate: str) -> bool:
-    """True if *candidate* matches the configured password."""
-    expected = current_app.config.get("DATABASE_UI_PASSWORD")
-    return bool(expected) and candidate == expected
+def resolve_scope(candidate: str) -> Scope | None:
+    """Resolve a submitted password to a :class:`Scope`, or ``None`` if no match.
+
+    The master password wins and grants all-access; otherwise the candidate is
+    matched against the per-course map. Comparisons are constant-time.
+    """
+    master = current_app.config.get("DATABASE_UI_PASSWORD")
+    if master and hmac.compare_digest(candidate, master):
+        return Scope(all_access=True, courses=())
+    course_passwords: dict[str, tuple[str, ...]] = (
+        current_app.config.get("DATABASE_UI_COURSE_PASSWORDS") or {}
+    )
+    for password, courses in course_passwords.items():
+        if hmac.compare_digest(candidate, password):
+            return Scope(all_access=False, courses=tuple(courses))
+    return None
 
 
-def mark_authed() -> None:
-    """Mark the current session as authenticated and make the cookie permanent."""
+def allowed_courses() -> list[str] | None:
+    """Course keys the current session is restricted to, or ``None`` for no filter.
+
+    ``None`` means all-access (master password, or open local-dev mode). A list
+    means restrict queries to exactly those course keys.
+    """
+    if not password_required():
+        return None
+    if session.get(_SESSION_ALL_ACCESS):
+        return None
+    return list(session.get(_SESSION_COURSES, []))
+
+
+def mark_authed(scope: Scope) -> None:
+    """Mark the session authenticated for *scope* and make the cookie permanent."""
     session[_SESSION_KEY] = True
+    session[_SESSION_ALL_ACCESS] = scope.all_access
+    session[_SESSION_COURSES] = list(scope.courses)
     session.permanent = True
 
 
 def clear_auth() -> None:
-    """Clear the authenticated flag from the current session (log out)."""
+    """Clear all auth/scope state from the current session (log out)."""
     session.pop(_SESSION_KEY, None)
+    session.pop(_SESSION_ALL_ACCESS, None)
+    session.pop(_SESSION_COURSES, None)
 
 
 def init_auth(app: Flask) -> None:

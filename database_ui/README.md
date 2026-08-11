@@ -19,9 +19,11 @@ italicized), then the full course name, then the exercise header with the
 conversation's running total cost appended.
 
 A **Download data** button in the sidebar (the same solid-accent CTA sandbox_ui
-uses for "Edit context") opens a two-step wizard: step 1 multi-selects courses,
-then step 2 gives each selected course its own sandbox-style multi-select
-dropdown of that course's exercises/practice. The final step downloads the
+uses for "Edit context") opens a wizard: the first page multi-selects courses
+(a sandbox-style dropdown, none selected by default), then each selected course
+gets its own page with a multi-select dropdown of that course's
+exercises/practice — so the page count is `1 + (courses chosen)`. The final page
+downloads the
 matching conversations as a single CSV (one row per message: content,
 pedagogical reasoning, rating, model, cost, raw `usage_json` /
 `retrieved_context`, and an image count). Read-only like the rest of the app —

@@ -126,7 +126,7 @@ def validate_role(role) -> dict | None:
 
 
 def role_default_prompt(role) -> str | None:
-    """Return the default prompt name for *role* (e.g. 'tutor' -> 'tutor_07')."""
+    """Return the default prompt name for *role* (e.g. 'tutor' -> 'tutor_09')."""
     r = get_role(role)
     return r.default_prompt if r else None
 
@@ -175,7 +175,7 @@ def list_tutors() -> list[str]:
     """Sorted tutor prompt stems available under tutor/prompts/.
 
     The wizard lists every built-in for visibility, but the Tutor prompt step is
-    locked to `tutor_07` (disabled dropdown) and the routes ignore any
+    locked to `tutor_09` (disabled dropdown) and the routes ignore any
     client-supplied tutor, so the full list is display-only.
     """
     if not _TUTOR_PROMPTS_DIR.is_dir():

@@ -7,7 +7,6 @@ Run with:
 from __future__ import annotations
 
 from pathlib import Path
-import os
 import tempfile
 
 from eval.rag_judge.generate_ground_truth import _lecture_files
@@ -18,16 +17,13 @@ from utils.curriculum import (
     ARCHIVE_DIRNAME,
     TUTOR_RULES_HEADER,
     append_course_tutor_rules,
-    append_language_directive,
     course_dir,
     discover_exercises,
     discover_practice,
     exercise_exists,
     list_archived_courses,
     list_courses,
-    load_language_directive,
     load_ui_labels,
-    multilingual_enabled,
     practice_exists,
     practice_path,
     read_course_tutor_rules,
@@ -384,70 +380,6 @@ def test_ui_labels() -> None:
         _check("empty course -> defaults", load_ui_labels("", curriculum_root=root) == defaults)
 
 
-def test_load_language_directive() -> None:
-    """load_language_directive reads the fragment, or '' when absent."""
-    with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        _check(
-            "missing fragment -> empty string",
-            load_language_directive(curriculum_root=root) == "",
-        )
-        (root / "language_directive.txt").write_text(
-            "Language:\nReply in the student's language.", encoding="utf-8"
-        )
-        text = load_language_directive(curriculum_root=root)
-        _check("present fragment is read and stripped", text.startswith("Language:"), f"got {text!r}")
-
-
-def test_multilingual_enabled_env_flag() -> None:
-    """multilingual_enabled defaults on; off only for 0/false/no/off."""
-    prev = os.environ.pop("TUTOR_MULTILINGUAL", None)
-    try:
-        _check("default (unset) is enabled", multilingual_enabled() is True)
-        for falsey in ("0", "false", "FALSE", "no", "off"):
-            os.environ["TUTOR_MULTILINGUAL"] = falsey
-            _check(f"{falsey!r} disables", multilingual_enabled() is False)
-        os.environ["TUTOR_MULTILINGUAL"] = "1"
-        _check("'1' enables", multilingual_enabled() is True)
-    finally:
-        os.environ.pop("TUTOR_MULTILINGUAL", None)
-        if prev is not None:
-            os.environ["TUTOR_MULTILINGUAL"] = prev
-
-
-def test_append_language_directive() -> None:
-    """append appends once when enabled; is a byte-identical no-op when disabled/empty."""
-    prev = os.environ.pop("TUTOR_MULTILINGUAL", None)
-    try:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            (root / "language_directive.txt").write_text("DIRECTIVE-MARKER", encoding="utf-8")
-
-            # Enabled (default): appended exactly once, after the base prompt.
-            os.environ.pop("TUTOR_MULTILINGUAL", None)
-            out = append_language_directive("BASE", curriculum_root=root)
-            _check("enabled appends directive", out == "BASE\n\nDIRECTIVE-MARKER", f"got {out!r}")
-            _check("appended exactly once", out.count("DIRECTIVE-MARKER") == 1)
-
-            # Disabled: byte-identical no-op.
-            os.environ["TUTOR_MULTILINGUAL"] = "off"
-            _check(
-                "disabled is byte-identical no-op",
-                append_language_directive("BASE", curriculum_root=root) == "BASE",
-            )
-
-            # Enabled but fragment missing: no-op.
-            os.environ.pop("TUTOR_MULTILINGUAL", None)
-            _check(
-                "missing fragment is no-op",
-                append_language_directive("BASE", curriculum_root=Path(tmp) / "nope") == "BASE",
-            )
-    finally:
-        os.environ.pop("TUTOR_MULTILINGUAL", None)
-        if prev is not None:
-            os.environ["TUTOR_MULTILINGUAL"] = prev
-
-
 def main() -> int:
     """Run all tests and return 1 if any failed, else 0."""
     tests = [
@@ -463,9 +395,6 @@ def main() -> int:
         test_archived_course_reachable_by_all_helpers,
         test_active_course_paths_unchanged,
         test_archived_course_reachable_by_remaining_helpers,
-        test_load_language_directive,
-        test_multilingual_enabled_env_flag,
-        test_append_language_directive,
     ]
     for t in tests:
         print(t.__name__)

@@ -203,27 +203,6 @@ def _test_build_system_prompt_course_rules():
     )
 
 
-def _test_language_directive_in_system_prompt():
-    """build_system_prompt appends the language directive when enabled, omits it when disabled."""
-    from ui_core.tutor_bridge import TutorBridge
-
-    bridge = TutorBridge()
-    prev = os.environ.pop("TUTOR_MULTILINGUAL", None)
-    try:
-        os.environ.pop("TUTOR_MULTILINGUAL", None)  # default: enabled
-        enabled = bridge.build_system_prompt("tutor_07", "ZZZMARKER", course="")
-        _check("assignment override still present", "ZZZMARKER" in enabled)
-        _check("directive present when enabled", "Language:" in enabled, enabled[-200:])
-
-        os.environ["TUTOR_MULTILINGUAL"] = "off"
-        disabled = bridge.build_system_prompt("tutor_07", "ZZZMARKER", course="")
-        _check("directive absent when disabled", "Language:" not in disabled)
-    finally:
-        os.environ.pop("TUTOR_MULTILINGUAL", None)
-        if prev is not None:
-            os.environ["TUTOR_MULTILINGUAL"] = prev
-
-
 def _test_done_failed_flag():
     """The streaming ``done`` event flags a failed turn.
 
@@ -273,7 +252,6 @@ def main() -> int:
     _test_mode_resolution()
     _test_build_system_prompt_course_rules()
     _test_done_failed_flag()
-    _test_language_directive_in_system_prompt()
 
     canned_raw = json.dumps(
         {

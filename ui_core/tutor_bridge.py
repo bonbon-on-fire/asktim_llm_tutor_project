@@ -59,7 +59,6 @@ from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
 from utils.curriculum import (
     SOLUTION_CONTEXT_LABEL,
     append_course_tutor_rules,
-    append_language_directive,
     exercise_path,
     load_about_asktim,
     practice_path,
@@ -371,8 +370,7 @@ class TutorBridge:
         """
         prompts_dir = prompts_dir_for_prompt(tutor)  # None -> load_system_prompt uses tutor/prompts
         base = load_system_prompt(tutor, assignment_override=assignment_text, prompts_dir=prompts_dir)
-        base = append_course_tutor_rules(base, course)
-        return append_language_directive(base)
+        return append_course_tutor_rules(base, course)
 
     def retrieved_context(self, course: str, query: str, **ctx) -> RetrievedContext:
         """Per-turn RAG retrieval (prompt text + records); empty outside rag mode.

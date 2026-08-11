@@ -10,7 +10,6 @@ knows the layout, so the six call sites that used to duplicate
 from __future__ import annotations
 
 import json
-import os
 import re
 from pathlib import Path
 
@@ -142,7 +141,7 @@ def read_practice(
 
 # Optional per-course tutor-behavior delta appended to the base tutor prompt.
 # A course drops ``curriculum/<course>/tutor_rules.txt`` holding ONLY its
-# course-specific rules; the base prompt (tutor_07) stays the shared source of
+# course-specific rules; the base prompt (tutor_08) stays the shared source of
 # truth. See docs/superpowers/specs/2026-07-16-per-course-tutor-rules-design.md.
 TUTOR_RULES_HEADER = "## Course-specific rules:"
 
@@ -454,46 +453,3 @@ def load_about_asktim(curriculum_root: Path | str | None = None) -> str:
     """
     path = about_asktim_path(curriculum_root)
     return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
-
-
-# TUTOR_MULTILINGUAL gates the language directive. Multilingual conversation is ON
-# by default; set the env var to 0/false/no/off for instant rollback to English-only.
-_MULTILINGUAL_FALSEY = {"0", "false", "no", "off"}
-
-
-def multilingual_enabled() -> bool:
-    """True unless TUTOR_MULTILINGUAL is 0/false/no/off (case-insensitive)."""
-    return os.environ.get("TUTOR_MULTILINGUAL", "").strip().lower() not in _MULTILINGUAL_FALSEY
-
-
-def language_directive_path(curriculum_root: Path | str | None = None) -> Path:
-    """Path to the global language directive fragment (curriculum/language_directive.txt)."""
-    return _root(curriculum_root) / "language_directive.txt"
-
-
-def load_language_directive(curriculum_root: Path | str | None = None) -> str:
-    """Read the language directive, stripped, or "" when the fragment is absent.
-
-    A global tutor-behavior fragment (not per-course) folded into every assembled
-    system prompt, telling the tutor to reply in the student's language while
-    keeping reasoning/JSON keys/citations/LaTeX in English. Lives beside
-    about_asktim.txt so both global fragments share one home.
-    """
-    path = language_directive_path(curriculum_root)
-    return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
-
-
-def append_language_directive(
-    system_prompt: str, curriculum_root: Path | str | None = None
-) -> str:
-    """Append the language directive to *system_prompt* when multilingual is enabled.
-
-    No-op (returns *system_prompt* unchanged) when TUTOR_MULTILINGUAL disables it
-    or the fragment is empty/absent — so the assembled prompt is byte-identical to
-    the English-only build. Lands at the very end, after any course tutor rules, so
-    it carries recency weight (mirrors append_course_tutor_rules).
-    """
-    if not multilingual_enabled():
-        return system_prompt
-    directive = load_language_directive(curriculum_root)
-    return f"{system_prompt}\n\n{directive}" if directive else system_prompt

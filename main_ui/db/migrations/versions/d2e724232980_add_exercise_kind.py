@@ -19,6 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the add-exercise_kind migration."""
     op.add_column(
         "conversations",
         sa.Column(
@@ -31,4 +32,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Revert the add-exercise_kind migration."""
     op.drop_column("conversations", "exercise_kind")

@@ -22,7 +22,7 @@ dashboard_ui/
 From repo root in PowerShell:
 
 ```powershell
-python -m flask --app dashboard_ui.run_dashboard_ui run -p 5002
+python -m flask --app dashboard_ui.run_dashboard_ui run -p 5003
 ```
 
 Or:
@@ -31,9 +31,9 @@ Or:
 python -m dashboard_ui.run_dashboard_ui
 ```
 
-Then open [http://127.0.0.1:5002](http://127.0.0.1:5002).
+Then open [http://127.0.0.1:5003](http://127.0.0.1:5003).
 
-> Port `5001` is now reserved for [`main_ui/`](../main_ui/README.md). Pick anything else for the dashboard; the snippets above use `5002`.
+> Ports `5000`–`5002` are taken by [`main_ui/`](../main_ui/README.md), `sandbox_ui/`, and `database_ui/`. The dashboard defaults to `5003` (override with the `PORT` env var); the snippets above use `5003`.
 
 ## Data source
 

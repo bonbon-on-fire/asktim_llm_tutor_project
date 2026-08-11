@@ -18,13 +18,36 @@ import paths) — built as a factory so each app can inject its own
 from __future__ import annotations
 
 from types import ModuleType
+from urllib.parse import quote
 from uuid import UUID
 
 from flask import Blueprint, Response, g, jsonify, request
 
 
+def content_disposition_attachment(filename: str) -> str:
+    """Build a safe ``Content-Disposition: attachment`` header value.
+
+    Student-uploaded filenames are untrusted, so they can carry quotes,
+    newlines, or non-ASCII characters that would break (or inject into) the
+    header. Emit an ASCII-only ``filename=`` fallback plus an RFC 5987
+    ``filename*=`` with the real name percent-encoded — the same shape Flask's
+    ``send_file`` uses.
+    """
+    ascii_fallback = filename.encode("ascii", "ignore").decode("ascii")
+    ascii_fallback = ascii_fallback.replace("\\", "_").replace('"', "_")
+    ascii_fallback = ascii_fallback.replace("\r", "_").replace("\n", "_")
+    if not ascii_fallback:
+        ascii_fallback = "download"
+    encoded = quote(filename, safe="")
+    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}"
+
+
 def make_history_bp(
-    *, cookies: ModuleType, conversation: ModuleType, images: ModuleType
+    *,
+    cookies: ModuleType,
+    conversation: ModuleType,
+    images: ModuleType,
+    files: ModuleType,
 ) -> Blueprint:
     """Build the ``history`` blueprint, injecting the app-specific modules.
 
@@ -32,7 +55,8 @@ def make_history_bp(
     ``conversation`` — the app's ``services.conversation`` module
     (``get_conversation_for_viewer``, ``get_messages_for_conversation``,
     ``list_conversations_for_username``); ``images`` — the app's
-    ``services.images`` module (``get_image_for_viewer``).
+    ``services.images`` module (``get_image_for_viewer``); ``files`` — the
+    app's ``services.files`` module (``get_file_for_viewer``).
     """
 
     history_bp = Blueprint("history", __name__)
@@ -105,6 +129,28 @@ def make_history_bp(
             img.data,
             mimetype=img.mime_type,
             headers={"Cache-Control": "private, max-age=86400"},
+        )
+
+    @history_bp.get("/api/file/<int:file_id>")
+    def file(file_id: int):
+        """Serve a student-uploaded non-image file's bytes as a download.
+
+        Ownership is by session_id or username (same rule as the image
+        endpoint). Unauthorized/unknown ids return 404 so they can't be
+        probed. Served with ``Content-Disposition: attachment`` so the
+        browser downloads it under its original filename.
+        """
+        username = cookies.read_username_cookie(request)
+        row = files.get_file_for_viewer(g.db, file_id, g.session_id, username)
+        if row is None:
+            return jsonify({"error": "not_found"}), 404
+        return Response(
+            row.data,
+            mimetype="application/octet-stream",
+            headers={
+                "Content-Disposition": content_disposition_attachment(row.filename),
+                "Cache-Control": "private, max-age=86400",
+            },
         )
 
     return history_bp

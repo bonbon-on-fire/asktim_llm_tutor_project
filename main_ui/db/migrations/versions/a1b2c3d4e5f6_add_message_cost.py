@@ -24,12 +24,14 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the messages cost_usd/usage_json migration."""
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.add_column(sa.Column('cost_usd', sa.Float(), nullable=True))
         batch_op.add_column(sa.Column('usage_json', sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
+    """Revert the messages cost_usd/usage_json migration."""
     with op.batch_alter_table('messages', schema=None) as batch_op:
         batch_op.drop_column('usage_json')
         batch_op.drop_column('cost_usd')

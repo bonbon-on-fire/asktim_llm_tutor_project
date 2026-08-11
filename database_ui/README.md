@@ -16,7 +16,22 @@ images are rendered inline. The sidebar opens by default on wider screens
 transcript) until the toggle is tapped. Each sidebar entry leads with the
 student's username in the crimson accent (anonymous rows read "Anonymous",
 italicized), then the full course name, then the exercise header with the
-conversation's running total cost appended.
+conversation's running total cost appended. Any non-image attachments a student
+uploaded (PDF/CSV/XLSX/DOCX/TXT) render as "📎 filename" chips under
+the message — the same treatment `main_ui`/`sandbox_ui` give them; clicking a
+chip downloads the stored file (served from `/api/file/<id>` as an attachment).
+Uploaded images can be clicked to view large in a lightbox, matching the live apps.
+
+A **Download data** button in the sidebar (the same solid-accent CTA sandbox_ui
+uses for "Edit context") opens a wizard: the first page multi-selects courses
+(a sandbox-style dropdown, none selected by default), then each selected course
+gets its own page with a multi-select dropdown of that course's
+exercises/practice — so the page count is `1 + (courses chosen)`. The final page
+downloads the
+matching conversations as a single CSV (one row per message: content,
+pedagogical reasoning, rating, model, cost, raw `usage_json` /
+`retrieved_context`, and per-message image + file counts). Read-only like the
+rest of the app — the export is pure `SELECT`.
 
 A **Download data** button in the sidebar (the same solid-accent CTA sandbox_ui
 uses for "Edit context") opens a wizard: the first page multi-selects courses
@@ -37,10 +52,12 @@ checklist in [`PLANNING.md`](PLANNING.md).
 - `db/models.py` maps only the columns shared by `main_ui` and `sandbox_ui`
   (all-nullable, `viewonly=True` relationships), so the same code reads either
   DB unchanged and never crashes on sandbox-only columns. It currently maps
-  `conversations`, `messages`, and `uploaded_images` only — the shared DB also
-  now has `uploaded_files` (non-image attachments: CSV/XLSX/PDF/DOCX/TXT) and
-  `feedback` (conversation-level 1-5 star ratings, now dormant) tables, but this
-  viewer doesn't browse them yet.
+  `conversations`, `messages`, `uploaded_images`, and `uploaded_files`
+  (non-image attachments: CSV/XLSX/PDF/DOCX/TXT — the chips surface filename/kind
+  only and the extracted text is never served, though the raw bytes are
+  downloadable via `/api/file/<id>`). The shared DB
+  also has a `feedback` (conversation-level 1-5 star ratings, now dormant) table
+  this viewer doesn't browse yet.
 - Beyond `content`/`pedagogical_reasoning`, `db/models.py` maps the tutor-turn
   review columns — all shared by both schemas (`ui_core.db.models_common`), so
   mapping them is safe against either DB: `rating` (int `-1`/`0`/`1`, the
@@ -81,7 +98,7 @@ Routes live in `routes/database.py`; the read-only queries backing them live in
 `services/conversations.py` — the conversation list (with each conversation's
 message count, snippet, and summed `total_cost_usd`, batched to avoid N+1), one
 conversation's full transcript (`pedagogical_reasoning`, model + `cost_usd`, RAG
-`retrieved`, per-message `rating`), and image bytes. Course keys are resolved to
+`retrieved`, per-message `rating`), and image/file bytes. Course keys are resolved to
 their full display names (e.g. `MIT CTL.SC2x Supply Chain Design`) via a mirror
 in `courses.py` — `database_ui`'s image excludes `curriculum/`, so it can't read
 `course_name.txt` at runtime the way the live apps do.
@@ -138,6 +155,7 @@ reading the same Postgres as **askTIM-main**. To reproduce:
 | `GET /api/conversations?sort=date\|student&limit=&offset=` | list all conversations |
 | `GET /api/conversation/<uuid>` | one conversation's full transcript |
 | `GET /api/image/<int>` | serve an uploaded image's bytes |
+| `GET /api/file/<int>` | download an uploaded non-image file's bytes |
 | `GET /api/export/filters` | list courses + their assignments for the download wizard |
 | `GET /api/export.csv?assignment=<course>::<exercise>&…` | download selected conversations as a one-row-per-message CSV |
 | `GET /health` | liveness (open, no auth) |

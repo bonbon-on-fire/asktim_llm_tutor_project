@@ -20,9 +20,15 @@ def client():
 
 @pytest.fixture()
 def seeded():
-    from database_ui.db.models import Conversation, Message, UploadedImage
+    from database_ui.db.models import (
+        Conversation,
+        Message,
+        UploadedFile,
+        UploadedImage,
+    )
     session = SessionLocal()
     session.query(UploadedImage).delete()
+    session.query(UploadedFile).delete()
     session.query(Message).delete()
     session.query(Conversation).delete()
     session.commit()

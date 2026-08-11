@@ -10,6 +10,7 @@ API (all read-only, all behind the auth gate except where noted):
 - GET /api/conversations            list ALL conversations (sort=date|student)
 - GET /api/conversation/<uuid>      one conversation's full transcript
 - GET /api/image/<int>              serve an uploaded image's bytes
+- GET /api/file/<int>               download an uploaded non-image file's bytes
 
 Unlike the live apps' history endpoints, these are intentionally NOT scoped to a
 viewer's session/email — the whole point is to review everyone's conversations.
@@ -35,8 +36,10 @@ from flask import (
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from database_ui.auth import check_password, clear_auth, mark_authed
+from database_ui.auth import allowed_courses, clear_auth, mark_authed, resolve_scope
+from database_ui.courses import course_display_name
 from database_ui.services import conversations as svc
+from ui_core.web.blueprints.history import content_disposition_attachment
 
 database_bp = Blueprint("database", __name__)
 
@@ -61,6 +64,14 @@ def _is_schema_drift(exc: Exception) -> bool:
     return any(marker in message for marker in _SCHEMA_DRIFT_MARKERS)
 
 
+def _scope_label() -> str:
+    """Human-readable label for the current session's scope (for the header)."""
+    courses = allowed_courses()
+    if courses is None:
+        return "All courses"
+    return ", ".join(course_display_name(c) for c in courses)
+
+
 @database_bp.get("/")
 def index():
     """Render the review shell (sidebar plus transcript view)."""
@@ -68,6 +79,7 @@ def index():
         "index.html",
         title=current_app.config["DATABASE_UI_TITLE"],
         accent=current_app.config["DATABASE_UI_ACCENT"],
+        scope_label=_scope_label(),
     )
 
 
@@ -86,8 +98,9 @@ def login():
 def login_submit():
     """Verify the submitted password and start a session, or re-render with an error."""
     candidate = request.form.get("password", "")
-    if check_password(candidate):
-        mark_authed()
+    scope = resolve_scope(candidate)
+    if scope is not None:
+        mark_authed(scope)
         return redirect(url_for("database.index"))
     return (
         render_template(
@@ -117,7 +130,7 @@ def api_conversations():
     offset = _clamp_int(request.args.get("offset"), default=0, lo=0, hi=None)
     try:
         conversations = svc.list_all_conversations(
-            g.db, sort=sort, limit=limit, offset=offset
+            g.db, sort=sort, limit=limit, offset=offset, courses=allowed_courses()
         )
     except SQLAlchemyError as exc:
         g.db.rollback()
@@ -141,7 +154,7 @@ def api_conversations():
 def api_export_filters():
     """Return the export picker's course/assignment options as JSON."""
     try:
-        courses = svc.list_export_filters(g.db)
+        courses = svc.list_export_filters(g.db, allowed_courses())
     except SQLAlchemyError as exc:
         g.db.rollback()
         if _is_schema_drift(exc):
@@ -169,7 +182,7 @@ def api_export_csv():
         return jsonify({"error": "bad_selection",
                         "message": "Select at least one assignment"}), 400
     try:
-        rows = list(svc.iter_export_rows(g.db, pairs))
+        rows = list(svc.iter_export_rows(g.db, pairs, allowed_courses()))
     except SQLAlchemyError as exc:
         g.db.rollback()
         if _is_schema_drift(exc):
@@ -210,6 +223,9 @@ def api_conversation(conversation_id: str):
     convo = svc.get_conversation(g.db, convo_id)
     if convo is None:
         return jsonify({"error": "not_found"}), 404
+    courses = allowed_courses()
+    if courses is not None and convo.course not in courses:
+        return jsonify({"error": "not_found"}), 404
     return jsonify(
         {
             "id": str(convo.id),
@@ -231,13 +247,34 @@ def api_conversation(conversation_id: str):
 @database_bp.get("/api/image/<int:image_id>")
 def api_image(image_id: int):
     """Serve an uploaded image's bytes, or 404 if the image is not found."""
-    img = svc.get_image(g.db, image_id)
+    img = svc.get_image(g.db, image_id, allowed_courses())
     if img is None:
         return jsonify({"error": "not_found"}), 404
     return Response(
         img.data,
         mimetype=img.mime_type,
         headers={"Cache-Control": "private, max-age=86400"},
+    )
+
+
+@database_bp.get("/api/file/<int:file_id>")
+def api_file(file_id: int):
+    """Serve an uploaded non-image file's bytes as a download, or 404 if not found.
+
+    Restricted to the caller's course scope (``allowed_courses()``); a
+    cross-course id 404s the same as a nonexistent one. The bytes are served
+    as an attachment under the original filename (safely encoded).
+    """
+    row = svc.get_file(g.db, file_id, allowed_courses())
+    if row is None:
+        return jsonify({"error": "not_found"}), 404
+    return Response(
+        row.data,
+        mimetype="application/octet-stream",
+        headers={
+            "Content-Disposition": content_disposition_attachment(row.filename),
+            "Cache-Control": "private, max-age=86400",
+        },
     )
 
 

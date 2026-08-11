@@ -15,6 +15,7 @@ from langchain_core.messages import (
 def tutor_output_to_json(
     chat_history, intent_history, assessment_history, metadata=None
 ):
+    """Serialize the chat, intent, and assessment histories plus metadata into a JSON string."""
     metadata = metadata or {}
     json_output = {
         "chat_history": messages_to_json(chat_history),
@@ -149,4 +150,5 @@ def json_to_messages(json_messages):
 
 
 def filter_out_system_messages(messages):
+    """Return the messages with all SystemMessage entries removed."""
     return [msg for msg in messages if not isinstance(msg, SystemMessage)]

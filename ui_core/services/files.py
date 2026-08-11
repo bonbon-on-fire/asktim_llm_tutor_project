@@ -57,3 +57,35 @@ def persist_files(
 def files_to_text(files: list[ValidatedAttachment]) -> str:
     """Render attachments as labeled text blocks for the tutor message."""
     return attachments_to_text_block(files)
+
+
+def get_file_for_viewer(
+    db: Session,
+    file_id: int,
+    session_id: str,
+    username: str | None,
+    *,
+    uploaded_file_cls: type,
+    message_cls: type,
+    conversation_cls: type,
+) -> Any | None:
+    """Return an ``UploadedFile`` if the viewer owns the parent conversation.
+
+    Ownership = same session_id (same browser) OR matching username
+    (cross-browser). Returns ``None`` otherwise so the route can 404 without
+    leaking existence. Mirrors ``images.get_image_for_viewer`` exactly.
+    """
+    row = db.get(uploaded_file_cls, file_id)
+    if row is None:
+        return None
+    message = db.get(message_cls, row.message_id)
+    if message is None:
+        return None
+    convo = db.get(conversation_cls, message.conversation_id)
+    if convo is None:
+        return None
+    if convo.session_id == session_id:
+        return row
+    if username and convo.username == username:
+        return row
+    return None

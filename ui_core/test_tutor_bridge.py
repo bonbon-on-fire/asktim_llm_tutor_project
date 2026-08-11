@@ -203,10 +203,55 @@ def _test_build_system_prompt_course_rules():
     )
 
 
+def _test_done_failed_flag():
+    """The streaming ``done`` event flags a failed turn.
+
+    ``failed=True`` when the reply parses to an empty answer or to the canned
+    ``INVALID_RESPONSE_ANSWER`` sentinel; ``failed=False`` for a real answer.
+    The chat routes key their SSE ``error`` frame ("Tap to retry") off this flag.
+    """
+    from tutor.run_tutor import INVALID_RESPONSE_ANSWER
+
+    cases = [
+        ("real answer -> not failed",
+         json.dumps({"pedagogical-reasoning": "r", "Student-facing-answer": "Real answer."}),
+         False),
+        ("canned sentinel -> failed",
+         json.dumps({"pedagogical-reasoning": "r", "Student-facing-answer": INVALID_RESPONSE_ANSWER}),
+         True),
+        ("empty answer -> failed",
+         json.dumps({"pedagogical-reasoning": "r", "Student-facing-answer": ""}),
+         True),
+    ]
+    for label, canned_raw, expect_failed in cases:
+        rec = _Recorder()
+        originals = _install_stubs(tb, rec, canned_raw)
+        try:
+            bridge = tb.TutorBridge()
+            # exercise_only mode + empty retrieval: no RAG refusal, real model
+            # stubbed, so only the failed-flag computation is under test.
+            bridge.retrieved_context = lambda course, query, **ctx: tb.RetrievedContext()
+            events = list(
+                bridge.stream_tutor_reply(
+                    course="cities_and_climate_change",
+                    exercise="04",
+                    tutor="tutor_05",
+                    history=[],
+                    new_student_message="Explain X",
+                    context_mode="exercise_only",
+                )
+            )
+        finally:
+            _restore_stubs(tb, originals)
+        done = [e for e in events if isinstance(e, dict) and e.get("type") == "done"][-1]
+        _check(f"done failed flag: {label}", done.get("failed") is expect_failed, done)
+
+
 def main() -> int:
     """Run the offline bridge control-flow checks and return an exit code (1 if any failed)."""
     _test_mode_resolution()
     _test_build_system_prompt_course_rules()
+    _test_done_failed_flag()
 
     canned_raw = json.dumps(
         {

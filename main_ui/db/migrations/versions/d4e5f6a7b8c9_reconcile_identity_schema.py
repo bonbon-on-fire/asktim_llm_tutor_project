@@ -45,6 +45,7 @@ def _index_names(insp: sa.Inspector, table: str) -> set[str]:
 
 
 def upgrade() -> None:
+    """Apply the identity-schema reconciliation migration."""
     bind = op.get_bind()
     insp = sa.inspect(bind)
     tables = set(insp.get_table_names())
@@ -114,6 +115,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Revert the identity-schema reconciliation migration."""
     # Reconciliation only ever converges the schema forward toward the models;
     # there is no meaningful, safe inverse, so downgrade is a deliberate no-op.
     pass

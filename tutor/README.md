@@ -15,11 +15,13 @@ tutor/
     tutor_04.txt            — updated Socratic guidance variant
     tutor_05.txt            — refined Socratic guidance
     tutor_06.txt            — Socratic guidance variant
-    tutor_07.txt            — deployed default: tutor_05 guidance + math formatting + grounded lecture citations + anti-leakage (main_ui + sandbox_ui locked to this)
+    tutor_07.txt            — tutor_05 guidance + math formatting + grounded lecture citations + anti-leakage
+    tutor_08.txt            — deployed default: tutor_07 + a ## Language section (reply in the student's language) baked in (main_ui + sandbox_ui locked to this)
 ```
 
 - `run_tutor.py` builds the LangGraph, invokes the LLM, and parses structured JSON response fields (pedagogical reasoning + student-facing answer).
-- Prompt versions are selected by name (for example `tutor_03`, `tutor_07`) and loaded from `tutor/prompts/`. **`tutor_07` is the deployed default** (`DEFAULT_TUTOR` in both `main_ui` and `sandbox_ui`, and both apps are **locked** to it — the client can't override it).
+- Prompt versions are selected by name (for example `tutor_03`, `tutor_08`) and loaded from `tutor/prompts/`. **`tutor_08` is the deployed default** (`DEFAULT_TUTOR` in both `main_ui` and `sandbox_ui`, and both apps are **locked** to it — the client can't override it). To revert to English-only, switch the default back to `tutor_07`.
+- **`tutor_08`** is `tutor_07` with a **`## Language` section** baked in — the tutor detects the language of the student's latest message and writes its student-facing answer in that language (following mid-conversation switches), while keeping `pedagogical-reasoning`, the JSON field names, citation labels, and LaTeX in English.
 - **`tutor_07`** layers on `tutor_05`'s Socratic guidance and adds:
   - **Math formatting** — write math as `\(...\)` (inline) / `\[...\]` (display) LaTeX, never `$`/`$$` (those stay literal currency), doubling every backslash (`\\(`, `\\frac{}{}`) so the JSON response stays valid.
   - **Grounded lecture citations** — when pointing a student to course material, cite the real **Week / Lesson / Video** coordinate (e.g. *"…in **Week 10, Lesson 1**, in the **DuPont Analysis** video"*), woven into a sentence. Labels come from `curriculum/<course>/lecture_index.json` via [`rag/retrieve.py`](../rag/README.md); the tutor may only cite a label present in the retrieved block, so it can't invent a lecture.
@@ -32,7 +34,7 @@ A *role* selects which prompt family the web apps (`main_ui`, `sandbox_ui`)
 use, via a `role` URL query param (default `tutor`). Roles are declared in
 `tutor/roles.py`:
 
-- `role=tutor` → `tutor/prompts/`, default prompt `tutor_07` (the deployed
+- `role=tutor` → `tutor/prompts/`, default prompt `tutor_08` (the deployed
   default; both apps stay locked to their role's default prompt).
 - `role=ta` → a future `ta/prompts/` folder — **not shipped**; requesting it
   404s until added.
@@ -313,4 +315,4 @@ This yields one batch of visible characters per LLM token batch, then a final `(
 | `OPENAI_API_KEY` | For GPT | OpenAI API key. Required for the default `gpt` provider. |
 | `OPENAI_MODEL` | No | OpenAI model name (default: `gpt-5.4`). |
 | `ANTHROPIC_API_KEY` | For Claude | Anthropic API key. Required only when `build_tutor_model(provider="claude")` is used. |
-| `ANTHROPIC_MODEL` | No | Anthropic model name (default: `claude-sonnet-4-6`). |
+| `ANTHROPIC_MODEL` | No | Anthropic model name (default: `claude-sonnet-5`). |

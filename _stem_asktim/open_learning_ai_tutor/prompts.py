@@ -85,6 +85,7 @@ Analyze the last student's utterance.
 
 
 def get_problem_prompt(problem, problem_set, variant):
+    """Build the tutor's problem system prompt for the given problem and variant."""
     if variant == "edx":
         problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
             problem=problem, problem_set=problem_set
@@ -154,6 +155,7 @@ The problem set contains multiple individual problems. The student may be asking
 
 
 def get_intent_prompt(intents):
+    """Concatenate the instruction prompts for the given intents into a single string."""
     intent_prompt = ""
 
     if Intent.G_REFUSE in intents:
@@ -166,6 +168,7 @@ def get_intent_prompt(intents):
 
 
 def get_assessment_initial_prompt(problem, problem_set, variant):
+    """Build the system prompt used to assess student messages for the given problem and variant."""
 
     if variant == "edx":
         problem_statement = EDX_PROBLEM_PROMPT_TEMPLATE.format(
@@ -193,6 +196,7 @@ def get_assessment_initial_prompt(problem, problem_set, variant):
 
 
 def get_assessment_prompt(problem, problem_set, new_messages, variant):
+    """Build the assessment prompt messages combining the initial system prompt and the new student utterances."""
     initial_prompt = get_assessment_initial_prompt(problem, problem_set, variant)
     prompt = [SystemMessage(initial_prompt)]
 

@@ -141,7 +141,7 @@ def read_practice(
 
 # Optional per-course tutor-behavior delta appended to the base tutor prompt.
 # A course drops ``curriculum/<course>/tutor_rules.txt`` holding ONLY its
-# course-specific rules; the base prompt (tutor_07) stays the shared source of
+# course-specific rules; the base prompt (tutor_08) stays the shared source of
 # truth. See docs/superpowers/specs/2026-07-16-per-course-tutor-rules-design.md.
 TUTOR_RULES_HEADER = "## Course-specific rules:"
 

@@ -38,6 +38,45 @@
     sidebarEmpty.hidden = false;
   }
 
+  // --- Image lightbox --------------------------------------------------------
+  // Click any transcript image to view it large, centered over the review pane,
+  // ChatGPT-style — matching main_ui / sandbox_ui. One overlay is lazily created
+  // and reused; the .image-lightbox* styles ship in the shared chat.css.
+  let imageLightbox = null;
+
+  function openImageLightbox(src, alt) {
+    if (!imageLightbox) {
+      imageLightbox = document.createElement("div");
+      imageLightbox.className = "image-lightbox";
+      imageLightbox.hidden = true;
+      const big = document.createElement("img");
+      big.className = "image-lightbox-img";
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = "image-lightbox-close";
+      close.setAttribute("aria-label", "Close image");
+      close.textContent = "×";
+      imageLightbox.appendChild(big);
+      imageLightbox.appendChild(close);
+      document.body.appendChild(imageLightbox);
+      // Backdrop or × click closes; clicking the image itself does nothing.
+      imageLightbox.addEventListener("click", (event) => {
+        if (event.target !== big) closeImageLightbox();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !imageLightbox.hidden) closeImageLightbox();
+      });
+    }
+    const big = imageLightbox.querySelector(".image-lightbox-img");
+    big.src = src;
+    big.alt = alt || "attached image";
+    imageLightbox.hidden = false;
+  }
+
+  function closeImageLightbox() {
+    if (imageLightbox) imageLightbox.hidden = true;
+  }
+
   // "Exercise 3 · May 19 · 8 messages" (or "Practice 3 ...") — mirrors
   // main_ui's formatEntryHeader.
   function formatEntryHeader(c) {
@@ -190,7 +229,45 @@
       el.src = `/api/image/${img.id}`;
       el.alt = "attached image";
       el.loading = "lazy";
+      // Click to view large (matches main_ui / sandbox_ui).
+      el.addEventListener("click", () => openImageLightbox(el.src, el.alt));
       wrap.appendChild(el);
+    }
+    li.appendChild(wrap);
+  }
+
+  // A "📎 <name>" pill for a non-image attachment on a past message. Rendered as
+  // a download link — clicking it fetches the bytes from /api/file/<id>, served
+  // with Content-Disposition: attachment so the browser saves it under the
+  // original filename. Reuses chat.css's .attachment-chip.
+  function renderFileChip(att) {
+    const chip = document.createElement("a");
+    chip.className = "attachment-chip";
+    chip.href = `/api/file/${att.id}`;
+    chip.setAttribute("download", att.filename || "");
+    const icon = document.createElement("span");
+    icon.className = "attachment-chip-icon";
+    icon.setAttribute("aria-hidden", "true");
+    // Static markup only (no user input); the filename is a separate text node.
+    icon.innerHTML =
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+      '<polyline points="14 2 14 8 20 8"/></svg>';
+    const label = document.createElement("span");
+    label.className = "attachment-chip-name";
+    label.textContent = att.filename; // user-controlled — keep as a text node (no innerHTML)
+    chip.appendChild(icon);
+    chip.appendChild(label);
+    return chip;
+  }
+
+  function appendFileChips(li, attachments) {
+    if (!attachments || attachments.length === 0) return;
+    const wrap = document.createElement("div");
+    wrap.className = "message-attachments";
+    for (const a of attachments) {
+      wrap.appendChild(renderFileChip(a));
     }
     li.appendChild(wrap);
   }
@@ -298,8 +375,13 @@
   function renderMessage(m) {
     const li = document.createElement("li");
     li.className = "message message-" + m.role;
-    if (m.images && m.images.length) {
-      appendImages(li, m.images);
+    const hasImages = m.images && m.images.length;
+    const hasAttachments = m.attachments && m.attachments.length;
+    // Attachments render ABOVE the text (matching the live student apps):
+    // image thumbnails first, then downloadable "📎 name" file chips.
+    appendImages(li, m.images);
+    appendFileChips(li, m.attachments);
+    if (hasImages || hasAttachments) {
       if (m.content) {
         const textEl = document.createElement("div");
         textEl.className = "message-text";

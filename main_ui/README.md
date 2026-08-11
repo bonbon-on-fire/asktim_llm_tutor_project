@@ -43,24 +43,24 @@ What works today:
 python -m main_ui
 ```
 
-Binds to `127.0.0.1:5001` by default. Override with the `PORT` env var.
+Binds to `127.0.0.1:5000` by default. Override with the `PORT` env var.
 
 Open the chat in a browser:
 
 ```text
-http://127.0.0.1:5001/embed?course=cities_and_climate_change&exercise=01
+http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01
 ```
 
 Add `&problem=<n>` *(optional)* to focus a single sub-problem within the selected week file (`Practice Problem N:` / `Graded Assignment N:`). The whole file still loads; the tutor is told the student is working on problem `n` and treats the rest as reference. The focus is persisted per conversation. An unknown `n` (or a non-integer) returns 404.
 
-Production is **locked to `tutor_07`** — `DEFAULT_TUTOR` in
+Production is **locked to `tutor_08`** — `DEFAULT_TUTOR` in
 [`routes/_validation.py`](routes/_validation.py) is forced at both the embed and
 chat entry points, so a `?tutor=` query param is ignored.
 
 Verify the server is up:
 
 ```powershell
-curl http://127.0.0.1:5001/health
+curl http://127.0.0.1:5000/health
 # {"service":"main_ui","status":"ok"}
 ```
 
@@ -76,7 +76,7 @@ curl http://127.0.0.1:5001/health
 | `MAIN_UI_SECRET_KEY` | `dev-insecure-key` | Flask session signing key. Replace in production. |
 | `MAIN_UI_COOKIE_SECURE` | `true` | Set to `false` for non-HTTPS local testing if cookies aren't sticking. |
 | `MAIN_UI_COOKIE_MAX_AGE` | `15552000` (180 days) | Cookie lifetime in seconds. |
-| `PORT` | `5001` | TCP port the Flask dev server binds to. |
+| `PORT` | `5000` | TCP port the Flask dev server binds to. |
 
 ## Database
 
@@ -117,6 +117,7 @@ psql -U postgres -h localhost -d asktim -c "SELECT turn, role, LEFT(content, 60)
 | GET | `/api/history` | List conversations for the current username cookie |
 | GET | `/api/conversation/<uuid>` | Read-only message log for one conversation (each message includes its `id`, `rating`, and any `images`/`files` metadata) |
 | GET | `/api/image/<id>` | Serve an uploaded image's bytes (ownership-checked by session/username; 404 otherwise) |
+| GET | `/api/file/<id>` | Download an uploaded non-image file's bytes as an attachment (ownership-checked by session/username; 404 otherwise) |
 | POST | `/api/message/<id>/rating` | Set a tutor message's thumbs rating (JSON: `{"rating": -1\|0\|1}`; ownership-checked + tutor-only; returns `{"ok": true, "rating": N}`) |
 | POST | `/api/feedback` | **Dormant** (kept, superseded by `/api/message/<id>/rating`): record a 1-5 star rating for a conversation (JSON: `conversation_id`, `rating`, optional `turn`) |
 
@@ -207,7 +208,7 @@ one-off custom text at each step.
 It runs on its **own** PostgreSQL database (`asktim_test`) so test chats never
 mix with production data, builds its schema with `create_all` (no Alembic), and
 uses a teal-blue (`#126f9a`) accent instead of crimson. Both apps can run side
-by side (`main_ui` on `5001`, `sandbox_ui` on `5000`).
+by side (`main_ui` on `5000`, `sandbox_ui` on `5001`).
 
 Both apps are thin shells over the shared [`ui_core/`](../ui_core/) package —
 see [Architecture](#architecture) above — which is where the Flask app

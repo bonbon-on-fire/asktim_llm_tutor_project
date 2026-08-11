@@ -165,10 +165,9 @@
     if (imageLightbox) imageLightbox.hidden = true;
   }
 
-  // A "📄 <name>" pill — used both for a staged (not-yet-sent) file and for a
-  // file attached to an already-sent/past message.
-  function renderFileChip(name) {
-    const chip = document.createElement("span");
+  // Fill *chip* with the file glyph + *name* label. Shared by the span variant
+  // (staged/inert) and the anchor variant (downloadable, sent messages).
+  function fillFileChip(chip, name) {
     chip.className = "attachment-chip";
     const icon = document.createElement("span");
     icon.className = "attachment-chip-icon";
@@ -184,6 +183,29 @@
     label.textContent = name; // user-controlled — keep as a text node (no innerHTML)
     chip.appendChild(icon);
     chip.appendChild(label);
+    return chip;
+  }
+
+  // A "📄 <name>" pill (a <span>) — used for a staged (not-yet-sent) file in the
+  // composer preview, and as the inert fallback for a just-sent file that has no
+  // id yet.
+  function renderFileChip(name) {
+    return fillFileChip(document.createElement("span"), name);
+  }
+
+  // Downloadable pill for a file on a sent/past message: an <a> that fetches the
+  // bytes from /api/file/<id> (served with Content-Disposition: attachment, so
+  // the browser saves it under the original filename). *att* is a {id, filename}
+  // object; a bare string or an id-less object falls back to the inert chip
+  // (e.g. an optimistically-rendered file before its round-trip assigns an id).
+  function renderDownloadFileChip(att) {
+    const name = att && typeof att === "object" ? att.filename : att;
+    if (!att || typeof att !== "object" || att.id == null) {
+      return renderFileChip(name);
+    }
+    const chip = fillFileChip(document.createElement("a"), name);
+    chip.href = `/api/file/${att.id}`;
+    chip.setAttribute("download", name || "");
     return chip;
   }
 
@@ -314,12 +336,12 @@
     li.appendChild(wrap);
   }
 
-  function appendFileChips(li, names) {
-    if (!names || names.length === 0) return;
+  function appendFileChips(li, attachments) {
+    if (!attachments || attachments.length === 0) return;
     const wrap = document.createElement("div");
     wrap.className = "message-attachments";
-    for (const name of names) {
-      wrap.appendChild(renderFileChip(name));
+    for (const att of attachments) {
+      wrap.appendChild(renderDownloadFileChip(att));
     }
     li.appendChild(wrap);
   }
@@ -413,14 +435,18 @@
     li.appendChild(details);
   }
 
-  function renderMessage(role, content, imageSrcs, reasoning, retrieved, attachmentNames, messageId, rating, model, costUsd) {
+  function renderMessage(role, content, imageSrcs, reasoning, retrieved, attachments, messageId, rating, model, costUsd) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
-    if (imageSrcs && imageSrcs.length) {
-      // Image(s) above the text: attach images first, then the text in its own
-      // wrapper (setMessageContent writes onto the element it's given, so the
-      // text needs its own node to avoid clobbering the image block).
-      appendImages(li, imageSrcs);
+    const hasImages = imageSrcs && imageSrcs.length;
+    const hasFiles = attachments && attachments.length;
+    // Attachments render above the text: image thumbnails first, then the file
+    // chips, then the text in its own wrapper (setMessageContent writes onto the
+    // element it's given, so the text needs its own node to avoid clobbering the
+    // attachment blocks).
+    appendImages(li, imageSrcs);
+    appendFileChips(li, attachments);
+    if (hasImages || hasFiles) {
       if (content) {
         const textEl = document.createElement("div");
         textEl.className = "message-text";
@@ -430,7 +456,6 @@
     } else {
       setMessageContent(li, role, content);
     }
-    appendFileChips(li, attachmentNames);
     if (role === "tutor") {
       appendModelLabel(li, activeProvider, model, costUsd);
       appendReasoning(li, reasoning);
@@ -801,14 +826,14 @@
       ).length;
       for (const m of data.messages || []) {
         const srcs = (m.images || []).map((img) => `/api/image/${img.id}`);
-        const attachmentNames = (m.attachments || []).map((a) => a.filename);
+        // Pass the full {id, filename} objects so each chip becomes a download link.
         renderMessage(
           m.role,
           m.content,
           srcs,
           m.pedagogical_reasoning,
           m.retrieved,
-          attachmentNames,
+          m.attachments || [],
           m.id,
           m.rating,
           m.model,
@@ -890,7 +915,7 @@
       ? CREATE_STEPS.filter((s) => s !== "lectures")
       : CREATE_STEPS;
   }
-  const LOCKED_TUTOR = "tutor_07"; // the tutor prompt is locked to this in the wizard
+  const LOCKED_TUTOR = "tutor_08"; // the tutor prompt is locked to this in the wizard
 
   // Custom dropdown that replaces the native <select> in the Create-context
   // wizard. A native <select> flips its option list UPWARD when the control sits
@@ -1181,7 +1206,7 @@
       currentValue = d.existing ? d.kind + ":" + d.existing : firstExisting;
     } else if (step === "tutor") {
       // All tutor built-ins are listed for visibility, but the step is locked to
-      // tutor_07 (disabled dropdown + lock icon); testers can't pick another. The
+      // tutor_08 (disabled dropdown + lock icon); testers can't pick another. The
       // backend also ignores any client tutor.
       options = contextOptions.tutors
         .map((t) => ({ value: t, label: tutorLabel(t) }))
@@ -1211,7 +1236,7 @@
     }
 
     const sel = buildSelect(options, currentValue);
-    if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_07
+    if (step === "tutor") sel.disabled = true; // tutor prompt is locked to tutor_08
     createStepBody.appendChild(sel);
 
     // Exercise step: show the selected assignment's title + an expandable full
@@ -1547,14 +1572,16 @@
     // first streamed delta arrives we morph the thinking bubble into the
     // tutor bubble.
     const previewSrcs = outgoingImages.map((item) => item.url);
-    const attachmentNames = outgoingFiles.map((item) => item.file.name);
+    // Just-sent files have no id yet (assigned on persist) — render inert chips;
+    // they become downloadable when the conversation is reloaded from history.
+    const outgoingAttachments = outgoingFiles.map((item) => ({ filename: item.file.name }));
     const studentBubble = renderMessage(
       "student",
       text,
       previewSrcs,
       null,
       null,
-      attachmentNames,
+      outgoingAttachments,
     );
     const tutorBubble = renderThinking();
     let tutorBubbleActive = false; // false until first delta lands

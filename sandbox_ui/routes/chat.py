@@ -367,6 +367,7 @@ def chat():
         reasoning = None
         retrieved = None  # per-turn RAG records: [{source, score, chars, text}]
         cost = None  # {model, usd, tutor, embedding} — estimated turn cost
+        failed = False  # tutor produced no valid answer (parse failure / fallback)
         try:
             try:
                 for ev in tutor_bridge.stream_tutor_reply(**stream_kwargs):
@@ -385,6 +386,7 @@ def chat():
                         reasoning = ev.get("reasoning")
                         retrieved = ev.get("retrieved") or None
                         cost = ev.get("cost") or None
+                        failed = bool(ev.get("failed"))
                         break
             except Exception as exc:
                 yield _sse_event(
@@ -392,7 +394,11 @@ def chat():
                 )
                 return
 
-            if not full_reply:
+            # A failed turn (unparseable reply or the canned fallback) is
+            # surfaced as an error frame so the client shows "Tap to retry"
+            # instead of rendering the fallback as a real answer. No tutor row
+            # is persisted, matching the empty-reply / exception paths.
+            if failed or not full_reply:
                 yield _sse_event(
                     "error", {"reason": "empty reply from tutor"}
                 )

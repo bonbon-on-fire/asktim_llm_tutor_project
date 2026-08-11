@@ -21,7 +21,13 @@ _tmp_db.close()
 os.environ["DATABASE_UI_DATABASE_URL"] = f"sqlite:///{_tmp_db.name}"
 os.environ.setdefault("DATABASE_UI_PASSWORD", "test-password")
 
-from database_ui.db.models import Base, Conversation, Message, UploadedImage  # noqa: E402
+from database_ui.db.models import (  # noqa: E402
+    Base,
+    Conversation,
+    Message,
+    UploadedFile,
+    UploadedImage,
+)
 from database_ui.db.session import SessionLocal, engine  # noqa: E402
 
 Base.metadata.create_all(engine)
@@ -33,6 +39,7 @@ def db_session():
     session = SessionLocal()
     # Clean slate: delete in FK-safe order.
     session.query(UploadedImage).delete()
+    session.query(UploadedFile).delete()
     session.query(Message).delete()
     session.query(Conversation).delete()
     session.commit()
@@ -52,7 +59,8 @@ def seed(session) -> dict:
 
     Two courses. supply_chain_design has exercises "1" and "2"; meaning_of_life
     has exercise "1". One conversation each; supply_chain ex "1" has a 2-message
-    transcript (student turn + tutor turn) with one image on the student turn.
+    transcript (student turn + tutor turn) with one image and one file attachment
+    on the student turn.
     """
     sc = Conversation(
         id=uuid.uuid4(), session_id="s1", username="stu@mit.edu",
@@ -89,6 +97,11 @@ def seed(session) -> dict:
     session.add(UploadedImage(
         message_id=m_student.id, filename="f.png", mime_type="image/png",
         size_bytes=3, data=b"abc", created_at=_dt(3),
+    ))
+    session.add(UploadedFile(
+        message_id=m_student.id, filename="data.csv", kind="csv",
+        extracted_text="col1,col2\n1,2", size_bytes=12, data=b"col1,col2\n1,2",
+        created_at=_dt(3),
     ))
     session.commit()
     return {"sc_id": sc.id, "sc2_id": sc2.id, "mol_id": mol.id,

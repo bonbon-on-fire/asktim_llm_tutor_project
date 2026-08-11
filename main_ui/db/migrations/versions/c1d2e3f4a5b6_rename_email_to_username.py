@@ -24,6 +24,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Apply the email-to-username rename migration."""
     # Drop the index before renaming the column (it references the old name),
     # rename inside a batch (SQLite recreates the table), then rebuild the
     # index on the new column. Keeping the index ops outside the rename batch
@@ -38,6 +39,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Revert the email-to-username rename migration."""
     with op.batch_alter_table('students', schema=None) as batch_op:
         batch_op.alter_column('username', new_column_name='email')
 

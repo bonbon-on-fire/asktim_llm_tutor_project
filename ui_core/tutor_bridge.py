@@ -42,6 +42,7 @@ from rag.retrieve import format_context, retrieve_scored_with_usage, to_records
 from tutor.cached_history import build_message_plan
 from tutor.roles import prompts_dir_for_prompt
 from tutor.run_tutor import (
+    INVALID_RESPONSE_ANSWER,
     StudentAnswerExtractor,
     _apply_json_mode,
     _chunk_json_fragment,
@@ -689,6 +690,10 @@ class TutorBridge:
                 "reasoning": reasoning,
                 "retrieved": rc.records,
                 "cost": cost,
+                # The turn failed if the reply couldn't be parsed (empty) or came
+                # back as the canned parse-failure fallback; the route turns this
+                # into an SSE error frame so the client shows "Tap to retry".
+                "failed": (not answer) or (answer == INVALID_RESPONSE_ANSWER),
             }
             return
 
@@ -726,4 +731,8 @@ class TutorBridge:
             "reasoning": reasoning,
             "retrieved": rc.records,
             "cost": cost,
+            # The turn failed if the reply couldn't be parsed (empty) or came
+            # back as the canned parse-failure fallback; the route turns this
+            # into an SSE error frame so the client shows "Tap to retry".
+            "failed": (not reply_text) or (reply_text == INVALID_RESPONSE_ANSWER),
         }

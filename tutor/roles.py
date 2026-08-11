@@ -2,7 +2,7 @@
 prompt folder and default prompt.
 
 A role decides which prompt family the web apps use. ``tutor`` reads
-``tutor/prompts/`` with default ``tutor_07`` (today's behavior). Additional
+``tutor/prompts/`` with default ``tutor_08`` (today's behavior). Additional
 roles (e.g. a teaching assistant ``ta`` reading ``ta/prompts/``) are added by
 creating the folder and registering an entry below — until then the role is
 unknown and the web layer 404s on it.
@@ -33,7 +33,7 @@ DEFAULT_ROLE = "tutor"
 # Only roles that are ready to serve appear here. To add the TA role later:
 # create ``ta/prompts/ta_01.txt`` (+ variants) and uncomment the entry below.
 ROLES: dict[str, Role] = {
-    "tutor": Role("tutor", _REPO_ROOT / "tutor" / "prompts", "tutor_07"),
+    "tutor": Role("tutor", _REPO_ROOT / "tutor" / "prompts", "tutor_08"),
     # "ta": Role("ta", _REPO_ROOT / "ta" / "prompts", "ta_01"),
 }
 

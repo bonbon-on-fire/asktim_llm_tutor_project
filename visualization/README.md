@@ -4,7 +4,7 @@ Two modules, different questions:
 
 - **`run_visualization`** — one tutor's rubric profile in depth (11 charts).
   Reads `transcripts/<type>/<type>_judge/`.
-- **`run_comparison_viz`** — AskTIM vs STEM AskTIM, 5 charts. Reads the
+- **`run_comparison_viz`** — AskTIM vs STEM AskTIM, 4 charts. Reads the
   comparison folders `transcripts/<type>/<type>_{cmp,phys}_{asktim,stem}/`.
   See [Comparison charts](#comparison-charts) below.
 

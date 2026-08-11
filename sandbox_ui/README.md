@@ -114,7 +114,7 @@ built-in options from the curriculum:
   separate "Exercises" and "Practice problems" groups. The chosen kind is stored
   per conversation in `exercise_kind` (defaults to `exercise`)
 - **Tutor** — two controls. The **prompt** dropdown lists every built-in prompt
-  for visibility but is **locked to `tutor_06`** (disabled; the routes ignore any
+  for visibility but is **locked to `tutor_08`** (disabled; the routes ignore any
   client-supplied `tutor`, mirroring `main_ui`'s single-prompt lock). Beneath it,
   a **tutor-model** dropdown selects the LLM the tutor runs on — `claude-sonnet-5`
   (default) or `gpt-5.4` — stored per conversation in the `provider` column
@@ -136,7 +136,7 @@ live in `curriculum/<course>/pinned/` and are always folded into context.)
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
 > wizard. It was removed in June 2026 because the Create-context wizard offered a
 > superset of its functionality. (The Tutor prompt step lists all built-ins but is
-> locked to `tutor_06`; see above.)
+> locked to `tutor_08`; see above.)
 
 ## Quick start
 
@@ -147,7 +147,7 @@ python -m sandbox_ui
 Binds to `127.0.0.1:5000` by default. Override with the `PORT` env var.
 
 ```text
-http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_06
+http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01&tutor=tutor_08
 ```
 
 Add `&problem=<n>` *(optional)* to focus a single sub-problem within the selected week file (`Practice Problem N:` / `Graded Assignment N:`). The whole file still loads; the tutor is told the student is working on problem `n` and treats the rest as reference. The focus is persisted per conversation. An unknown `n` (or a non-integer) returns 404.
@@ -199,7 +199,7 @@ tables so `create_all` picks them up on boot with no reconcile step needed.
 
 The database must already exist (`CREATE DATABASE asktim_test;`); `create_all`
 then builds the tables. To reset the sandbox data, drop and recreate that
-database. On startup, `_drop_custom_context_columns(engine)` drops any legacy
+database. On startup, `_drop_retired_columns(engine)` drops any legacy
 `custom_*` columns (from before custom-context was removed) if they exist,
 ensuring the schema matches the current model; the drop is idempotent and
 runs once per boot.
@@ -266,7 +266,7 @@ fields for a new conversation:
 - `"course_enabled": true|false` (defaults to `true`) — gates the course-description block
 - `"exercise_kind": "exercise"|"practice"` (defaults to `"exercise"`) — selects exercise or practice-problem variant
 - `"context_mode": "rag"|"full_context"` (optional) — per-conversation RAG toggle; omit to let the server resolve by default
-- `"tutor"` — **ignored**; the sandbox is locked to `tutor_06` server-side, so any supplied value is discarded
+- `"tutor"` — **ignored**; the sandbox is locked to `tutor_08` server-side, so any supplied value is discarded
 
 `POST /api/feedback` records a 1-5 star rating against a `conversation_id`
 (and optional `turn` number); 400 if `rating`/`conversation_id` are missing or
@@ -309,7 +309,7 @@ off the `DATABASE_URL` main_ui uses in the shared `.env`.
 sandbox_ui/
   __main__.py             # python -m sandbox_ui entry point (127.0.0.1, port 5000)
   config.py               # env-driven Config (SANDBOX_UI_* vars, separate DB)
-  run_app.py              # ui_core.app_factory.create_app(...) wiring; create_all + _reconcile_columns + _drop_custom_context_columns on boot; blueprints
+  run_app.py              # ui_core.app_factory.create_app(...) wiring; create_all + _reconcile_columns + _drop_retired_columns on boot; blueprints
   cookies.py              # session/username cookie names + kwargs (thin wrapper over ui_core.cookies)
   db/
     models.py             # sandbox-only Conversation (course/syllabus/lectures flags, context_mode) + Message (+ sandbox-only retrieved_context col) / Student / UploadedImage / UploadedFile / Feedback from ui_core.db.models_common

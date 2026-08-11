@@ -64,7 +64,7 @@ _SAVE_LOCK = threading.Lock()
 # Default bundle config (can be overridden by CLI)
 # ---------------------------------------------------------------------------
 
-DEFAULT_TUTOR_PROMPTS: list[str] = ["tutor_07"]
+DEFAULT_TUTOR_PROMPTS: list[str] = ["tutor_08"]
 DEFAULT_STUDENT_PERSONAS: list[str] = ["clueless"]
 DEFAULT_COURSE_EXERCISES: list[tuple[str, str]] = [("philosophy", "01")]
 DEFAULT_TURN_SIZE: int = 10

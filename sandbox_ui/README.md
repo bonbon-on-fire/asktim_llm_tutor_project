@@ -114,7 +114,7 @@ built-in options from the curriculum:
   separate "Exercises" and "Practice problems" groups. The chosen kind is stored
   per conversation in `exercise_kind` (defaults to `exercise`)
 - **Tutor** — two controls. The **prompt** dropdown lists every built-in prompt
-  for visibility but is **locked to `tutor_08`** (disabled; the routes ignore any
+  for visibility but is **locked to `tutor_07`** (disabled; the routes ignore any
   client-supplied `tutor`, mirroring `main_ui`'s single-prompt lock). Beneath it,
   a **tutor-model** dropdown selects the LLM the tutor runs on — `claude-sonnet-5`
   (default) or `gpt-5.4` — stored per conversation in the `provider` column
@@ -136,7 +136,7 @@ live in `curriculum/<course>/pinned/` and are always folded into context.)
 > A simpler **Edit context** modal (built-ins only) previously sat alongside this
 > wizard. It was removed in June 2026 because the Create-context wizard offered a
 > superset of its functionality. (The Tutor prompt step lists all built-ins but is
-> locked to `tutor_08`; see above.)
+> locked to `tutor_07`; see above.)
 
 ## Quick start
 
@@ -266,7 +266,7 @@ fields for a new conversation:
 - `"course_enabled": true|false` (defaults to `true`) — gates the course-description block
 - `"exercise_kind": "exercise"|"practice"` (defaults to `"exercise"`) — selects exercise or practice-problem variant
 - `"context_mode": "rag"|"full_context"` (optional) — per-conversation RAG toggle; omit to let the server resolve by default
-- `"tutor"` — **ignored**; the sandbox is locked to `tutor_08` server-side, so any supplied value is discarded
+- `"tutor"` — **ignored**; the sandbox is locked to `tutor_07` server-side, so any supplied value is discarded
 
 `POST /api/feedback` records a 1-5 star rating against a `conversation_id`
 (and optional `turn` number); 400 if `rating`/`conversation_id` are missing or

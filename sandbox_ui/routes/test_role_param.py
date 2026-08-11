@@ -25,8 +25,8 @@ def main() -> int:
     ok &= _check("DEFAULT_ROLE is tutor", DEFAULT_ROLE == "tutor", DEFAULT_ROLE)
     ok &= _check("validate_role(tutor) ok", validate_role("tutor") is None)
     ok &= _check("validate_role(ta) fails", validate_role("ta") is not None)
-    ok &= _check("role_default_prompt(tutor) == tutor_08",
-                 role_default_prompt("tutor") == "tutor_08")
+    ok &= _check("role_default_prompt(tutor) == tutor_07",
+                 role_default_prompt("tutor") == "tutor_07")
 
     r = client.get("/embed?course=supply_chain_design&exercise=1")
     ok &= _check("/embed default role 200", r.status_code == 200, r.status_code)

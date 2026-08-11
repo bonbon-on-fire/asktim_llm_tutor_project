@@ -33,17 +33,6 @@ pedagogical reasoning, rating, model, cost, raw `usage_json` /
 `retrieved_context`, and per-message image + file counts). Read-only like the
 rest of the app — the export is pure `SELECT`.
 
-A **Download data** button in the sidebar (the same solid-accent CTA sandbox_ui
-uses for "Edit context") opens a wizard: the first page multi-selects courses
-(a sandbox-style dropdown, none selected by default), then each selected course
-gets its own page with a multi-select dropdown of that course's
-exercises/practice — so the page count is `1 + (courses chosen)`. The final page
-downloads the
-matching conversations as a single CSV (one row per message: content,
-pedagogical reasoning, rating, model, cost, raw `usage_json` /
-`retrieved_context`, and an image count). Read-only like the rest of the app —
-the export is pure `SELECT`.
-
 Built to review **`main_ui`**'s production database. See the full design +
 checklist in [`PLANNING.md`](PLANNING.md).
 

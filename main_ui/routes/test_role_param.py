@@ -26,8 +26,8 @@ def main() -> int:
     ok &= _check("validate_role(tutor) ok", validate_role("tutor") is None)
     ok &= _check("validate_role(ta) fails", validate_role("ta") is not None)
     ok &= _check("validate_role(bogus) fails", validate_role("bogus") is not None)
-    ok &= _check("role_default_prompt(tutor) == tutor_08",
-                 role_default_prompt("tutor") == "tutor_08")
+    ok &= _check("role_default_prompt(tutor) == tutor_07",
+                 role_default_prompt("tutor") == "tutor_07")
 
     # /embed default role renders and carries role=tutor in the page config.
     r = client.get("/embed?course=supply_chain_design&exercise=1")

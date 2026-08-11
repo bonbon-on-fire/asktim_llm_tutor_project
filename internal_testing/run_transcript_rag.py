@@ -77,7 +77,7 @@ _TUTOR_CALL_MAX_RETRIES = 3
 _SAVE_LOCK = threading.Lock()
 
 DEFAULT_COURSE = "supply_chain_design"
-DEFAULT_TUTOR = "tutor_08"
+DEFAULT_TUTOR = "tutor_09"
 DEFAULT_PROVIDER = "claude"
 DEFAULT_TURN_SIZE = 10
 DEFAULT_TRIALS = 3

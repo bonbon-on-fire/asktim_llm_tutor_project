@@ -53,7 +53,7 @@ http://127.0.0.1:5000/embed?course=cities_and_climate_change&exercise=01
 
 Add `&problem=<n>` *(optional)* to focus a single sub-problem within the selected week file (`Practice Problem N:` / `Graded Assignment N:`). The whole file still loads; the tutor is told the student is working on problem `n` and treats the rest as reference. The focus is persisted per conversation. An unknown `n` (or a non-integer) returns 404.
 
-Production is **locked to `tutor_08`** — `DEFAULT_TUTOR` in
+Production is **locked to `tutor_09`** — `DEFAULT_TUTOR` in
 [`routes/_validation.py`](routes/_validation.py) is forced at both the embed and
 chat entry points, so a `?tutor=` query param is ignored.
 

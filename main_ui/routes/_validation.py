@@ -22,7 +22,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
 _TUTOR_PROMPTS_DIR = _REPO_ROOT / "tutor" / "prompts"
 
-DEFAULT_TUTOR = "tutor_08"
+DEFAULT_TUTOR = "tutor_09"
 DEFAULT_COURSE = "cities_and_climate_change"
 DEFAULT_EXERCISE = "01"
 

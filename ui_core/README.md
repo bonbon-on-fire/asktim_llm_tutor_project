@@ -251,7 +251,7 @@ Overridable hooks (defaults shown are the base/`main_ui` behavior):
   assignment text into a full system prompt via `tutor.run_tutor.load_system_prompt`,
   then appends the course's `curriculum/<course>/tutor_rules.txt` (if any) via
   `utils.curriculum.append_course_tutor_rules` — a course-specific rules delta on
-  top of the shared base prompt (`tutor_08`), so no per-course prompt fork is needed
+  top of the shared base prompt (`tutor_09`), so no per-course prompt fork is needed
 - `retrieved_context(course, query, **ctx)` — per-turn RAG retrieval, returned as
   a `RetrievedContext(text, records)` dataclass: `.text` is the formatted block
   that always rides in the tutor's **system** channel, never onto the student's

@@ -65,10 +65,14 @@ def _is_schema_drift(exc: Exception) -> bool:
 
 
 def _scope_label() -> str:
-    """Human-readable label for the current session's scope (for the header)."""
+    """Human-readable label for the current session's scope (for the header).
+
+    Empty for the all-courses (master) scope so the header omits the line;
+    scoped logins still show which course(s) they are limited to.
+    """
     courses = allowed_courses()
     if courses is None:
-        return "All courses"
+        return ""
     return ", ".join(course_display_name(c) for c in courses)
 
 

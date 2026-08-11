@@ -62,6 +62,12 @@ def test_index_shows_scope_label():
     assert "MIT CTL.SC2x Supply Chain Design" in body
 
 
+def test_index_master_omits_scope_label():
+    # The all-courses (master) scope shows no "Viewing:" line in the header.
+    body = _login(_app(), MASTER).get("/").get_data(as_text=True)
+    assert "Viewing:" not in body
+
+
 def test_scoped_list_shows_only_own_course(seeded):
     client = _login(_app(), SC_PW)
     data = client.get("/api/conversations").get_json()

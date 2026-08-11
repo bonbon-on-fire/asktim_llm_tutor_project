@@ -185,7 +185,7 @@
 /* Sandbox-style dropdown (ported from sandbox-extra.css). The list opens
    DOWNWARD with a scroll — a native <select> flips its list up when the
    control sits low on a centered modal. Here it's a multi-select variant:
-   each option carries a checkbox and toggling keeps the list open. */
+   clicking an option toggles its blue highlight and keeps the list open. */
 .context-dropdown {
   position: relative;
   width: 100%;
@@ -256,24 +256,10 @@
 .context-dropdown-option:hover {
   background: #f0f1f3;
 }
-
-/* Multi-select rows: the checkbox conveys state, so skip the sandbox
-   single-select blue highlight. Defined after .context-dropdown-option so
-   this wins the equal-specificity aria-selected rule. */
-.download-ms-option {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  white-space: normal;
-}
-.download-ms-option[aria-selected="true"] {
-  background: none;
-  color: inherit;
-}
-.download-ms-option:hover {
-  background: #f0f1f3;
-}
-.download-ms-cb {
-  flex: none;
-  cursor: pointer;
+/* Selected options get the same solid-accent highlight sandbox_ui uses for its
+   single-select picker. Here multiple can be highlighted at once (multi-select);
+   the blue fill is the only affordance — no checkbox. */
+.context-dropdown-option[aria-selected="true"] {
+  background: var(--send-bg);
+  color: #ffffff;
 }

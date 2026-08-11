@@ -89,27 +89,23 @@
     }
 
     for (const o of options) {
-      const item = document.createElement("label");
-      item.className = "context-dropdown-option download-ms-option";
+      const item = document.createElement("div");
+      item.className = "context-dropdown-option";
       item.setAttribute("role", "option");
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.className = "download-ms-cb";
-      cb.checked = checkedSet.has(o.value);
-      item.setAttribute("aria-selected", cb.checked ? "true" : "false");
-      const span = document.createElement("span");
-      span.textContent = o.label;
-      cb.addEventListener("change", () => {
-        if (cb.checked) checkedSet.add(o.value);
-        else checkedSet.delete(o.value);
-        item.setAttribute("aria-selected", cb.checked ? "true" : "false");
+      item.textContent = o.label;
+      const sync = () =>
+        item.setAttribute("aria-selected", checkedSet.has(o.value) ? "true" : "false");
+      sync();
+      // Multi-select: a click toggles this option's blue highlight and keeps
+      // the list open (stopPropagation) so more can be picked in one go.
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (checkedSet.has(o.value)) checkedSet.delete(o.value);
+        else checkedSet.add(o.value);
+        sync();
         paintLabel();
         if (onChange) onChange();
       });
-      // Clicking a row toggles its checkbox; keep the click from closing the list.
-      item.addEventListener("click", (e) => e.stopPropagation());
-      item.appendChild(cb);
-      item.appendChild(span);
       list.appendChild(item);
     }
 

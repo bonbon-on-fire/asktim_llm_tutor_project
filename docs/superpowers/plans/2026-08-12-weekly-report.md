@@ -244,14 +244,14 @@ def session():
     s.close()
 
 
-def _week_of_seed():
-    # Seed rows are dated May 2026; grab the week that contains May 5.
-    return week_containing(datetime(2026, 5, 5).date())
+def _seed_week():
+    # Seed rows are all dated Fri May 1, 2026 -> the Sun Apr 26 - Sat May 2 week.
+    return week_containing(datetime(2026, 5, 1).date())
 
 
 def test_fetch_conversations_windows_and_scopes(session):
     s, ids = session
-    wk = week_containing(datetime(2026, 5, 5).date())
+    wk = _seed_week()
     # A distant week returns nothing.
     far = week_containing(datetime(2026, 1, 5).date())
     assert d.fetch_conversations(s, far, None) == []
@@ -264,7 +264,7 @@ def test_fetch_conversations_windows_and_scopes(session):
 def test_fetch_messages_maps_rag_flag_and_rating(session):
     s, ids = session
     rows = d.fetch_messages(s, [str(ids["sc_id"])])
-    tutor = [m for m in rows if m.role != "student" and m.role != "user"]
+    tutor = [m for m in rows if m.role == "tutor"]  # seed uses role="tutor"
     assert any(m.rating == 1 for m in tutor)
     assert any(m.has_rag for m in tutor)  # seeded tutor msg has retrieved_context
 
@@ -279,11 +279,12 @@ def test_prior_usernames(session):
 def test_fetch_transcript_is_ordered(session):
     s, ids = session
     pairs = d.fetch_transcript(s, str(ids["sc_id"]))
-    assert [p[0] for p in pairs] == sorted([p[0] for p in pairs], key=lambda _: 0) or pairs
     assert len(pairs) >= 2
+    assert pairs[0][0] == "student"   # student turn precedes tutor turn
+    assert pairs[-1][0] == "tutor"
 ```
 
-> Note for the implementer: confirm the seed's tutor `role` string (`"tutor"` vs `"assistant"`) from `database_ui/conftest.py` and adjust the `tutor` filter in the first assertion to match; the RAG/rating assertions are the load-bearing ones.
+> Seed facts (from `database_ui/conftest.py`): the tutor row has `role="tutor"`, the student row `role="student"`; both share `turn=1`, so `fetch_messages` must break ties by `id` to keep student-before-tutor order. All three seeded conversations are dated May 1, 2026.
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -508,12 +509,10 @@ present on tutor rows); token totals are a best-effort parse of ``usage_json``.
 """
 from __future__ import annotations
 
-import json
 from collections import Counter, defaultdict
-from datetime import timedelta
 
 from database_ui.analytics.data import ConvRow, MsgRow
-from ui_core.usage import model_from_usage_json
+from ui_core.usage import model_from_usage_json, new_tokens_from_usage_json
 
 # Tutor turns carry rating/cost; student turns don't. Accept both historical labels.
 TUTOR_ROLES = {"tutor", "assistant"}
@@ -521,21 +520,6 @@ TUTOR_ROLES = {"tutor", "assistant"}
 
 def is_tutor(role: str) -> bool:
     return role in TUTOR_ROLES
-
-
-def _tokens(usage_json: str | None) -> int:
-    """Best-effort token count: sum any int field whose key contains 'token'."""
-    if not usage_json:
-        return 0
-    try:
-        obj = json.loads(usage_json)
-    except (ValueError, TypeError):
-        return 0
-    total = 0
-    for key, val in (obj.items() if isinstance(obj, dict) else []):
-        if "token" in key.lower() and isinstance(val, int):
-            total += val
-    return total
 
 
 def _round(x: float, n: int = 4) -> float:
@@ -595,7 +579,7 @@ def _section(convs: list[ConvRow], msgs: list[MsgRow], returning: set[str]) -> d
         "cost": {
             "total_usd": _round(sum(costs), 4),
             "per_conversation_usd": _round(sum(costs) / len(convs), 4) if convs else 0.0,
-            "tokens": sum(_tokens(m.usage_json) for m in tutor_msgs),
+            "tokens": sum(new_tokens_from_usage_json(m.usage_json) for m in tutor_msgs),
             "model_mix": dict(models),
         },
         "content": {
@@ -647,7 +631,7 @@ def week_over_week(current: dict, prior: dict) -> dict:
     return out
 ```
 
-> Implementer note: confirm `ui_core.usage.model_from_usage_json` accepts a JSON string and returns `str | None` (it's already imported that way in `services/conversations.py`). If its signature differs, adapt the one call site.
+> Confirmed helpers (in `ui_core/usage.py`): `model_from_usage_json(str|None) -> str|None` and `new_tokens_from_usage_json(str|None) -> int`. Both take the raw `usage_json` string and fail safe (None / 0). Use them as written — do not reimplement token parsing.
 
 - [ ] **Step 4: Run to verify pass**
 
@@ -904,15 +888,14 @@ def test_fake_judge_returns_canned_then_default():
                 topics=["EOQ"], one_line="gave answer")
     d = Verdict(worked_well=True, issues=[], topics=[], one_line="ok")
     j = FakeJudge(canned={"u1": v}, default=d)
-    assert j.judge("c1", [("student", "u1")]) is v or j._pop("u1") == v  # canned by key
-    assert j.judge("c1", [("student", "other")]) == d
+    # FakeJudge keys on the LAST student line of the transcript.
+    assert j.judge("c1", [("student", "u1")]) == v          # canned match wins
+    assert j.judge("c1", [("student", "other")]) == d       # otherwise the default
 
 
 def test_issue_types_are_the_four_agreed():
     assert ISSUE_TYPES == ("gave_away_answer", "factual_error", "unhelpful_dead_end", "rag_grounding")
 ```
-
-> Implementer note: make `FakeJudge` deterministic and simple — it pops canned verdicts by a caller-supplied key or falls back to `default`. Adjust the first assertion in `test_fake_judge_returns_canned_then_default` to whatever minimal `FakeJudge` API you implement (documented below); the load-bearing checks are "canned wins, default otherwise."
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -1549,7 +1532,7 @@ def session():
 
 def test_run_week_writes_cache_and_report(tmp_path, monkeypatch, session):
     monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path)
-    wk = week_containing(date(2026, 5, 5))     # the seeded rows' week
+    wk = week_containing(date(2026, 5, 1))     # seeded rows are dated May 1, 2026
     judge = FakeJudge(default=Verdict(False, issues=[
         {"type": "gave_away_answer", "severity": "high", "quote": "q"}], topics=["EOQ"], one_line="bad"))
     path, md = weekly.run_week(
@@ -1764,7 +1747,7 @@ def session():
 
 
 def test_live_stats_scoped(session):
-    wk = week_containing(date(2026, 5, 5))
+    wk = week_containing(date(2026, 5, 1))   # seeded rows are dated May 1, 2026
     allc = svc.live_stats(session, wk, None)
     scoped = svc.live_stats(session, wk, ["supply_chain_design"])
     assert allc["usage"]["conversations"] >= scoped["usage"]["conversations"]
@@ -1920,7 +1903,7 @@ def test_analytics_page_requires_auth():
 
 def test_api_analytics_returns_live_and_pending_cached(seeded):
     c = _login(_app(), MASTER)
-    resp = c.get("/api/analytics?week=2026-05-05")
+    resp = c.get("/api/analytics?week=2026-05-01")
     assert resp.status_code == 200
     body = resp.get_json()
     assert "live" in body and "week" in body
@@ -1929,7 +1912,7 @@ def test_api_analytics_returns_live_and_pending_cached(seeded):
 
 def test_api_analytics_scoped(seeded):
     c = _login(_app(), SC_PW)
-    body = c.get("/api/analytics?week=2026-05-05").get_json()
+    body = c.get("/api/analytics?week=2026-05-01").get_json()
     assert set(body["live"]["per_course"]) <= {"supply_chain_design"}
 
 

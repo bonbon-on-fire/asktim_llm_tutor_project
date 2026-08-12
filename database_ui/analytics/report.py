@@ -41,7 +41,8 @@ def render_report(week: Week, stats: dict, wow: dict, flags: dict, topics_by_cou
         lines.append("| Course | Exercise | Student | Issue | Severity | Note |")
         lines.append("| --- | --- | --- | --- | --- | --- |")
         for i in flags["items"][:25]:
-            note = (i["one_line"] or i["quote"]).replace("|", "\\|")[:80]
+            note = (i["one_line"] or i["quote"]).replace("\n", " ").replace("\r", " ")
+            note = note.replace("|", "\\|")[:80]
             lines.append(f"| {course_display_name(i['course'])} | {i['exercise']} | "
                          f"{i['student']} | {i['issue_type']} | {i['severity']} | {note} |")
     lines.append("")

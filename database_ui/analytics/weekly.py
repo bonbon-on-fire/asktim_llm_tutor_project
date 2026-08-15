@@ -8,6 +8,7 @@ transcript hash), then writes the committed cache and a sibling report.md.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -84,7 +85,7 @@ def run_week(
     # Persist hashes alongside for next run's reuse (kept out of the scope-filtered read).
     blob = cache_mod.read_cache(week.key)
     blob["_hashes"] = hashes
-    path.write_text(__import__("json").dumps(blob, indent=2, ensure_ascii=False), encoding="utf-8")
+    path.write_text(json.dumps(blob, indent=2, ensure_ascii=False), encoding="utf-8")
 
     stats = compute_stats(convs, msgs, returning)
     prior_week = week.prev()

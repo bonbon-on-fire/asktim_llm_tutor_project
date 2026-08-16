@@ -12,18 +12,55 @@
     return n;
   }
 
-  // Minimal, accessible bar chart from [{label, value}]. Direct-labeled bars.
+  const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // Expand a { "YYYY-MM-DD": value } map into the full Sun–Sat week starting at
+  // sundayKey, filling absent days with 0 so every week charts the same seven
+  // slots. All date math is in UTC (the keys are date-only) to avoid DST drift.
+  function weekSeries(byDay, sundayKey, unit) {
+    const [y, m, d] = sundayKey.split("-").map(Number);
+    const base = Date.UTC(y, m - 1, d);
+    return DOW.map((name, i) => {
+      const dt = new Date(base + i * 86400000);
+      const iso = dt.toISOString().slice(0, 10);
+      const value = byDay[iso] || 0;
+      return { label: name, value, title: `${name}, ${MON[dt.getUTCMonth()]} ${dt.getUTCDate()} · ${value} ${unit}` };
+    });
+  }
+
+  // Accessible bar chart from [{label, value, title}]. Faint horizontal
+  // gridlines with left-edge value ticks; top-rounded bars (square bottom);
+  // each bar carries a native <title> tooltip.
   function barChart(data, opts) {
     opts = opts || {};
-    const w = 520, h = 200, pad = 28, n = data.length || 1;
+    const w = 520, h = 220, padX = 30, padTop = 20, padBot = 26;
+    const plotH = h - padTop - padBot, baseY = padTop + plotH;
+    const n = data.length || 1;
     const max = Math.max(1, ...data.map((d) => d.value));
-    const bw = (w - pad * 2) / n * 0.7;
-    const svg = el("svg", { _svg: true, viewBox: `0 0 ${w} ${h}`, class: "chart", role: "img" });
+    const slot = (w - padX * 2) / n, bw = slot * 0.6;
+    const svg = el("svg", { _svg: true, viewBox: `0 0 ${w} ${h}`, class: "chart", role: "img",
+      "aria-label": opts.label || "Bar chart" });
+
+    const TICKS = 4;
+    for (let t = 0; t <= TICKS; t++) {
+      const gy = padTop + plotH * (t / TICKS);
+      svg.appendChild(el("line", { _svg: true, x1: padX, y1: gy, x2: w - padX, y2: gy, class: "chart-grid" }));
+      svg.appendChild(el("text", { _svg: true, x: padX - 6, y: gy + 3, "text-anchor": "end", class: "chart-lbl" },
+        [String(Math.round(max * (1 - t / TICKS)))]));
+    }
+
     data.forEach((d, i) => {
-      const x = pad + (i + 0.15) * ((w - pad * 2) / n);
-      const bh = (h - pad * 2) * (d.value / max);
-      const y = h - pad - bh;
-      svg.appendChild(el("rect", { _svg: true, x, y, width: bw, height: bh, rx: 2, fill: "var(--accent)" }));
+      const x = padX + i * slot + (slot - bw) / 2;
+      const bh = plotH * (d.value / max);
+      const y = baseY - bh;
+      const r = Math.min(4, bw / 2, bh);
+      // Path with rounded upper corners only, so bars sit flat on the baseline.
+      const path = `M${x},${baseY} L${x},${y + r} Q${x},${y} ${x + r},${y}`
+        + ` L${x + bw - r},${y} Q${x + bw},${y} ${x + bw},${y + r} L${x + bw},${baseY} Z`;
+      const bar = el("path", { _svg: true, d: path, fill: "var(--accent)" });
+      bar.appendChild(el("title", { _svg: true }, [d.title || `${d.label}: ${d.value}`]));
+      svg.appendChild(bar);
       svg.appendChild(el("text", { _svg: true, x: x + bw / 2, y: y - 4, "text-anchor": "middle", class: "chart-val" }, [String(d.value)]));
       svg.appendChild(el("text", { _svg: true, x: x + bw / 2, y: h - 8, "text-anchor": "middle", class: "chart-lbl" }, [d.label]));
     });
@@ -66,8 +103,8 @@
       ["RAG rate", pct(ct.rag_rate) + " " + arrow(wow, "rag_rate")],
     ])));
 
-    const byDay = Object.entries(u.messages_by_day || {}).map(([d, v]) => ({ label: d.slice(5), value: v }));
-    if (byDay.length) root.appendChild(card("Messages by day", barChart(byDay)));
+    const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");
+    root.appendChild(card("Messages by day", barChart(byDay, { label: "Messages by day, Sunday through Saturday" })));
 
     // Judged sections (may be pending).
     if (!payload.cached) {

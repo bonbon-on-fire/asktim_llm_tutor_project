@@ -62,13 +62,16 @@ class FakeJudge:
 
 _SYSTEM = """You are a strict evaluator of an AI tutor's conversation with a \
 student. The tutor must guide via Socratic questioning and NEVER hand over a \
-final/submission-ready answer. Given the transcript, decide whether the tutoring \
-worked well, list concrete issues, and tag the 1-3 topics the student asked about.
+final/submission-ready answer. The course subject varies across many disciplines, \
+so interpret the topics and any factual claims in the context of the named course. \
+Given the transcript, decide whether the tutoring worked well, list concrete \
+issues, and tag the 1-3 topics the student asked about.
 
 Issue "type" must be one of: gave_away_answer, factual_error, unhelpful_dead_end, \
 rag_grounding. "severity" must be one of: low, medium, high. Each issue needs a \
 short verbatim "quote" from the tutor that evidences it. Keep "one_line" under 15 \
-words. "topics" are short noun phrases (e.g. "EOQ", "safety stock")."""
+words. "topics" are short noun phrases naming the specific concepts the student \
+worked on, whatever the course's subject."""
 
 
 class AnthropicJudge:

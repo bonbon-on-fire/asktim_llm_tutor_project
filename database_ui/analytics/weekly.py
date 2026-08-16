@@ -22,6 +22,7 @@ from database_ui.analytics.report import render_report
 from database_ui.analytics.stats import compute_stats, is_tutor, week_over_week
 from database_ui.analytics.topics import aggregate_topics
 from database_ui.analytics.weeks import Week, previous_complete_week, parse_week
+from database_ui.courses import course_display_name
 
 
 def _first_question(transcript: list[tuple[str, str]]) -> str:
@@ -69,7 +70,9 @@ def run_week(
                 topics=entry["topics"], one_line=entry["one_line"],
             )
         else:
-            verdict = judge.judge(conv.course, transcript)
+            # Judge sees the human-readable course name (any discipline) for
+            # domain context; grouping/storage still keys off conv.course.
+            verdict = judge.judge(course_display_name(conv.course), transcript)
         verdicts[conv.id] = verdict
         judged_dict[conv.id] = verdict.as_dict(conv.course)
 

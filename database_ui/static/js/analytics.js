@@ -180,7 +180,9 @@
     const monthIxOf = (k) => { const s = sundayOf(parseKey(k)); return ix(s.getUTCFullYear(), s.getUTCMonth()); };
 
     const setLabel = () => { label.textContent = weekLabel(sundayOf(parseKey(selected))); };
-    function choose(k) { selected = k; setLabel(); closePop(); load(k); }
+    // Picking a week updates the highlight and reloads but leaves the popover
+    // open; only an outside click (onDoc) closes it.
+    function choose(k) { selected = k; setLabel(); renderGrid(); load(k); }
 
     function renderGrid() {
       pop.textContent = "";

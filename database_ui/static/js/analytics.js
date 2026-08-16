@@ -120,11 +120,11 @@
     ])));
 
     const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");
-    root.appendChild(card("Messages by day", barChart(byDay, { label: "Messages by day, Sunday through Saturday" })));
+    root.appendChild(card("Daily activity", barChart(byDay, { label: "Daily message activity, Sunday through Saturday" })));
 
     // Judged sections (may be pending).
     if (!payload.cached) {
-      root.appendChild(card("Judged review", el("p", { class: "a-pending" },
+      root.appendChild(card("AI review", el("p", { class: "a-pending" },
         ["This week's review is coming soon"])));
       return;
     }

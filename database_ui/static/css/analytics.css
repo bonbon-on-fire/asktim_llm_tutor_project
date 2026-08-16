@@ -1,25 +1,54 @@
-/* database_ui/static/css/analytics.css */
-.analytics { max-width: 960px; margin: 0 auto; padding: 16px; }
-.analytics-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.analytics-back { color: var(--accent); text-decoration: none; font-size: 14px; }
+/* database_ui/static/css/analytics.css
+   Weekly report styling. Inherits chat.css's system font and reuses the
+   database palette tokens (--text / --muted / --border / --accent) so the cards,
+   labels, and type weights read as part of the same review dashboard. */
+.analytics { max-width: 960px; margin: 0 auto; padding: 1rem; }
+.analytics-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.analytics-back { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
 /* When the back control is a <button> (dashboard panel), strip button chrome. */
 button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
-.analytics-week { padding: 6px 8px; border: 1px solid #cdd6db; border-radius: 6px; }
-.analytics-status { color: #6b7a82; font-size: 13px; }
-.analytics-content { display: grid; gap: 16px; }
-.a-card { border: 1px solid #e3e9ec; border-radius: 10px; padding: 16px; background: #fff; }
-.a-card-title { font-size: 15px; margin: 0 0 10px; color: #123; }
-.a-stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
-.a-stat-k { display: block; font-size: 12px; color: #6b7a82; }
-.a-stat-v { display: block; font-size: 20px; font-weight: 600; }
-.a-pending { color: #6b7a82; font-style: italic; }
+.analytics-week {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--text, #2a2a2a);
+  background: #ffffff;
+}
+.analytics-status { color: var(--muted, #888); font-size: 0.85rem; }
+.analytics-content { display: grid; gap: 1rem; }
+
+.a-card {
+  border: 1px solid var(--border, #e2e2e2);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  background: #ffffff;
+}
+/* Card heading: same weight/size as the sidebar's section title, in the base
+   text color rather than a hard black. */
+.a-card-title { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.7rem; color: var(--text, #2a2a2a); }
+
+.a-stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
+/* Stat key reuses the sidebar course-eyebrow treatment: a quiet uppercase tag. */
+.a-stat-k {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #888);
+  margin-bottom: 0.15rem;
+}
+.a-stat-v { display: block; font-size: 1.3rem; font-weight: 600; color: var(--text, #2a2a2a); }
+.a-pending { color: var(--muted, #888); font-style: italic; font-size: 0.9rem; margin: 0; }
+
 .chart { width: 100%; height: auto; }
-.chart-grid { stroke: #eceff1; stroke-width: 1; }
-.chart-val { font-size: 10px; fill: #123; }
-.chart-lbl { font-size: 9px; fill: #6b7a82; }
+.chart-grid { stroke: var(--border, #e2e2e2); stroke-width: 1; }
+.chart-val { font-size: 10px; fill: var(--text, #2a2a2a); }
+.chart-lbl { font-size: 9px; fill: var(--muted, #888); }
 
 /* Embedded in the dashboard main pane (index.html): fills the transcript box,
    scrolls on its own, and keeps content readable-width. Hidden until opened. */
-.analytics-panel { padding: 16px 20px; overflow-y: auto; height: 100%; box-sizing: border-box; }
+.analytics-panel { padding: 1rem 1.25rem; overflow-y: auto; height: 100%; box-sizing: border-box; }
 .analytics-panel .analytics-bar,
 .analytics-panel .analytics-content { max-width: 960px; margin-left: auto; margin-right: auto; }

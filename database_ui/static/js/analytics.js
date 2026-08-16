@@ -113,8 +113,8 @@
     root.appendChild(card(null, statList([
       ["Conversations", u.conversations + " " + arrow(wow, "conversations")],
       ["Messages", u.total_messages + " " + arrow(wow, "total_messages")],
-      ["Students", u.unique_students],
-      ["New students", u.new_students],
+      ["Students", u.unique_students + " " + arrow(wow, "unique_students")],
+      ["New students", u.new_students + " " + arrow(wow, "new_students")],
       ["Cost", money(co.total_usd) + " " + arrow(wow, "cost_usd")],
     ])));
 

@@ -42,3 +42,5 @@ def test_week_over_week_arrows():
     wow = week_over_week(cur, prior)
     assert wow["conversations"]["arrow"] == "▼"   # 1 < 2
     assert wow["cost_usd"]["arrow"] == "▲"          # 0.10 > ~0.01
+    assert wow["unique_students"]["arrow"] == "–"   # 1 == 1, unchanged
+    assert wow["new_students"]["arrow"] == "–"       # 1 == 1, unchanged

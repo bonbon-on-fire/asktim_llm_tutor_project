@@ -113,6 +113,7 @@ _HEADLINE = [
     ("conversations", ("usage", "conversations")),
     ("total_messages", ("usage", "total_messages")),
     ("unique_students", ("usage", "unique_students")),
+    ("new_students", ("usage", "new_students")),
     ("cost_usd", ("cost", "total_usd")),
     ("positive_rate", ("ratings", "positive_rate")),
     ("rag_rate", ("content", "rag_rate")),

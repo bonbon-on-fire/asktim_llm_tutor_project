@@ -32,6 +32,7 @@ def test_usage_and_ratings_and_cost():
     assert out["ratings"]["positive_rate"] == 0.5
     assert round(out["cost"]["total_usd"], 2) == 0.05
     assert out["content"]["rag_turns"] == 1
+    assert out["usage"]["messages_by_day"] == {"2026-08-10": 4}
     assert "c1" in out["per_course"]
 
 

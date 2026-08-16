@@ -35,6 +35,9 @@ def _section(convs: list[ConvRow], msgs: list[MsgRow], returning: set[str]) -> d
     by_day: Counter = Counter(
         c.started_at.date().isoformat() for c in convs if c.started_at
     )
+    msgs_by_day: Counter = Counter(
+        m.created_at.date().isoformat() for m in msgs if m.created_at
+    )
     per_conv_msgs: Counter = Counter(m.conversation_id for m in msgs)
     up = sum(1 for m in tutor_msgs if m.rating == 1)
     down = sum(1 for m in tutor_msgs if m.rating == -1)
@@ -65,6 +68,7 @@ def _section(convs: list[ConvRow], msgs: list[MsgRow], returning: set[str]) -> d
             ),
             "short_conversations": sum(1 for c in per_conv_msgs.values() if c <= 2),
             "conversations_by_day": dict(sorted(by_day.items())),
+            "messages_by_day": dict(sorted(msgs_by_day.items())),
         },
         "ratings": {
             "up": up,

@@ -66,8 +66,8 @@
       ["RAG rate", pct(ct.rag_rate) + " " + arrow(wow, "rag_rate")],
     ])));
 
-    const byDay = Object.entries(u.conversations_by_day || {}).map(([d, v]) => ({ label: d.slice(5), value: v }));
-    if (byDay.length) root.appendChild(card("Conversations by day", barChart(byDay)));
+    const byDay = Object.entries(u.messages_by_day || {}).map(([d, v]) => ({ label: d.slice(5), value: v }));
+    if (byDay.length) root.appendChild(card("Messages by day", barChart(byDay)));
 
     // Judged sections (may be pending).
     if (!payload.cached) {

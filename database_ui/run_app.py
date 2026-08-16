@@ -15,6 +15,7 @@ from flask import Flask, g, jsonify
 from database_ui.auth import init_auth
 from database_ui.config import load_config
 from database_ui.db import SessionLocal
+from database_ui.routes.analytics import analytics_bp
 from database_ui.routes.database import database_bp
 from ui_core.web.static_blueprint import static_bp
 
@@ -61,6 +62,7 @@ def create_app() -> Flask:
     init_auth(app)
     app.register_blueprint(static_bp)
     app.register_blueprint(database_bp)
+    app.register_blueprint(analytics_bp)
 
     return app
 

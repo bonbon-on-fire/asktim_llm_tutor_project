@@ -1,0 +1,86 @@
+/* database_ui/static/css/analytics.css
+   Weekly report styling. Inherits chat.css's system font and reuses the
+   database palette tokens (--text / --muted / --border / --accent) so the cards,
+   labels, and type weights read as part of the same review dashboard. */
+.analytics { max-width: 960px; margin: 0 auto; padding: 1rem; }
+.analytics-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.analytics-back { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+/* When the back control is a <button> (dashboard panel), strip button chrome. */
+button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.analytics-status { color: var(--muted, #888); font-size: 0.85rem; }
+
+/* Week picker: a select-like trigger that opens a small calendar popover.
+   Sits on the page background (--bg) with a light --border outline so it
+   blends into the page rather than reading as a stark white form input. */
+.weekpick { position: relative; display: inline-block; }
+.weekpick-trigger {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  min-width: 13rem; padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border, #e2e2e2); border-radius: 8px;
+  background: var(--bg, #fafafa); color: var(--text, #2a2a2a); font: inherit; cursor: pointer;
+}
+.weekpick-trigger:hover { border-color: #cfcfcf; }
+.weekpick-caret { color: var(--muted, #888); flex: none; }
+.weekpick-pop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 20;
+  width: 17rem; padding: 0.6rem;
+  background: #ffffff; border: 1px solid var(--border, #e2e2e2); border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.weekpick-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; }
+.weekpick-month { font-size: 0.85rem; font-weight: 600; color: var(--text, #2a2a2a); }
+.weekpick-nav {
+  border: 0; background: none; cursor: pointer; line-height: 1;
+  font-size: 1.15rem; color: var(--text, #2a2a2a); padding: 0.1rem 0.45rem; border-radius: 6px;
+}
+.weekpick-nav:hover:not(:disabled) { background: var(--tutor-bg, #f0f0f0); }
+.weekpick-nav:disabled { color: #cfcfcf; cursor: default; }
+.weekpick-wd { display: grid; grid-template-columns: repeat(7, 1fr); }
+.weekpick-wd span { text-align: center; font-size: 0.62rem; color: var(--muted, #888); padding: 0.2rem 0; }
+.weekpick-week { display: grid; grid-template-columns: repeat(7, 1fr); border-radius: 8px; cursor: pointer; }
+/* Same 3-state highlight as the conversation-list entries (database.css):
+   grey on hover, light blue when selected, deeper blue hovering the selected
+   week. Ordered so the selected-hover rule wins over the general hover. */
+.weekpick-week:not(.is-disabled):hover { background: #f5f5f5; }
+.weekpick-week.is-selected { background: #e3eff5; }
+.weekpick-week.is-selected:hover { background: #d3e6f0; }
+.weekpick-week.is-disabled { cursor: default; }
+.weekpick-week.is-disabled .weekpick-day { color: #d6d6d6; }
+.weekpick-day { text-align: center; font-size: 0.8rem; padding: 0.35rem 0; color: var(--text, #2a2a2a); }
+.weekpick-day.is-off { color: var(--muted, #bbb); }
+.analytics-content { display: grid; gap: 1rem; }
+
+/* Cards match the tutor message bubble: neutral fill, no outline. */
+.a-card {
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  background: var(--tutor-bg, #f0f0f0);
+}
+/* Card heading: same weight/size as the sidebar's section title, in the base
+   text color rather than a hard black. */
+.a-card-title { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.7rem; color: var(--text, #2a2a2a); }
+
+.a-stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
+/* Stat key reuses the sidebar course-eyebrow treatment: a quiet uppercase tag. */
+.a-stat-k {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #888);
+  margin-bottom: 0.15rem;
+}
+.a-stat-v { display: block; font-size: 1.3rem; font-weight: 600; color: var(--text, #2a2a2a); }
+.a-pending { color: var(--muted, #888); font-size: 0.9rem; margin: 0; }
+
+.chart { width: 100%; height: auto; }
+.chart-grid { stroke: var(--border, #e2e2e2); stroke-width: 1; }
+.chart-val { font-size: 10px; fill: var(--text, #2a2a2a); }
+.chart-lbl { font-size: 9px; fill: var(--muted, #888); }
+
+/* Embedded in the dashboard main pane (index.html): fills the transcript box,
+   scrolls on its own, and keeps content readable-width. Hidden until opened. */
+.analytics-panel { padding: 1rem 1.25rem; overflow-y: auto; height: 100%; box-sizing: border-box; }
+.analytics-panel .analytics-bar,
+.analytics-panel .analytics-content { max-width: 960px; margin-left: auto; margin-right: auto; }

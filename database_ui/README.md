@@ -168,4 +168,69 @@ reading the same Postgres as **askTIM-main**. To reproduce:
 | `GET /api/file/<int>` | download an uploaded non-image file's bytes |
 | `GET /api/export/filters` | list courses + their assignments for the download wizard |
 | `GET /api/export.csv?assignment=<course>::<exercise>&…` | download selected conversations as a one-row-per-message CSV |
+| `GET /analytics` | weekly report page — see [Weekly report](#weekly-report) |
+| `GET /api/analytics?week=YYYY-MM-DD` | one week's live stats + judged cache (scoped) as JSON |
+| `GET /api/analytics/weeks` | week-picker options + `range: {min, max}` bounds (scoped) |
 | `GET /health` | liveness (open, no auth) |
+
+## Weekly report
+
+`GET /analytics` shows a Sunday–Saturday weekly report. Weeks are defined in
+America/New_York (`database_ui/analytics/weeks.py`); a week's label is
+`Mon D, YYYY — Mon D, YYYY` (em dash), e.g. `Aug 9, 2026 — Aug 15, 2026`. The
+week is chosen with a calendar popover (`/api/analytics/weeks` supplies its
+bounds) spanning from the first week with data through the latest complete
+week; picking a week reloads the report in place. The page has two kinds of
+content:
+
+- **Live stats** — computed per request straight from the DB for whichever
+  week is selected, so they're always current, including for the in-progress
+  week. The overview cards show **conversations, messages, unique students,
+  new students, and cost** (each with a week-over-week arrow where a prior
+  week exists), above a Sunday–Saturday "Daily activity" bar chart. Positive-
+  rating and RAG rates are still computed for the PR-body report
+  (`report.py`) but are **not** surfaced as dashboard cards — students rarely
+  use the thumbs, so the cards stay focused on volume and cost.
+- **Judged sections** — flags, example conversations, and topic
+  aggregation — are LLM-judged and served from the committed cache
+  (`database_ui/analytics/cache/`), not computed live. This is the **AI
+  review**. Until a week's cache exists, the "AI review" card shows a quiet
+  "This week's review is coming soon" note; the flagged conversations,
+  examples, and topics appear once that week's weekly-report PR is merged.
+
+**Scoping.** Like the rest of the app, `/analytics` and `/api/analytics`
+respect `allowed_courses()`: a per-course login only sees its own course's
+live stats and its own course's entries in the cached sections. The master
+password sees everything.
+
+### Generating the cache
+
+The judging + caching logic lives in `database_ui/analytics/` (data
+fetching, the LLM judge, flags/examples/topics, the cache writer). Run it
+with:
+
+```bash
+python -m database_ui.analytics.weekly --week YYYY-MM-DD [--max-convos N]
+```
+
+`--week` is any date inside the target week (defaults to the previous
+complete week); `--max-convos` caps how many conversations get judged.
+Relevant environment variables:
+
+| Variable | Description |
+| -------- | ----------- |
+| `DATABASE_UI_DATABASE_URL` | DB to read (same variable `database_ui` itself uses). |
+| `ANTHROPIC_API_KEY` | Used by the LLM judge. |
+| `ANALYTICS_JUDGE_MODEL` | Judge model id. Defaults to `claude-sonnet-5`. |
+
+### Weekly GitHub Action
+
+[`.github/workflows/weekly-analytics.yml`](../.github/workflows/weekly-analytics.yml)
+runs the CLI on a schedule (and on manual dispatch), then opens a pull
+request against `prod-beta-plus` with the updated cache files. **Merging
+that PR is what deploys the cache** — only then do the judged sections on
+`/analytics` light up for that week; until it's merged, the page shows the
+"pending this week's review" note above.
+
+**Privacy.** The cache contains real student usernames (in flags and
+example conversations), so it must never be exposed outside a private repo.

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · Weekly report</title>
+  <style>:root { --accent: {{ accent }}; }</style>
+  <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/chat.css', v='3') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css', v='7') }}">
+</head>
+<body>
+  <header class="course-banner"><span class="course-name scope-hidden">{{ scope_label }}</span></header>
+  <main class="analytics" id="analytics-root">
+    <div class="analytics-bar">
+      <a href="/" class="analytics-back">← Conversations</a>
+      <div class="weekpick" id="week-picker">
+        <button type="button" class="weekpick-trigger" id="weekpick-trigger"
+                aria-haspopup="dialog" aria-expanded="false" aria-label="Select week">
+          <span class="weekpick-label" id="weekpick-label">Select week</span>
+          <svg class="weekpick-caret" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <span id="analytics-status" class="analytics-status"></span>
+    </div>
+    <section id="analytics-content" class="analytics-content" aria-live="polite"></section>
+  </main>
+  <script src="{{ url_for('static', filename='js/analytics.js', v='12') }}" defer></script>
+</body>
+</html>

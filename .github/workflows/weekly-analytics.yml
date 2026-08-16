@@ -1,0 +1,75 @@
+# .github/workflows/weekly-analytics.yml
+name: Weekly analytics report
+
+on:
+  schedule:
+    # Monday 11:00 UTC ≈ Sun night / early Mon in America/New_York (DST shifts ±1h).
+    - cron: "0 11 * * 1"
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "Any date (YYYY-MM-DD) inside the target week; blank = previous complete week"
+        required: false
+        default: ""
+      max_convos:
+        description: "Cap conversations judged (blank = all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: weekly-analytics
+  cancel-in-progress: false
+
+env:
+  TARGET_BRANCH: prod-beta-plus
+
+jobs:
+  build-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate weekly report
+        id: gen
+        env:
+          DATABASE_UI_DATABASE_URL: ${{ secrets.ANALYTICS_DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANALYTICS_JUDGE_MODEL: ${{ vars.ANALYTICS_JUDGE_MODEL || 'claude-sonnet-5' }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.week }}" ]; then ARGS="$ARGS --week ${{ github.event.inputs.week }}"; fi
+          if [ -n "${{ github.event.inputs.max_convos }}" ]; then ARGS="$ARGS --max-convos ${{ github.event.inputs.max_convos }}"; fi
+          python -m database_ui.analytics.weekly $ARGS --report-out /tmp/report.md
+          # Surface the week key (cache filename stem) for the PR branch/title.
+          echo "week_key=$(ls -t database_ui/analytics/cache/*.json | head -1 | xargs -n1 basename | sed 's/.json//')" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEEK: ${{ steps.gen.outputs.week_key }}
+        run: |
+          BRANCH="analytics/week-${WEEK}"
+          git config user.name "asktim-bot"
+          git config user.email "asktim-bot@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add database_ui/analytics/cache/
+          if git diff --cached --quiet; then echo "No cache changes; skipping PR."; exit 0; fi
+          git commit -m "chore(analytics): weekly report cache for ${WEEK}"
+          git push -u origin "$BRANCH" --force-with-lease
+          gh pr create --base "$TARGET_BRANCH" --head "$BRANCH" \
+            --title "Weekly analytics — week of ${WEEK}" \
+            --body-file /tmp/report.md

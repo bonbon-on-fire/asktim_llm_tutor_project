@@ -29,6 +29,21 @@
     });
   }
 
+  // A "nice" round axis ceiling that clears the data max with one empty step of
+  // headroom above the tallest bar (e.g. max 8 → ceiling 10, step 2).
+  function niceScale(m) {
+    m = Math.max(1, m);
+    const pow = Math.pow(10, Math.floor(Math.log10(m)));
+    let step = pow;
+    for (const s of [1, 2, 5, 10]) {
+      step = s * pow;
+      if (m / step <= 4) break;
+    }
+    let ceil = Math.ceil(m / step) * step;
+    if (ceil <= m) ceil += step;   // guarantee the empty top layer
+    return { ceil, step };
+  }
+
   // Accessible bar chart from [{label, value, title}]. Faint horizontal
   // gridlines with left-edge value ticks; top-rounded bars (square bottom);
   // each bar carries a native <title> tooltip.
@@ -38,21 +53,22 @@
     const plotH = h - padTop - padBot, baseY = padTop + plotH;
     const n = data.length || 1;
     const max = Math.max(1, ...data.map((d) => d.value));
+    const { ceil, step } = niceScale(max);
     const slot = (w - padX * 2) / n, bw = slot * 0.6;
     const svg = el("svg", { _svg: true, viewBox: `0 0 ${w} ${h}`, class: "chart", role: "img",
       "aria-label": opts.label || "Bar chart" });
 
-    const TICKS = 4;
+    const TICKS = Math.round(ceil / step);
     for (let t = 0; t <= TICKS; t++) {
       const gy = padTop + plotH * (t / TICKS);
       svg.appendChild(el("line", { _svg: true, x1: padX, y1: gy, x2: w - padX, y2: gy, class: "chart-grid" }));
       svg.appendChild(el("text", { _svg: true, x: padX - 6, y: gy + 3, "text-anchor": "end", class: "chart-lbl" },
-        [String(Math.round(max * (1 - t / TICKS)))]));
+        [String(Math.round(ceil - step * t))]));
     }
 
     data.forEach((d, i) => {
       const x = padX + i * slot + (slot - bw) / 2;
-      const bh = plotH * (d.value / max);
+      const bh = plotH * (d.value / ceil);
       const y = baseY - bh;
       const r = Math.min(4, bw / 2, bh);
       // Path with rounded upper corners only, so bars sit flat on the baseline.

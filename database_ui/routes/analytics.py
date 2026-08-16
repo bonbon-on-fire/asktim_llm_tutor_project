@@ -1,0 +1,43 @@
+# database_ui/routes/analytics.py
+"""Weekly-report blueprint: the page shell and its scoped JSON API."""
+from __future__ import annotations
+
+from datetime import date
+
+from flask import Blueprint, current_app, g, jsonify, render_template, request
+
+from database_ui.analytics.weeks import parse_week, previous_complete_week
+from database_ui.auth import allowed_courses
+from database_ui.routes.database import _scope_label  # reuse the hidden banner label
+from database_ui.services import analytics as svc
+
+analytics_bp = Blueprint("analytics", __name__)
+
+
+@analytics_bp.get("/analytics")
+def analytics_page():
+    return render_template(
+        "analytics.html",
+        title=current_app.config["DATABASE_UI_TITLE"],
+        accent=current_app.config["DATABASE_UI_ACCENT"],
+        scope_label=_scope_label(),
+    )
+
+
+@analytics_bp.get("/api/analytics")
+def api_analytics():
+    raw = request.args.get("week")
+    week = parse_week(raw) if raw else previous_complete_week(date.today())
+    courses = allowed_courses()
+    live = svc.live_stats(g.db, week, courses)
+    cached = svc.cached_sections(week.key, courses)
+    return jsonify({
+        "week": {"key": week.key, "label": week.label()},
+        "live": live,
+        "cached": cached,
+    })
+
+
+@analytics_bp.get("/api/analytics/weeks")
+def api_weeks():
+    return jsonify({"weeks": svc.week_options()})

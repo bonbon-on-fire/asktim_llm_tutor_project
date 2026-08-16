@@ -72,7 +72,7 @@
     // Judged sections (may be pending).
     if (!payload.cached) {
       root.appendChild(card("Judged review", el("p", { class: "a-pending" },
-        ["Pending this week's review — the flagged conversations, examples, and topics appear once the weekly report PR is merged."])));
+        ["This week's review is coming soon"])));
       return;
     }
     const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);

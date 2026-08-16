@@ -6,7 +6,7 @@
   const $ = (id) => document.getElementById(id);
 
   function el(tag, attrs, kids) {
-    const n = document.createElementNS(attrs && attrs._svg ? SVG : null, tag);
+    const n = attrs && attrs._svg ? document.createElementNS(SVG, tag) : document.createElement(tag);
     for (const k in (attrs || {})) if (k !== "_svg") n.setAttribute(k, attrs[k]);
     (kids || []).forEach((c) => n.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
     return n;

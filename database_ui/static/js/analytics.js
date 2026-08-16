@@ -32,7 +32,7 @@
 
   function card(title, body) {
     const c = el("div", { class: "a-card" });
-    c.appendChild(el("h2", { class: "a-card-title" }, [title]));
+    if (title) c.appendChild(el("h2", { class: "a-card-title" }, [title]));
     c.appendChild(body);
     return c;
   }
@@ -58,7 +58,7 @@
     const s = payload.live, wow = s.week_over_week || {};
     const u = s.usage, r = s.ratings, co = s.cost, ct = s.content;
 
-    root.appendChild(card("Overview — " + payload.week.label, statList([
+    root.appendChild(card(null, statList([
       ["Conversations", u.conversations + " " + arrow(wow, "conversations")],
       ["Students", u.unique_students + " (" + u.new_students + " new)"],
       ["Positive rating", pct(r.positive_rate) + " " + arrow(wow, "positive_rate")],

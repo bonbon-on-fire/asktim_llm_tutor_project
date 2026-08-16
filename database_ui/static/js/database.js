@@ -14,7 +14,6 @@
   const sidebarClose = document.getElementById("sidebar-close");
   const weeklyOpen = document.getElementById("weekly-report-open");
   const analyticsPanel = document.getElementById("analytics-panel");
-  const analyticsBack = document.getElementById("analytics-back");
 
   let activeConversationId = null;
 
@@ -47,7 +46,7 @@
       showReport();
     });
   }
-  if (analyticsBack) analyticsBack.addEventListener("click", () => setView("conversation"));
+  // Selecting a conversation swaps the report back out (see loadConversation).
 
   function showError(msg) {
     errorText.textContent = msg;

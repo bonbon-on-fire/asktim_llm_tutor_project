@@ -106,5 +106,21 @@
     load(sel.value || (weeks[0] && weeks[0].key));
   }
 
-  document.addEventListener("DOMContentLoaded", initPicker);
+  // Fetch + build the picker at most once. Safe to call every time the report
+  // is opened; a no-op after the first successful init.
+  let inited = false;
+  async function ensureInit() {
+    if (inited || !$("week-picker")) return;
+    inited = true;
+    await initPicker();
+  }
+
+  // Two hosts share this module:
+  //  - Standalone /analytics page (main#analytics-root): init on load.
+  //  - Dashboard panel (index.html): stays dormant until database.js calls
+  //    WeeklyReport.ensureInit() when the "Weekly report" button is clicked.
+  window.WeeklyReport = { ensureInit };
+  document.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById("analytics-root")) ensureInit();
+  });
 })();

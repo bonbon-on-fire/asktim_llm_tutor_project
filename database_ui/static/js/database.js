@@ -12,6 +12,9 @@
   const sidebar = document.getElementById("sidebar");
   const historyToggle = document.getElementById("history-toggle");
   const sidebarClose = document.getElementById("sidebar-close");
+  const weeklyOpen = document.getElementById("weekly-report-open");
+  const analyticsPanel = document.getElementById("analytics-panel");
+  const analyticsBack = document.getElementById("analytics-back");
 
   let activeConversationId = null;
 
@@ -21,6 +24,30 @@
   }
   if (historyToggle) historyToggle.addEventListener("click", () => setSidebar(true));
   if (sidebarClose) sidebarClose.addEventListener("click", () => setSidebar(false));
+
+  // Swap the main pane between the transcript ("conversation") and the weekly
+  // report ("report"). The panel toggles via the `hidden` property (chat.css
+  // has `[hidden]{display:none!important}`, so inline display can't beat it);
+  // #message-list toggles via inline display, which overrides chat.css's flex.
+  function setView(view) {
+    const report = view === "report";
+    if (analyticsPanel) analyticsPanel.hidden = !report;
+    if (messageList) messageList.style.display = report ? "none" : "";
+  }
+  function showReport() {
+    activeConversationId = null;
+    highlightActive();
+    hideError();
+    setView("report");
+    if (window.WeeklyReport) window.WeeklyReport.ensureInit();
+  }
+  if (weeklyOpen) {
+    weeklyOpen.addEventListener("click", (e) => {
+      e.preventDefault();   // render in-place; the href is the no-JS fallback
+      showReport();
+    });
+  }
+  if (analyticsBack) analyticsBack.addEventListener("click", () => setView("conversation"));
 
   function showError(msg) {
     errorText.textContent = msg;
@@ -407,6 +434,7 @@
   async function loadConversation(id) {
     if (id === activeConversationId) return;
     activeConversationId = id;
+    setView("conversation");   // leave the report if it was showing
     highlightActive();
     hideError();
     if (placeholder) placeholder.hidden = true;

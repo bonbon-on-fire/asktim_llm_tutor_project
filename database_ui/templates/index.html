@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/chat.css', v='3') }}">
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/katex.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css', v='2') }}">
     <style>:root { --accent: {{ accent }}; }</style>
 </head>
 <body class="review-body">
@@ -42,7 +43,7 @@
                 </svg>
                 <span>Download data</span>
             </button>
-            <a href="/analytics" class="sidebar-cta" id="weekly-report-open" title="Weekly analytics report">
+            <a href="/analytics" class="sidebar-cta sidebar-cta-primary" id="weekly-report-open" title="Weekly analytics report">
                 <svg class="sidebar-cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <line x1="18" y1="20" x2="18" y2="10"/>
                     <line x1="12" y1="20" x2="12" y2="4"/>
@@ -59,6 +60,18 @@
         <ol class="message-list" id="message-list" aria-live="polite" aria-label="Conversation">
             <li class="review-placeholder" id="review-placeholder">AskTIM Database is here to help</li>
         </ol>
+        <!-- Weekly report renders in-place here (same box as the transcript), so
+             the sidebar and top banner stay put. Starts hidden; the "Weekly
+             report" button swaps it in and a conversation click swaps it out.
+             The button's href="/analytics" is the no-JS fallback. -->
+        <section class="analytics-panel" id="analytics-panel" aria-live="polite" hidden>
+            <div class="analytics-bar">
+                <button type="button" class="analytics-back" id="analytics-back">← Conversations</button>
+                <select id="week-picker" class="analytics-week" aria-label="Select week"></select>
+                <span id="analytics-status" class="analytics-status"></span>
+            </div>
+            <div id="analytics-content" class="analytics-content"></div>
+        </section>
         <div class="error-banner" id="error-banner" role="alert" hidden>
             <span class="error-text" id="error-text"></span>
             <button class="error-dismiss" id="error-dismiss" type="button" aria-label="Dismiss error">&times;</button>
@@ -91,7 +104,8 @@
     <script src="{{ url_for('ui_core.static', filename='js/katex-marked.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/database.js', v='2') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/analytics.js', v='3') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/database.js', v='3') }}" defer></script>
     <script src="{{ url_for('static', filename='js/download.js') }}" defer></script>
 </body>
 </html>

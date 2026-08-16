@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from database_ui.analytics import cache as cache_mod
 from database_ui.analytics import data as data_mod
 from database_ui.analytics.stats import compute_stats, week_over_week
-from database_ui.analytics.weeks import Week, previous_complete_week
+from database_ui.analytics.weeks import Week, previous_complete_week, week_containing
 
 
 def live_stats(db: Session, week: Week, courses: list[str] | None) -> dict:
@@ -55,3 +55,16 @@ def week_options() -> list[dict]:
         {"key": k, "label": Week(date.fromisoformat(k)).label()}
         for k in sorted(keys, reverse=True)
     ]
+
+
+def week_range(db: Session, courses: list[str] | None) -> dict:
+    """Selectable week bounds for the calendar picker, scoped to the login.
+
+    ``min`` is the week containing the earliest conversation (its Sunday key);
+    ``max`` is the latest complete week (also the default). With no data, both
+    collapse to the default week.
+    """
+    latest = previous_complete_week(date.today())
+    earliest = data_mod.earliest_conversation_date(db, courses)
+    first = week_containing(earliest) if earliest else latest
+    return {"min": min(first.key, latest.key), "max": latest.key}

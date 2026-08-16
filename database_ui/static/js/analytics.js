@@ -149,13 +149,97 @@
     $("analytics-status").textContent = "";
   }
 
+  // ---- Week picker: a trigger that opens a small calendar popover ---------
+  const WD = ["S", "M", "T", "W", "T", "F", "S"];
+  const MONLONG = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+
+  const dUTC = (y, m, d) => new Date(Date.UTC(y, m, d));
+  const keyOf = (dt) => dt.toISOString().slice(0, 10);
+  function parseKey(k) { const [y, m, d] = k.split("-").map(Number); return dUTC(y, m - 1, d); }
+  const sundayOf = (dt) => new Date(dt.getTime() - dt.getUTCDay() * 86400000);
+  function weekLabel(sun) {
+    const sat = new Date(sun.getTime() + 6 * 86400000);
+    return `${MON[sun.getUTCMonth()]} ${sun.getUTCDate()} — `
+      + `${MON[sat.getUTCMonth()]} ${sat.getUTCDate()}, ${sat.getUTCFullYear()}`;
+  }
+
+  // Build the calendar popover. `range` = {min, max} week keys (Sundays); weeks
+  // outside it are shown disabled. Selecting a week loads it and closes the pop.
+  function setupPicker(range, initialKey) {
+    const host = $("week-picker"), trigger = $("weekpick-trigger"), label = $("weekpick-label");
+    const minKey = range.min, maxKey = range.max;
+    let selected = initialKey;
+    const sun0 = sundayOf(parseKey(selected));
+    let viewY = sun0.getUTCFullYear(), viewM = sun0.getUTCMonth();
+
+    const pop = el("div", { class: "weekpick-pop", role: "dialog", hidden: "" });
+    host.appendChild(pop);
+
+    const ix = (y, m) => y * 12 + m;
+    const monthIxOf = (k) => { const s = sundayOf(parseKey(k)); return ix(s.getUTCFullYear(), s.getUTCMonth()); };
+
+    const setLabel = () => { label.textContent = weekLabel(sundayOf(parseKey(selected))); };
+    function choose(k) { selected = k; setLabel(); closePop(); load(k); }
+
+    function renderGrid() {
+      pop.textContent = "";
+      const head = el("div", { class: "weekpick-head" });
+      const prev = el("button", { type: "button", class: "weekpick-nav", "aria-label": "Previous month" }, ["‹"]);
+      const next = el("button", { type: "button", class: "weekpick-nav", "aria-label": "Next month" }, ["›"]);
+      const cur = ix(viewY, viewM);
+      if (cur <= monthIxOf(minKey)) prev.setAttribute("disabled", "");
+      if (cur >= monthIxOf(maxKey)) next.setAttribute("disabled", "");
+      prev.addEventListener("click", () => { if (--viewM < 0) { viewM = 11; viewY--; } renderGrid(); });
+      next.addEventListener("click", () => { if (++viewM > 11) { viewM = 0; viewY++; } renderGrid(); });
+      head.appendChild(prev);
+      head.appendChild(el("span", { class: "weekpick-month" }, [`${MONLONG[viewM]} ${viewY}`]));
+      head.appendChild(next);
+      pop.appendChild(head);
+
+      const wd = el("div", { class: "weekpick-wd" });
+      WD.forEach((c) => wd.appendChild(el("span", {}, [c])));
+      pop.appendChild(wd);
+
+      const lastOfMonth = dUTC(viewY, viewM + 1, 0);
+      let sun = sundayOf(dUTC(viewY, viewM, 1));
+      while (sun <= lastOfMonth) {
+        const wkKey = keyOf(sun);
+        const inRange = wkKey >= minKey && wkKey <= maxKey;
+        const cls = "weekpick-week" + (wkKey === selected ? " is-selected" : "") + (inRange ? "" : " is-disabled");
+        const row = el("div", { class: cls });
+        for (let i = 0; i < 7; i++) {
+          const day = new Date(sun.getTime() + i * 86400000);
+          const off = day.getUTCMonth() !== viewM ? " is-off" : "";
+          row.appendChild(el("span", { class: "weekpick-day" + off }, [String(day.getUTCDate())]));
+        }
+        if (inRange) { const k = wkKey; row.addEventListener("click", () => choose(k)); }
+        pop.appendChild(row);
+        sun = new Date(sun.getTime() + 7 * 86400000);
+      }
+    }
+
+    function onDoc(e) { if (!host.contains(e.target)) closePop(); }
+    function openPop() {
+      renderGrid();
+      pop.removeAttribute("hidden");
+      trigger.setAttribute("aria-expanded", "true");
+      document.addEventListener("mousedown", onDoc);
+    }
+    function closePop() {
+      pop.setAttribute("hidden", "");
+      trigger.setAttribute("aria-expanded", "false");
+      document.removeEventListener("mousedown", onDoc);
+    }
+    trigger.addEventListener("click", () => (pop.hasAttribute("hidden") ? openPop() : closePop()));
+    setLabel();
+  }
+
   async function initPicker() {
     const resp = await fetch("/api/analytics/weeks");
-    const { weeks } = await resp.json();
-    const sel = $("week-picker");
-    weeks.forEach((w) => sel.appendChild(el("option", { value: w.key }, [w.label])));
-    sel.addEventListener("change", () => load(sel.value));
-    load(sel.value || (weeks[0] && weeks[0].key));
+    const { range } = await resp.json();
+    setupPicker(range, range.max);
+    load(range.max);
   }
 
   // Fetch + build the picker at most once. Safe to call every time the report

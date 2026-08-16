@@ -40,4 +40,7 @@ def api_analytics():
 
 @analytics_bp.get("/api/analytics/weeks")
 def api_weeks():
-    return jsonify({"weeks": svc.week_options()})
+    return jsonify({
+        "weeks": svc.week_options(),
+        "range": svc.week_range(g.db, allowed_courses()),
+    })

@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from database_ui.analytics.weeks import Week
+from database_ui.analytics.weeks import TZ, Week
 from database_ui.db.models import Conversation, Message
 
 
@@ -113,6 +113,16 @@ def prior_usernames(db: Session, before: datetime, courses: list[str] | None) ->
         courses,
     )
     return {u for (u,) in db.execute(stmt).all() if u}
+
+
+def earliest_conversation_date(db: Session, courses: list[str] | None) -> date | None:
+    """Local (America/New_York) date of the earliest conversation, scoped.
+
+    Feeds the week picker's lower bound. ``None`` when there is no data at all.
+    """
+    stmt = _scoped(select(func.min(Conversation.started_at)), courses)
+    ts = db.execute(stmt).scalar_one_or_none()
+    return ts.astimezone(TZ).date() if ts is not None else None
 
 
 def fetch_transcript(db: Session, conversation_id: str) -> list[tuple[str, str]]:

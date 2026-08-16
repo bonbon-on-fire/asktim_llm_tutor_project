@@ -169,6 +169,8 @@ reading the same Postgres as **askTIM-main**. To reproduce:
 | `GET /api/export/filters` | list courses + their assignments for the download wizard |
 | `GET /api/export.csv?assignment=<course>::<exercise>&…` | download selected conversations as a one-row-per-message CSV |
 | `GET /analytics` | weekly report page — see [Weekly report](#weekly-report) |
+| `GET /api/analytics?week=YYYY-MM-DD` | one week's live stats + judged cache (scoped) as JSON |
+| `GET /api/analytics/weeks` | week-picker options + `range: {min, max}` bounds (scoped) |
 | `GET /health` | liveness (open, no auth) |
 
 ## Weekly report
@@ -176,17 +178,25 @@ reading the same Postgres as **askTIM-main**. To reproduce:
 `GET /analytics` shows a Sunday–Saturday weekly report. Weeks are defined in
 America/New_York (`database_ui/analytics/weeks.py`); a week's label is
 `Mon D, YYYY — Mon D, YYYY` (em dash), e.g. `Aug 9, 2026 — Aug 15, 2026`. The
-page has two kinds of content:
+week is chosen with a calendar popover (`/api/analytics/weeks` supplies its
+bounds) spanning from the first week with data through the latest complete
+week; picking a week reloads the report in place. The page has two kinds of
+content:
 
-- **Live stats** — usage, ratings, cost, and RAG numbers — are computed
-  per request straight from the DB for whichever week is selected, so they're
-  always current, including for the in-progress week.
+- **Live stats** — computed per request straight from the DB for whichever
+  week is selected, so they're always current, including for the in-progress
+  week. The overview cards show **conversations, messages, unique students,
+  new students, and cost** (each with a week-over-week arrow where a prior
+  week exists), above a Sunday–Saturday "Daily activity" bar chart. Positive-
+  rating and RAG rates are still computed for the PR-body report
+  (`report.py`) but are **not** surfaced as dashboard cards — students rarely
+  use the thumbs, so the cards stay focused on volume and cost.
 - **Judged sections** — flags, example conversations, and topic
   aggregation — are LLM-judged and served from the committed cache
-  (`database_ui/analytics/cache/`), not computed live. Until a week's cache
-  exists, that part of the page shows "Pending this week's review — the
-  flagged conversations, examples, and topics appear once the weekly report
-  PR is merged."
+  (`database_ui/analytics/cache/`), not computed live. This is the **AI
+  review**. Until a week's cache exists, the "AI review" card shows a quiet
+  "This week's review is coming soon" note; the flagged conversations,
+  examples, and topics appear once that week's weekly-report PR is merged.
 
 **Scoping.** Like the rest of the app, `/analytics` and `/api/analytics`
 respect `allowed_courses()`: a per-course login only sees its own course's

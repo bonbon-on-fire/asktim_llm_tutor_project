@@ -111,6 +111,7 @@ def compute_stats(convs: list[ConvRow], msgs: list[MsgRow], returning: set[str])
 
 _HEADLINE = [
     ("conversations", ("usage", "conversations")),
+    ("total_messages", ("usage", "total_messages")),
     ("unique_students", ("usage", "unique_students")),
     ("cost_usd", ("cost", "total_usd")),
     ("positive_rate", ("ratings", "positive_rate")),

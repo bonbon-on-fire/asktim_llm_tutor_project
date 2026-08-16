@@ -101,7 +101,6 @@
     return ul;
   }
 
-  function pct(x) { return Math.round((x || 0) * 100) + "%"; }
   function money(x) { return "$" + (x || 0).toFixed(2); }
   function arrow(wow, key) { return (wow && wow[key] && wow[key].arrow) || ""; }
 
@@ -109,14 +108,14 @@
     const root = $("analytics-content");
     root.textContent = "";
     const s = payload.live, wow = s.week_over_week || {};
-    const u = s.usage, r = s.ratings, co = s.cost, ct = s.content;
+    const u = s.usage, co = s.cost;
 
     root.appendChild(card(null, statList([
       ["Conversations", u.conversations + " " + arrow(wow, "conversations")],
-      ["Students", u.unique_students + " (" + u.new_students + " new)"],
-      ["Positive rating", pct(r.positive_rate) + " " + arrow(wow, "positive_rate")],
+      ["Messages", u.total_messages + " " + arrow(wow, "total_messages")],
+      ["Students", u.unique_students],
+      ["New students", u.new_students],
       ["Cost", money(co.total_usd) + " " + arrow(wow, "cost_usd")],
-      ["RAG rate", pct(ct.rag_rate) + " " + arrow(wow, "rag_rate")],
     ])));
 
     const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");

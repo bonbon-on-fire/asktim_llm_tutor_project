@@ -683,36 +683,35 @@ def _create_judge_graph(
     return graph.compile()
 
 
-def _judge_transcript(
-    transcript_name: str,
+def grade_transcript_payload(
+    transcript: dict[str, Any],
     *,
-    provider: Provider,
-    prompt_name: str,
-    rubric_name: str,
-    output_name: str | None,
-) -> JudgeResult:
-    """Run the complete judging flow for one transcript and write output JSON."""
+    provider: Provider = "claude",
+    prompt_name: str = DEFAULT_JUDGE_PROMPT,
+    rubric_name: str = DEFAULT_RUBRIC,
+    model_name: str | None = None,
+    api_key: str | None = None,
+) -> dict[str, Any]:
+    """Grade an in-memory transcript dict and return the ordered grade payload.
 
-    transcript_path = TRANSCRIPTS_DIR / f"{transcript_name}.json"
-    if not transcript_path.exists():
-        raise JudgeError(f"Transcript not found: {transcript_path}")
-    try:
-        transcript = json.loads(transcript_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        raise JudgeError(f"Invalid transcript JSON: {transcript_path}: {e}") from e
+    Same grading path as ``_judge_transcript`` but with no file I/O: callers
+    (the eval CLI and the weekly report adapter) pass a transcript dict shaped
+    ``{course, context, exercise, exchanges:[{student, tutor, retrieved?}], figures?}``
+    and receive the grade payload. An empty ``course`` skips figure discovery.
+    """
     if not isinstance(transcript, dict):
-        raise JudgeError("Transcript JSON must be an object.")
+        raise JudgeError("Transcript must be an object.")
     exchanges = transcript.get("exchanges")
     if not isinstance(exchanges, list) or not exchanges:
         raise JudgeError("Transcript must contain non-empty 'exchanges' list.")
 
     if provider == "gpt":
-        model_name = os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
-        api_key = _require_openai_api_key()
+        model_name = model_name or os.environ.get("OPENAI_MODEL", DEFAULT_OPENAI_MODEL)
+        api_key = api_key or _require_openai_api_key()
         reasoning = os.environ.get("JUDGE_OPENAI_REASONING_EFFORT", DEFAULT_REASONING).strip().lower() or DEFAULT_REASONING
     else:
-        model_name = os.environ.get("ANTHROPIC_MODEL", DEFAULT_CLAUDE_MODEL)
-        api_key = _require_anthropic_api_key()
+        model_name = model_name or os.environ.get("ANTHROPIC_MODEL", DEFAULT_CLAUDE_MODEL)
+        api_key = api_key or _require_anthropic_api_key()
         reasoning = "off"
 
     invoke_model = _create_model_invoke(provider, model_name, api_key, reasoning)
@@ -721,10 +720,6 @@ def _judge_transcript(
     system_prompt = load_judge_prompt(prompt_name=prompt_name, rubric_name=rubric_name)
     conversation_text = _format_conversation_for_judge(transcript)
 
-    # Re-attach the images the tutor saw so the judge grades against them.
-    # Two sources, unioned: the transcript's recorded ``figures`` (filenames) and
-    # the lecture/practice figures for items retrieved on any turn (reconstructed
-    # from each exchange's ``retrieved`` records). Absent/empty fields = none.
     course = _sanitize_text(transcript.get("course")).strip()
     figure_names: list[str] = []
     recorded = transcript.get("figures")
@@ -741,13 +736,9 @@ def _judge_transcript(
             for rec in recs:
                 if isinstance(rec, dict):
                     retrieved_sources.append(str(rec.get("source", "")))
-        figure_names.extend(
-            figure_filenames(discover_figures_for_sources(course, retrieved_sources))
-        )
+        figure_names.extend(figure_filenames(discover_figures_for_sources(course, retrieved_sources)))
     figure_names = list(dict.fromkeys(figure_names))
-    figures: list = (
-        resolve_figure_filenames(course, figure_names) if (course and figure_names) else []
-    )
+    figures: list = resolve_figure_filenames(course, figure_names) if (course and figure_names) else []
 
     result = graph.invoke(
         {
@@ -773,19 +764,43 @@ def _judge_transcript(
     else:
         grade_payload["model"] = {"provider": "anthropic", "model": model_name, "temperature": 0}
     grade_payload["judge_llm_calls"] = int(result.get("attempts", 0))
-    # Judge token usage + estimated cost (mirrors the tutor's per-call pricing).
     judge_usage = result.get("token_usage") or {
-        "input_tokens": 0,
-        "output_tokens": 0,
-        "cache_read": 0,
-        "cache_write": 0,
+        "input_tokens": 0, "output_tokens": 0, "cache_read": 0, "cache_write": 0,
     }
     judge_model = result.get("judge_model") or model_name
     grade_payload["token_usage"] = judge_usage
     grade_payload["cost_estimate"] = priced(judge_model, judge_usage)
     if _env_truthy("JUDGE_INCLUDE_TIMESTAMP"):
         grade_payload["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
-    grade_payload = _order_grade_payload(grade_payload)
+    return _order_grade_payload(grade_payload)
+
+
+def _judge_transcript(
+    transcript_name: str,
+    *,
+    provider: Provider,
+    prompt_name: str,
+    rubric_name: str,
+    output_name: str | None,
+) -> JudgeResult:
+    """Run the complete judging flow for one transcript and write output JSON."""
+
+    transcript_path = TRANSCRIPTS_DIR / f"{transcript_name}.json"
+    if not transcript_path.exists():
+        raise JudgeError(f"Transcript not found: {transcript_path}")
+    try:
+        transcript = json.loads(transcript_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise JudgeError(f"Invalid transcript JSON: {transcript_path}: {e}") from e
+    if not isinstance(transcript, dict):
+        raise JudgeError("Transcript JSON must be an object.")
+
+    grade_payload = grade_transcript_payload(
+        transcript,
+        provider=provider,
+        prompt_name=prompt_name,
+        rubric_name=rubric_name,
+    )
 
     out_doc = dict(transcript)
     out_doc.pop("grade", None)

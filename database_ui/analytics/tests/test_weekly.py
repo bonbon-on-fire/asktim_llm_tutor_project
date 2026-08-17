@@ -80,3 +80,65 @@ def test_run_week_reuses_verdict_when_hash_matches(tmp_path, monkeypatch, sessio
     )
     blob3 = cache_mod.read_cache(wk.key)
     assert blob3["conversations"][sc_id]["one_line"] == "SECOND-JUDGE"
+
+
+class _RaisesOnceJudge:
+    """Judge that raises on the first conversation and succeeds afterwards —
+    stands in for an empty-transcript JudgeError or a one-off LLM 529."""
+
+    def __init__(self):
+        self._calls = 0
+
+    def judge(self, course, transcript, *, exercise=""):
+        self._calls += 1
+        if self._calls == 1:
+            raise RuntimeError("boom: e.g. LLM 529 or empty-transcript JudgeError")
+        return Verdict(True, one_line="ok")
+
+
+def test_run_week_isolates_one_failing_conversation(tmp_path, monkeypatch, session):
+    monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path)
+    wk = week_containing(date(2026, 5, 1))
+    convs = fetch_conversations(session, wk, None)
+    assert len(convs) >= 2  # need one to fail and at least one to succeed
+
+    path, md = weekly.run_week(
+        session, wk, _RaisesOnceJudge(), judge_model="fake",
+        generated_at=datetime(2026, 5, 12, tzinfo=timezone.utc),
+    )
+
+    # One conversation failed, but the job still shipped a cache + report.
+    assert path.exists()
+    assert "Weekly report" in md
+    blob = cache_mod.read_cache(wk.key)
+    assert blob["skipped"] == 1
+    # The failed conversation is absent; every other conversation was stored.
+    assert len(blob["conversations"]) == len(convs) - 1
+    # Its hash was dropped so a later run retries it rather than reusing nothing.
+    assert len(blob["_hashes"]) == len(convs) - 1
+
+
+def test_run_week_preserves_grade_across_reuse(tmp_path, monkeypatch, session):
+    monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path)
+    wk = week_containing(date(2026, 5, 1))
+    convs = fetch_conversations(session, wk, None)
+    sc_id = next(
+        c.id for c in convs
+        if c.course == "supply_chain_design" and c.exercise_number == "1"
+    )
+    grade = {"total_score": 33, "max_score": 40, "overview": "solid"}
+
+    # First run: the verdict carries a full grade -> it must land in the cache.
+    judge1 = FakeJudge(default=Verdict(True, one_line="J1", grade=grade))
+    weekly.run_week(session, wk, judge1, judge_model="fake1",
+                    generated_at=datetime(2026, 5, 12, tzinfo=timezone.utc))
+    blob = cache_mod.read_cache(wk.key)
+    assert blob["conversations"][sc_id]["grade"] == grade
+
+    # Second run: unchanged transcript -> verdict reused; the grade must survive
+    # even though the new judge would produce none.
+    judge2 = FakeJudge(default=Verdict(True, one_line="J2"))
+    weekly.run_week(session, wk, judge2, judge_model="fake2",
+                    generated_at=datetime(2026, 5, 12, tzinfo=timezone.utc), prior_cache=blob)
+    blob2 = cache_mod.read_cache(wk.key)
+    assert blob2["conversations"][sc_id]["grade"] == grade

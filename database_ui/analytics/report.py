@@ -38,13 +38,16 @@ def render_report(week: Week, stats: dict, wow: dict, flags: dict, topics_by_cou
                  f"{flags['judge_flagged']} judge ({flags['overlap']} overlap).")
     lines.append("")
     if flags["items"]:
-        lines.append("| Course | Exercise | Student | Issue | Severity | Note |")
-        lines.append("| --- | --- | --- | --- | --- | --- |")
+        lines.append("| Course | Exercise | Student | Score | Issue | Severity | Note |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+        score_max = (flags.get("avg_score") or {}).get("max", 40)
         for i in flags["items"][:25]:
             note = (i["one_line"] or i["quote"]).replace("\n", " ").replace("\r", " ")
             note = note.replace("|", "\\|")[:80]
+            score = i.get("score")
+            score_cell = f"{score}/{score_max}" if score is not None else "—"
             lines.append(f"| {course_display_name(i['course'])} | {i['exercise']} | "
-                         f"{i['student']} | {i['issue_type']} | {i['severity']} | {note} |")
+                         f"{i['student']} | {score_cell} | {i['issue_type']} | {i['severity']} | {note} |")
     lines.append("")
 
     lines.append("## 🗣 Top topics")
@@ -58,6 +61,9 @@ def render_report(week: Week, stats: dict, wow: dict, flags: dict, topics_by_cou
     lines.append("")
     lines.append(f"- Judged {judged_count} conversations with `{judge_model}`"
                  + (f" ({skipped} skipped)" if skipped else "") + ".")
+    avg = flags.get("avg_score") or {}
+    if avg.get("n"):
+        lines.append(f"- Average rubric score: {avg['avg']:.1f}/{avg['max']} (over {avg['n']} graded).")
     lines.append(f"- Model mix: {', '.join(f'{m} ({n})' for m, n in c['model_mix'].items())}")
     lines.append("")
     return "\n".join(lines)

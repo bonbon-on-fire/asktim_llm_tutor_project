@@ -3,8 +3,10 @@ name: Weekly analytics report
 
 on:
   schedule:
-    # Monday 11:00 UTC ≈ Sun night / early Mon in America/New_York (DST shifts ±1h).
-    - cron: "0 11 * * 1"
+    # Sunday 08:00 UTC = ~3-4am America/New_York, just after the Sun-Sat week
+    # closes (Sun 00:00 ET). Must stay after that close, or previous_complete_week
+    # would target a week still in progress in ET. Buffer lets late writes settle.
+    - cron: "0 8 * * 0"
   workflow_dispatch:
     inputs:
       week:

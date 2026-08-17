@@ -54,7 +54,7 @@ def test_api_weeks_lists_options(seeded):
     c = _login(_app(), MASTER)
     body = c.get("/api/analytics/weeks").get_json()
     assert "weeks" in body and isinstance(body["weeks"], list)
-    # The calendar picker's bounds: earliest data week <= latest complete week.
+    # The calendar picker's bounds: earliest data week <= current in-progress week.
     rng = body["range"]
     assert rng["min"] <= rng["max"]
     assert rng["min"] == "2026-04-26"          # week containing the May 1 seed rows

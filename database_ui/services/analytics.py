@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from database_ui.analytics import cache as cache_mod
 from database_ui.analytics import data as data_mod
 from database_ui.analytics.stats import compute_stats, week_over_week
-from database_ui.analytics.weeks import Week, previous_complete_week, week_containing
+from database_ui.analytics.weeks import Week, week_containing
 
 
 def live_stats(db: Session, week: Week, courses: list[str] | None) -> dict:
@@ -48,9 +48,9 @@ def cached_sections(week_key: str, courses: list[str] | None) -> dict | None:
 
 
 def week_options() -> list[dict]:
-    """Picker options: every cached week plus the default previous-complete week."""
+    """Picker options: every cached week plus the current in-progress week."""
     keys = set(cache_mod.available_weeks())
-    keys.add(previous_complete_week(date.today()).key)
+    keys.add(week_containing(date.today()).key)
     return [
         {"key": k, "label": Week(date.fromisoformat(k)).label()}
         for k in sorted(keys, reverse=True)
@@ -61,10 +61,12 @@ def week_range(db: Session, courses: list[str] | None) -> dict:
     """Selectable week bounds for the calendar picker, scoped to the login.
 
     ``min`` is the week containing the earliest conversation (its Sunday key);
-    ``max`` is the latest complete week (also the default). With no data, both
-    collapse to the default week.
+    ``max`` is the current in-progress week (also the default landing week), so
+    live stats are visible mid-week — the AI review for that week just shows
+    "coming soon" until the week closes. With no data, both collapse to the
+    current week.
     """
-    latest = previous_complete_week(date.today())
+    latest = week_containing(date.today())
     earliest = data_mod.earliest_conversation_date(db, courses)
     first = week_containing(earliest) if earliest else latest
     return {"min": min(first.key, latest.key), "max": latest.key}

@@ -74,9 +74,21 @@ def run_week(
         else:
             # Judge sees the human-readable course name (any discipline) for
             # domain context; grouping/storage still keys off conv.course.
-            verdict = judge.judge(
-                course_display_name(conv.course), transcript, exercise=conv.tutor_prompt
-            )
+            # Isolate per-conversation failures (empty transcript, LLM 529,
+            # grade-validation error): skip the bad one and still ship the
+            # rest of the week's report rather than aborting the whole run.
+            try:
+                verdict = judge.judge(
+                    course_display_name(conv.course), transcript, exercise=conv.tutor_prompt
+                )
+            except Exception as exc:  # noqa: BLE001 - one bad convo must not sink the job
+                skipped += 1
+                # Drop this conversation's hash so a later run retries it instead
+                # of mistaking the absent verdict for an unchanged-reuse hit.
+                hashes.pop(conv.id, None)
+                first_q.pop(conv.id, None)
+                print(f"skipped {conv.id}: {type(exc).__name__}: {exc}")
+                continue
         verdicts[conv.id] = verdict
         judged_dict[conv.id] = verdict.as_dict(conv.course)
 

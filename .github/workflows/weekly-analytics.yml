@@ -50,11 +50,16 @@ jobs:
           DATABASE_UI_DATABASE_URL: ${{ secrets.ANALYTICS_DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANALYTICS_JUDGE_MODEL: ${{ vars.ANALYTICS_JUDGE_MODEL || 'claude-sonnet-4-6' }}
+          # Pass dispatch inputs through the environment (never interpolated into
+          # the shell) so a crafted `week`/`max_convos` value can't inject commands
+          # into a step that holds the DB URL and API key.
+          INPUT_WEEK: ${{ github.event.inputs.week }}
+          INPUT_MAX_CONVOS: ${{ github.event.inputs.max_convos }}
         run: |
-          ARGS=""
-          if [ -n "${{ github.event.inputs.week }}" ]; then ARGS="$ARGS --week ${{ github.event.inputs.week }}"; fi
-          if [ -n "${{ github.event.inputs.max_convos }}" ]; then ARGS="$ARGS --max-convos ${{ github.event.inputs.max_convos }}"; fi
-          python -m database_ui.analytics.weekly $ARGS --report-out /tmp/report.md
+          ARGS=()
+          if [ -n "$INPUT_WEEK" ]; then ARGS+=(--week "$INPUT_WEEK"); fi
+          if [ -n "$INPUT_MAX_CONVOS" ]; then ARGS+=(--max-convos "$INPUT_MAX_CONVOS"); fi
+          python -m database_ui.analytics.weekly "${ARGS[@]}" --report-out /tmp/report.md
           # Surface the week key (cache filename stem) for the commit message.
           echo "week_key=$(ls -t database_ui/analytics/cache/*.json | head -1 | xargs -n1 basename | sed 's/.json//')" >> "$GITHUB_OUTPUT"
 
@@ -78,4 +83,14 @@ jobs:
           gh pr create --base "$TARGET_BRANCH" --head "$BRANCH" \
             --title "chore(analytics): weekly report cache for ${WEEK}" \
             --body "Automated weekly analytics cache for week ${WEEK}. Merges on creation."
-          gh pr merge "$BRANCH" --squash --delete-branch
+          # Retry: right after creation GitHub may still report the PR's mergeable
+          # state as UNKNOWN, which makes an immediate `gh pr merge` fail.
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "$BRANCH" --squash --delete-branch; then
+              exit 0
+            fi
+            echo "merge attempt ${attempt} failed (mergeability may still be computing); retrying in 15s"
+            sleep 15
+          done
+          echo "::error::PR merge failed after 5 attempts for ${BRANCH}"
+          exit 1

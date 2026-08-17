@@ -24,6 +24,8 @@ def build_flags(convs: list[ConvRow], msgs: list[MsgRow], verdicts: dict[str, Ve
         if conv is None:
             continue
         verdict = verdicts.get(cid)
+        grade = verdict.grade if (verdict and verdict.grade) else None
+        score = grade.get("total_score") if grade else None
         by_judge = cid in judged_bad
         by_thumb = cid in thumbed
         source = "both" if by_judge and by_thumb else "judge" if by_judge else "thumb"
@@ -36,6 +38,7 @@ def build_flags(convs: list[ConvRow], msgs: list[MsgRow], verdicts: dict[str, Ve
             "course": conv.course,
             "exercise": f"{conv.exercise_kind}:{conv.exercise_number}",
             "student": conv.username,
+            "score": score,
             "source": source,
             "issue_type": issue_type,
             "severity": severity,
@@ -44,8 +47,20 @@ def build_flags(convs: list[ConvRow], msgs: list[MsgRow], verdicts: dict[str, Ve
         })
 
     items.sort(key=lambda i: (_SEVERITY_RANK.get(i["severity"], 3), _SOURCE_RANK[i["source"]], i["id"]))
+
+    graded = [
+        v.grade["total_score"] for v in verdicts.values()
+        if v.grade and isinstance(v.grade.get("total_score"), (int, float))
+    ]
+    if graded:
+        maxes = [v.grade.get("max_score", 40) for v in verdicts.values() if v.grade]
+        avg_score = {"avg": sum(graded) / len(graded), "max": maxes[0] if maxes else 40, "n": len(graded)}
+    else:
+        avg_score = {"avg": 0.0, "max": 40, "n": 0}
+
     return {
         "items": items,
+        "avg_score": avg_score,
         "counts_by_issue": dict(counts),
         "thumbs_down": len(thumbed),
         "judge_flagged": len(judged_bad),

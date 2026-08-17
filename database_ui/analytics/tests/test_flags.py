@@ -29,3 +29,19 @@ def test_flags_union_and_overlap():
     assert ids == {"a", "b", "c"}          # a: both, b: judge only, c: thumb only
     assert out["thumbs_down"] == 2 and out["judge_flagged"] == 2 and out["overlap"] == 1
     assert out["items"][0]["id"] == "a"    # high severity + both sources ranks first
+
+
+def test_flags_expose_score_and_average():
+    convs = [_conv("a"), _conv("b")]
+    msgs = [_tutor("a", -1), _tutor("b", 0)]
+    verdicts = {
+        "a": Verdict(False, issues=[{"type": "1.1.A.a", "severity": "high", "quote": "x"}],
+                     one_line="bad", grade={"total_score": 20, "max_score": 40}),
+        "b": Verdict(True, one_line="ok", grade={"total_score": 36, "max_score": 40}),
+    }
+    out = build_flags(convs, msgs, verdicts)
+    # Only "a" is flagged (b worked well, no thumb); its score comes from the grade.
+    item_a = next(i for i in out["items"] if i["id"] == "a")
+    assert item_a["score"] == 20
+    # Average is over ALL graded verdicts (a and b), not only flagged ones.
+    assert out["avg_score"] == {"avg": 28.0, "max": 40, "n": 2}

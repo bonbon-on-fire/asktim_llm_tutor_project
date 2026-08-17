@@ -1,9 +1,12 @@
 # database_ui/tests/test_analytics_routes.py
+import json
+
 import pytest
 
 from database_ui.conftest import seed
 from database_ui.db.session import SessionLocal
 from database_ui.run_app import create_app
+from database_ui.analytics import cache as cache_mod
 
 MASTER = "master-secret"
 SC_PW = "supply-secret"
@@ -58,3 +61,29 @@ def test_api_weeks_lists_options(seeded):
     rng = body["range"]
     assert rng["min"] <= rng["max"]
     assert rng["min"] == "2026-04-26"          # week containing the May 1 seed rows
+
+
+def test_api_analytics_passes_grade_through(seeded, tmp_path, monkeypatch):
+    monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path)
+    grade = {"total_score": 20, "max_score": 40, "overview": "gave away the answer"}
+    blob = {
+        "conversations": {
+            "conv-1": {
+                "course": "supply_chain_design",
+                "worked_well": False,
+                "issues": [],
+                "topics": [],
+                "one_line": "handed it over",
+                "grade": grade,
+            }
+        },
+        "examples": {"exemplary": [], "high_engagement": [], "sample": {}},
+        "topics_by_course": {},
+    }
+    (tmp_path / "2026-04-26.json").write_text(json.dumps(blob), encoding="utf-8")
+
+    c = _login(_app(), MASTER)
+    body = c.get("/api/analytics?week=2026-05-01").get_json()
+    conv = body["cached"]["conversations"]["conv-1"]
+    assert conv["grade"] == grade
+    assert conv["worked_well"] is False

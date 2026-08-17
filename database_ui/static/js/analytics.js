@@ -129,7 +129,16 @@
     }
     const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);
     const flagBody = el("div");
-    flagBody.appendChild(el("p", {}, [flags.length + " conversations flagged."]));
+    flagBody.appendChild(el("p", { class: "a-muted" }, [flags.length + " conversations flagged."]));
+    flags.forEach((c) => {
+      const g = c.grade || null;
+      const score = g && typeof g.total_score === "number"
+        ? (g.total_score + "/" + (g.max_score || 40)) : "—";
+      const overview = (g && g.overview) || c.one_line || "";
+      const parts = [c.course, score];
+      if (overview) parts.push(overview);
+      flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
+    });
     root.appendChild(card("🚩 Didn't work well", flagBody));
 
     const topics = payload.cached.topics_by_course || {};

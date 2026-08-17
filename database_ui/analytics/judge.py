@@ -21,15 +21,19 @@ class Verdict:
     issues: list[dict] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
     one_line: str = ""
+    grade: dict | None = None
 
     def as_dict(self, course: str) -> dict:
-        return {
+        out = {
             "course": course,
             "worked_well": self.worked_well,
             "issues": self.issues,
             "topics": self.topics,
             "one_line": self.one_line,
         }
+        if self.grade is not None:
+            out["grade"] = self.grade
+        return out
 
 
 def transcript_hash(pairs: list[tuple[str, str]]) -> str:
@@ -43,7 +47,7 @@ def transcript_hash(pairs: list[tuple[str, str]]) -> str:
 
 
 class Judge(Protocol):
-    def judge(self, course: str, transcript: list[tuple[str, str]]) -> Verdict: ...
+    def judge(self, course: str, transcript: list[tuple[str, str]], *, exercise: str = "") -> Verdict: ...
 
 
 class FakeJudge:
@@ -54,7 +58,7 @@ class FakeJudge:
         self._canned = dict(canned or {})
         self._default = default or Verdict(worked_well=True, one_line="ok")
 
-    def judge(self, course: str, transcript: list[tuple[str, str]]) -> Verdict:
+    def judge(self, course: str, transcript: list[tuple[str, str]], *, exercise: str = "") -> Verdict:
         students = [c for r, c in transcript if r not in ("tutor", "assistant")]
         key = students[-1] if students else ""
         return self._canned.get(key, self._default)
@@ -107,7 +111,7 @@ class AnthropicJudge:
         }
         self._llm = ChatAnthropic(model=model, temperature=0).with_structured_output(self._schema)
 
-    def judge(self, course: str, transcript: list[tuple[str, str]]) -> Verdict:
+    def judge(self, course: str, transcript: list[tuple[str, str]], *, exercise: str = "") -> Verdict:
         body = "\n\n".join(f"{role.upper()}: {content}" for role, content in transcript)
         result = self._llm.invoke(
             [("system", _SYSTEM), ("human", f"Course: {course}\n\nTranscript:\n{body}")]

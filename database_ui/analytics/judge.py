@@ -105,7 +105,9 @@ class AnthropicJudge:
                 "required": ["worked_well", "issues", "topics", "one_line"],
             },
         }
-        self._llm = ChatAnthropic(model=model, temperature=0).with_structured_output(self._schema)
+        # Newer Claude models (Claude 5 family) reject an explicit `temperature`,
+        # so we omit it and rely on the model default rather than pinning to 0.
+        self._llm = ChatAnthropic(model=model).with_structured_output(self._schema)
 
     def judge(self, course: str, transcript: list[tuple[str, str]]) -> Verdict:
         body = "\n\n".join(f"{role.upper()}: {content}" for role, content in transcript)

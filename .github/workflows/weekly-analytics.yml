@@ -3,8 +3,9 @@ name: Weekly analytics report
 
 on:
   schedule:
-    # Monday 11:00 UTC ≈ Sun night / early Mon in America/New_York (DST shifts ±1h).
-    - cron: "0 11 * * 1"
+    # Sunday 08:00 UTC ≈ 03:00–04:00 America/New_York — right after the Sun–Sat
+    # week closes at Saturday midnight ET, so the report covers the full week.
+    - cron: "0 8 * * 0"
   workflow_dispatch:
     inputs:
       week:
@@ -48,28 +49,33 @@ jobs:
         env:
           DATABASE_UI_DATABASE_URL: ${{ secrets.ANALYTICS_DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          ANALYTICS_JUDGE_MODEL: ${{ vars.ANALYTICS_JUDGE_MODEL || 'claude-sonnet-5' }}
+          ANALYTICS_JUDGE_MODEL: ${{ vars.ANALYTICS_JUDGE_MODEL || 'claude-sonnet-4-6' }}
         run: |
           ARGS=""
           if [ -n "${{ github.event.inputs.week }}" ]; then ARGS="$ARGS --week ${{ github.event.inputs.week }}"; fi
           if [ -n "${{ github.event.inputs.max_convos }}" ]; then ARGS="$ARGS --max-convos ${{ github.event.inputs.max_convos }}"; fi
           python -m database_ui.analytics.weekly $ARGS --report-out /tmp/report.md
-          # Surface the week key (cache filename stem) for the PR branch/title.
+          # Surface the week key (cache filename stem) for the commit message.
           echo "week_key=$(ls -t database_ui/analytics/cache/*.json | head -1 | xargs -n1 basename | sed 's/.json//')" >> "$GITHUB_OUTPUT"
 
-      - name: Open pull request
+      - name: Open and merge report-cache PR to prod-beta-plus
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           WEEK: ${{ steps.gen.outputs.week_key }}
         run: |
-          BRANCH="analytics/week-${WEEK}"
           git config user.name "asktim-bot"
           git config user.email "asktim-bot@users.noreply.github.com"
-          git checkout -b "$BRANCH"
           git add database_ui/analytics/cache/
-          if git diff --cached --quiet; then echo "No cache changes; skipping PR."; exit 0; fi
+          if git diff --cached --quiet; then
+            echo "No cache changes; nothing to deploy."
+            exit 0
+          fi
+          BRANCH="analytics/weekly-${WEEK}"
+          git checkout -b "$BRANCH"
           git commit -m "chore(analytics): weekly report cache for ${WEEK}"
-          git push -u origin "$BRANCH" --force-with-lease
+          git push --force-with-lease origin "$BRANCH"
+          # 0 required approvals on the ruleset => the bot can merge its own PR.
           gh pr create --base "$TARGET_BRANCH" --head "$BRANCH" \
-            --title "Weekly analytics — week of ${WEEK}" \
-            --body-file /tmp/report.md
+            --title "chore(analytics): weekly report cache for ${WEEK}" \
+            --body "Automated weekly analytics cache for week ${WEEK}. Merges on creation."
+          gh pr merge "$BRANCH" --squash --delete-branch

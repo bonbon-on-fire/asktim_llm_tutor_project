@@ -17,7 +17,8 @@ from database_ui.analytics import cache as cache_mod
 from database_ui.analytics import data as data_mod
 from database_ui.analytics.examples import pick_examples
 from database_ui.analytics.flags import build_flags
-from database_ui.analytics.judge import AnthropicJudge, Judge, Verdict, transcript_hash
+from database_ui.analytics.judge import Judge, Verdict, transcript_hash
+from database_ui.analytics.rubric_judge import RubricJudge, DEFAULT_JUDGE_MODEL
 from database_ui.analytics.report import render_report
 from database_ui.analytics.stats import compute_stats, is_tutor, week_over_week
 from database_ui.analytics.topics import aggregate_topics
@@ -68,11 +69,14 @@ def run_week(
             verdict = Verdict(
                 worked_well=entry["worked_well"], issues=entry["issues"],
                 topics=entry["topics"], one_line=entry["one_line"],
+                grade=entry.get("grade"),
             )
         else:
             # Judge sees the human-readable course name (any discipline) for
             # domain context; grouping/storage still keys off conv.course.
-            verdict = judge.judge(course_display_name(conv.course), transcript)
+            verdict = judge.judge(
+                course_display_name(conv.course), transcript, exercise=conv.tutor_prompt
+            )
         verdicts[conv.id] = verdict
         judged_dict[conv.id] = verdict.as_dict(conv.course)
 
@@ -121,13 +125,13 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     week = parse_week(args.week) if args.week else previous_complete_week(date.today())
-    judge_model = os.environ.get("ANALYTICS_JUDGE_MODEL", "claude-sonnet-5")
+    judge_model = os.environ.get("ANALYTICS_JUDGE_MODEL", DEFAULT_JUDGE_MODEL)
 
     from database_ui.db.session import SessionLocal
     db = SessionLocal()
     try:
         prior = cache_mod.read_cache(week.key)   # reuse this week's own prior run if any
-        judge = AnthropicJudge(judge_model)
+        judge = RubricJudge(judge_model)
         path, md = run_week(
             db, week, judge, judge_model=judge_model,
             generated_at=datetime.now(timezone.utc),

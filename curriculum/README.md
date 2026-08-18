@@ -45,7 +45,7 @@ curriculum/
 - Each course is a subfolder (for example `cities_and_climate_change/`, `mathematics_for_cs/`).
 - `course_name.txt` holds the human-readable course title rendered in the `main_ui/` course banner (via `load_course_name()` in [main_ui/routes/_validation.py](../main_ui/routes/_validation.py)). If empty or absent, the banner renders blank.
 - `pinned/` holds **always-pinned reference docs** — every `pinned/*.txt` is folded directly into the tutor's context in `full_context` and `rag` modes, and is **excluded from the RAG index** (never retrieved), so nothing pinned is also re-fetched by retrieval. This is where the **course description (`pinned/course.txt`)**, the **syllabus (`pinned/syllabus.txt`)**, and any other always-on material (e.g. a Solver debugging flow chart) live. Each file carries its own title as its first line; they're read (sorted, stripped, blank-line-joined) by `read_pinned_context()` in [`utils/curriculum.py`](../utils/curriculum.py) and folded in by `build_assignment_text` ([ui_core/tutor_bridge.py](../ui_core/tutor_bridge.py)); the exclusion from retrieval is in [rag/sources.py](../rag/sources.py). `read_course_description()` is a single-doc accessor for `pinned/course.txt` (the lean judge-context in the runners).
-- `tutor_rules.txt` (optional) holds **course-specific tutor rules** appended to the base tutor prompt (`tutor_08`) whenever the course has one — so a course can tune tutor behavior (e.g. "assume spreadsheets over Python") without forking a whole prompt version. Read + appended by `read_course_tutor_rules()` / `append_course_tutor_rules()` in [`utils/curriculum.py`](../utils/curriculum.py); applied in both apps (via `build_system_prompt`) and the bulk-simulation runners so evals mirror production. (Unlike `pinned/*.txt`, this is a system-prompt delta, not context body — so it lives at the course top level, not under `pinned/`.)
+- `tutor_rules.txt` (optional) holds **course-specific tutor rules** appended to the base tutor prompt (`tutor_09`) whenever the course has one — so a course can tune tutor behavior (e.g. "assume spreadsheets over Python") without forking a whole prompt version. Read + appended by `read_course_tutor_rules()` / `append_course_tutor_rules()` in [`utils/curriculum.py`](../utils/curriculum.py); applied in both apps (via `build_system_prompt`) and the bulk-simulation runners so evals mirror production. (Unlike `pinned/*.txt`, this is a system-prompt delta, not context body — so it lives at the course top level, not under `pinned/`.)
 - `online_link.txt` (optional) holds the course's MIT OpenCourseWare URL — the canonical source link for **RAG ingestion** of fuller course materials. The [`rag/`](../rag/) pipeline reads it (`python -m rag.ingest --course <c> --source ocw`) to crawl the OCW site's HTML pages **and linked PDFs** (lecture notes, problem sets) into the per-course `rag_index/`. See **Phase 11** in the root [PLANNING.md](../PLANNING.md) and [`rag/README.md`](../rag/README.md).
 - `exercises/exercise_X.txt` stores the assignment prompt for a specific exercise (non-padded numbering — `exercise_1.txt`, `exercise_10.txt`). Path resolution for all readers (web apps + runners) is centralized in [`utils/curriculum.py`](../utils/curriculum.py), which normalizes numbers and sorts them numerically. `01` and `1` both resolve to `exercise_1.txt`.
 - `practices/practice_X.txt` (optional) holds **ungraded practice problems** — a parallel content kind to exercises, selectable as a distinct "Practice problems" group in the `sandbox_ui/` Create-context wizard. Same non-padded numbering; resolved via `practices_dir()` / `discover_practice()` in [`utils/curriculum.py`](../utils/curriculum.py).
@@ -58,22 +58,36 @@ curriculum/
 
 ## Available courses
 
+### Active
+
+Returned by `list_courses()` / accepted by `validate_course()`.
+
 | Folder | Course | Exercises |
 | ------ | ------ | --------- |
-| `cities_and_climate_change/` | Cities and Climate Change: Mitigation and Adaptation (MIT 11.270x) | 12 — case study city research + mitigation/adaptation planning; **live in AskTIM for Spring 2026** |
+| `supply_chain_design/` | MIT CTL.SC2x Supply Chain Design — **the live production course** | 8 graded exercises (weeks 1–10, non-consecutive) — network/facility-location, production-planning, and supply-chain-finance assignments; also ships 8 ungraded `practices/`, 160 `lectures/` transcripts, and a `lecture_index.json` of real Week/Lesson/Video citations; RAG-indexed |
+| `physics_iii_vibrations_and_waves/` | Physics III: Vibrations and Waves (MIT 8.03SC) — STEM comparison course | 17 — 10 problem sets, 5 practice exams, and the 2 real Fall 2016 exams; also ships 24 `lectures/` transcripts, a `lecture_index.json`, and `exercises_solutions/` for the 5 practice exams (OCW publishes no solutions for the problem sets or the real exams) |
 | `economic_development_planning/` | Economic Development Planning (MIT 11.438) | 4 — two professional memos (Deputy Mayor role), a midterm lens/tool paper, and a community-engaged final case study; also ships 17 `lectures/` transcripts and a `lecture_index.json` of Session/Unit citations |
-| `intro_to_international_development_planning/` | Introduction to International Development Planning (MIT 11.701) | 24 — 700–800 word reflection prompts |
-| `mathematics_for_cs/` | Mathematics for Computer Science (MIT 6.1200J) | 10 — discrete-math problem sets |
-| `physics_iii_vibrations_and_waves/` | Physics III: Vibrations and Waves (MIT 8.03SC) | 17 — 10 problem sets, 5 practice exams, and the 2 real Fall 2016 exams; also ships 24 `lectures/` transcripts, a `lecture_index.json`, and `exercises_solutions/` for the 5 practice exams (OCW publishes no solutions for the problem sets or the real exams) |
-| `meaning_of_life/` | The Meaning of Life (MIT 21A.157) | 3 — vignette + investigation + final reflection papers |
-| `supply_chain_design/` | MIT CTL.SC2x Supply Chain Design | 8 graded exercises (weeks 1–10, non-consecutive) — network/facility-location, production-planning, and supply-chain-finance assignments; also ships 8 ungraded `practices/`, 160 `lectures/` transcripts, and a `lecture_index.json` of real Week/Lesson/Video citations |
 | `urban_transportation/` | Urban Transportation, Land Use, and the Environment (MIT 11.943J) | 4 — issue papers + a Mexico City / Santiago case-study consulting exercise; also ships 10 `lectures/` transcripts and a `lecture_index.json` of Lecture citations |
 
-All eight courses above are currently **active**. Archived courses, if any, live
-under `_archive/` and are listed by `list_archived_courses()` in
+### Archived (`_archive/`)
+
+Hidden from the apps (excluded by `list_courses()` / `validate_course()`), still
+readable by tooling and listed by `list_archived_courses()` in
 [`utils/curriculum.py`](../utils/curriculum.py).
 
-The four courses beyond Cities and Climate Change (Development Planning, Mathematics for CS, Physics III, and Meaning of Life) were added in June 2026 as **cross-course test contexts** (two STEM, two humanities) to check how the tutor behaves across subjects. `supply_chain_design/` (MIT CTL.SC2x) was added later as a lecture-heavy course. Only `cities_and_climate_change/` is deployed to real students.
+| Folder | Course | Exercises |
+| ------ | ------ | --------- |
+| `cities_and_climate_change/` | Cities and Climate Change: Mitigation and Adaptation (MIT 11.270x) — **the original pilot course** (retired) | 12 — case study city research + mitigation/adaptation planning |
+| `intro_to_international_development_planning/` | Introduction to International Development Planning (MIT 11.701) | 24 — 700–800 word reflection prompts |
+| `mathematics_for_cs/` | Mathematics for Computer Science (MIT 6.1200J) | 10 — discrete-math problem sets |
+| `meaning_of_life/` | The Meaning of Life (MIT 21A.157) | 3 — vignette + investigation + final reflection papers |
+
+**AskTIM is live in production on `supply_chain_design/` (MIT CTL.SC2x).** It first
+launched as a pilot on `cities_and_climate_change/` (MIT 11.270x), now archived.
+Development Planning, Physics III, Urban Transportation (and the archived
+Mathematics for CS and Meaning of Life) were added from June 2026 as
+**cross-course test contexts** — a mix of STEM and humanities to check how the
+tutor behaves across subjects.
 
 ## Adding a new course
 

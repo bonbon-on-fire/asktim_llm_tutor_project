@@ -36,6 +36,22 @@ def test_usage_and_ratings_and_cost():
     assert "c1" in out["per_course"]
 
 
+def test_days_bucketed_by_eastern_not_utc():
+    """Late-night-ET activity buckets to its Eastern day, not the UTC day.
+
+    Aug 11 02:00 UTC is Aug 10 22:00 in America/New_York (EDT, UTC-4). The
+    daily-activity chart is an ET Sun-Sat week, so the message must land on the
+    ET date (Aug 10) — bucketing by the raw UTC date would push it into the next
+    day's bar, and at a week edge into the wrong week entirely.
+    """
+    conv = _conv("a")  # started_at Aug 10 12:00 UTC -> Aug 10 ET
+    late = MsgRow("a", 1, "student", "hi", 0, None, None, False,
+                  datetime(2026, 8, 11, 2, tzinfo=timezone.utc))
+    out = compute_stats([conv], [late], returning=set())
+    assert out["usage"]["messages_by_day"] == {"2026-08-10": 1}
+    assert out["usage"]["conversations_by_day"] == {"2026-08-10": 1}
+
+
 def test_week_over_week_arrows():
     cur = compute_stats([_conv("a")], [_tutor("a", cost=0.10)], returning=set())
     prior = compute_stats([_conv("b"), _conv("c")], [_tutor("b"), _tutor("c")], returning=set())

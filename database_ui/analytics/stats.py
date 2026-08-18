@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 
 from database_ui.analytics.data import ConvRow, MsgRow
+from database_ui.analytics.weeks import TZ
 from ui_core.usage import model_from_usage_json, new_tokens_from_usage_json
 
 # Tutor turns carry rating/cost; student turns don't. Accept both historical labels.
@@ -32,11 +33,16 @@ def _section(convs: list[ConvRow], msgs: list[MsgRow], returning: set[str]) -> d
         for c in convs
         if c.started_at and c.last_active_at
     ]
+    # Bucket by the America/New_York calendar day, not the raw UTC day: the
+    # week window (weeks.py) is an ET Sun-Sat interval, so a message stored at
+    # e.g. 02:00 UTC belongs to the previous ET day. Bucketing by UTC bleeds
+    # late-night-ET activity into the next day's bar (and, at a week edge, the
+    # wrong week). Same astimezone(TZ) pattern as data.earliest_conversation_date.
     by_day: Counter = Counter(
-        c.started_at.date().isoformat() for c in convs if c.started_at
+        c.started_at.astimezone(TZ).date().isoformat() for c in convs if c.started_at
     )
     msgs_by_day: Counter = Counter(
-        m.created_at.date().isoformat() for m in msgs if m.created_at
+        m.created_at.astimezone(TZ).date().isoformat() for m in msgs if m.created_at
     )
     per_conv_msgs: Counter = Counter(m.conversation_id for m in msgs)
     up = sum(1 for m in tutor_msgs if m.rating == 1)

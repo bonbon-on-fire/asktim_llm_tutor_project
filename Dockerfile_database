@@ -22,6 +22,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # shared ui_core static blueprint (serves chat.css at /ui-core/css/chat.css).
 COPY database_ui/ database_ui/
 COPY ui_core/ ui_core/
+# The Flagged card's (i) icon serves the calibrated grading rubric (markdown);
+# analytics.default_rubric() reads it from eval/tutor_judge/rubrics/ — the same
+# rubric the judge uses, kept as the single source of truth (not vendored here).
+COPY eval/tutor_judge/rubrics/ eval/tutor_judge/rubrics/
 COPY scripts/railway-entrypoint-database.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh

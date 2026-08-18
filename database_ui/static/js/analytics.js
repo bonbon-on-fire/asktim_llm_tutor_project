@@ -110,6 +110,26 @@
     const s = payload.live, wow = s.week_over_week || {};
     const u = s.usage, co = s.cost;
 
+    // AI review sits at the top: the week's narrative overview, one paragraph
+    // per course, scoped on read so a course login sees only its own. Falls back
+    // to a pending note before the week's cache has been generated.
+    const rBody = el("div");
+    if (!payload.cached) {
+      rBody.appendChild(el("p", { class: "a-pending" }, ["This week's review is coming soon"]));
+    } else {
+      const reviews = payload.cached.ai_review_by_course || {};
+      const courses = Object.keys(reviews);
+      if (courses.length === 0) {
+        rBody.appendChild(el("p", { class: "a-muted" }, ["No review available for this week."]));
+      } else {
+        courses.forEach((course) => {
+          if (courses.length > 1) rBody.appendChild(el("p", { class: "a-review-course" }, [course]));
+          rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
+        });
+      }
+    }
+    root.appendChild(card("AI review", rBody));
+
     root.appendChild(card(null, statList([
       ["Conversations", u.conversations + " " + arrow(wow, "conversations")],
       ["Messages", u.total_messages + " " + arrow(wow, "total_messages")],
@@ -121,15 +141,10 @@
     const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");
     root.appendChild(card("Daily activity", barChart(byDay, { label: "Daily message activity, Sunday through Saturday" })));
 
-    // Judged sections (may be pending).
-    if (!payload.cached) {
-      root.appendChild(card("AI review", el("p", { class: "a-pending" },
-        ["This week's review is coming soon"])));
-      return;
-    }
-    // The "Didn't work well" flags are internal QA — shown only in the master
-    // view, never to a course-scoped login (the server also withholds the data).
-    if (payload.all_access) {
+    // Flags: judged conversations that didn't work well — internal QA shown only
+    // in the master view, never to a course-scoped login (the server also
+    // withholds the data). Nothing to show until the week's cache exists.
+    if (payload.cached && payload.all_access) {
       const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);
       const flagBody = el("div");
       flagBody.appendChild(el("p", { class: "a-muted" }, [flags.length + " conversations flagged."]));
@@ -142,23 +157,8 @@
         if (overview) parts.push(overview);
         flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
       });
-      root.appendChild(card("⚑ Didn't work well", flagBody));
+      root.appendChild(card("Flags", flagBody));
     }
-
-    // AI review: a short narrative of the week's major questions/themes, one
-    // paragraph per course. Scoped on read, so a course login sees only its own.
-    const reviews = payload.cached.ai_review_by_course || {};
-    const courses = Object.keys(reviews);
-    const rBody = el("div");
-    if (courses.length === 0) {
-      rBody.appendChild(el("p", { class: "a-muted" }, ["No review available for this week."]));
-    } else {
-      courses.forEach((course) => {
-        if (courses.length > 1) rBody.appendChild(el("p", { class: "a-review-course" }, [course]));
-        rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
-      });
-    }
-    root.appendChild(card("AI review", rBody));
   }
 
   async function load(weekKey) {

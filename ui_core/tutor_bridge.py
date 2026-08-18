@@ -30,6 +30,7 @@ exercise, tutor, history, new_student_message)`` to a tutor reply.
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from dataclasses import dataclass, field
@@ -71,6 +72,8 @@ from utils.figures import build_multimodal_content, discover_figures
 from utils.lectures import load_lecture_transcripts
 from utils.pricing import model_from_message, priced, usage_from_message
 
+
+logger = logging.getLogger(__name__)
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CURRICULUM_DIR = _REPO_ROOT / "curriculum"
@@ -392,6 +395,15 @@ class TutorBridge:
                 embedding_tokens=embed_tokens,
             )
         except Exception:
+            # Fail closed: an empty RetrievedContext makes the caller trip the
+            # mandatory-RAG guard and surface an error for this turn. But log the
+            # real cause first — an embedding-API outage (bad/expired key, quota,
+            # OpenAI down) otherwise vanishes here silently and every turn fails
+            # with no diagnostic trail. logger.exception captures the traceback.
+            logger.exception(
+                "RAG retrieval failed for course=%r (fail-closed, returning empty context)",
+                course,
+            )
             return RetrievedContext()
 
     def turn_attachments(self, course: str, exercise: str, images: list | None, **ctx):

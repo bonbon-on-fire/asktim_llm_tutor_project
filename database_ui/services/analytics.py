@@ -14,6 +14,7 @@ from database_ui.analytics import cache as cache_mod
 from database_ui.analytics import data as data_mod
 from database_ui.analytics.stats import compute_stats, week_over_week
 from database_ui.analytics.weeks import Week, week_containing
+from database_ui.courses import course_display_name
 
 
 def live_stats(db: Session, week: Week, courses: list[str] | None) -> dict:
@@ -54,6 +55,18 @@ def cached_sections(
         filtered = dict(filtered)
         filtered["conversations"] = {}
     return filtered
+
+
+def selectable_courses(db: Session, courses: list[str] | None) -> list[dict]:
+    """Course-filter dropdown options ``[{key, name}]`` for the login's scope.
+
+    Only courses that actually have conversations are listed; the client adds an
+    "All courses" option in front.
+    """
+    return [
+        {"key": k, "name": course_display_name(k)}
+        for k in data_mod.distinct_courses(db, courses)
+    ]
 
 
 def week_options() -> list[dict]:

@@ -12,6 +12,17 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 /* Week picker: a select-like trigger that opens a small calendar popover.
    Sits on the page background (--bg) with a light --border outline so it
    blends into the page rather than reading as a stark white form input. */
+/* Week nav: prev/next arrows hugging the calendar trigger box. */
+.weeknav { display: inline-flex; align-items: center; gap: 0.3rem; }
+.weeknav-arrow {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.4rem 0.55rem; line-height: 1; font-size: 1.1rem;
+  border: 1px solid var(--border, #e2e2e2); border-radius: 8px;
+  background: var(--bg, #fafafa); color: var(--text, #2a2a2a); cursor: pointer;
+}
+.weeknav-arrow:hover:not(:disabled) { border-color: #cfcfcf; }
+.weeknav-arrow:disabled { color: #d6d6d6; cursor: default; }
+
 .weekpick { position: relative; display: inline-block; }
 .weekpick-trigger {
   display: inline-flex; align-items: center; justify-content: space-between; gap: 0.5rem;
@@ -48,6 +59,30 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .weekpick-week.is-disabled .weekpick-day { color: #d6d6d6; }
 .weekpick-day { text-align: center; font-size: 0.8rem; padding: 0.35rem 0; color: var(--text, #2a2a2a); }
 .weekpick-day.is-off { color: var(--muted, #bbb); }
+
+/* Course filter: a select-like trigger + list popover, styled to match the
+   week picker so the two controls read as a pair. */
+.coursepick { position: relative; display: inline-block; }
+.coursepick-trigger {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  min-width: 13rem; padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border, #e2e2e2); border-radius: 8px;
+  background: var(--bg, #fafafa); color: var(--text, #2a2a2a); font: inherit; cursor: pointer;
+}
+.coursepick-trigger:hover { border-color: #cfcfcf; }
+.coursepick-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.coursepick-pop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 20;
+  min-width: 100%; max-width: 22rem; padding: 0.3rem;
+  background: #ffffff; border: 1px solid var(--border, #e2e2e2); border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.coursepick-opt {
+  padding: 0.4rem 0.55rem; border-radius: 8px; cursor: pointer;
+  font-size: 0.85rem; color: var(--text, #2a2a2a); white-space: nowrap;
+}
+.coursepick-opt:hover { background: #f5f5f5; }
+.coursepick-opt.is-selected { background: #d0e6f7; }
 .analytics-content { display: grid; gap: 1rem; }
 
 /* Cards match the tutor message bubble: neutral fill, no outline. */

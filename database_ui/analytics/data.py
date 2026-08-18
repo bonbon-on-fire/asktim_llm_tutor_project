@@ -115,6 +115,16 @@ def prior_usernames(db: Session, before: datetime, courses: list[str] | None) ->
     return {u for (u,) in db.execute(stmt).all() if u}
 
 
+def distinct_courses(db: Session, courses: list[str] | None) -> list[str]:
+    """Sorted distinct course keys present in the data, scoped to ``courses``.
+
+    Feeds the report's course-filter dropdown, so only courses that actually
+    have conversations appear as options.
+    """
+    stmt = _scoped(select(Conversation.course).distinct(), courses)
+    return sorted({c for (c,) in db.execute(stmt).all() if c})
+
+
 def earliest_conversation_date(db: Session, courses: list[str] | None) -> date | None:
     """Local (America/New_York) date of the earliest conversation, scoped.
 

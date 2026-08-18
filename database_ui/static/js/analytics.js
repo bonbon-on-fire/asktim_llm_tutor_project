@@ -166,9 +166,18 @@
     }
   }
 
+  // Current selection shared by the week nav and the course dropdown, so either
+  // control can reload the report while preserving the other's choice.
+  let currentWeek = null;
+  let currentCourse = "";   // "" = all courses in scope
+
   async function load(weekKey) {
+    if (weekKey) currentWeek = weekKey;
     $("analytics-status").textContent = "Loading…";
-    const q = weekKey ? ("?week=" + encodeURIComponent(weekKey)) : "";
+    const params = [];
+    if (currentWeek) params.push("week=" + encodeURIComponent(currentWeek));
+    if (currentCourse) params.push("course=" + encodeURIComponent(currentCourse));
+    const q = params.length ? "?" + params.join("&") : "";
     const resp = await fetch("/api/analytics" + q);
     const payload = await resp.json();
     render(payload);
@@ -202,13 +211,38 @@
     const pop = el("div", { class: "weekpick-pop", role: "dialog", hidden: "" });
     host.appendChild(pop);
 
+    // Prev/next week arrows flanking the trigger box. The box is moved into a
+    // .weeknav wrapper so the arrows sit tight against it; each greys out when
+    // stepping that way would leave the selectable range.
+    const nav = el("div", { class: "weeknav" });
+    const prevBtn = el("button", { type: "button", class: "weeknav-arrow", "aria-label": "Previous week" }, ["‹"]);
+    const nextBtn = el("button", { type: "button", class: "weeknav-arrow", "aria-label": "Next week" }, ["›"]);
+    host.parentNode.insertBefore(nav, host);
+    nav.appendChild(prevBtn);
+    nav.appendChild(host);          // moves the trigger box between the arrows
+    nav.appendChild(nextBtn);
+    const shiftKey = (days) =>
+      keyOf(sundayOf(new Date(parseKey(selected).getTime() + days * 86400000)));
+    function updateArrows() {
+      prevBtn.disabled = shiftKey(-7) < minKey;
+      nextBtn.disabled = shiftKey(7) > maxKey;
+    }
+    prevBtn.addEventListener("click", () => { const k = shiftKey(-7); if (k >= minKey) choose(k); });
+    nextBtn.addEventListener("click", () => { const k = shiftKey(7); if (k <= maxKey) choose(k); });
+
     const ix = (y, m) => y * 12 + m;
     const monthIxOf = (k) => { const s = sundayOf(parseKey(k)); return ix(s.getUTCFullYear(), s.getUTCMonth()); };
 
     const setLabel = () => { label.textContent = weekLabel(sundayOf(parseKey(selected))); };
     // Picking a week updates the highlight and reloads but leaves the popover
     // open; only an outside click (onDoc) closes it.
-    function choose(k) { selected = k; setLabel(); renderGrid(); load(k); }
+    function choose(k) {
+      selected = k;
+      const s = sundayOf(parseKey(k));   // keep the calendar view on the chosen week's month
+      viewY = s.getUTCFullYear();
+      viewM = s.getUTCMonth();
+      setLabel(); renderGrid(); load(k); updateArrows();
+    }
 
     function renderGrid() {
       pop.textContent = "";
@@ -261,12 +295,64 @@
     }
     trigger.addEventListener("click", () => (pop.hasAttribute("hidden") ? openPop() : closePop()));
     setLabel();
+    updateArrows();
+  }
+
+  // Course filter: a select-like dropdown that rescopes every card (stats, AI
+  // review, flags) to one course, or "All courses". Only rendered when the login
+  // can see more than one course — a single-course login has nothing to filter.
+  function setupCoursePicker(courses) {
+    const wk = $("week-picker");
+    if (!wk || !courses || courses.length < 2) return;
+    const host = el("div", { class: "coursepick", id: "course-picker" });
+    const trigger = el("button", { type: "button", class: "coursepick-trigger",
+      "aria-haspopup": "listbox", "aria-expanded": "false" });
+    const label = el("span", { class: "coursepick-label" }, ["All courses"]);
+    trigger.appendChild(label);
+    const caret = el("svg", { _svg: true, class: "weekpick-caret", viewBox: "0 0 24 24",
+      width: "14", height: "14", "aria-hidden": "true" });
+    caret.appendChild(el("path", { _svg: true, d: "M6 9l6 6 6-6", fill: "none",
+      stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    trigger.appendChild(caret);
+    host.appendChild(trigger);
+    const pop = el("div", { class: "coursepick-pop", role: "listbox", hidden: "" });
+    host.appendChild(pop);
+    // Place the dropdown just to the right of the week nav wrapper.
+    const navWrap = wk.parentNode;
+    navWrap.parentNode.insertBefore(host, navWrap.nextSibling);
+
+    const opts = [{ key: "", name: "All courses" }].concat(courses);
+    let sel = "";
+    function renderOpts() {
+      pop.textContent = "";
+      opts.forEach((o) => {
+        const item = el("div", { class: "coursepick-opt" + (o.key === sel ? " is-selected" : "") }, [o.name]);
+        item.addEventListener("click", () => {
+          sel = o.key; label.textContent = o.name; currentCourse = o.key; closePop(); load(currentWeek);
+        });
+        pop.appendChild(item);
+      });
+    }
+    function onDoc(e) { if (!host.contains(e.target)) closePop(); }
+    function openPop() {
+      renderOpts();
+      pop.removeAttribute("hidden");
+      trigger.setAttribute("aria-expanded", "true");
+      document.addEventListener("mousedown", onDoc);
+    }
+    function closePop() {
+      pop.setAttribute("hidden", "");
+      trigger.setAttribute("aria-expanded", "false");
+      document.removeEventListener("mousedown", onDoc);
+    }
+    trigger.addEventListener("click", () => (pop.hasAttribute("hidden") ? openPop() : closePop()));
   }
 
   async function initPicker() {
     const resp = await fetch("/api/analytics/weeks");
-    const { range } = await resp.json();
+    const { range, courses } = await resp.json();
     setupPicker(range, range.max);
+    setupCoursePicker(courses || []);
     load(range.max);
   }
 

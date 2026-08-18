@@ -82,7 +82,7 @@
 
     function summary() {
       const checked = options.filter((o) => checkedSet.has(o.value));
-      if (checked.length === 0) return "None selected";
+      if (checked.length === 0) return "None";
       if (checked.length === 1) return checked[0].label;
       if (checked.length === options.length) return "All (" + checked.length + ")";
       return checked.length + " selected";

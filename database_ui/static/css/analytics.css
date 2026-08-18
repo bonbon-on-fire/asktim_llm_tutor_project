@@ -123,6 +123,20 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .coursepick-opt:hover { background: var(--opt-hover); }
 .coursepick-opt.is-selected { background: var(--opt-selected); }
 .coursepick-opt.is-selected:hover { background: var(--opt-selected-hover); }
+/* Inline validation pill beside the course picker (e.g. "Select at least one
+   course"). Sits on the same light-blue as a selected option, so it reads as a
+   quiet prompt tied to the picker rather than a stark red error. */
+.coursepick-error {
+  align-self: center;
+  font-size: var(--fs-control);
+  color: var(--text, #2a2a2a);
+  background: var(--opt-selected, #e3eff5);
+  border: 1px solid var(--opt-selected-hover, #d3e6f0);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  white-space: nowrap;
+}
+.coursepick-error[hidden] { display: none; }
 .analytics-content { display: grid; gap: 1rem; }
 
 /* Cards match the tutor message bubble: neutral fill, no outline. */
@@ -171,8 +185,9 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .a-flag { font-size: var(--fs-body); line-height: 1.55; color: var(--text, #2a2a2a); margin: 0 0 0.7rem; }
 .a-flag:last-child { margin-bottom: 0; }
 .a-flag-score { font-weight: 600; }
-/* The clickable parenthetical opens the conversation — a link-styled button so
-   it inherits the line's size and needs no anchor href. */
+/* The clickable label (inside the parentheses) opens the conversation — a
+   link-styled button so it inherits the line's size and needs no anchor href.
+   The parentheses around it are plain text in the line's base color. */
 .a-flag-open {
   appearance: none;
   background: none;

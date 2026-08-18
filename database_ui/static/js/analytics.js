@@ -138,8 +138,9 @@
   }
 
   // One flagged conversation, e.g.
-  // "28/40 (Practice 7 · Aug 17 · 2 messages) — <overview>". The parenthetical
-  // is a button that opens the conversation (see openFlagged).
+  // "28/40 (Practice 7 · Aug 17 · 2 messages) — <overview>". Only the label
+  // inside the parentheses is the blue, clickable open-link; the parentheses
+  // themselves stay in the line's base color and aren't clickable.
   function flagLine(id, c, m) {
     const g = c.grade || null;
     const score = g && typeof g.total_score === "number"
@@ -147,10 +148,11 @@
     const overview = (g && g.overview) || c.one_line || "";
     const p = el("p", { class: "a-flag" });
     p.appendChild(el("span", { class: "a-flag-score" }, [score]));
-    p.appendChild(document.createTextNode(" "));
-    const link = el("button", { type: "button", class: "a-flag-open" }, ["(" + flagLabel(m) + ")"]);
+    p.appendChild(document.createTextNode(" ("));
+    const link = el("button", { type: "button", class: "a-flag-open" }, [flagLabel(m)]);
     link.addEventListener("click", () => openFlagged(id));
     p.appendChild(link);
+    p.appendChild(document.createTextNode(")"));
     if (overview) {
       p.appendChild(document.createTextNode(" — "));
       p.appendChild(el("span", { class: "a-flag-text" }, [overview]));
@@ -279,7 +281,6 @@
 
   async function load(weekKey) {
     if (weekKey) currentWeek = weekKey;
-    setStatus("Loading…", false);
     const params = [];
     if (currentWeek) params.push("week=" + encodeURIComponent(currentWeek));
     params.push(...courseParams());
@@ -454,11 +455,22 @@
     const navWrap = wk.parentNode;
     navWrap.parentNode.insertBefore(host, navWrap);
 
+    // Inline validation message, shown just to the right of the course picker
+    // (a light-blue pill) when the selection is emptied — not in the far-right
+    // status line. Hidden until there's something to say.
+    const errBox = el("span", { class: "coursepick-error", hidden: "" });
+    navWrap.parentNode.insertBefore(errBox, navWrap);
+    function setCourseError(msg) {
+      errBox.textContent = msg || "";
+      if (msg) errBox.removeAttribute("hidden");
+      else errBox.setAttribute("hidden", "");
+    }
+
     // Trigger label, mirroring the Download-data multi-select summary:
-    // none -> "None selected", one -> that course, all -> "All (N)", else "N selected".
+    // none -> "None", one -> that course, all -> "All (N)", else "N selected".
     function summary() {
       const n = checked.size;
-      if (n === 0) return "None selected";
+      if (n === 0) return "None";
       if (n === 1) {
         const only = courses.find((c) => checked.has(c.key));
         return only ? only.name : "1 selected";
@@ -510,9 +522,10 @@
     // screen. An unchanged selection is a no-op.
     async function applySelection() {
       if (checked.size === 0) {
-        setStatus("Select at least one course", true);
+        setCourseError("Select at least one course");
         return;
       }
+      setCourseError("");
       const key = Array.from(checked).sort().join("|");
       if (key === appliedKey) { setStatus("", false); return; }
       appliedKey = key;

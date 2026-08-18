@@ -454,13 +454,17 @@
     }
   }
 
-  // Unified Escape: close in z-order — image lightbox > weekly report.
-  // Mirrors main_ui / sandbox_ui, where Escape steps back out of the
-  // frontmost overlay (there: detail > modal > sidebar).
+  // Unified Escape: step back one layer at a time — image lightbox first, then
+  // the sidebar (side dashboard) while it's open, then the weekly report.
+  // Closing the open sidebar takes priority over leaving the report, so Escape
+  // on the report tucks the sidebar away rather than exiting the report.
+  // Mirrors main_ui / sandbox_ui, where Escape peels back the frontmost overlay.
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     if (imageLightbox && !imageLightbox.hidden) {
       closeImageLightbox();
+    } else if (sidebar && sidebar.getAttribute("data-open") === "true") {
+      setSidebar(false);
     } else if (analyticsPanel && !analyticsPanel.hidden) {
       hideReport();
     }

@@ -37,9 +37,9 @@ The system has seven loosely coupled layers:
 - **Judge pipeline**: a separate LangGraph agent reads a finished transcript and returns a structured JSON grade against a rubric, with up to 3 automatic repair-and-retry cycles
 - **Dashboard + visualization**: `dashboard_ui/`, a Flask web app that reads raw transcripts + Claude judge grades straight from disk (no DB) for browsing (sortable score table + per-transcript conversation/grade view), and a matplotlib chart module (`visualization.run_visualization` for the per-persona-type rubric breakdowns, score histogram, and per-transcript line charts; `visualization.run_comparison_viz` for the New-AskTIM-vs-STEM-AskTIM comparison deck)
 - **Shared web layer (`ui_core/`)**: common infrastructure the three Flask web apps below are built on, so persistence/session/identity plumbing isn't duplicated three times. Includes DB engine/session helpers (`db/session.py`), shared `Message`/`Student`/`UploadedImage`/`UploadedFile`/`Feedback` SQLAlchemy mixins (`db/models_common.py`), app-agnostic conversation/image/file/student/feedback services parameterized by each app's own models (`services/`), a `TutorBridge` base class with overridable hooks for the tutor pipeline (`tutor_bridge.py`), a static blueprint serving the shared `chat.css` plus vendored **KaTeX** assets at `/ui-core` (`web/static_blueprint.py`), identity/history/feedback blueprint factories (`web/blueprints/`), a shared page shell (`templates/base_chat.html`), and a `create_app` Flask-assembly factory (`app_factory.py`). `main_ui` and `sandbox_ui` are thin shells over `ui_core` (built via `create_app`, with their own models/services/tutor_bridge as thin wrappers or subclasses); `database_ui` reuses `ui_core`'s DB session helpers and static blueprint but keeps its own read-only `run_app` (it's structurally different — no chat, no writes).
-- **Student-facing app (`main_ui/`)**: iframe-embeddable chat for real OCW students, **live on Railway → [asktim.up.railway.app](https://asktim.up.railway.app/)**. PostgreSQL persistence (`asktim`), bcrypt-hashed username+password identity, Server-Sent Events streaming, sanitized-markdown + KaTeX-rendered tutor replies (tables/lists/math render cleanly), cross-browser conversation history, image **and document** uploads (CSV/TSV/XLSX/PDF/DOCX/TXT, extracted to text and persisted across turns), and per-message thumbs up/down ratings on each tutor reply. See [`main_ui/README.md`](main_ui/README.md).
+- **Student-facing app (`main_ui/`)**: iframe-embeddable chat for real OCW students, **live on Railway → [asktim-beta-plus.up.railway.app](https://asktim-beta-plus.up.railway.app/)**. PostgreSQL persistence (`asktim`), bcrypt-hashed username+password identity, Server-Sent Events streaming, sanitized-markdown + KaTeX-rendered tutor replies (tables/lists/math render cleanly), cross-browser conversation history, image **and document** uploads (CSV/TSV/XLSX/PDF/DOCX/TXT, extracted to text and persisted across turns), and per-message thumbs up/down ratings on each tutor reply. See [`main_ui/README.md`](main_ui/README.md).
 - **Testing sandbox (`sandbox_ui/`)**: "AskTIM Sandbox" — a developer/TA chat app that mirrors `main_ui` but adds a step-by-step **Create context** wizard (custom course / exercise / tutor prompt / syllabus / lectures, plus a per-conversation RAG toggle). Its own PostgreSQL database (`asktim_test`) and teal-blue (`#126f9a`) branding keep it isolated from production. **Live on Railway → [asktim-sandbox.up.railway.app](https://asktim-sandbox.up.railway.app/)**. See [`sandbox_ui/README.md`](sandbox_ui/README.md).
-- **Conversation review (`database_ui/`)**: read-only dashboard for browsing real `main_ui` conversations live from its Postgres — looks like `main_ui` (MIT crimson) but with no inputs, lists every conversation (most recent first, each labeled by student username), shows transcripts with tutor reasoning + uploaded images. Password-gated with optional per-course scoped logins (staff see only their course), strictly read-only. **Live on Railway → [asktim-database.up.railway.app](https://asktim-database.up.railway.app/)**. See [`database_ui/README.md`](database_ui/README.md) and [`database_ui/PLANNING.md`](database_ui/PLANNING.md).
+- **Conversation review (`database_ui/`)**: read-only dashboard for browsing real `main_ui` conversations live from its Postgres — looks like `main_ui` (MIT crimson) but with no inputs, lists every conversation (most recent first, each labeled by student username), shows transcripts with tutor reasoning + uploaded images. Password-gated with optional per-course scoped logins (staff see only their course), strictly read-only. **Live on Railway → [asktim-database-beta-plus.up.railway.app](https://asktim-database-beta-plus.up.railway.app/)**. See [`database_ui/README.md`](database_ui/README.md) and [`database_ui/PLANNING.md`](database_ui/PLANNING.md).
 
 ### Live Deployments (Railway)
 
@@ -50,9 +50,9 @@ database read-only. (Click the app nodes to open the live sites.)
 ```mermaid
 flowchart LR
     subgraph live["Live on Railway"]
-        MAIN["main_ui\nAskTIM (students)\nasktim.up.railway.app"]
+        MAIN["main_ui\nAskTIM (students)\nasktim-beta-plus.up.railway.app"]
         SAND["sandbox_ui\nAskTIM Sandbox\nasktim-sandbox.up.railway.app"]
-        REV["database_ui\nAskTIM Database\nasktim-database.up.railway.app"]
+        REV["database_ui\nAskTIM Database\nasktim-database-beta-plus.up.railway.app"]
     end
 
     PGMAIN[("Postgres\nasktim")]
@@ -62,14 +62,46 @@ flowchart LR
     SAND -->|read/write| PGTEST
     REV -. read-only .-> PGMAIN
 
-    click MAIN "https://asktim.up.railway.app/" "Open AskTIM"
+    click MAIN "https://asktim-beta-plus.up.railway.app/" "Open AskTIM"
     click SAND "https://asktim-sandbox.up.railway.app/" "Open AskTIM Sandbox"
-    click REV "https://asktim-database.up.railway.app/" "Open AskTIM Database"
+    click REV "https://asktim-database-beta-plus.up.railway.app/" "Open AskTIM Database"
 ```
 
-- **AskTIM** (students): <https://asktim.up.railway.app/>
+- **AskTIM** (students): <https://asktim-beta-plus.up.railway.app/>
 - **AskTIM Sandbox** (developers/TAs): <https://asktim-sandbox.up.railway.app/>
-- **AskTIM Database** (read-only review): <https://asktim-database.up.railway.app>
+- **AskTIM Database** (read-only review): <https://asktim-database-beta-plus.up.railway.app>
+
+### Screenshots
+
+Real captures from the live Railway deployments (course: MIT CTL.SC2x Supply
+Chain Design). Student identities are anonymized.
+
+**AskTIM student chat** — the iframe-embeddable Socratic tutor. Replies stream in
+token-by-token, render markdown + KaTeX math, and never state the answer outright.
+[Open →](https://asktim-beta-plus.up.railway.app/)
+
+![AskTIM student chat](docs/screenshots/asktim-student-chat.png)
+
+**Sandbox — Create context wizard** — the developer/TA app mirrors the student
+chat but adds a step-by-step wizard for a one-off custom course / exercise / tutor
+prompt / syllabus / lectures, with a per-conversation RAG toggle.
+[Open →](https://asktim-sandbox.up.railway.app/)
+
+![Sandbox Create-context wizard](docs/screenshots/sandbox-create-context.png)
+
+**AskTIM Database — conversation review** — the read-only dashboard for browsing
+real conversations live from Postgres: each tutor turn shows its model, estimated
+cost, hidden pedagogical reasoning, and any RAG-retrieved chunks. Password-gated
+with optional per-course scoping. [Open →](https://asktim-database-beta-plus.up.railway.app/)
+
+![AskTIM Database conversation review](docs/screenshots/database-review.png)
+
+**Weekly analytics & AI review** — the dashboard's weekly report pairs always-live
+usage stats (conversations, messages, students, cost, week-over-week deltas) with
+an offline LLM-judged review of the week's tutoring. See
+[`database_ui/analytics/README.md`](database_ui/analytics/README.md).
+
+![Weekly analytics and AI review](docs/screenshots/weekly-report.png)
 
 ### Tutor Context Assembly (RAG + multimodal)
 
@@ -161,7 +193,7 @@ is the deployed default. To revert to English-only, switch the default back to
 
 **Dashboard (`dashboard_ui/`):** Flask app (port 5002) that discovers all raw transcripts on disk, attaches each one's Claude judge grade, and serves a sortable table (with a Score column) plus a per-transcript detail view (full conversation + grade panel) via a single-page JS frontend.
 
-**Conversation review (`database_ui/`, "AskTIM Database"):** Read-only Flask dashboard (port 5003) for browsing real `main_ui` conversation data live from its Postgres, **deployed on Railway at <https://asktim-database.up.railway.app/>**. Looks like the `main_ui` chat (MIT-crimson) but with no composer/inputs — lists every conversation (most recent first, each labeled by student username), and renders a selected transcript with the tutor's pedagogical reasoning, uploaded images/files, and math-rendered (KaTeX) tutor replies. Password-gated — a master password sees everything, optional per-course passwords scope a viewer to their own course (the filtering is invisible in the UI); strictly read-only (no schema writes). Reuses `ui_core`'s DB session helpers and static blueprint, but — being structurally different (no chat, no writes) — keeps its own `run_app` rather than going through `ui_core.app_factory.create_app`. See [`database_ui/README.md`](database_ui/README.md).
+**Conversation review (`database_ui/`, "AskTIM Database"):** Read-only Flask dashboard (port 5003) for browsing real `main_ui` conversation data live from its Postgres, **deployed on Railway at <https://asktim-database-beta-plus.up.railway.app/>**. Looks like the `main_ui` chat (MIT-crimson) but with no composer/inputs — lists every conversation (most recent first, each labeled by student username), and renders a selected transcript with the tutor's pedagogical reasoning, uploaded images/files, and math-rendered (KaTeX) tutor replies. Password-gated — a master password sees everything, optional per-course passwords scope a viewer to their own course (the filtering is invisible in the UI); strictly read-only (no schema writes). Reuses `ui_core`'s DB session helpers and static blueprint, but — being structurally different (no chat, no writes) — keeps its own `run_app` rather than going through `ui_core.app_factory.create_app`. See [`database_ui/README.md`](database_ui/README.md).
 
 **Student app (`main_ui/`):** Production-shape Flask app for the live OCW deployment, built as a thin shell over `ui_core` (assembled via `create_app`; its own `db/models.py`, `services/`, and `services/tutor_bridge.py` are thin wrappers/subclasses of the shared layer). Streams tutor replies token-by-token via SSE while keeping the `pedagogical-reasoning` field hidden server-side. Persists conversations and messages to Postgres (Alembic-managed schema). Soft identity via a two-stage username + password modal that reappears after every message until the student signs up — passwords are bcrypt-hashed in a separate `students` table, and the username cookie carries forward across browsers for chat-history continuity.
 
@@ -407,9 +439,9 @@ The full pipeline is working end-to-end, with:
 - Judge prompts versioned up to `judge_08`, rubrics up to `rubric_08` (latest/recommended: `judge_08` / `rubric_08`, **40 pts**; also the in-code default `judge_08` / `rubric_08`). Claude is the primary judge; GPT judging paused.
 - Dashboard browses every raw transcript with its Claude judge grade — a sortable table (with a Score column) and a per-transcript detail view (full conversation + grade panel), on port 5002
 - Visualization outputs the per-persona-type rubric breakdowns, a score histogram, and per-transcript line charts via `run_visualization`; the New-AskTIM-vs-STEM-AskTIM comparison deck comes from `run_comparison_viz` (`visualization/outputs/comparison/`)
-- **AskTIM (`main_ui/`)** is feature-complete through Step 10 (image uploads) — Postgres persistence, username + password identity, cross-browser history (sidebar open by default on desktop), SSE-streamed replies, **student PNG/JPEG uploads plus non-image attachments** (CSV/TSV/XLSX/PDF/DOCX/TXT, extracted to text and persisted across turns), tutor replies rendered as sanitized markdown + **KaTeX** math (locked to the deployed `tutor_08`), and per-message **thumbs up/down** ratings on each tutor reply (a `messages.rating` column; the older conversation-level 1–5 star feedback toast is kept but dormant) — and is **live on Railway at <https://asktim.up.railway.app/>** (containerized, migrations run on boot). Steps 11–12 (multi-iframe test host, formal test suite) remain.
+- **AskTIM (`main_ui/`)** is feature-complete through Step 10 (image uploads) — Postgres persistence, username + password identity, cross-browser history (sidebar open by default on desktop), SSE-streamed replies, **student PNG/JPEG uploads plus non-image attachments** (CSV/TSV/XLSX/PDF/DOCX/TXT, extracted to text and persisted across turns), tutor replies rendered as sanitized markdown + **KaTeX** math (locked to the deployed `tutor_09`), and per-message **thumbs up/down** ratings on each tutor reply (a `messages.rating` column; the older conversation-level 1–5 star feedback toast is kept but dormant) — and is **live on Railway at <https://asktim-beta-plus.up.railway.app/>** (containerized, migrations run on boot). Steps 11–12 (multi-iframe test host, formal test suite) remain.
 - **AskTIM Sandbox (`sandbox_ui/`)** is **live at <https://asktim-sandbox.up.railway.app/>** for developers/TAs — the same chat as `main_ui` plus a **Create context** wizard for one-off custom course/exercise/tutor/syllabus/lectures, on its own PostgreSQL database (`asktim_test`). Now also serves RAG-retrieved course context (with a per-conversation toggle).
-- **AskTIM Database (`database_ui/`)** is **live on Railway at <https://asktim-database.up.railway.app/>** — a read-only dashboard that browses every real `main_ui` conversation live from its Postgres (most recent first, labeled by student username and running total cost; transcript view with each tutor turn's model + estimated cost, pedagogical reasoning, RAG-retrieval chunks, display-only thumb rating, and uploaded images/files, math-rendered replies), password-gated with optional per-course scoping and strictly read-only. See [`database_ui/PLANNING.md`](database_ui/PLANNING.md).
+- **AskTIM Database (`database_ui/`)** is **live on Railway at <https://asktim-database-beta-plus.up.railway.app/>** — a read-only dashboard that browses every real `main_ui` conversation live from its Postgres (most recent first, labeled by student username and running total cost; transcript view with each tutor turn's model + estimated cost, pedagogical reasoning, RAG-retrieval chunks, display-only thumb rating, and uploaded images/files, math-rendered replies), password-gated with optional per-course scoping and strictly read-only. See [`database_ui/PLANNING.md`](database_ui/PLANNING.md).
 
 ## Challenges and How I Solved Them
 

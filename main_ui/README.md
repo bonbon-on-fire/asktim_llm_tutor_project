@@ -2,13 +2,13 @@
 
 Embeddable AskTIM chat app for real MIT OCW students. Designed to load inside an iframe on the course page, with each iframe URL hardcoding its own course + exercise context.
 
-**🔗 Live: <https://asktim.up.railway.app/>**
+**🔗 Live: <https://asktim-beta-plus.up.railway.app/>**
 
 For the overall design — problem framing, schema, identity flow, non-goals — see **Phase 8** of the root [PLANNING.md](../PLANNING.md). For the step-by-step build log, see [main_ui/PLANNING.md](PLANNING.md).
 
 ## Status
 
-Steps 1–10 complete and **deployed on Railway** (containerized via the root `Dockerfile_main` + `scripts/railway-entrypoint-main.sh` — see [Deployment](#deployment-railway)). The app is feature-complete for the 2026 Cities and Climate Change deployment minus a multi-iframe test host page (Step 11) and the formal test suite (Step 12).
+Steps 1–10 complete and **deployed on Railway** (containerized via the root `Dockerfile_main` + `scripts/railway-entrypoint-main.sh` — see [Deployment](#deployment-railway)). The app is **live in production on MIT CTL.SC2x Supply Chain Design** (it first launched as a pilot in MIT 11.270x Cities and Climate Change) and is feature-complete minus a multi-iframe test host page (Step 11) and the formal test suite (Step 12).
 
 What works today:
 
@@ -19,7 +19,7 @@ What works today:
 - Two-stage username + password identity (`/api/identity/check` → `/api/identity`) with bcrypt hashing
 - Sidebar with cross-browser conversation history, live-reorder on new turns, click-to-continue past chats; opens by default on wider screens (>480px) and stays closed on narrow/mobile screens (where it covers the full chat) until the toggle is tapped
 - "Log in" sidebar entry point (button text + tooltip) so students who skipped the modal can come back later
-- MIT crimson branding, AskTIM Beta+ header, "MIT 11.270x Cities and Climate Change" course banner
+- MIT crimson branding, AskTIM Beta+ header, per-iframe course banner (e.g. "MIT CTL.SC2x Supply Chain Design" for the live deployment)
 - Per-course lecture transcripts (`curriculum/<course>/lectures/*.txt`) auto-folded into tutor context when present (text-only, no-op until a course adds them) — via [`utils.lectures`](../utils/lectures.py)
 - **Paired solution as tutor-only reference** — when the exercise has a matching solution file, its "correct answer & worked solution" is injected right after the exercise for the tutor only (via [`utils.curriculum.read_solution`](../utils/curriculum.py)); it's deterministic (keyed by problem number), never revealed to the student, and no-op for exercises with no solution file
 - **Curriculum figures** auto-attached to the tutor: any `curriculum/<course>/figures/exercise_<NN>_*.{png,jpg,jpeg}` matching the conversation's exercise is sent to the tutor as multimodal input on every turn (re-attached each call since per-call history is text-only) — via [`utils.figures.discover_figures`](../utils/figures.py) in [`services/tutor_bridge.py`](services/tutor_bridge.py); no-op for exercises with no figure

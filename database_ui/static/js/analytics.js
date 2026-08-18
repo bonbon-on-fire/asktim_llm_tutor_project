@@ -142,7 +142,7 @@
         if (overview) parts.push(overview);
         flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
       });
-      root.appendChild(card("🚩 Didn't work well", flagBody));
+      root.appendChild(card("⚑ Didn't work well", flagBody));
     }
 
     const topics = payload.cached.topics_by_course || {};

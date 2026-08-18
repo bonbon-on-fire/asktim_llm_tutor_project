@@ -26,6 +26,7 @@ class Config:
     max_message_tokens: int
     max_conversation_tokens: int
     free_messages_before_login: int
+    maintenance_mode: bool
 
 
 def load_config() -> Config:
@@ -40,6 +41,10 @@ def load_config() -> Config:
     max_message_tokens = int(os.environ.get("MAX_MESSAGE_TOKENS", "10000"))
     max_conversation_tokens = int(os.environ.get("MAX_CONVERSATION_TOKENS", "450000"))
     free_messages_before_login = int(os.environ.get("FREE_MESSAGES_BEFORE_LOGIN", "3"))
+    # Full-screen "AskTIM is down" overlay. Env-driven so it can be flipped on the
+    # deployment (MAIN_UI_MAINTENANCE=1) without a code change and off again once
+    # service is restored. Defaults off so normal environments are unaffected.
+    maintenance_mode = _parse_bool(os.environ.get("MAIN_UI_MAINTENANCE"), default=False)
     return Config(
         secret_key=secret_key,
         database_url=database_url,
@@ -49,4 +54,5 @@ def load_config() -> Config:
         max_message_tokens=max_message_tokens,
         max_conversation_tokens=max_conversation_tokens,
         free_messages_before_login=free_messages_before_login,
+        maintenance_mode=maintenance_mode,
     )

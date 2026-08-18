@@ -20,6 +20,7 @@ from flask import Blueprint, jsonify, render_template, request
 
 from utils.curriculum import load_ui_labels
 
+from main_ui.config import load_config
 from main_ui.cookies import read_username_cookie
 from main_ui.routes._validation import (
     DEFAULT_EXERCISE,
@@ -69,6 +70,7 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         course_name=load_course_name(course),
         tutor_config=tutor_config,
         has_email=has_email,
+        maintenance=load_config().maintenance_mode,
     )
 
 

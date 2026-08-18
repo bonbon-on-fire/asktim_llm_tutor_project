@@ -110,9 +110,20 @@
     const s = payload.live, wow = s.week_over_week || {};
     const u = s.usage, co = s.cost;
 
-    // AI review sits at the top: the week's narrative overview, one paragraph
-    // per course, scoped on read so a course login sees only its own. Falls back
-    // to a pending note before the week's cache has been generated.
+    root.appendChild(card(null, statList([
+      ["Conversations", u.conversations + " " + arrow(wow, "conversations")],
+      ["Messages", u.total_messages + " " + arrow(wow, "total_messages")],
+      ["Students", u.unique_students + " " + arrow(wow, "unique_students")],
+      ["New students", u.new_students + " " + arrow(wow, "new_students")],
+      ["Cost", money(co.total_usd) + " " + arrow(wow, "cost_usd")],
+    ])));
+
+    const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");
+    root.appendChild(card("Daily activity", barChart(byDay, { label: "Daily message activity, Sunday through Saturday" })));
+
+    // AI review sits under Daily activity: the week's narrative overview, one
+    // paragraph per course, scoped on read so a course login sees only its own.
+    // Falls back to a pending note before the week's cache has been generated.
     const rBody = el("div");
     if (!payload.cached) {
       rBody.appendChild(el("p", { class: "a-pending" }, ["This week's review is coming soon"]));
@@ -129,17 +140,6 @@
       }
     }
     root.appendChild(card("AI review", rBody));
-
-    root.appendChild(card(null, statList([
-      ["Conversations", u.conversations + " " + arrow(wow, "conversations")],
-      ["Messages", u.total_messages + " " + arrow(wow, "total_messages")],
-      ["Students", u.unique_students + " " + arrow(wow, "unique_students")],
-      ["New students", u.new_students + " " + arrow(wow, "new_students")],
-      ["Cost", money(co.total_usd) + " " + arrow(wow, "cost_usd")],
-    ])));
-
-    const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");
-    root.appendChild(card("Daily activity", barChart(byDay, { label: "Daily message activity, Sunday through Saturday" })));
 
     // Flags: judged conversations that didn't work well — internal QA shown only
     // in the master view, never to a course-scoped login (the server also

@@ -87,3 +87,34 @@ def test_api_analytics_passes_grade_through(seeded, tmp_path, monkeypatch):
     conv = body["cached"]["conversations"]["conv-1"]
     assert conv["grade"] == grade
     assert conv["worked_well"] is False
+
+
+def test_flags_are_master_only(seeded, tmp_path, monkeypatch):
+    """The "Didn't work well" flags show only in the master view; a course-scoped
+    login gets ``all_access: False`` and no flag-bearing conversations at all."""
+    monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path)
+    blob = {
+        "conversations": {
+            "conv-1": {
+                "course": "supply_chain_design",
+                "worked_well": False,
+                "issues": [],
+                "topics": [],
+                "one_line": "handed it over",
+                "grade": {"total_score": 20, "max_score": 40, "overview": "gave it away"},
+            }
+        },
+        "examples": {"exemplary": [], "high_engagement": [], "sample": {}},
+        "topics_by_course": {},
+    }
+    (tmp_path / "2026-04-26.json").write_text(json.dumps(blob), encoding="utf-8")
+
+    # Master sees the flag source and is flagged all-access.
+    master = _login(_app(), MASTER).get("/api/analytics?week=2026-05-01").get_json()
+    assert master["all_access"] is True
+    assert "conv-1" in master["cached"]["conversations"]
+
+    # A scoped login (even to the very course the flag belongs to) gets nothing.
+    scoped = _login(_app(), SC_PW).get("/api/analytics?week=2026-05-01").get_json()
+    assert scoped["all_access"] is False
+    assert scoped["cached"]["conversations"] == {}

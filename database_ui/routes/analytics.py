@@ -29,12 +29,14 @@ def api_analytics():
     raw = request.args.get("week")
     week = parse_week(raw) if raw else week_containing(date.today())
     courses = allowed_courses()
+    all_access = courses is None          # master password / open dev, not a course scope
     live = svc.live_stats(g.db, week, courses)
-    cached = svc.cached_sections(week.key, courses)
+    cached = svc.cached_sections(week.key, courses, all_access=all_access)
     return jsonify({
         "week": {"key": week.key, "label": week.label()},
         "live": live,
         "cached": cached,
+        "all_access": all_access,         # gates the master-only "Didn't work well" flags
     })
 
 

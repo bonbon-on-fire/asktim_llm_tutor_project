@@ -35,16 +35,25 @@ def live_stats(db: Session, week: Week, courses: list[str] | None) -> dict:
     return stats
 
 
-def cached_sections(week_key: str, courses: list[str] | None) -> dict | None:
+def cached_sections(
+    week_key: str, courses: list[str] | None, *, all_access: bool = True
+) -> dict | None:
     """Course-filtered judged sections for a week, or ``None`` if not generated.
 
     Strips the internal ``_hashes`` bookkeeping so it never leaves the server.
+    The "Didn't work well" flags are internal QA, shown only in the master view;
+    for a scoped (per-course) login we drop the ``conversations`` that drive them
+    so the flag data never reaches that client at all.
     """
     blob = cache_mod.read_cache(week_key)
     if blob is None:
         return None
     blob.pop("_hashes", None)
-    return cache_mod.filter_cache(blob, courses)
+    filtered = cache_mod.filter_cache(blob, courses)
+    if not all_access:
+        filtered = dict(filtered)
+        filtered["conversations"] = {}
+    return filtered
 
 
 def week_options() -> list[dict]:

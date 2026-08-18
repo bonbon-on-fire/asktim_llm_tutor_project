@@ -127,19 +127,23 @@
         ["This week's review is coming soon"])));
       return;
     }
-    const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);
-    const flagBody = el("div");
-    flagBody.appendChild(el("p", { class: "a-muted" }, [flags.length + " conversations flagged."]));
-    flags.forEach((c) => {
-      const g = c.grade || null;
-      const score = g && typeof g.total_score === "number"
-        ? (g.total_score + "/" + (g.max_score || 40)) : "—";
-      const overview = (g && g.overview) || c.one_line || "";
-      const parts = [c.course, score];
-      if (overview) parts.push(overview);
-      flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
-    });
-    root.appendChild(card("🚩 Didn't work well", flagBody));
+    // The "Didn't work well" flags are internal QA — shown only in the master
+    // view, never to a course-scoped login (the server also withholds the data).
+    if (payload.all_access) {
+      const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);
+      const flagBody = el("div");
+      flagBody.appendChild(el("p", { class: "a-muted" }, [flags.length + " conversations flagged."]));
+      flags.forEach((c) => {
+        const g = c.grade || null;
+        const score = g && typeof g.total_score === "number"
+          ? (g.total_score + "/" + (g.max_score || 40)) : "—";
+        const overview = (g && g.overview) || c.one_line || "";
+        const parts = [c.course, score];
+        if (overview) parts.push(overview);
+        flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
+      });
+      root.appendChild(card("🚩 Didn't work well", flagBody));
+    }
 
     const topics = payload.cached.topics_by_course || {};
     const tBody = el("div");

@@ -404,14 +404,23 @@
     }
     trigger.addEventListener("click", () => (pop.hasAttribute("hidden") ? openPop() : closePop()));
 
-    // Retighten the selectable range (e.g. when the course filter changes). The
-    // selected week is left as-is — if it now falls outside the course's data,
-    // the report just shows the "not enough activity" note rather than jumping.
+    // Retighten the selectable range (e.g. when the course filter changes) and
+    // clamp the selected week into it: if it now sits before the first eligible
+    // week, snap to that first week; if after the last, snap to the last. The
+    // calendar view follows so the picker shows the week it lands on. Returns
+    // the (possibly changed) selected week key so the caller can load it.
     function setRange(r) {
       minKey = r.min;
       maxKey = r.max;
+      if (selected < minKey) selected = minKey;
+      else if (selected > maxKey) selected = maxKey;
+      const s = sundayOf(parseKey(selected));
+      viewY = s.getUTCFullYear();
+      viewM = s.getUTCMonth();
+      setLabel();
       renderGrid();
       updateArrows();
+      return selected;
     }
 
     setLabel();
@@ -532,15 +541,18 @@
       currentCourses = Array.from(checked);
       setStatus("", false);
       // Tighten the calendar range to the selected courses' data (all selected ⇒
-      // the full login range). Keep the current week even if it's now out of
-      // range; the report shows "not enough activity" for it.
+      // the full login range). If the current week falls outside the new range,
+      // setRange snaps it to the nearest eligible week (first if earlier, last
+      // if later) and returns the week to load, so we never land on an empty
+      // out-of-range report.
+      let target = currentWeek;
       try {
         const qs = courseParams().join("&");
         const r = await fetch("/api/analytics/weeks" + (qs ? "?" + qs : ""));
         const data = await r.json();
-        if (picker && data.range) picker.setRange(data.range);
+        if (picker && data.range) target = picker.setRange(data.range);
       } catch (e) { /* keep the existing range if the refetch fails */ }
-      load(currentWeek);
+      load(target);
     }
 
     paintLabel();

@@ -9,9 +9,9 @@ understand before reading the code.
 |---|---|---|
 | Computed | On every request, from the DB | Offline, once per week, by a scheduled job |
 | Source | `services/analytics.py` → SQL | Committed JSON cache in [`cache/`](cache/) |
-| Cost | Free (plain queries) | One LLM call per new/changed conversation |
+| Cost | Free (plain queries) | One rubric-grade call per new/changed conversation |
 | Freshness | Always current | As of the last generated + merged cache |
-| Shown as | Overview cards + daily-activity chart | "🚩 Didn't work well" + "🗣 Top topics" |
+| Shown as | Overview cards + daily-activity chart | Per-course "AI review" paragraph + "🚩 Didn't work well" + "🗣 Top topics" |
 
 If a week has no cache file yet, the dashboard still shows live stats and simply
 renders **"This week's review is coming soon"** for the AI-review sections. That
@@ -30,9 +30,11 @@ dashboard only ever *reads* that committed JSON.
 ```mermaid
 flowchart LR
     subgraph Producer["Offline job — GitHub Actions (weekly)"]
-        A[data.py<br/>windowed SQL] --> B[judge.py<br/>LLM verdict per conversation]
+        A[data.py<br/>windowed SQL] --> B[rubric_judge.py<br/>rubric_08 grade per conversation]
         B --> C[flags / topics / examples]
+        C --> RV[review.py<br/>per-course AI-review paragraph]
         C --> D[cache.py<br/>write cache/&lt;week&gt;.json]
+        RV --> D
         C --> E[report.py<br/>report.md → PR body]
     end
     D --> PR[[Pull request to prod-beta-plus]]
@@ -65,7 +67,9 @@ Each module is pure and independently testable (tests live in [`tests/`](tests/)
 |---|---|
 | [`weeks.py`](weeks.py) | Sun→Sat week math in `America/New_York`. A `Week` exposes its UTC bounds (`start_utc`/`end_utc`) so all SQL stays timezone-portable. `key` is the Sunday ISO date (e.g. `2026-08-09`) and doubles as the cache filename. `previous_complete_week()` is the default target. |
 | [`data.py`](data.py) | Windowed, **SELECT-only** read-queries returning plain dataclasses (`ConvRow`, `MsgRow`) — never ORM objects — so the stats layer needs no database. Also `fetch_transcript()` (feeds the judge) and `prior_usernames()` (new vs returning). All queries take `courses: list[str] | None` where `None` = no scope filter. |
-| [`judge.py`](judge.py) | The LLM judge behind a `Judge` protocol. `AnthropicJudge` uses `langchain-anthropic` structured output (default `claude-sonnet-5`, `temperature=0`) to return a `Verdict(worked_well, issues, topics, one_line)`. `FakeJudge` is the deterministic test double — **tests never hit the network**. `transcript_hash()` enables verdict reuse (see [Cost control](#cost-control)). |
+| [`judge.py`](judge.py) | The judge **contract**: the `Verdict(worked_well, issues, topics, one_line, grade)` dataclass, the `Judge` protocol, `transcript_hash()` (enables verdict reuse — see [Cost control](#cost-control)), and `FakeJudge`, the deterministic test double so **tests never hit the network**. It no longer ships a live judge — that moved to `rubric_judge.py`. |
+| [`rubric_judge.py`](rubric_judge.py) | The **deployed** judge: `RubricJudge` grades each conversation against the mature `rubric_08` 40-point rubric (`eval.tutor_judge.run_judge`) and adapts the rich grade into a `Verdict` — `worked_well` from the 32/40 threshold, `issues` from the rubric deductions (worst-points first), `one_line` from the overview, and the full grade retained in `Verdict.grade`. Topics come from a separate cheap Haiku call. Default model `claude-sonnet-4-6` (pinned: `rubric_08` is calibrated on it and the judge forces `temperature=0`). |
+| [`review.py`](review.py) | Writes the short per-course **"AI review" paragraph** shown atop each report — one cheap Haiku call per course (not per conversation) synthesizing the already-judged material (first questions, overviews, topics) into a plain instructor-facing summary. |
 | [`stats.py`](stats.py) | Pure aggregation: `compute_stats()` builds usage / ratings / cost / content sections (+ per-course), and `week_over_week()` adds ▲/▼ deltas on the headline metrics (`_HEADLINE`). No LLM, no DB. |
 | [`flags.py`](flags.py) | Merges 👎 thumbs-down and judge verdicts into one ranked "didn't work well" list, sorted by severity then source (`both` > `judge` > `thumb`). |
 | [`topics.py`](topics.py) | Aggregates each conversation's judge `topics` into ranked per-course lists, carrying up to 3 example first-questions per topic. |
@@ -96,11 +100,13 @@ Each module is pure and independently testable (tests live in [`tests/`](tests/)
 1. **Fetch** all conversations whose `started_at` falls in the target week
    (unscoped — the job always judges everything; the dashboard scopes on read),
    plus their messages and the set of prior usernames.
-2. **Judge** each conversation. For each, hash the transcript; if the hash
-   matches the previous run's and a verdict already exists, **reuse it**;
-   otherwise call the LLM. The judge sees the human-readable course name for
-   domain context, but storage keys off the raw `course`.
-3. **Aggregate** the verdicts into flags, per-course topics, and example lists.
+2. **Judge** each conversation against the `rubric_08` rubric. For each, hash the
+   transcript; if the hash matches the previous run's and a verdict already
+   exists, **reuse it**; otherwise call the judge. The judge sees the
+   human-readable course name for domain context, but storage keys off the raw
+   `course`.
+3. **Aggregate** the verdicts into flags, per-course topics, and example lists,
+   and synthesize a per-course AI-review paragraph (`review.py`).
 4. **Write** `cache/<week_key>.json` (version, week bounds, `generated_at`,
    `judge_model`, judged conversations, examples, topics) and append an internal
    `_hashes` map for next run's reuse.
@@ -112,7 +118,7 @@ Run it manually:
 ```bash
 export DATABASE_UI_DATABASE_URL="postgresql+psycopg://…"   # read access is enough
 export ANTHROPIC_API_KEY="sk-ant-…"
-export ANALYTICS_JUDGE_MODEL="claude-sonnet-5"             # optional; this is the default
+export ANALYTICS_JUDGE_MODEL="claude-sonnet-4-6"          # optional; this is the default
 
 python -m database_ui.analytics.weekly                     # previous complete week
 python -m database_ui.analytics.weekly --week 2026-08-10   # any date inside a week
@@ -179,10 +185,12 @@ the weekly cadence is automatic.
    gh secret set ANTHROPIC_API_KEY      --body "sk-ant-…"
    ```
 
-2. **(Optional) Pin the judge model** (same screen → *Variables*):
-   `ANALYTICS_JUDGE_MODEL` (defaults to `claude-sonnet-5` when unset).
+2. **(Optional) Override the judge model** (same screen → *Variables*):
+   `ANALYTICS_JUDGE_MODEL` (defaults to `claude-sonnet-4-6` when unset — the
+   model `rubric_08` is calibrated on; override only if you know what you're
+   doing).
    ```bash
-   gh variable set ANALYTICS_JUDGE_MODEL --body "claude-sonnet-5"
+   gh variable set ANALYTICS_JUDGE_MODEL --body "claude-sonnet-4-6"
    ```
 
 3. **Allow Actions to open PRs:** Settings → Actions → General → *Workflow
@@ -209,7 +217,7 @@ publish.
 |---|---|---|---|
 | `ANALYTICS_DATABASE_URL` | Actions secret | yes | Read DB URL for the offline job |
 | `ANTHROPIC_API_KEY` | Actions secret | yes | Judge model credentials |
-| `ANALYTICS_JUDGE_MODEL` | Actions variable | no | Judge model (default `claude-sonnet-5`) |
+| `ANALYTICS_JUDGE_MODEL` | Actions variable | no | Judge model (default `claude-sonnet-4-6`) |
 | `DATABASE_UI_DATABASE_URL` | local env | local runs | Read DB URL when running the CLI by hand |
 | `GITHUB_TOKEN` | provided | — | Auto-provided to the workflow for the PR |
 

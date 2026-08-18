@@ -20,6 +20,9 @@
 /* When the back control is a <button> (dashboard panel), strip button chrome. */
 button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
 .analytics-status { color: var(--muted, #888); font-size: var(--fs-control); }
+/* Validation errors (e.g. an empty course selection) reuse the palette's error
+   text color so the status line reads as a warning, not a quiet note. */
+.analytics-status.is-error { color: var(--error-text, #b3261e); }
 
 /* Week picker: a select-like trigger that opens a small calendar popover.
    Sits on the page background (--bg) with a light --border outline so it
@@ -43,6 +46,7 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   min-width: 13rem; padding: 0.45rem 0.7rem;
   border: 1px solid var(--border, #e2e2e2); border-radius: 8px;
   background: var(--bg, #fafafa); color: var(--text, #2a2a2a); font: inherit; cursor: pointer;
+  font-size: var(--fs-control);   /* label matches the option lists (both triggers + lists share one size) */
 }
 .weekpick-trigger:hover { border-color: #cfcfcf; }
 /* Uniform focus / open outline shared with the course dropdown: a crisp solid
@@ -80,9 +84,9 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
    .sidebar-entry-active): grey on hover when unselected, its exact light blue
    (#e3eff5) when selected, its exact deeper blue (#d3e6f0) hovering the
    selected week. Ordered so the selected-hover rule wins over the general hover. */
-.weekpick-week:not(.is-disabled):hover { background: #f5f5f5; }
-.weekpick-week.is-selected { background: #e3eff5; }
-.weekpick-week.is-selected:hover { background: #d3e6f0; }
+.weekpick-week:not(.is-disabled):hover { background: var(--opt-hover); }
+.weekpick-week.is-selected { background: var(--opt-selected); }
+.weekpick-week.is-selected:hover { background: var(--opt-selected-hover); }
 .weekpick-week.is-disabled { cursor: default; }
 .weekpick-week.is-disabled .weekpick-day { color: #d6d6d6; }
 .weekpick-day { text-align: center; font-size: var(--fs-label); padding: 0.35rem 0; color: var(--text, #2a2a2a); }
@@ -96,6 +100,7 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   min-width: 13rem; padding: 0.45rem 0.7rem;
   border: 1px solid var(--border, #e2e2e2); border-radius: 8px;
   background: var(--bg, #fafafa); color: var(--text, #2a2a2a); font: inherit; cursor: pointer;
+  font-size: var(--fs-control);   /* selected label matches the option list below */
 }
 .coursepick-trigger:hover { border-color: #cfcfcf; }
 .coursepick-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -109,8 +114,11 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   padding: 0.4rem 0.55rem; border-radius: 8px; cursor: pointer;
   font-size: var(--fs-control); color: var(--text, #2a2a2a); white-space: nowrap;
 }
-.coursepick-opt:hover { background: #f5f5f5; }
-.coursepick-opt.is-selected { background: #e3eff5; }
+/* Same 3-state highlight as the calendar weeks and the conversation list
+   (chat.css tokens). Selected rule after :hover so it wins when not hovered. */
+.coursepick-opt:hover { background: var(--opt-hover); }
+.coursepick-opt.is-selected { background: var(--opt-selected); }
+.coursepick-opt.is-selected:hover { background: var(--opt-selected-hover); }
 .analytics-content { display: grid; gap: 1rem; }
 
 /* Cards match the tutor message bubble: neutral fill, no outline. */

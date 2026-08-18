@@ -89,6 +89,23 @@ def test_api_analytics_passes_grade_through(seeded, tmp_path, monkeypatch):
     assert conv["worked_well"] is False
 
 
+def test_course_scope_multi():
+    """The course dropdown sends one ``course=`` per selected course. Out-of-scope
+    keys are dropped, blanks ignored, and an empty/all selection falls back to the
+    login's full scope so no login can widen past ``allowed``."""
+    from database_ui.routes.analytics import _course_scope
+
+    allowed = ["a", "b", "c"]
+    assert _course_scope(allowed, ["a", "b"]) == ["a", "b"]      # subset kept, in order
+    assert _course_scope(allowed, ["b", "z"]) == ["b"]           # out-of-scope "z" dropped
+    assert _course_scope(allowed, ["a", "a", " a "]) == ["a"]    # de-duped + stripped
+    assert _course_scope(allowed, []) == allowed                 # nothing selected -> full scope
+    assert _course_scope(allowed, ["z"]) == allowed              # all out of scope -> full scope
+    # Master (allowed=None) can filter to any keys it names, and empty falls back to None.
+    assert _course_scope(None, ["x", "y"]) == ["x", "y"]
+    assert _course_scope(None, []) is None
+
+
 def test_flags_are_master_only(seeded, tmp_path, monkeypatch):
     """The "Didn't work well" flags show only in the master view; a course-scoped
     login gets ``all_access: False`` and no flag-bearing conversations at all."""

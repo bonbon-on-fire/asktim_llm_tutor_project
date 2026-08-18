@@ -200,19 +200,40 @@
   // Current selection shared by the week nav and the course dropdown, so either
   // control can reload the report while preserving the other's choice.
   let currentWeek = null;
-  let currentCourse = "";   // "" = all courses in scope
+  // Selected course keys. Set to every course in scope once the picker loads;
+  // an empty array is an invalid state the picker guards against (it shows the
+  // "Select at least one course" error and does not reload).
+  let currentCourses = [];
+  let allCourseKeys = [];   // every selectable course — used to detect "all selected"
+
+  function setStatus(text, isError) {
+    const s = $("analytics-status");
+    if (!s) return;
+    s.textContent = text || "";
+    s.classList.toggle("is-error", !!isError);
+  }
+
+  // Build the ?course= params for the current selection. When every course is
+  // selected we send none, so the server falls back to the login's full scope —
+  // identical to the old "All courses" behavior. A strict subset sends one
+  // course= per selected key.
+  function courseParams() {
+    if (!allCourseKeys.length) return [];
+    if (currentCourses.length >= allCourseKeys.length) return [];
+    return currentCourses.map((c) => "course=" + encodeURIComponent(c));
+  }
 
   async function load(weekKey) {
     if (weekKey) currentWeek = weekKey;
-    $("analytics-status").textContent = "Loading…";
+    setStatus("Loading…", false);
     const params = [];
     if (currentWeek) params.push("week=" + encodeURIComponent(currentWeek));
-    if (currentCourse) params.push("course=" + encodeURIComponent(currentCourse));
+    params.push(...courseParams());
     const q = params.length ? "?" + params.join("&") : "";
     const resp = await fetch("/api/analytics" + q);
     const payload = await resp.json();
     render(payload);
-    $("analytics-status").textContent = "";
+    setStatus("", false);
   }
 
   // ---- Week picker: a trigger that opens a small calendar popover ---------
@@ -343,16 +364,26 @@
     return { setRange };
   }
 
-  // Course filter: a select-like dropdown that rescopes every card (stats, AI
-  // review, flags) to one course, or "All courses". Only rendered when the login
-  // can see more than one course — a single-course login has nothing to filter.
+  // Course filter: a multi-select dropdown that rescopes every card (stats, AI
+  // review, flags) to the chosen courses. Mirrors the Download-data course
+  // picker — every course starts selected ("All (N)"), clicking toggles each,
+  // and applying an empty set is rejected with an error. Always shown when the
+  // login has at least one course, so the control is consistent and discoverable
+  // even for a single-course login.
   function setupCoursePicker(courses, picker) {
     const wk = $("week-picker");
-    if (!wk || !courses || courses.length < 2) return;
+    if (!wk || !courses || courses.length < 1) return;
+    // Open on "all selected": the report lands on the full scope, matching the
+    // old "All courses" default.
+    allCourseKeys = courses.map((c) => c.key);
+    currentCourses = allCourseKeys.slice();
+    const checked = new Set(currentCourses);      // mutated as options toggle
+    let appliedKey = currentCourses.slice().sort().join("|");   // last-applied selection
+
     const host = el("div", { class: "coursepick", id: "course-picker" });
     const trigger = el("button", { type: "button", class: "coursepick-trigger",
       "aria-haspopup": "listbox", "aria-expanded": "false" });
-    const label = el("span", { class: "coursepick-label" }, ["All courses"]);
+    const label = el("span", { class: "coursepick-label" }, [""]);
     trigger.appendChild(label);
     const caret = el("svg", { _svg: true, class: "weekpick-caret", viewBox: "0 0 24 24",
       width: "14", height: "14", "aria-hidden": "true" });
@@ -360,29 +391,45 @@
       stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }));
     trigger.appendChild(caret);
     host.appendChild(trigger);
-    const pop = el("div", { class: "coursepick-pop", role: "listbox", hidden: "" });
+    const pop = el("div", { class: "coursepick-pop", role: "listbox",
+      "aria-multiselectable": "true", hidden: "" });
     host.appendChild(pop);
     // Place the dropdown just to the right of the week nav wrapper.
     const navWrap = wk.parentNode;
     navWrap.parentNode.insertBefore(host, navWrap.nextSibling);
 
-    const opts = [{ key: "", name: "All courses" }].concat(courses);
-    let sel = "";
+    // Trigger label, mirroring the Download-data multi-select summary:
+    // none -> "None selected", one -> that course, all -> "All (N)", else "N selected".
+    function summary() {
+      const n = checked.size;
+      if (n === 0) return "None selected";
+      if (n === 1) {
+        const only = courses.find((c) => checked.has(c.key));
+        return only ? only.name : "1 selected";
+      }
+      if (n === courses.length) return "All (" + n + ")";
+      return n + " selected";
+    }
+    function paintLabel() { label.textContent = summary(); }
+
     function renderOpts() {
       pop.textContent = "";
-      opts.forEach((o) => {
-        const item = el("div", { class: "coursepick-opt" + (o.key === sel ? " is-selected" : "") }, [o.name]);
-        item.addEventListener("click", async () => {
-          sel = o.key; label.textContent = o.name; currentCourse = o.key; closePop();
-          // Tighten the calendar range to the chosen course's data (empty key ⇒
-          // the full login range). Keep the current week even if it's now out of
-          // range; the report shows "not enough activity" for it.
-          try {
-            const r = await fetch("/api/analytics/weeks?course=" + encodeURIComponent(o.key));
-            const data = await r.json();
-            if (picker && data.range) picker.setRange(data.range);
-          } catch (e) { /* keep the existing range if the refetch fails */ }
-          load(currentWeek);
+      courses.forEach((c) => {
+        const on = checked.has(c.key);
+        const item = el("div",
+          { class: "coursepick-opt" + (on ? " is-selected" : ""),
+            role: "option", "aria-selected": on ? "true" : "false" },
+          [c.name]);
+        // Multi-select: a click toggles this course and keeps the list open
+        // (stopPropagation) so several can be picked in one go. The report
+        // reloads only when the dropdown closes with a changed selection.
+        item.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const now = !checked.has(c.key);
+          if (now) checked.add(c.key); else checked.delete(c.key);
+          item.classList.toggle("is-selected", now);
+          item.setAttribute("aria-selected", now ? "true" : "false");
+          paintLabel();
         });
         pop.appendChild(item);
       });
@@ -394,12 +441,40 @@
       trigger.setAttribute("aria-expanded", "true");
       document.addEventListener("mousedown", onDoc);
     }
-    function closePop() {
+    async function closePop() {
       pop.setAttribute("hidden", "");
       trigger.setAttribute("aria-expanded", "false");
       document.removeEventListener("mousedown", onDoc);
+      await applySelection();
     }
     trigger.addEventListener("click", () => (pop.hasAttribute("hidden") ? openPop() : closePop()));
+
+    // Apply the (possibly changed) selection when the dropdown closes. Empty is
+    // rejected with an error and no reload — the last valid report stays on
+    // screen. An unchanged selection is a no-op.
+    async function applySelection() {
+      if (checked.size === 0) {
+        setStatus("Select at least one course", true);
+        return;
+      }
+      const key = Array.from(checked).sort().join("|");
+      if (key === appliedKey) { setStatus("", false); return; }
+      appliedKey = key;
+      currentCourses = Array.from(checked);
+      setStatus("", false);
+      // Tighten the calendar range to the selected courses' data (all selected ⇒
+      // the full login range). Keep the current week even if it's now out of
+      // range; the report shows "not enough activity" for it.
+      try {
+        const qs = courseParams().join("&");
+        const r = await fetch("/api/analytics/weeks" + (qs ? "?" + qs : ""));
+        const data = await r.json();
+        if (picker && data.range) picker.setRange(data.range);
+      } catch (e) { /* keep the existing range if the refetch fails */ }
+      load(currentWeek);
+    }
+
+    paintLabel();
   }
 
   async function initPicker() {

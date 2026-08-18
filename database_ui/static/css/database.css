@@ -284,13 +284,17 @@ a.sidebar-cta {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Shared 3-state highlight (chat.css tokens), matching the conversation list and
+   the weekly-report pickers: gray hover when unselected, light blue when
+   selected, deeper blue hovering a selected one. Multiple can be selected at
+   once (multi-select); the blue fill is the only affordance — no checkbox. The
+   selected rule sits after :hover so it wins for a selected-not-hovered option. */
 .context-dropdown-option:hover {
-  background: #f0f1f3;
+  background: var(--opt-hover);
 }
-/* Selected options get the same solid-accent highlight sandbox_ui uses for its
-   single-select picker. Here multiple can be highlighted at once (multi-select);
-   the blue fill is the only affordance — no checkbox. */
 .context-dropdown-option[aria-selected="true"] {
-  background: var(--send-bg);
-  color: #ffffff;
+  background: var(--opt-selected);
+}
+.context-dropdown-option[aria-selected="true"]:hover {
+  background: var(--opt-selected-hover);
 }

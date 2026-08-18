@@ -31,10 +31,11 @@ def api_analytics():
     week = parse_week(raw) if raw else week_containing(date.today())
     allowed = allowed_courses()
     all_access = allowed is None          # master password / open dev, not a course scope
-    # Optional single-course filter from the report's course dropdown. An
-    # out-of-scope request is ignored (falls back to the login's full scope),
-    # so a course-scoped login can never read another course's data.
-    courses = _course_scope(allowed, request.args.get("course"))
+    # Optional multi-course filter from the report's course dropdown (one
+    # course= param per selected course). Out-of-scope keys are dropped, and an
+    # empty/all selection falls back to the login's full scope — so a
+    # course-scoped login can never read another course's data.
+    courses = _course_scope(allowed, request.args.getlist("course"))
     live = svc.live_stats(g.db, week, courses)
     cached = svc.cached_sections(week.key, courses, all_access=all_access)
     return jsonify({
@@ -59,14 +60,22 @@ def _course_names(cached: dict | None) -> dict[str, str]:
     return {k: course_display_name(k) for k in keys if k}
 
 
-def _course_scope(allowed: list[str] | None, selected: str | None) -> list[str] | None:
-    """Narrow the login's scope to one chosen course, ignoring out-of-scope asks."""
-    sel = (selected or "").strip()
-    if not sel:
-        return allowed
-    if allowed is not None and sel not in allowed:
-        return allowed
-    return [sel]
+def _course_scope(
+    allowed: list[str] | None, selected: list[str] | None
+) -> list[str] | None:
+    """Narrow the login's scope to the chosen courses, dropping out-of-scope asks.
+
+    ``selected`` is the raw ``course=`` values from the request. Blanks are
+    stripped; keys outside ``allowed`` are dropped. If nothing selectable
+    remains (no filter, or every key was out of scope), the login's full scope
+    is returned unchanged — the report's "all courses" state.
+    """
+    sel = [s.strip() for s in (selected or []) if s and s.strip()]
+    if allowed is not None:
+        sel = [s for s in sel if s in allowed]
+    # Preserve order while de-duplicating.
+    sel = list(dict.fromkeys(sel))
+    return sel or allowed
 
 
 @analytics_bp.get("/api/analytics/weeks")
@@ -75,7 +84,7 @@ def api_weeks():
     # The calendar range tightens to a single course when one is chosen, so the
     # arrows/calendar only reach weeks that course actually has data for. The
     # dropdown's option list stays the login's full scope so it can switch back.
-    scoped = _course_scope(allowed, request.args.get("course"))
+    scoped = _course_scope(allowed, request.args.getlist("course"))
     return jsonify({
         "weeks": svc.week_options(),
         "range": svc.week_range(g.db, scoped),

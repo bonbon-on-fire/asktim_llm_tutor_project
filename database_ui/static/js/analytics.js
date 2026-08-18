@@ -255,9 +255,9 @@
     if (rubricOverlay) return rubricOverlay;
     const overlay = el("div", { class: "a-modal-overlay", hidden: "" });
     const cardEl = el("div", { class: "a-modal-card", role: "dialog",
-      "aria-modal": "true", "aria-label": "Grading rubric" });
+      "aria-modal": "true", "aria-label": "Rubric" });
     const head = el("div", { class: "a-modal-head" });
-    head.appendChild(el("h2", { class: "a-modal-title" }, ["Grading rubric"]));
+    head.appendChild(el("h2", { class: "a-modal-title" }, ["Rubric"]));
     const close = el("button", { type: "button", class: "a-modal-close",
       "aria-label": "Close" }, ["×"]);
     close.addEventListener("click", hideRubric);
@@ -287,13 +287,15 @@
       if (!r.ok) throw new Error("rubric unavailable");
       const data = await r.json();
       rubricCache = {
-        title: "Grading rubric — " + (data.title || data.name || ""),
+        title: "Rubric — " + (data.title || data.name || ""),
         markdown: data.markdown || "",
         html: mdToHtml(data.markdown || ""),
       };
       paintRubric();
     } catch (e) {
-      overlay.querySelector(".a-modal-body").textContent = "Couldn't load the rubric.";
+      const body = overlay.querySelector(".a-modal-body");
+      body.textContent = "";
+      body.appendChild(el("p", { class: "a-rubric-error" }, ["Couldn't load the rubric"]));
     }
   }
 

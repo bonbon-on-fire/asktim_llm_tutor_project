@@ -137,6 +137,55 @@
     });
   }
 
+  // One flagged conversation, e.g.
+  // "28/40 (Practice 7 · Aug 17 · 2 messages) — <overview>". The parenthetical
+  // is a button that opens the conversation (see openFlagged).
+  function flagLine(id, c, m) {
+    const g = c.grade || null;
+    const score = g && typeof g.total_score === "number"
+      ? g.total_score + "/" + (g.max_score || 40) : "—";
+    const overview = (g && g.overview) || c.one_line || "";
+    const p = el("p", { class: "a-flag" });
+    p.appendChild(el("span", { class: "a-flag-score" }, [score]));
+    p.appendChild(document.createTextNode(" "));
+    const link = el("button", { type: "button", class: "a-flag-open" }, ["(" + flagLabel(m) + ")"]);
+    link.addEventListener("click", () => openFlagged(id));
+    p.appendChild(link);
+    if (overview) {
+      p.appendChild(document.createTextNode(" — "));
+      p.appendChild(el("span", { class: "a-flag-text" }, [overview]));
+    }
+    return p;
+  }
+
+  // "Practice 7 · Aug 17 · 2 messages" from live meta — mirrors database.js's
+  // formatEntryHeader (minus the running cost). Falls back to a bare label when
+  // the conversation's live metadata is unavailable.
+  function flagLabel(m) {
+    if (!m) return "open conversation";
+    const num = parseInt(m.exercise_number, 10);
+    const kind = m.exercise_kind === "practice" ? "Practice" : "Exercise";
+    const parts = [kind + " " + (Number.isFinite(num) ? num : m.exercise_number)];
+    if (m.last_active_at) {
+      const d = new Date(m.last_active_at);
+      parts.push(d.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    }
+    const n = m.message_count;
+    if (typeof n === "number") parts.push(n + (n === 1 ? " message" : " messages"));
+    return parts.join(" · ");
+  }
+
+  // Open a flagged conversation. On the dashboard, database.js exposes an opener
+  // that swaps the transcript in-place; on the standalone /analytics page there
+  // is no transcript, so navigate home with a deep link it reads on load.
+  function openFlagged(id) {
+    if (window.DatabaseReview && typeof window.DatabaseReview.open === "function") {
+      window.DatabaseReview.open(id);
+    } else {
+      window.location.href = "/?c=" + encodeURIComponent(id);
+    }
+  }
+
   function render(payload) {
     const root = $("analytics-content");
     root.textContent = "";
@@ -176,21 +225,26 @@
     // withholds the data). Nothing to show until the week's cache exists, and
     // the whole card is dropped when there's nothing flagged (no empty card).
     if (payload.cached && payload.all_access) {
-      const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);
+      const flags = Object.entries(payload.cached.conversations || {})
+        .filter((e) => !e[1].worked_well);
       if (flags.length > 0) {
-      const names = payload.course_names || {};
-      const flagBody = el("div");
-      flagBody.appendChild(el("p", { class: "a-muted" }, [flags.length + " conversations flagged."]));
-      flags.forEach((c) => {
-        const g = c.grade || null;
-        const score = g && typeof g.total_score === "number"
-          ? (g.total_score + "/" + (g.max_score || 40)) : "—";
-        const overview = (g && g.overview) || c.one_line || "";
-        const parts = [names[c.course] || c.course, score];
-        if (overview) parts.push(overview);
-        flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
-      });
-      root.appendChild(card("Flagged", flagBody));
+        const names = payload.course_names || {};
+        const meta = payload.conversation_meta || {};
+        const flagBody = el("div");
+        // Group by course under a quiet uppercase course eyebrow, mirroring the
+        // AI-review layout — so the per-line course name drops out.
+        const order = [];               // course keys in first-seen order
+        const byCourse = new Map();
+        flags.forEach((e) => {
+          const key = e[1].course || "";
+          if (!byCourse.has(key)) { byCourse.set(key, []); order.push(key); }
+          byCourse.get(key).push(e);
+        });
+        order.forEach((course) => {
+          flagBody.appendChild(el("p", { class: "a-review-course" }, [names[course] || course]));
+          byCourse.get(course).forEach((e) => flagBody.appendChild(flagLine(e[0], e[1], meta[e[0]])));
+        });
+        root.appendChild(card("Flagged", flagBody));
       }
     }
 
@@ -394,9 +448,11 @@
     const pop = el("div", { class: "coursepick-pop", role: "listbox",
       "aria-multiselectable": "true", hidden: "" });
     host.appendChild(pop);
-    // Place the dropdown just to the right of the week nav wrapper.
+    // Course picker sits on the LEFT of the bar; the week nav is pushed to the
+    // right (analytics.css gives .weeknav margin-left:auto). Insert just before
+    // the week-nav wrapper so, on the standalone page, it follows the back link.
     const navWrap = wk.parentNode;
-    navWrap.parentNode.insertBefore(host, navWrap.nextSibling);
+    navWrap.parentNode.insertBefore(host, navWrap);
 
     // Trigger label, mirroring the Download-data multi-select summary:
     // none -> "None selected", one -> that course, all -> "All (N)", else "N selected".

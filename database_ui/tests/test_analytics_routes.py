@@ -106,6 +106,50 @@ def test_course_scope_multi():
     assert _course_scope(None, []) is None
 
 
+def test_flagged_meta_is_live_and_flag_only(seeded, tmp_path, monkeypatch):
+    """The payload carries live label data for the flagged conversations only.
+
+    Real seeded conversation ids get {exercise_*, last_active_at, message_count};
+    conversations that worked well contribute nothing, and a non-UUID cache key
+    is skipped rather than crashing the request.
+    """
+    from database_ui.services import conversations as conv_mod
+
+    convs = conv_mod.list_all_conversations(SessionLocal())
+    assert convs, "seed provides at least one conversation"
+    real_id = convs[0]["id"]
+
+    monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path)
+    blob = {
+        "conversations": {
+            real_id: {                       # flagged + a real id -> gets meta
+                "course": "supply_chain_design", "worked_well": False,
+                "issues": [], "topics": [], "one_line": "x",
+                "grade": {"total_score": 20, "max_score": 40, "overview": "o"},
+            },
+            "not-a-uuid": {                  # flagged but unresolvable -> skipped
+                "course": "supply_chain_design", "worked_well": False,
+                "issues": [], "topics": [], "one_line": "x", "grade": {},
+            },
+            "conv-ok": {                     # worked well -> never in meta
+                "course": "supply_chain_design", "worked_well": True,
+                "issues": [], "topics": [], "one_line": "x", "grade": {},
+            },
+        },
+        "examples": {"exemplary": [], "high_engagement": [], "sample": {}},
+        "topics_by_course": {},
+    }
+    (tmp_path / "2026-04-26.json").write_text(json.dumps(blob), encoding="utf-8")
+
+    body = _login(_app(), MASTER).get("/api/analytics?week=2026-05-01").get_json()
+    meta = body["conversation_meta"]
+    assert set(meta) == {real_id}            # only the flagged, resolvable id
+    entry = meta[real_id]
+    assert entry["exercise_kind"] in ("exercise", "practice")
+    assert isinstance(entry["message_count"], int)
+    assert "exercise_number" in entry and "last_active_at" in entry
+
+
 def test_flags_are_master_only(seeded, tmp_path, monkeypatch):
     """The "Didn't work well" flags show only in the master view; a course-scoped
     login gets ``all_access: False`` and no flag-bearing conversations at all."""

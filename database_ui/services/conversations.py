@@ -60,6 +60,43 @@ def get_conversation(db: Session, conversation_id: UUID) -> Conversation | None:
     return db.get(Conversation, conversation_id)
 
 
+def conversation_meta(
+    db: Session, conversation_ids: list[str | UUID]
+) -> dict[str, dict]:
+    """Minimal per-conversation label data, keyed by ``str(id)``.
+
+    Returns ``{id: {exercise_number, exercise_kind, last_active_at,
+    message_count}}`` for each id that exists. Read live from the DB so the
+    weekly report's flagged list can render a linkable
+    "Practice 7 · Aug 17 · N messages" label without baking that (mutable)
+    metadata into the judged week cache. Unknown ids are simply absent.
+    """
+    uuids = []
+    for c in conversation_ids:
+        if isinstance(c, UUID):
+            uuids.append(c)
+            continue
+        try:
+            uuids.append(UUID(str(c)))
+        except (ValueError, AttributeError, TypeError):
+            continue      # non-UUID cache key (bad/legacy data) — skip, don't crash
+    if not uuids:
+        return {}
+    counts = _message_counts(db, uuids)
+    rows = db.execute(
+        select(Conversation).where(Conversation.id.in_(uuids))
+    ).scalars().all()
+    return {
+        str(c.id): {
+            "exercise_number": c.exercise_number,
+            "exercise_kind": c.exercise_kind or "exercise",
+            "last_active_at": c.last_active_at.isoformat() if c.last_active_at else None,
+            "message_count": counts.get(c.id, 0),
+        }
+        for c in rows
+    }
+
+
 def get_messages_for_conversation(db: Session, conversation: Conversation) -> list[dict]:
     """Chronologically ordered messages as JSON-friendly dicts.
 

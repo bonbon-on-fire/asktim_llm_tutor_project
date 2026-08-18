@@ -46,6 +46,10 @@ def api_analytics():
         # Curriculum-key -> human course name, so the client shows "MIT CTL.SC2x
         # Supply Chain Design" rather than the raw "supply_chain_design" key.
         "course_names": _course_names(cached),
+        # Live label data (kind/number/date/msg-count) for the flagged list, so
+        # each flag can render and link to its conversation. Empty for scoped
+        # logins (they get no flagged conversations at all).
+        "conversation_meta": svc.flagged_conversation_meta(g.db, cached),
     })
 
 

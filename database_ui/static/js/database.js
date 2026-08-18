@@ -466,7 +466,20 @@
     }
   });
 
+  // Bridge for the weekly report's flagged list: the report (analytics.js) runs
+  // both here and on the standalone /analytics page. On the dashboard it calls
+  // this opener to swap a flagged conversation's transcript in-place; on the
+  // standalone page (no transcript) it deep-links to /?c=<id>, read below.
+  window.DatabaseReview = { open: loadConversation };
+
   refreshSidebar();
+
+  // Deep link: /?c=<id> opens that conversation directly on load — used by the
+  // standalone weekly report's flagged list, which navigates here. A blank or
+  // bad id is ignored (loadConversation surfaces a load error if the id is real
+  // but unreadable).
+  const deepLinkId = new URLSearchParams(window.location.search).get("c");
+  if (deepLinkId) loadConversation(deepLinkId);
 
   // Open the sidebar by default on wider screens (mirrors the student app).
   // Narrow screens (≤480px, where it covers the full transcript) stay closed.

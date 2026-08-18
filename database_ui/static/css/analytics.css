@@ -29,7 +29,9 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
    blends into the page rather than reading as a stark white form input. */
 /* Week nav: borderless prev/next chevrons hugging the calendar trigger box —
    the same stroked chevron as the picker caret, rotated sideways. */
-.weeknav { display: inline-flex; align-items: center; gap: 0.2rem; }
+/* Course picker sits on the left; the week nav (and the status after it) get
+   pushed to the right edge of the bar. */
+.weeknav { display: inline-flex; align-items: center; gap: 0.2rem; margin-left: auto; }
 .weeknav-arrow {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0.2rem; line-height: 1;
@@ -102,7 +104,9 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   background: var(--bg, #fafafa); color: var(--text, #2a2a2a); font: inherit; cursor: pointer;
   font-size: var(--fs-control);   /* selected label matches the option list below */
 }
-.coursepick-trigger:hover { border-color: #cfcfcf; }
+/* Grey hover edge only when idle; when focused or open the accent border (above)
+   must win, else hovering the open trigger repaints its edge grey over the blue. */
+.coursepick-trigger:not(:focus-visible):not([aria-expanded="true"]):hover { border-color: #cfcfcf; }
 .coursepick-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .coursepick-pop {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 20;
@@ -160,6 +164,28 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   color: var(--muted, #888);
   margin: 0 0 0.2rem;
 }
+
+/* Flagged list: same readable body size as the AI review, grouped under the
+   same course eyebrow (.a-review-course). Each line reads
+   "28/40 (Practice 7 · Aug 17 · 2 messages) — overview". */
+.a-flag { font-size: var(--fs-body); line-height: 1.55; color: var(--text, #2a2a2a); margin: 0 0 0.7rem; }
+.a-flag:last-child { margin-bottom: 0; }
+.a-flag-score { font-weight: 600; }
+/* The clickable parenthetical opens the conversation — a link-styled button so
+   it inherits the line's size and needs no anchor href. */
+.a-flag-open {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--accent, #a31f34);
+  cursor: pointer;
+  border-radius: 3px;
+}
+.a-flag-open:hover { text-decoration: underline; }
+.a-flag-open:focus-visible { outline: 2px solid var(--accent, #a31f34); outline-offset: 2px; }
 
 .chart { width: 100%; height: auto; }
 .chart-grid { stroke: var(--border, #e2e2e2); stroke-width: 1; }

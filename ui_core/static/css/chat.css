@@ -605,12 +605,15 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
 .sidebar-inner {
     width: 300px;
     height: 100%;
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
+/* Header and the CTA buttons stay pinned at the top; only .sidebar-list
+   (the conversation history) scrolls beneath them. */
 .sidebar-header {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -647,6 +650,7 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
 }
 
 .sidebar-cta {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 0.55rem;
@@ -723,6 +727,8 @@ body:has(.sidebar[data-open="true"]) .history-toggle {
     margin: 0;
     padding: 0;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .sidebar-entry {

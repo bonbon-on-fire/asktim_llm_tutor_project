@@ -131,7 +131,7 @@
       const reviews = payload.cached.ai_review_by_course || {};
       const courses = Object.keys(reviews);
       if (courses.length === 0) {
-        rBody.appendChild(el("p", { class: "a-muted" }, ["No review available for this week."]));
+        rBody.appendChild(el("p", { class: "a-muted" }, ["Not enough activity this week to write a review."]));
       } else {
         courses.forEach((course) => {
           if (courses.length > 1) rBody.appendChild(el("p", { class: "a-review-course" }, [course]));

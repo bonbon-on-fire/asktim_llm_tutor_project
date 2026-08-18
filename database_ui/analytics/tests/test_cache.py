@@ -24,6 +24,10 @@ def _blob():
             "supply_chain_design": [{"topic": "EOQ", "count": 1, "examples": ["how?"]}],
             "meaning_of_life": [{"topic": "ethics", "count": 1, "examples": ["why?"]}],
         },
+        "ai_review_by_course": {
+            "supply_chain_design": "Students worked on EOQ.",
+            "meaning_of_life": "Students debated ethics.",
+        },
     }
 
 
@@ -34,6 +38,8 @@ def test_filter_cache_drops_out_of_scope():
     assert filtered["examples"]["high_engagement"] == ["u1"]
     assert set(filtered["examples"]["sample"]) == {"supply_chain_design"}
     assert set(filtered["topics_by_course"]) == {"supply_chain_design"}
+    # The AI review is scoped the same way: a course login sees only its own.
+    assert set(filtered["ai_review_by_course"]) == {"supply_chain_design"}
 
 
 def test_filter_cache_master_is_identity():
@@ -51,8 +57,10 @@ def test_write_then_read_roundtrip(tmp_path, monkeypatch):
         judge_model="claude-sonnet-5",
         generated_at=datetime(2026, 8, 17, 9, tzinfo=timezone.utc),
         judged_count=1, skipped=0,
+        ai_review_by_course={"c1": "Students worked on t."},
     )
     assert path.name == "2026-08-09.json"
     blob = c.read_cache("2026-08-09")
     assert blob["week_start"] == "2026-08-09" and blob["judged_count"] == 1
+    assert blob["ai_review_by_course"] == {"c1": "Students worked on t."}
     assert "2026-08-09" in c.available_weeks()

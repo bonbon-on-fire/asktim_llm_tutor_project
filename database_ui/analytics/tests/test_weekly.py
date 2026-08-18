@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 import pytest
 
 from database_ui.analytics import cache as cache_mod
+from database_ui.analytics import review as review_mod
 from database_ui.analytics import weekly
 from database_ui.analytics.data import fetch_conversations
 from database_ui.analytics.judge import FakeJudge, Verdict
@@ -18,6 +19,18 @@ def session():
     seed(s)
     yield s
     s.close()
+
+
+# A no-network stand-in for the Haiku review synthesis: every course gets the
+# same canned paragraph, so run_week never reaches the network in tests.
+def _fake_review(course, material, model):
+    return f"review of {course}"
+
+
+@pytest.fixture(autouse=True)
+def _offline_reviews(monkeypatch):
+    """Keep run_week's AI-review synthesis offline for every test in this file."""
+    monkeypatch.setattr(review_mod, "_default_review_fn", _fake_review)
 
 
 def test_run_week_writes_cache_and_report(tmp_path, monkeypatch, session):
@@ -35,6 +48,9 @@ def test_run_week_writes_cache_and_report(tmp_path, monkeypatch, session):
     assert "Weekly report" in md
     # report.md written beside the cache
     assert (tmp_path / "report.md").exists()
+    # An AI-review paragraph was synthesized (offline fake) for each judged course.
+    assert blob["ai_review_by_course"]
+    assert all(v.startswith("review of ") for v in blob["ai_review_by_course"].values())
 
 
 def test_run_week_reuses_verdict_when_hash_matches(tmp_path, monkeypatch, session):

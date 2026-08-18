@@ -20,6 +20,7 @@ from database_ui.analytics.flags import build_flags
 from database_ui.analytics.judge import Judge, Verdict, transcript_hash
 from database_ui.analytics.rubric_judge import RubricJudge, DEFAULT_JUDGE_MODEL
 from database_ui.analytics.report import render_report
+from database_ui.analytics.review import DEFAULT_REVIEW_MODEL, build_reviews, course_material
 from database_ui.analytics.stats import compute_stats, is_tutor, week_over_week
 from database_ui.analytics.topics import aggregate_topics
 from database_ui.analytics.weeks import Week, previous_complete_week, parse_week
@@ -42,6 +43,8 @@ def run_week(
     generated_at: datetime,
     prior_cache: dict | None = None,
     max_convos: int | None = None,
+    review_fn=None,
+    review_model: str = DEFAULT_REVIEW_MODEL,
 ) -> tuple[Path, str]:
     courses = None  # the job always runs unscoped; the dashboard scopes on read
     convs = data_mod.fetch_conversations(db, week, courses)
@@ -95,11 +98,16 @@ def run_week(
     flags = build_flags(convs, msgs, verdicts)
     topics = aggregate_topics(convs, verdicts, first_q)
     examples = pick_examples(convs, msgs, verdicts, seed=week.key)
+    reviews = build_reviews(
+        course_material(convs, verdicts, first_q),
+        model=review_model, review_fn=review_fn,
+    )
 
     path = cache_mod.write_cache(
         week, judged_dict, examples, topics,
         judge_model=judge_model, generated_at=generated_at,
         judged_count=len(convs), skipped=skipped,
+        ai_review_by_course=reviews,
     )
     # Persist hashes alongside for next run's reuse (kept out of the scope-filtered read).
     blob = cache_mod.read_cache(week.key)

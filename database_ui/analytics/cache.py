@@ -31,6 +31,7 @@ def write_cache(
     generated_at: datetime,
     judged_count: int,
     skipped: int,
+    ai_review_by_course: dict | None = None,
 ) -> Path:
     """Serialize one week's judged output to its cache file; returns the path."""
     blob = {
@@ -45,6 +46,7 @@ def write_cache(
         "conversations": judged,
         "examples": examples,
         "topics_by_course": topics_by_course,
+        "ai_review_by_course": ai_review_by_course or {},
     }
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     path = cache_path(week.key)
@@ -88,10 +90,15 @@ def filter_cache(blob: dict, courses: list[str] | None) -> dict:
         course: rows for course, rows in blob.get("topics_by_course", {}).items()
         if course in allowed
     }
+    reviews = {
+        course: text for course, text in blob.get("ai_review_by_course", {}).items()
+        if course in allowed
+    }
     out = dict(blob)
     out["conversations"] = convs
     out["examples"] = examples
     out["topics_by_course"] = topics
+    out["ai_review_by_course"] = reviews
     return out
 
 

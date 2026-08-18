@@ -145,12 +145,20 @@
       root.appendChild(card("⚑ Didn't work well", flagBody));
     }
 
-    const topics = payload.cached.topics_by_course || {};
-    const tBody = el("div");
-    Object.entries(topics).forEach(([course, rows]) => {
-      tBody.appendChild(el("p", {}, [course + ": " + rows.slice(0, 8).map((t) => t.topic + " (" + t.count + ")").join(" · ")]));
-    });
-    root.appendChild(card("🗣 Top topics", tBody));
+    // AI review: a short narrative of the week's major questions/themes, one
+    // paragraph per course. Scoped on read, so a course login sees only its own.
+    const reviews = payload.cached.ai_review_by_course || {};
+    const courses = Object.keys(reviews);
+    const rBody = el("div");
+    if (courses.length === 0) {
+      rBody.appendChild(el("p", { class: "a-muted" }, ["No review available for this week."]));
+    } else {
+      courses.forEach((course) => {
+        if (courses.length > 1) rBody.appendChild(el("p", { class: "a-review-course" }, [course]));
+        rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
+      });
+    }
+    root.appendChild(card("AI review", rBody));
   }
 
   async function load(weekKey) {

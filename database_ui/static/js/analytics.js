@@ -150,24 +150,20 @@
 
     // AI review sits under Daily activity: the week's narrative overview, one
     // paragraph per course, scoped on read so a course login sees only its own.
-    // Falls back to a pending note before the week's cache has been generated.
-    const rBody = el("div");
-    if (!payload.cached) {
-      rBody.appendChild(el("p", { class: "a-pending" }, ["This week's review is coming soon"]));
-    } else {
-      const reviews = payload.cached.ai_review_by_course || {};
+    // Like the Flagged card, the whole card is dropped when there's nothing to
+    // show — before the week's cache exists, or when no course had enough
+    // activity to review — rather than showing a placeholder note.
+    const reviews = (payload.cached && payload.cached.ai_review_by_course) || {};
+    const reviewedCourses = Object.keys(reviews);
+    if (reviewedCourses.length > 0) {
       const names = payload.course_names || {};
-      const courses = Object.keys(reviews);
-      if (courses.length === 0) {
-        rBody.appendChild(el("p", { class: "a-pending" }, ["Not enough activity this week to write a review"]));
-      } else {
-        courses.forEach((course) => {
-          rBody.appendChild(el("p", { class: "a-review-course" }, [names[course] || course]));
-          rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
-        });
-      }
+      const rBody = el("div");
+      reviewedCourses.forEach((course) => {
+        rBody.appendChild(el("p", { class: "a-review-course" }, [names[course] || course]));
+        rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
+      });
+      root.appendChild(card("AI review", rBody));
     }
-    root.appendChild(card("AI review", rBody));
 
     // Flags: judged conversations that didn't work well — internal QA shown only
     // in the master view, never to a course-scoped login (the server also

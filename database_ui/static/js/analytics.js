@@ -230,6 +230,21 @@
   let rubricCache = null;      // { title, markdown, html } — fetched once, reused
   let rubricOverlay = null;
 
+  // Show only the scored criteria in the popup: drop the file's H1 title and
+  // intro blurb (everything before the first "## " section) and the trailing
+  // "## Summary" points table. The rubric file itself is unchanged — this is a
+  // display-only slice, so the judge still grades against the full document.
+  function rubricBodyMarkdown(md) {
+    const lines = (md || "").split("\n");
+    let start = lines.findIndex((l) => /^##\s+/.test(l));
+    if (start < 0) start = 0;
+    let end = lines.findIndex((l, i) => i > start && /^##\s+summary\b/i.test(l));
+    if (end < 0) end = lines.length;
+    // Trim trailing blank lines and a horizontal rule left before the summary.
+    while (end > start && /^\s*(-{3,}\s*)?$/.test(lines[end - 1])) end--;
+    return lines.slice(start, end).join("\n");
+  }
+
   function paintRubric() {
     rubricOverlay.querySelector(".a-modal-title").textContent = rubricCache.title;
     const body = rubricOverlay.querySelector(".a-modal-body");
@@ -286,10 +301,11 @@
       const r = await fetch("/api/analytics/rubric");
       if (!r.ok) throw new Error("rubric unavailable");
       const data = await r.json();
+      const md = rubricBodyMarkdown(data.markdown || "");
       rubricCache = {
-        title: "Rubric — " + (data.title || data.name || ""),
-        markdown: data.markdown || "",
-        html: mdToHtml(data.markdown || ""),
+        title: "Rubric",
+        markdown: md,
+        html: mdToHtml(md),
       };
       paintRubric();
     } catch (e) {

@@ -11,6 +11,7 @@ cents at most on top of the judge run.
 ``review_fn`` is an injection seam: tests pass a fake so no network call happens;
 production defaults to a real Haiku call.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -29,14 +30,17 @@ _MAX_TOPICS = 30
 _REVIEW_SYSTEM = (
     "You write a brief weekly review of an AI tutor's conversations for one "
     "course. You are given one-line summaries of how each conversation went "
-    "and the topics students covered. Write ONE short paragraph (3-5 "
-    "sentences) for a course instructor that summarizes the kinds of "
-    "conversations students had and the main topics they focused on, and "
-    "calls out the common areas of confusion or difficulty students ran "
-    "into. Be concrete and specific to "
-    "the material. Do not name the course or refer to 'this course'; write "
-    "about the students and their work directly. Do not use bullet points, "
-    "headings, or a preamble like 'This week'; just the paragraph."
+    "and the topics students covered. Write ONE plain paragraph for a course "
+    "instructor that summarizes the kinds of conversations students had and "
+    "the main topics they focused on, and calls out the common areas of "
+    "confusion or difficulty students ran into. Use only as many sentences as "
+    "the material genuinely warrants and no more than five — a quiet week with "
+    "little activity may need just one or two. Do not pad, speculate, or "
+    "restate the same point to reach a length; if there is little to say, say "
+    "little. Be concrete and specific to the material. Do not name the course "
+    "or refer to 'this course'; write about the students and their work "
+    "directly. Do not use bullet points, headings, or a preamble like 'This "
+    "week'; just the paragraph."
 )
 
 
@@ -52,7 +56,9 @@ def course_material(
     lists preserve conversation order.
     """
     course_of = {c.id: c.course for c in convs}
-    mat: dict[str, dict] = defaultdict(lambda: {"questions": [], "overviews": [], "topics": []})
+    mat: dict[str, dict] = defaultdict(
+        lambda: {"questions": [], "overviews": [], "topics": []}
+    )
     seen_topic: dict[str, set[str]] = defaultdict(set)
     for cid, verdict in verdicts.items():
         course = course_of.get(cid)
@@ -81,8 +87,10 @@ def _render_material(material: dict) -> str:
     if topics:
         parts.append("Topics students worked on:\n" + ", ".join(topics))
     if overviews:
-        parts.append("How each conversation went (one-line summaries):\n"
-                     + "\n".join(f"- {o}" for o in overviews))
+        parts.append(
+            "How each conversation went (one-line summaries):\n"
+            + "\n".join(f"- {o}" for o in overviews)
+        )
     return "\n\n".join(parts)
 
 
@@ -91,10 +99,12 @@ def _default_review_fn(course: str, material: dict, model: str) -> str:
 
     llm = ChatAnthropic(model=model, temperature=0)
     body = _render_material(material)
-    result = llm.invoke([
-        ("system", _REVIEW_SYSTEM),
-        ("human", f"Course: {course}\n\n{body}"),
-    ])
+    result = llm.invoke(
+        [
+            ("system", _REVIEW_SYSTEM),
+            ("human", f"Course: {course}\n\n{body}"),
+        ]
+    )
     return str(getattr(result, "content", result) or "").strip()
 
 
@@ -116,7 +126,9 @@ def build_reviews(
             continue
         try:
             text = (fn(course, material, model) or "").strip()
-        except Exception as exc:  # noqa: BLE001 - one bad course must not sink the report
+        except (
+            Exception
+        ) as exc:  # noqa: BLE001 - one bad course must not sink the report
             print(f"review skipped {course}: {type(exc).__name__}: {exc}")
             continue
         if text:

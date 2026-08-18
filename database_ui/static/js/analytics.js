@@ -143,9 +143,11 @@
 
     // Flags: judged conversations that didn't work well — internal QA shown only
     // in the master view, never to a course-scoped login (the server also
-    // withholds the data). Nothing to show until the week's cache exists.
+    // withholds the data). Nothing to show until the week's cache exists, and
+    // the whole card is dropped when there's nothing flagged (no empty card).
     if (payload.cached && payload.all_access) {
       const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);
+      if (flags.length > 0) {
       const flagBody = el("div");
       flagBody.appendChild(el("p", { class: "a-muted" }, [flags.length + " conversations flagged."]));
       flags.forEach((c) => {
@@ -158,6 +160,7 @@
         flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
       });
       root.appendChild(card("Conversation flags", flagBody));
+      }
     }
   }
 

@@ -494,13 +494,32 @@
     await initPicker();
   }
 
+  // Standalone /analytics page only: Escape leaves the report and returns to the
+  // conversation list — the same destination as the "← Conversations" back link,
+  // so Escape "hides the dashboard" here the way it does in the in-place panel.
+  // Gated on #analytics-root (present only on the standalone page), so it stays
+  // inert in the dashboard host, where database.js owns Escape — no double-fire.
+  function setupStandaloneEscape() {
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const back = document.querySelector(".analytics-back");
+      const href = back && back.getAttribute("href");
+      window.location.href = href || "/";
+    });
+  }
+
   // Two hosts share this module:
-  //  - Standalone /analytics page (main#analytics-root): init on load.
+  //  - Standalone /analytics page (main#analytics-root): init on load, and
+  //    Escape returns to the conversation list.
   //  - Dashboard panel (index.html): stays dormant until database.js calls
-  //    WeeklyReport.ensureInit() when the "Weekly report" button is clicked.
+  //    WeeklyReport.ensureInit() when the "Weekly report" button is clicked;
+  //    database.js owns Escape there.
   window.WeeklyReport = { ensureInit };
   window.addEventListener("resize", sizeChartText);
   document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById("analytics-root")) ensureInit();
+    if (document.getElementById("analytics-root")) {
+      ensureInit();
+      setupStandaloneEscape();
+    }
   });
 })();

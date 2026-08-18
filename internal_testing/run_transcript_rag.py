@@ -466,7 +466,7 @@ def _save_transcript(
         payload = {
             "tutor_provider": config.provider,
             # The STEM arm uses the vendored tutor's own prompts; recording our
-            # --tutor value there would wrongly imply tutor_07 shaped its replies.
+            # --tutor value there would wrongly imply tutor_09 shaped its replies.
             "tutor_prompt": (
                 config.tutor_prompt
                 if config.tutor_impl == "asktim"

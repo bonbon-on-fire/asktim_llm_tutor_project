@@ -1,5 +1,5 @@
 """
-Humanities LLM Tutor — LangGraph engine.
+LLM Tutor — LangGraph engine.
 
 Provides the tutor graph, system-prompt loading, and response parsing.
 Called by the UI and web app; not intended to run standalone.

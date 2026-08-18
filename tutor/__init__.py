@@ -1,4 +1,4 @@
-"""LangGraph-based humanities tutor."""
+"""LangGraph-based tutor engine."""
 
 from .run_tutor import (
     create_tutor_graph,

@@ -3,8 +3,8 @@
 ``Message``, ``Student``, and ``UploadedImage`` are schema-identical across the
 web apps and come from the shared mixins in ``ui_core.db.models_common``. Only
 ``Conversation`` is defined here, on sandbox_ui's own ``Base`` — it carries
-sandbox-only columns (exercise_kind, *_enabled toggles, context_mode) that
-main_ui's does not.
+sandbox-only columns (exercise_kind, lectures_enabled, context_mode, provider)
+that main_ui's does not.
 """
 
 from __future__ import annotations

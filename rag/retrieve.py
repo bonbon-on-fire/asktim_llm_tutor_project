@@ -2,7 +2,7 @@
 
 Loads the course's numpy index (cached in-process), embeds the student query,
 and returns the most relevant chunks under a character budget. ``format_context``
-renders them into the block that tutor_bridge injects on the latest student turn.
+renders them into the block that tutor_bridge folds into the tutor's system channel.
 """
 
 from __future__ import annotations
@@ -169,8 +169,9 @@ def retrieve_scored(
     retrieves content the student hasn't reached yet. Week-agnostic docs (course
     description, syllabus, key concepts, OCW) are always in scope.
 
-    Returns ``[]`` when there's no index or the query is empty — callers fall
-    back to their non-RAG context path.
+    Returns ``[]`` when there's no index or the query is empty. In ``rag`` mode
+    an empty result makes the tutor fail closed (no silent fallback to full
+    context) — see ``ui_core.tutor_bridge``.
     """
     scored, _ = retrieve_scored_with_usage(
         course, query, k=k, max_chars=max_chars, max_week=max_week

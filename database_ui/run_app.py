@@ -1,9 +1,10 @@
 """Flask app for database_ui — read-only conversation review.
 
-Phase 1 establishes the app factory, per-request read-only DB session, and a
-health check. Routes (the conversation list, transcript view, image serving) are
-registered in Phase 2. This app intentionally does NOT create or migrate any
-schema — the live apps own it; we only read.
+The factory wires up config, a per-request read-only DB session, a health check,
+the password-gate auth guard, and the blueprints: ui_core's shared static, the
+review routes (conversation list, transcript view, image/file serving, export),
+and the weekly-report analytics. This app intentionally does NOT create or
+migrate any schema — the live apps own it; we only read.
 """
 
 from __future__ import annotations

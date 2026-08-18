@@ -435,7 +435,18 @@
     li.appendChild(details);
   }
 
-  function renderMessage(role, content, imageSrcs, reasoning, retrieved, attachments, messageId, rating, model, costUsd) {
+  function placeInList(li, insertBefore) {
+    // Normally messages append to the bottom. On retry we pass the node the
+    // failed message currently sits before, so the re-sent bubble slots back
+    // into its original position instead of jumping to the end of the list.
+    if (insertBefore && insertBefore.parentNode === messageList) {
+      messageList.insertBefore(li, insertBefore);
+    } else {
+      messageList.appendChild(li);
+    }
+  }
+
+  function renderMessage(role, content, imageSrcs, reasoning, retrieved, attachments, messageId, rating, model, costUsd, insertBefore) {
     const li = document.createElement("li");
     li.className = "message message-" + role;
     const hasImages = imageSrcs && imageSrcs.length;
@@ -461,7 +472,7 @@
       appendReasoning(li, reasoning);
       appendRetrieved(li, retrieved);
     }
-    messageList.appendChild(li);
+    placeInList(li, insertBefore);
     if (role === "tutor") {
       // After the bubble is in the DOM, drop the thumbs in as the next sibling.
       appendRating(li, messageId, rating);
@@ -471,7 +482,7 @@
     return li;
   }
 
-  function renderThinking() {
+  function renderThinking(insertBefore) {
     const li = document.createElement("li");
     li.className = "message message-thinking";
     li.appendChild(document.createTextNode("AskTIM Sandbox is thinking"));
@@ -482,7 +493,26 @@
       dot.textContent = ".";
       li.appendChild(dot);
     }
-    messageList.appendChild(li);
+    placeInList(li, insertBefore);
+    messageList.scrollTop = messageList.scrollHeight;
+    return li;
+  }
+
+  function renderRetryStatus(afterBubble, onRetry) {
+    // A sibling <li> placed right after the student bubble (mirrors the
+    // appendRating pattern), styled as small "tap to retry" text — the sandbox's
+    // dark-blue accent, via the base .msg-retry-btn rule's var(--error-text)
+    // which sandbox-extra.css overrides to #0e587b. The inner <button> keeps it
+    // keyboard-focusable and tappable.
+    const li = document.createElement("li");
+    li.className = "msg-retry";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "msg-retry-btn";
+    button.textContent = "Tap to retry";
+    button.addEventListener("click", onRetry);
+    li.appendChild(button);
+    afterBubble.after(li);
     messageList.scrollTop = messageList.scrollHeight;
     return li;
   }
@@ -1556,7 +1586,7 @@
     return { event: eventName, data: payload };
   }
 
-  async function sendMessage() {
+  async function sendMessage(insertBefore) {
     const text = composerInput.value.trim();
     const outgoingImages = stagedImages.slice();
     const outgoingFiles = stagedFiles.slice();
@@ -1582,8 +1612,13 @@
       null,
       null,
       outgoingAttachments,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      insertBefore,
     );
-    const tutorBubble = renderThinking();
+    const tutorBubble = renderThinking(insertBefore);
     let tutorBubbleActive = false; // false until first delta lands
     const originalText = composerInput.value;
     composerInput.value = "";
@@ -1629,6 +1664,30 @@
 
     const revokeOutgoing = () => {
       for (const item of outgoingImages) URL.revokeObjectURL(item.url);
+    };
+
+    // Shared failure handling for both stream-error and no-done-frame exits:
+    // keep the student bubble visible and offer an inline "Tap to retry" that
+    // re-sends this exact turn. The retry re-sends IN PLACE — it captures the
+    // node the failed message currently sits before and hands it to sendMessage
+    // so the bubble slots back into its original position rather than jumping to
+    // the bottom (matches iMessage/WhatsApp retry behavior). The student bubble
+    // stays visible, so its image object URLs are NOT revoked here — the retry
+    // reuses them by restoring outgoingImages/Files to the staged lists.
+    const markTurnFailed = () => {
+      tutorBubble.remove();
+      const retryStatus = renderRetryStatus(studentBubble, () => {
+        if (isSending) return; // don't disturb an in-flight send
+        const anchor = retryStatus.nextSibling;
+        retryStatus.remove();
+        studentBubble.remove();
+        composerInput.value = originalText;
+        stagedImages = outgoingImages.slice();
+        stagedFiles = outgoingFiles.slice();
+        renderStagedPreviews();
+        sendMessage(anchor);
+      });
+      showError("Something went wrong, please try again");
     };
 
     const controller = new AbortController();
@@ -1728,20 +1787,15 @@
       }
 
       if (streamError) {
-        tutorBubble.remove();
-        studentBubble.remove();
-        revokeOutgoing();
-        composerInput.value = originalText;
-        showError("Something went wrong, please try again");
+        // Explicit error frame from the server: keep the bubble, offer retry.
+        markTurnFailed();
         return;
       }
 
       if (!sawDone) {
-        tutorBubble.remove();
-        studentBubble.remove();
-        revokeOutgoing();
-        composerInput.value = originalText;
-        showError("Something went wrong, please try again");
+        // Stream closed with no done/error frame — same failure to the student
+        // as an explicit error frame, so handle it identically.
+        markTurnFailed();
         return;
       }
 

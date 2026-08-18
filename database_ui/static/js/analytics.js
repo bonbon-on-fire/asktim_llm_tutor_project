@@ -114,6 +114,23 @@
     return svg;
   }
 
+  // The charts draw text inside a scaled viewBox, so a fixed SVG font-size
+  // renders larger on screen and drifts with width. Size the label + value text
+  // in SVG units from each chart's real render scale so they land at an exact
+  // on-screen rem: day/axis labels at 0.8rem (like the stat keys), bar-top
+  // values at 0.92rem (like the AI-review body). Re-run on resize.
+  function sizeChartText() {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    document.querySelectorAll("#analytics-content .chart").forEach((svg) => {
+      const vb = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width) || 520;
+      const shown = svg.getBoundingClientRect().width;
+      if (!shown) return;
+      const scale = vb / shown;   // SVG user units per on-screen pixel
+      svg.style.setProperty("--chart-lbl-size", (0.8 * rem * scale).toFixed(2) + "px");
+      svg.style.setProperty("--chart-val-size", (0.92 * rem * scale).toFixed(2) + "px");
+    });
+  }
+
   function render(payload) {
     const root = $("analytics-content");
     root.textContent = "";
@@ -174,6 +191,8 @@
       root.appendChild(card("Flagged", flagBody));
       }
     }
+
+    sizeChartText();   // match chart text to the on-screen rem sizes above
   }
 
   // Current selection shared by the week nav and the course dropdown, so either
@@ -403,6 +422,7 @@
   //  - Dashboard panel (index.html): stays dormant until database.js calls
   //    WeeklyReport.ensureInit() when the "Weekly report" button is clicked.
   window.WeeklyReport = { ensureInit };
+  window.addEventListener("resize", sizeChartText);
   document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById("analytics-root")) ensureInit();
   });

@@ -123,7 +123,7 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   color: var(--muted, #888);
   margin-bottom: 0.15rem;
 }
-.a-stat-v { display: block; font-size: 1.3rem; font-weight: 600; color: var(--text, #2a2a2a); }
+.a-stat-v { display: block; font-size: 1rem; font-weight: 600; color: var(--text, #2a2a2a); }
 .a-pending { color: var(--muted, #888); font-size: 0.8rem; margin: 0; }
 
 /* AI review: a readable narrative paragraph per course. The course label is a
@@ -142,10 +142,15 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 
 .chart { width: 100%; height: auto; }
 .chart-grid { stroke: var(--border, #e2e2e2); stroke-width: 1; }
-.chart-val { font-size: 10px; fill: var(--text, #2a2a2a); }
-/* Axis + day labels: uppercase ("SUN"…) and muted, matching the quiet-label
-   size of the stat keys on screen once the chart's viewBox scales up. */
-.chart-lbl { font-size: 8px; fill: var(--muted, #888); text-transform: uppercase; }
+/* Bar-top value numbers: sized by JS (sizeChartText) to render at 0.92rem on
+   screen — matching the AI-review body (.a-review) — despite the viewBox scale.
+   14px is the pre-JS fallback. */
+.chart-val { font-size: var(--chart-val-size, 14px); fill: var(--text, #2a2a2a); }
+/* Axis + day labels: uppercase ("SUN"…) and muted. The size is a CSS var set
+   per-chart by JS (sizeChartLabels) to render at exactly 0.8rem on screen —
+   matching the stat keys — despite the chart's viewBox scaling. 8px is the
+   pre-JS fallback. */
+.chart-lbl { font-size: var(--chart-lbl-size, 8px); fill: var(--muted, #888); text-transform: uppercase; }
 
 /* Embedded in the dashboard main pane (index.html): fills the transcript box,
    scrolls on its own, and keeps content readable-width. Hidden until opened. */

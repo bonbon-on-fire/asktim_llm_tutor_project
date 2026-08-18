@@ -23,19 +23,20 @@ DEFAULT_REVIEW_MODEL = "claude-haiku-4-5-20251001"
 
 # Keep each course's material bounded so the synthesis stays cheap regardless of
 # how busy a week was; the newest/first entries are representative enough.
-_MAX_QUESTIONS = 40
 _MAX_OVERVIEWS = 40
 _MAX_TOPICS = 30
 
 _REVIEW_SYSTEM = (
     "You write a brief weekly review of an AI tutor's conversations for one "
-    "course. Given the questions students opened with, one-line summaries of how "
-    "each conversation went, and the topics they touched, write ONE short "
-    "paragraph (3-5 sentences) for a course instructor. Describe the major "
-    "questions and themes students worked on and where they concentrated; note "
-    "briefly how the tutoring went overall. Be concrete and specific to the "
-    "material. Do not use bullet points, headings, or a preamble like 'This "
-    "week'; just the paragraph."
+    "course. You are given one-line summaries of how each conversation went "
+    "and the topics students covered. Write ONE short paragraph (3-5 "
+    "sentences) for a course instructor that summarizes the kinds of "
+    "conversations students had and the main topics they focused on, and "
+    "calls out the common areas of confusion or difficulty students ran "
+    "into. Be concrete and specific to "
+    "the material. Do not name the course or refer to 'this course'; write "
+    "about the students and their work directly. Do not use bullet points, "
+    "headings, or a preamble like 'This week'; just the paragraph."
 )
 
 
@@ -74,15 +75,11 @@ def course_material(
 
 def _render_material(material: dict) -> str:
     """Flatten one course's material into the human message for the synthesis."""
-    questions = material.get("questions", [])[:_MAX_QUESTIONS]
     overviews = material.get("overviews", [])[:_MAX_OVERVIEWS]
     topics = material.get("topics", [])[:_MAX_TOPICS]
     parts = []
     if topics:
         parts.append("Topics students worked on:\n" + ", ".join(topics))
-    if questions:
-        parts.append("Questions students opened with:\n"
-                     + "\n".join(f"- {q}" for q in questions))
     if overviews:
         parts.append("How each conversation went (one-line summaries):\n"
                      + "\n".join(f"- {o}" for o in overviews))

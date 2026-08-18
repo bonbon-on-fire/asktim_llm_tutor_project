@@ -157,7 +157,7 @@
         if (overview) parts.push(overview);
         flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
       });
-      root.appendChild(card("Flags", flagBody));
+      root.appendChild(card("Conversation flags", flagBody));
     }
   }
 

@@ -40,13 +40,17 @@
     setView("report");
     if (window.WeeklyReport) window.WeeklyReport.ensureInit();
   }
+  function hideReport() {
+    setView("conversation");   // back to the transcript pane
+  }
   if (weeklyOpen) {
     weeklyOpen.addEventListener("click", (e) => {
       e.preventDefault();   // render in-place; the href is the no-JS fallback
       showReport();
     });
   }
-  // Selecting a conversation swaps the report back out (see loadConversation).
+  // Selecting a conversation swaps the report back out (see loadConversation);
+  // Escape does too (see the unified Escape handler below).
 
   function showError(msg) {
     errorText.textContent = msg;
@@ -89,9 +93,7 @@
       imageLightbox.addEventListener("click", (event) => {
         if (event.target !== big) closeImageLightbox();
       });
-      document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !imageLightbox.hidden) closeImageLightbox();
-      });
+      // Escape-to-close is handled by the unified Escape handler below.
     }
     const big = imageLightbox.querySelector(".image-lightbox-img");
     big.src = src;
@@ -451,6 +453,18 @@
       showError("Could not load that conversation.");
     }
   }
+
+  // Unified Escape: close in z-order — image lightbox > weekly report.
+  // Mirrors main_ui / sandbox_ui, where Escape steps back out of the
+  // frontmost overlay (there: detail > modal > sidebar).
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (imageLightbox && !imageLightbox.hidden) {
+      closeImageLightbox();
+    } else if (analyticsPanel && !analyticsPanel.hidden) {
+      hideReport();
+    }
+  });
 
   refreshSidebar();
 

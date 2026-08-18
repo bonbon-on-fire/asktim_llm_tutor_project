@@ -12,16 +12,18 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 /* Week picker: a select-like trigger that opens a small calendar popover.
    Sits on the page background (--bg) with a light --border outline so it
    blends into the page rather than reading as a stark white form input. */
-/* Week nav: prev/next arrows hugging the calendar trigger box. */
-.weeknav { display: inline-flex; align-items: center; gap: 0.3rem; }
+/* Week nav: borderless prev/next chevrons hugging the calendar trigger box —
+   the same stroked chevron as the picker caret, rotated sideways. */
+.weeknav { display: inline-flex; align-items: center; gap: 0.2rem; }
 .weeknav-arrow {
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 0.4rem 0.55rem; line-height: 1; font-size: 1.1rem;
-  border: 1px solid var(--border, #e2e2e2); border-radius: 8px;
-  background: var(--bg, #fafafa); color: var(--text, #2a2a2a); cursor: pointer;
+  padding: 0.2rem; line-height: 1;
+  border: 0; background: none; color: var(--muted, #888); cursor: pointer;
 }
-.weeknav-arrow:hover:not(:disabled) { border-color: #cfcfcf; }
+.weeknav-arrow:hover:not(:disabled) { color: var(--text, #2a2a2a); }
 .weeknav-arrow:disabled { color: #d6d6d6; cursor: default; }
+.weeknav-arrow:focus-visible { outline: none; color: var(--text, #2a2a2a); }
+.weeknav-chev { display: block; }
 
 .weekpick { position: relative; display: inline-block; }
 .weekpick-trigger {
@@ -31,6 +33,16 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   background: var(--bg, #fafafa); color: var(--text, #2a2a2a); font: inherit; cursor: pointer;
 }
 .weekpick-trigger:hover { border-color: #cfcfcf; }
+/* Uniform focus / open outline shared with the course dropdown so both
+   select-like triggers light up the same blue when clicked. */
+.weekpick-trigger:focus-visible,
+.coursepick-trigger:focus-visible,
+.weekpick-trigger[aria-expanded="true"],
+.coursepick-trigger[aria-expanded="true"] {
+  outline: none;
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.25);
+}
 .weekpick-caret { color: var(--muted, #888); flex: none; }
 .weekpick-pop {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 20;
@@ -96,10 +108,12 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .a-card-title { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.7rem; color: var(--text, #2a2a2a); }
 
 .a-stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
-/* Stat key reuses the sidebar course-eyebrow treatment: a quiet uppercase tag. */
+/* Stat key, course label, and the pending note share one quiet-label size and
+   color (0.8rem, --muted) so "Conversations", "Sun", the course name, and the
+   "not enough activity" note all read as the same class of small grey label. */
 .a-stat-k {
   display: block;
-  font-size: 0.66rem;
+  font-size: 0.8rem;
   font-weight: 400;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -107,7 +121,7 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   margin-bottom: 0.15rem;
 }
 .a-stat-v { display: block; font-size: 1.3rem; font-weight: 600; color: var(--text, #2a2a2a); }
-.a-pending { color: var(--muted, #888); font-size: 0.9rem; margin: 0; }
+.a-pending { color: var(--muted, #888); font-size: 0.8rem; margin: 0; }
 
 /* AI review: a readable narrative paragraph per course. The course label is a
    quiet uppercase eyebrow (reused from the stat-key treatment) shown only when
@@ -115,8 +129,10 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .a-review { font-size: 0.92rem; line-height: 1.55; color: var(--text, #2a2a2a); margin: 0 0 0.9rem; }
 .a-review:last-child { margin-bottom: 0; }
 .a-review-course {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted, #888);
   margin: 0 0 0.2rem;
 }
@@ -124,7 +140,9 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .chart { width: 100%; height: auto; }
 .chart-grid { stroke: var(--border, #e2e2e2); stroke-width: 1; }
 .chart-val { font-size: 10px; fill: var(--text, #2a2a2a); }
-.chart-lbl { font-size: 9px; fill: var(--muted, #888); }
+/* Axis + day labels: uppercase ("SUN"…) and muted, matching the quiet-label
+   size of the stat keys on screen once the chart's viewBox scales up. */
+.chart-lbl { font-size: 8px; fill: var(--muted, #888); text-transform: uppercase; }
 
 /* Embedded in the dashboard main pane (index.html): fills the transcript box,
    scrolls on its own, and keeps content readable-width. Hidden until opened. */

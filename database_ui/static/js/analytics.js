@@ -104,6 +104,16 @@
   function money(x) { return "$" + (x || 0).toFixed(2); }
   function arrow(wow, key) { return (wow && wow[key] && wow[key].arrow) || ""; }
 
+  // A stroked chevron in a 24×24 viewBox, matching the picker caret. Used for
+  // the borderless week-nav arrows (the caret path, rotated sideways).
+  function svgChevron(d, cls) {
+    const svg = el("svg", { _svg: true, class: cls, viewBox: "0 0 24 24",
+      width: "16", height: "16", "aria-hidden": "true" });
+    svg.appendChild(el("path", { _svg: true, d, fill: "none", stroke: "currentColor",
+      "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    return svg;
+  }
+
   function render(payload) {
     const root = $("analytics-content");
     root.textContent = "";
@@ -203,7 +213,7 @@
   // outside it are shown disabled. Selecting a week loads it and closes the pop.
   function setupPicker(range, initialKey) {
     const host = $("week-picker"), trigger = $("weekpick-trigger"), label = $("weekpick-label");
-    const minKey = range.min, maxKey = range.max;
+    let minKey = range.min, maxKey = range.max;
     let selected = initialKey;
     const sun0 = sundayOf(parseKey(selected));
     let viewY = sun0.getUTCFullYear(), viewM = sun0.getUTCMonth();
@@ -215,8 +225,10 @@
     // .weeknav wrapper so the arrows sit tight against it; each greys out when
     // stepping that way would leave the selectable range.
     const nav = el("div", { class: "weeknav" });
-    const prevBtn = el("button", { type: "button", class: "weeknav-arrow", "aria-label": "Previous week" }, ["‹"]);
-    const nextBtn = el("button", { type: "button", class: "weeknav-arrow", "aria-label": "Next week" }, ["›"]);
+    const prevBtn = el("button", { type: "button", class: "weeknav-arrow", "aria-label": "Previous week" },
+      [svgChevron("M15 6l-6 6 6 6", "weeknav-chev")]);
+    const nextBtn = el("button", { type: "button", class: "weeknav-arrow", "aria-label": "Next week" },
+      [svgChevron("M9 6l6 6-6 6", "weeknav-chev")]);
     host.parentNode.insertBefore(nav, host);
     nav.appendChild(prevBtn);
     nav.appendChild(host);          // moves the trigger box between the arrows
@@ -294,14 +306,26 @@
       document.removeEventListener("mousedown", onDoc);
     }
     trigger.addEventListener("click", () => (pop.hasAttribute("hidden") ? openPop() : closePop()));
+
+    // Retighten the selectable range (e.g. when the course filter changes). The
+    // selected week is left as-is — if it now falls outside the course's data,
+    // the report just shows the "not enough activity" note rather than jumping.
+    function setRange(r) {
+      minKey = r.min;
+      maxKey = r.max;
+      renderGrid();
+      updateArrows();
+    }
+
     setLabel();
     updateArrows();
+    return { setRange };
   }
 
   // Course filter: a select-like dropdown that rescopes every card (stats, AI
   // review, flags) to one course, or "All courses". Only rendered when the login
   // can see more than one course — a single-course login has nothing to filter.
-  function setupCoursePicker(courses) {
+  function setupCoursePicker(courses, picker) {
     const wk = $("week-picker");
     if (!wk || !courses || courses.length < 2) return;
     const host = el("div", { class: "coursepick", id: "course-picker" });
@@ -327,8 +351,17 @@
       pop.textContent = "";
       opts.forEach((o) => {
         const item = el("div", { class: "coursepick-opt" + (o.key === sel ? " is-selected" : "") }, [o.name]);
-        item.addEventListener("click", () => {
-          sel = o.key; label.textContent = o.name; currentCourse = o.key; closePop(); load(currentWeek);
+        item.addEventListener("click", async () => {
+          sel = o.key; label.textContent = o.name; currentCourse = o.key; closePop();
+          // Tighten the calendar range to the chosen course's data (empty key ⇒
+          // the full login range). Keep the current week even if it's now out of
+          // range; the report shows "not enough activity" for it.
+          try {
+            const r = await fetch("/api/analytics/weeks?course=" + encodeURIComponent(o.key));
+            const data = await r.json();
+            if (picker && data.range) picker.setRange(data.range);
+          } catch (e) { /* keep the existing range if the refetch fails */ }
+          load(currentWeek);
         });
         pop.appendChild(item);
       });
@@ -351,8 +384,8 @@
   async function initPicker() {
     const resp = await fetch("/api/analytics/weeks");
     const { range, courses } = await resp.json();
-    setupPicker(range, range.max);
-    setupCoursePicker(courses || []);
+    const picker = setupPicker(range, range.max);
+    setupCoursePicker(courses || [], picker);
     load(range.max);
   }
 

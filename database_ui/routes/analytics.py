@@ -72,8 +72,12 @@ def _course_scope(allowed: list[str] | None, selected: str | None) -> list[str] 
 @analytics_bp.get("/api/analytics/weeks")
 def api_weeks():
     allowed = allowed_courses()
+    # The calendar range tightens to a single course when one is chosen, so the
+    # arrows/calendar only reach weeks that course actually has data for. The
+    # dropdown's option list stays the login's full scope so it can switch back.
+    scoped = _course_scope(allowed, request.args.get("course"))
     return jsonify({
         "weeks": svc.week_options(),
-        "range": svc.week_range(g.db, allowed),
+        "range": svc.week_range(g.db, scoped),
         "courses": svc.selectable_courses(g.db, allowed),
     })

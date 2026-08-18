@@ -7,6 +7,7 @@ sections come from the committed cache, course-filtered to the login's scope.
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -94,6 +95,31 @@ def week_options() -> list[dict]:
         {"key": k, "label": Week(date.fromisoformat(k)).label()}
         for k in sorted(keys, reverse=True)
     ]
+
+
+# The single global rubric every judged conversation is scored against. Kept in
+# sync with eval/tutor_judge/run_judge.py's DEFAULT_RUBRIC — the calibrated
+# default the web judge adapter never overrides. Resolved as a plain file read,
+# NOT by importing run_judge, which would pull the whole judging stack
+# (langchain/langgraph/openai) into the web process just to read one markdown file.
+_RUBRICS_DIR = Path(__file__).resolve().parents[2] / "eval" / "tutor_judge" / "rubrics"
+DEFAULT_RUBRIC = "rubric_08"
+
+
+def default_rubric() -> dict:
+    """The grading-rubric markdown shown behind the Flagged card's (i) icon.
+
+    Returns ``{name, title, markdown}`` for the one global default rubric — the
+    same rubric that produced the flags. ``title`` is the rubric's top ``# ``
+    heading. Raises ``FileNotFoundError`` if the rubric is missing from the deploy.
+    """
+    markdown = (_RUBRICS_DIR / f"{DEFAULT_RUBRIC}.md").read_text(encoding="utf-8")
+    title = DEFAULT_RUBRIC
+    for line in markdown.splitlines():
+        if line.startswith("# "):
+            title = line[2:].strip()
+            break
+    return {"name": DEFAULT_RUBRIC, "title": title, "markdown": markdown}
 
 
 def week_range(db: Session, courses: list[str] | None) -> dict:

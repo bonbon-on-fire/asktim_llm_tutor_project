@@ -202,6 +202,62 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .a-flag-open:hover { text-decoration: underline; }
 .a-flag-open:focus-visible { outline: 2px solid var(--accent, #a31f34); outline-offset: 2px; }
 
+/* Info (i) on the Flagged card title — a quiet circle-i that opens the rubric
+   popup. Muted like the other secondary controls; accent on hover. Sits inline
+   with the heading text, vertically centered. */
+.a-info {
+  appearance: none; background: none; border: 0; padding: 0;
+  margin-left: 0.4rem; vertical-align: middle; line-height: 0;
+  color: var(--muted, #888); cursor: pointer; border-radius: 50%;
+}
+.a-info:hover { color: var(--accent, #a31f34); }
+.a-info:focus-visible { outline: 2px solid var(--accent, #a31f34); outline-offset: 2px; }
+.a-info-icon { display: block; }
+
+/* Rubric popup: a centered modal over a dim backdrop, reusing the picker
+   popovers' white card / border / shadow so it reads as the same surface. The
+   body scrolls internally when the rubric is taller than the card. */
+.a-modal-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem; background: rgba(0, 0, 0, 0.32);
+}
+.a-modal-overlay[hidden] { display: none; }
+.a-modal-card {
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 640px; max-height: 82vh;
+  background: #ffffff; border: 1px solid var(--border, #e2e2e2); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+.a-modal-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 0.9rem 1.1rem; border-bottom: 1px solid var(--border, #e2e2e2);
+}
+.a-modal-title { font-size: var(--fs-heading); font-weight: 600; margin: 0; color: var(--text, #2a2a2a); }
+.a-modal-close {
+  appearance: none; background: none; border: 0; padding: 0 0.2rem; line-height: 1;
+  font-size: 1.3rem; color: var(--muted, #888); cursor: pointer; border-radius: 6px;
+}
+.a-modal-close:hover { color: var(--text, #2a2a2a); }
+.a-modal-close:focus-visible { outline: 2px solid var(--accent, #a31f34); outline-offset: 2px; }
+.a-modal-body { padding: 0.9rem 1.1rem; overflow-y: auto; }
+
+/* Rendered rubric markdown: sized to the report's own body scale, with quiet
+   section headings that echo the card-title weight without shouting. */
+.a-rubric-md { font-size: var(--fs-body); line-height: 1.55; color: var(--text, #2a2a2a); }
+.a-rubric-md h1 { font-size: 1.05rem; font-weight: 600; margin: 0 0 0.6rem; }
+.a-rubric-md h2 { font-size: var(--fs-heading); font-weight: 600; margin: 1rem 0 0.4rem; }
+.a-rubric-md h3 { font-size: var(--fs-body); font-weight: 600; margin: 0.8rem 0 0.3rem; }
+.a-rubric-md h4 { font-size: var(--fs-body); font-weight: 600; margin: 0.6rem 0 0.2rem; }
+.a-rubric-md p { margin: 0 0 0.6rem; }
+.a-rubric-md ul { margin: 0 0 0.6rem; padding-left: 1.2rem; }
+.a-rubric-md li { margin: 0.15rem 0; }
+.a-rubric-md hr { border: 0; border-top: 1px solid var(--border, #e2e2e2); margin: 0.9rem 0; }
+.a-rubric-md strong { font-weight: 600; }
+.a-rubric-md table { border-collapse: collapse; width: 100%; font-size: var(--fs-label); margin: 0.4rem 0; }
+.a-rubric-md th, .a-rubric-md td { border: 1px solid var(--border, #e2e2e2); padding: 0.3rem 0.5rem; text-align: left; }
+.a-rubric-pre { white-space: pre-wrap; font-size: var(--fs-label); margin: 0; }
+
 .chart { width: 100%; height: auto; }
 .chart-grid { stroke: var(--border, #e2e2e2); stroke-width: 1; }
 /* Bar-top value numbers: sized by JS (sizeChartText) from the --fs-body token

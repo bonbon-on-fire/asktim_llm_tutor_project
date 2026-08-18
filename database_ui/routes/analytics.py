@@ -82,6 +82,19 @@ def _course_scope(
     return sel or allowed
 
 
+@analytics_bp.get("/api/analytics/rubric")
+def api_rubric():
+    """The default grading rubric (markdown) behind the Flagged card's (i) icon.
+
+    Not course-scoped: one global rubric, identical for every login and not
+    sensitive. 404 only if the rubric file is missing from the deploy.
+    """
+    try:
+        return jsonify(svc.default_rubric())
+    except FileNotFoundError:
+        return jsonify({"error": "rubric unavailable"}), 404
+
+
 @analytics_bp.get("/api/analytics/weeks")
 def api_weeks():
     allowed = allowed_courses()

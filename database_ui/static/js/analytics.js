@@ -83,9 +83,13 @@
     return svg;
   }
 
-  function card(title, body) {
+  function card(title, body, titleExtra) {
     const c = el("div", { class: "a-card" });
-    if (title) c.appendChild(el("h2", { class: "a-card-title" }, [title]));
+    if (title) {
+      const h = el("h2", { class: "a-card-title" }, [title]);
+      if (titleExtra) h.appendChild(titleExtra);   // e.g. the Flagged card's (i)
+      c.appendChild(h);
+    }
     c.appendChild(body);
     return c;
   }
@@ -188,6 +192,117 @@
     }
   }
 
+  // ---- Rubric popup: the (i) on the Flagged card title -------------------
+  // Every flagged conversation is scored against one global rubric (the judge's
+  // default), so a single (i) on the card heading opens it — not one per line.
+
+  // A quiet circle-i glyph, drawn in a 24×24 viewBox to match the picker carets.
+  function infoCircleSvg() {
+    const svg = el("svg", { _svg: true, class: "a-info-icon", viewBox: "0 0 24 24",
+      width: "15", height: "15", "aria-hidden": "true" });
+    svg.appendChild(el("circle", { _svg: true, cx: "12", cy: "12", r: "9",
+      fill: "none", stroke: "currentColor", "stroke-width": "2" }));
+    svg.appendChild(el("line", { _svg: true, x1: "12", y1: "11", x2: "12", y2: "16.5",
+      stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round" }));
+    svg.appendChild(el("circle", { _svg: true, cx: "12", cy: "7.5", r: "1.25",
+      fill: "currentColor" }));
+    return svg;
+  }
+  function rubricInfoButton() {
+    const b = el("button", { type: "button", class: "a-info",
+      title: "View rubric", "aria-label": "View rubric" }, [infoCircleSvg()]);
+    b.addEventListener("click", openRubric);
+    return b;
+  }
+
+  // Render our own trusted rubric markdown with the vendored marked + DOMPurify
+  // (both hosts load them). Returns null when the libs are absent, so the caller
+  // can fall back to plain preformatted text.
+  function mdToHtml(md) {
+    const m = window.marked;
+    let html = null;
+    if (m && typeof m.parse === "function") html = m.parse(md);
+    else if (typeof m === "function") html = m(md);
+    if (html == null) return null;
+    return window.DOMPurify ? window.DOMPurify.sanitize(html) : html;
+  }
+
+  let rubricCache = null;      // { title, markdown, html } — fetched once, reused
+  let rubricOverlay = null;
+
+  function paintRubric() {
+    rubricOverlay.querySelector(".a-modal-title").textContent = rubricCache.title;
+    const body = rubricOverlay.querySelector(".a-modal-body");
+    if (rubricCache.html != null) {
+      body.innerHTML = rubricCache.html;
+    } else {
+      body.textContent = "";
+      body.appendChild(el("pre", { class: "a-rubric-pre" }, [rubricCache.markdown]));
+    }
+  }
+
+  // Escape closes the popup first. Capture phase + stopPropagation so it beats
+  // database.js's bubble-phase Escape (sidebar/report) and the standalone page's
+  // Escape (back to conversations) — neither fires while the rubric is open.
+  function onRubricKey(e) {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    e.preventDefault();
+    hideRubric();
+  }
+
+  function ensureRubricOverlay() {
+    if (rubricOverlay) return rubricOverlay;
+    const overlay = el("div", { class: "a-modal-overlay", hidden: "" });
+    const cardEl = el("div", { class: "a-modal-card", role: "dialog",
+      "aria-modal": "true", "aria-label": "Grading rubric" });
+    const head = el("div", { class: "a-modal-head" });
+    head.appendChild(el("h2", { class: "a-modal-title" }, ["Grading rubric"]));
+    const close = el("button", { type: "button", class: "a-modal-close",
+      "aria-label": "Close" }, ["×"]);
+    close.addEventListener("click", hideRubric);
+    head.appendChild(close);
+    cardEl.appendChild(head);
+    cardEl.appendChild(el("div", { class: "a-modal-body a-rubric-md" }));
+    overlay.appendChild(cardEl);
+    // Backdrop click (outside the card) closes; clicks on the card don't.
+    overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) hideRubric(); });
+    // Mount inside the analytics container so the --fs-* type tokens (scoped to
+    // .analytics / .analytics-panel) resolve; the overlay is fixed, so it still
+    // covers the viewport regardless of which host it lives in.
+    const host = $("analytics-root") || $("analytics-panel") || document.body;
+    host.appendChild(overlay);
+    rubricOverlay = overlay;
+    return overlay;
+  }
+
+  async function openRubric() {
+    const overlay = ensureRubricOverlay();
+    overlay.removeAttribute("hidden");
+    document.addEventListener("keydown", onRubricKey, true);
+    if (rubricCache) { paintRubric(); return; }
+    overlay.querySelector(".a-modal-body").textContent = "Loading…";
+    try {
+      const r = await fetch("/api/analytics/rubric");
+      if (!r.ok) throw new Error("rubric unavailable");
+      const data = await r.json();
+      rubricCache = {
+        title: "Grading rubric — " + (data.title || data.name || ""),
+        markdown: data.markdown || "",
+        html: mdToHtml(data.markdown || ""),
+      };
+      paintRubric();
+    } catch (e) {
+      overlay.querySelector(".a-modal-body").textContent = "Couldn't load the rubric.";
+    }
+  }
+
+  function hideRubric() {
+    if (!rubricOverlay) return;
+    rubricOverlay.setAttribute("hidden", "");
+    document.removeEventListener("keydown", onRubricKey, true);
+  }
+
   function render(payload) {
     const root = $("analytics-content");
     root.textContent = "";
@@ -246,7 +361,7 @@
           flagBody.appendChild(el("p", { class: "a-review-course" }, [names[course] || course]));
           byCourse.get(course).forEach((e) => flagBody.appendChild(flagLine(e[0], e[1], meta[e[0]])));
         });
-        root.appendChild(card("Flagged", flagBody));
+        root.appendChild(card("Flagged", flagBody, rubricInfoButton()));
       }
     }
 

@@ -2,12 +2,24 @@
    Weekly report styling. Inherits chat.css's system font and reuses the
    database palette tokens (--text / --muted / --border / --accent) so the cards,
    labels, and type weights read as part of the same review dashboard. */
+
+/* Font-size scale for the weekly report. One token per role, so resizing a
+   whole group (every heading, every quiet label, …) is a single edit and no
+   rule hard-codes a rem value on its own. analytics.js reads --fs-label and
+   --fs-body when it sizes the SVG chart text, keeping the chart in the scale. */
+.analytics, .analytics-panel {
+  --fs-heading: 0.9rem;   /* card titles — matches the sidebar CTA buttons */
+  --fs-value: 1rem;       /* stat values — matches the AskTIM sidebar title */
+  --fs-body: 0.92rem;     /* AI-review prose + chart bar-top values */
+  --fs-label: 0.8rem;     /* quiet uppercase labels + chart axis/day labels */
+  --fs-control: 0.85rem;  /* week/course pickers, back link, status line */
+}
 .analytics { max-width: 960px; margin: 0 auto; padding: 1rem; }
 .analytics-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-.analytics-back { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+.analytics-back { color: var(--accent); text-decoration: none; font-size: var(--fs-control); }
 /* When the back control is a <button> (dashboard panel), strip button chrome. */
 button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
-.analytics-status { color: var(--muted, #888); font-size: 0.85rem; }
+.analytics-status { color: var(--muted, #888); font-size: var(--fs-control); }
 
 /* Week picker: a select-like trigger that opens a small calendar popover.
    Sits on the page background (--bg) with a light --border outline so it
@@ -54,7 +66,7 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 .weekpick-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; }
-.weekpick-month { font-size: 0.85rem; font-weight: 600; color: var(--text, #2a2a2a); }
+.weekpick-month { font-size: var(--fs-control); font-weight: 600; color: var(--text, #2a2a2a); }
 .weekpick-nav {
   border: 0; background: none; cursor: pointer; line-height: 1;
   font-size: 1.15rem; color: var(--text, #2a2a2a); padding: 0.1rem 0.45rem; border-radius: 6px;
@@ -64,15 +76,16 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 .weekpick-wd { display: grid; grid-template-columns: repeat(7, 1fr); }
 .weekpick-wd span { text-align: center; font-size: 0.62rem; color: var(--muted, #888); padding: 0.2rem 0; }
 .weekpick-week { display: grid; grid-template-columns: repeat(7, 1fr); border-radius: 8px; cursor: pointer; }
-/* Same 3-state highlight as the conversation-list entries (database.css):
-   grey on hover, light blue when selected, deeper blue hovering the selected
-   week. Ordered so the selected-hover rule wins over the general hover. */
+/* Same 3-state highlight as the conversation-list active entry (database.css
+   .sidebar-entry-active): grey on hover when unselected, its exact light blue
+   (#e3eff5) when selected, its exact deeper blue (#d3e6f0) hovering the
+   selected week. Ordered so the selected-hover rule wins over the general hover. */
 .weekpick-week:not(.is-disabled):hover { background: #f5f5f5; }
-.weekpick-week.is-selected { background: #d0e6f7; }
-.weekpick-week.is-selected:hover { background: #bcd9ef; }
+.weekpick-week.is-selected { background: #e3eff5; }
+.weekpick-week.is-selected:hover { background: #d3e6f0; }
 .weekpick-week.is-disabled { cursor: default; }
 .weekpick-week.is-disabled .weekpick-day { color: #d6d6d6; }
-.weekpick-day { text-align: center; font-size: 0.8rem; padding: 0.35rem 0; color: var(--text, #2a2a2a); }
+.weekpick-day { text-align: center; font-size: var(--fs-label); padding: 0.35rem 0; color: var(--text, #2a2a2a); }
 .weekpick-day.is-off { color: var(--muted, #bbb); }
 
 /* Course filter: a select-like trigger + list popover, styled to match the
@@ -94,10 +107,10 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 }
 .coursepick-opt {
   padding: 0.4rem 0.55rem; border-radius: 8px; cursor: pointer;
-  font-size: 0.85rem; color: var(--text, #2a2a2a); white-space: nowrap;
+  font-size: var(--fs-control); color: var(--text, #2a2a2a); white-space: nowrap;
 }
 .coursepick-opt:hover { background: #f5f5f5; }
-.coursepick-opt.is-selected { background: #d0e6f7; }
+.coursepick-opt.is-selected { background: #e3eff5; }
 .analytics-content { display: grid; gap: 1rem; }
 
 /* Cards match the tutor message bubble: neutral fill, no outline. */
@@ -108,7 +121,7 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 }
 /* Card heading: same weight/size as the sidebar's section title, in the base
    text color rather than a hard black. */
-.a-card-title { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.7rem; color: var(--text, #2a2a2a); }
+.a-card-title { font-size: var(--fs-heading); font-weight: 600; margin: 0 0 0.7rem; color: var(--text, #2a2a2a); }
 
 .a-stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
 /* Stat key, course label, and the pending note share one quiet-label size and
@@ -116,23 +129,23 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
    "not enough activity" note all read as the same class of small grey label. */
 .a-stat-k {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--fs-label);
   font-weight: 400;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted, #888);
   margin-bottom: 0.15rem;
 }
-.a-stat-v { display: block; font-size: 1rem; font-weight: 600; color: var(--text, #2a2a2a); }
-.a-pending { color: var(--muted, #888); font-size: 0.8rem; margin: 0; }
+.a-stat-v { display: block; font-size: var(--fs-value); font-weight: 600; color: var(--text, #2a2a2a); }
+.a-pending { color: var(--muted, #888); font-size: var(--fs-label); margin: 0; }
 
 /* AI review: a readable narrative paragraph per course. The course label is a
    quiet uppercase eyebrow (reused from the stat-key treatment) shown only when
    more than one course is in view. */
-.a-review { font-size: 0.92rem; line-height: 1.55; color: var(--text, #2a2a2a); margin: 0 0 0.9rem; }
+.a-review { font-size: var(--fs-body); line-height: 1.55; color: var(--text, #2a2a2a); margin: 0 0 0.9rem; }
 .a-review:last-child { margin-bottom: 0; }
 .a-review-course {
-  font-size: 0.8rem;
+  font-size: var(--fs-label);
   font-weight: 400;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -142,14 +155,13 @@ button.analytics-back { background: none; border: 0; padding: 0; cursor: pointer
 
 .chart { width: 100%; height: auto; }
 .chart-grid { stroke: var(--border, #e2e2e2); stroke-width: 1; }
-/* Bar-top value numbers: sized by JS (sizeChartText) to render at 0.92rem on
-   screen — matching the AI-review body (.a-review) — despite the viewBox scale.
-   14px is the pre-JS fallback. */
+/* Bar-top value numbers: sized by JS (sizeChartText) from the --fs-body token
+   so they render at the AI-review body size on screen despite the viewBox
+   scale. 14px is the pre-JS fallback. */
 .chart-val { font-size: var(--chart-val-size, 14px); fill: var(--text, #2a2a2a); }
-/* Axis + day labels: uppercase ("SUN"…) and muted. The size is a CSS var set
-   per-chart by JS (sizeChartLabels) to render at exactly 0.8rem on screen —
-   matching the stat keys — despite the chart's viewBox scaling. 8px is the
-   pre-JS fallback. */
+/* Axis + day labels: uppercase ("SUN"…) and muted. Sized by JS from the
+   --fs-label token so they render at the quiet-label size on screen despite
+   the chart's viewBox scaling. 8px is the pre-JS fallback. */
 .chart-lbl { font-size: var(--chart-lbl-size, 8px); fill: var(--muted, #888); text-transform: uppercase; }
 
 /* Embedded in the dashboard main pane (index.html): fills the transcript box,

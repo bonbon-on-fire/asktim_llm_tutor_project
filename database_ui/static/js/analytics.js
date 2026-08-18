@@ -126,8 +126,14 @@
       const shown = svg.getBoundingClientRect().width;
       if (!shown) return;
       const scale = vb / shown;   // SVG user units per on-screen pixel
-      svg.style.setProperty("--chart-lbl-size", (0.8 * rem * scale).toFixed(2) + "px");
-      svg.style.setProperty("--chart-val-size", (0.92 * rem * scale).toFixed(2) + "px");
+      // Read the report's font-size tokens (rem multiples) so axis/day labels
+      // track --fs-label and the bar-top values track --fs-body — one source of
+      // truth in analytics.css rather than magic numbers duplicated here.
+      const cs = getComputedStyle(svg);
+      const lblRem = parseFloat(cs.getPropertyValue("--fs-label")) || 0.8;
+      const valRem = parseFloat(cs.getPropertyValue("--fs-body")) || 0.92;
+      svg.style.setProperty("--chart-lbl-size", (lblRem * rem * scale).toFixed(2) + "px");
+      svg.style.setProperty("--chart-val-size", (valRem * rem * scale).toFixed(2) + "px");
     });
   }
 

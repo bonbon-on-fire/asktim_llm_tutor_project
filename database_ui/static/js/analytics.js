@@ -129,12 +129,13 @@
       rBody.appendChild(el("p", { class: "a-pending" }, ["This week's review is coming soon"]));
     } else {
       const reviews = payload.cached.ai_review_by_course || {};
+      const names = payload.course_names || {};
       const courses = Object.keys(reviews);
       if (courses.length === 0) {
         rBody.appendChild(el("p", { class: "a-pending" }, ["Not enough activity this week to write a review"]));
       } else {
         courses.forEach((course) => {
-          rBody.appendChild(el("p", { class: "a-review-course" }, [course]));
+          rBody.appendChild(el("p", { class: "a-review-course" }, [names[course] || course]));
           rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
         });
       }
@@ -148,6 +149,7 @@
     if (payload.cached && payload.all_access) {
       const flags = Object.values(payload.cached.conversations || {}).filter((c) => !c.worked_well);
       if (flags.length > 0) {
+      const names = payload.course_names || {};
       const flagBody = el("div");
       flagBody.appendChild(el("p", { class: "a-muted" }, [flags.length + " conversations flagged."]));
       flags.forEach((c) => {
@@ -155,7 +157,7 @@
         const score = g && typeof g.total_score === "number"
           ? (g.total_score + "/" + (g.max_score || 40)) : "—";
         const overview = (g && g.overview) || c.one_line || "";
-        const parts = [c.course, score];
+        const parts = [names[c.course] || c.course, score];
         if (overview) parts.push(overview);
         flagBody.appendChild(el("p", { class: "a-flag" }, [parts.join(" · ")]));
       });

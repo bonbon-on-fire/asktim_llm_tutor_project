@@ -8,12 +8,12 @@ def _client():
     return app.test_client()
 
 
-def test_analytics_page_renders_shell():
-    html = _client().get("/analytics").get_data(as_text=True)
-    assert 'id="analytics-root"' in html
-    assert "analytics.js" in html
+def test_analytics_page_route_is_gone():
+    # The standalone /analytics page was removed; the report lives only in-place
+    # on the dashboard. The GET route should no longer exist.
+    assert _client().get("/analytics").status_code == 404
 
 
-def test_index_has_weekly_report_link():
+def test_index_has_weekly_report_button():
     html = _client().get("/").get_data(as_text=True)
-    assert "/analytics" in html and "Weekly report" in html
+    assert 'id="weekly-report-open"' in html and "Weekly report" in html

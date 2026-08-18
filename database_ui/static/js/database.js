@@ -44,9 +44,8 @@
     setView("conversation");   // back to the transcript pane
   }
   if (weeklyOpen) {
-    weeklyOpen.addEventListener("click", (e) => {
-      e.preventDefault();   // render in-place; the href is the no-JS fallback
-      showReport();
+    weeklyOpen.addEventListener("click", () => {
+      showReport();   // render the report in-place in the dashboard
     });
   }
   // Selecting a conversation swaps the report back out (see loadConversation);

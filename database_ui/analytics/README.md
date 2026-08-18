@@ -83,8 +83,8 @@ Each module is pure and independently testable (tests live in [`tests/`](tests/)
 | File | Responsibility |
 |---|---|
 | [`services/analytics.py`](../services/analytics.py) | `live_stats()` computes the always-current stats + WoW for any week; `cached_sections()` reads the committed cache, **strips the internal `_hashes`**, and course-scopes it to the login; `week_options()` / `week_range()` feed the picker. |
-| [`routes/analytics.py`](../routes/analytics.py) | The `analytics` blueprint: the `/analytics` page shell plus the scoped JSON API `GET /api/analytics?week=YYYY-MM-DD` and `GET /api/analytics/weeks`. Scope comes from `allowed_courses()`. |
-| [`templates/analytics.html`](../templates/analytics.html) / [`index.html`](../templates/index.html) | The standalone report page and the in-dashboard panel (same markup, same JS). |
+| [`routes/analytics.py`](../routes/analytics.py) | The `analytics` blueprint: the scoped JSON API `GET /api/analytics?week=YYYY-MM-DD` and `GET /api/analytics/weeks`. Scope comes from `allowed_courses()`. |
+| [`index.html`](../templates/index.html) | The in-dashboard report panel — the report renders in-place on the conversation dashboard (`/`); there is no standalone page. |
 | [`static/js/analytics.js`](../static/js/analytics.js) / [`css/analytics.css`](../static/css/analytics.css) | Renders the overview cards (Conversations, Messages, Students, New students, Cost — each with a WoW ▲/▼), the inline-SVG daily-activity chart, the calendar week-picker, and the AI-review sections. Bump the `?v=` query on these assets when you edit them. |
 
 ### CI

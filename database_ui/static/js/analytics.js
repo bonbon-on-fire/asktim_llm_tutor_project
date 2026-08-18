@@ -181,9 +181,8 @@
     return parts.join(" · ");
   }
 
-  // Open a flagged conversation. On the dashboard, database.js exposes an opener
-  // that swaps the transcript in-place; on the standalone /analytics page there
-  // is no transcript, so navigate home with a deep link it reads on load.
+  // Open a flagged conversation. database.js exposes an opener that swaps the
+  // transcript in-place; fall back to a home deep link if it isn't wired yet.
   function openFlagged(id) {
     if (window.DatabaseReview && typeof window.DatabaseReview.open === "function") {
       window.DatabaseReview.open(id);
@@ -355,11 +354,11 @@
       root.appendChild(card("AI review", rBody));
     }
 
-    // Flags: judged conversations that didn't work well — internal QA shown only
-    // in the master view, never to a course-scoped login (the server also
-    // withholds the data). Nothing to show until the week's cache exists, and
-    // the whole card is dropped when there's nothing flagged (no empty card).
-    if (payload.cached && payload.all_access) {
+    // Flags: judged conversations that didn't work well — shown to every login.
+    // The server course-filters the cache, so a scoped login only ever gets its
+    // own courses' flags. Nothing to show until the week's cache exists, and the
+    // whole card is dropped when there's nothing flagged (no empty card).
+    if (payload.cached) {
       const flags = Object.entries(payload.cached.conversations || {})
         .filter((e) => !e[1].worked_well);
       if (flags.length > 0) {
@@ -708,32 +707,9 @@
     await initPicker();
   }
 
-  // Standalone /analytics page only: Escape leaves the report and returns to the
-  // conversation list — the same destination as the "← Conversations" back link,
-  // so Escape "hides the dashboard" here the way it does in the in-place panel.
-  // Gated on #analytics-root (present only on the standalone page), so it stays
-  // inert in the dashboard host, where database.js owns Escape — no double-fire.
-  function setupStandaloneEscape() {
-    document.addEventListener("keydown", (event) => {
-      if (event.key !== "Escape") return;
-      const back = document.querySelector(".analytics-back");
-      const href = back && back.getAttribute("href");
-      window.location.href = href || "/";
-    });
-  }
-
-  // Two hosts share this module:
-  //  - Standalone /analytics page (main#analytics-root): init on load, and
-  //    Escape returns to the conversation list.
-  //  - Dashboard panel (index.html): stays dormant until database.js calls
-  //    WeeklyReport.ensureInit() when the "Weekly report" button is clicked;
-  //    database.js owns Escape there.
+  // This module has a single host: the dashboard panel (index.html). It stays
+  // dormant until database.js calls WeeklyReport.ensureInit() when the "Weekly
+  // report" button is clicked; database.js owns Escape there.
   window.WeeklyReport = { ensureInit };
   window.addEventListener("resize", sizeChartText);
-  document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById("analytics-root")) {
-      ensureInit();
-      setupStandaloneEscape();
-    }
-  });
 })();

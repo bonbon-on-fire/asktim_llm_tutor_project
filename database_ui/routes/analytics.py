@@ -1,28 +1,21 @@
 # database_ui/routes/analytics.py
-"""Weekly-report blueprint: the page shell and its scoped JSON API."""
+"""Weekly-report blueprint: the scoped JSON API for the in-dashboard report.
+
+The report renders in-place on the conversation dashboard (``/``); there is no
+standalone page — these endpoints feed that panel via ``analytics.js``.
+"""
 from __future__ import annotations
 
 from datetime import date
 
-from flask import Blueprint, current_app, g, jsonify, render_template, request
+from flask import Blueprint, g, jsonify, request
 
 from database_ui.analytics.weeks import parse_week, week_containing
 from database_ui.auth import allowed_courses
 from database_ui.courses import course_display_name
-from database_ui.routes.database import _scope_label  # reuse the hidden banner label
 from database_ui.services import analytics as svc
 
 analytics_bp = Blueprint("analytics", __name__)
-
-
-@analytics_bp.get("/analytics")
-def analytics_page():
-    return render_template(
-        "analytics.html",
-        title=current_app.config["DATABASE_UI_TITLE"],
-        accent=current_app.config["DATABASE_UI_ACCENT"],
-        scope_label=_scope_label(),
-    )
 
 
 @analytics_bp.get("/api/analytics")
@@ -30,25 +23,23 @@ def api_analytics():
     raw = request.args.get("week")
     week = parse_week(raw) if raw else week_containing(date.today())
     allowed = allowed_courses()
-    all_access = allowed is None          # master password / open dev, not a course scope
     # Optional multi-course filter from the report's course dropdown (one
     # course= param per selected course). Out-of-scope keys are dropped, and an
     # empty/all selection falls back to the login's full scope — so a
     # course-scoped login can never read another course's data.
     courses = _course_scope(allowed, request.args.getlist("course"))
     live = svc.live_stats(g.db, week, courses)
-    cached = svc.cached_sections(week.key, courses, all_access=all_access)
+    cached = svc.cached_sections(week.key, courses)
     return jsonify({
         "week": {"key": week.key, "label": week.label()},
         "live": live,
         "cached": cached,
-        "all_access": all_access,         # gates the master-only "Didn't work well" flags
         # Curriculum-key -> human course name, so the client shows "MIT CTL.SC2x
         # Supply Chain Design" rather than the raw "supply_chain_design" key.
         "course_names": _course_names(cached),
         # Live label data (kind/number/date/msg-count) for the flagged list, so
-        # each flag can render and link to its conversation. Empty for scoped
-        # logins (they get no flagged conversations at all).
+        # each flag can render and link to its conversation. Scoped to the
+        # login's courses via the already-filtered cache.
         "conversation_meta": svc.flagged_conversation_meta(g.db, cached),
     })
 

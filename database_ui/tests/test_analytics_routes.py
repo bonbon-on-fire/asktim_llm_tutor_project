@@ -10,6 +10,7 @@ from database_ui.analytics import cache as cache_mod
 
 MASTER = "master-secret"
 SC_PW = "supply-secret"
+OTHER_PW = "physics-secret"
 
 
 @pytest.fixture()
@@ -32,10 +33,12 @@ def _login(app, pw):
     return c
 
 
-def test_analytics_page_requires_auth():
-    app = _app()
-    resp = app.test_client().get("/analytics")
-    assert resp.status_code in (301, 302)          # redirected to login
+def test_analytics_page_route_removed():
+    # The standalone /analytics page is gone; only the JSON API remains. Even a
+    # fully authenticated session gets a 404 (an unauthed GET would only 302 to
+    # login, which wouldn't prove the route is absent).
+    c = _login(_app(), MASTER)
+    assert c.get("/analytics").status_code == 404
 
 
 def test_api_analytics_returns_live_and_pending_cached(seeded):
@@ -150,9 +153,12 @@ def test_flagged_meta_is_live_and_flag_only(seeded, tmp_path, monkeypatch):
     assert "exercise_number" in entry and "last_active_at" in entry
 
 
-def test_flags_are_master_only(seeded, tmp_path, monkeypatch):
-    """The "Didn't work well" flags show only in the master view; a course-scoped
-    login gets ``all_access: False`` and no flag-bearing conversations at all."""
+def test_flags_visible_to_every_login(seeded, tmp_path, monkeypatch):
+    """The "Didn't work well" flags show to every login, scoped to its courses.
+
+    Master sees the flag; a login scoped to the flag's own course now sees it too
+    (previously master-only); a login scoped to a different course never does —
+    the cache's course filter still isolates it."""
     monkeypatch.setattr(cache_mod, "CACHE_DIR", tmp_path)
     blob = {
         "conversations": {
@@ -170,12 +176,20 @@ def test_flags_are_master_only(seeded, tmp_path, monkeypatch):
     }
     (tmp_path / "2026-04-26.json").write_text(json.dumps(blob), encoding="utf-8")
 
-    # Master sees the flag source and is flagged all-access.
-    master = _login(_app(), MASTER).get("/api/analytics?week=2026-05-01").get_json()
-    assert master["all_access"] is True
+    app = _app()
+    app.config["DATABASE_UI_COURSE_PASSWORDS"] = {
+        SC_PW: ("supply_chain_design",),
+        OTHER_PW: ("physics_iii_vibrations_and_waves",),
+    }
+
+    # Master sees the flag source.
+    master = _login(app, MASTER).get("/api/analytics?week=2026-05-01").get_json()
     assert "conv-1" in master["cached"]["conversations"]
 
-    # A scoped login (even to the very course the flag belongs to) gets nothing.
-    scoped = _login(_app(), SC_PW).get("/api/analytics?week=2026-05-01").get_json()
-    assert scoped["all_access"] is False
-    assert scoped["cached"]["conversations"] == {}
+    # A login scoped to the flag's own course now sees it too.
+    scoped = _login(app, SC_PW).get("/api/analytics?week=2026-05-01").get_json()
+    assert "conv-1" in scoped["cached"]["conversations"]
+
+    # A login scoped to a different course still sees nothing — course isolation.
+    other = _login(app, OTHER_PW).get("/api/analytics?week=2026-05-01").get_json()
+    assert other["cached"]["conversations"] == {}

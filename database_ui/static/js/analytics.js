@@ -134,7 +134,7 @@
         rBody.appendChild(el("p", { class: "a-pending" }, ["Not enough activity this week to write a review"]));
       } else {
         courses.forEach((course) => {
-          if (courses.length > 1) rBody.appendChild(el("p", { class: "a-review-course" }, [course]));
+          rBody.appendChild(el("p", { class: "a-review-course" }, [course]));
           rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
         });
       }

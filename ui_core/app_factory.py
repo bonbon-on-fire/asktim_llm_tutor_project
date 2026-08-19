@@ -22,6 +22,23 @@ from ui_core.cookies import SESSION_COOKIE_NAME, default_cookie_kwargs, new_sess
 from ui_core.web.static_blueprint import static_bp
 
 
+# Endpoints that stay reachable while maintenance mode is on — just enough to
+# render the maintenance page and its assets. Everything else (the chat API and
+# every other /api/* action) is refused server-side with 503, so the outage holds
+# even if a client deletes the overlay from the DOM. This mirrors database_ui's
+# before_request gate (database_ui/auth.py), which likewise allowlists a few
+# public endpoints and blocks the rest.
+_MAINTENANCE_ALLOWED_ENDPOINTS = frozenset(
+    {
+        "embed.index",    # GET /       — serves the page (with the overlay)
+        "embed.embed",    # GET /embed  — same, with course context
+        "static",         # /static/*   — vendored JS (marked, dompurify, chat.js)
+        "ui_core.static",  # /ui-core/*  — chat.css (overlay styles) + katex
+        "health",         # Railway liveness probe must keep passing
+    }
+)
+
+
 def create_app(
     *,
     import_name: str,
@@ -51,6 +68,35 @@ def create_app(
     app.register_blueprint(static_bp)
     for bp in blueprints:
         app.register_blueprint(bp)
+
+    # Read once at startup: MAIN_UI_MAINTENANCE is set at deploy time and a change
+    # restarts the process (sandbox_ui has no such field, hence getattr default).
+    maintenance_mode = bool(getattr(config, "maintenance_mode", False))
+
+    @app.before_request
+    def _maintenance_gate():
+        """Refuse functional endpoints while maintenance mode is on (503).
+
+        Server-side companion to the maintenance overlay: the page still renders
+        (the embed endpoints stay allowed, so the overlay shows), but the chat
+        API and every other action are blocked here — so the outage can't be
+        clicked past by removing the overlay client-side. Registered first so a
+        blocked request short-circuits before the session/DB hooks run. Mirrors
+        database_ui's before_request auth gate.
+        """
+        if not maintenance_mode:
+            return None
+        if request.endpoint in _MAINTENANCE_ALLOWED_ENDPOINTS:
+            return None
+        response = jsonify(
+            {
+                "error": "maintenance",
+                "message": "AskTIM is temporarily down for maintenance.",
+            }
+        )
+        response.status_code = 503
+        response.headers["Retry-After"] = "120"
+        return response
 
     @app.before_request
     def _ensure_session_id() -> None:

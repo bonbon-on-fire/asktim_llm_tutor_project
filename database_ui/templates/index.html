@@ -6,11 +6,32 @@
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/chat.css', v='6') }}">
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/katex.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css', v='2') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css', v='3') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css', v='25') }}">
     <style>:root { --accent: {{ accent }}; }</style>
 </head>
 <body class="review-body">
+{% if show_login %}    <!-- Signed-out gate. The review shell renders behind this (blurred) but its
+         data is loaded from the /api endpoints, which stay blocked server-side
+         for signed-out sessions — so no conversations are exposed. Blue-ish frost
+         per the cross-app convention (sandbox/database = blue, main = red). No
+         close control: the only way past is a correct password. -->
+    <div class="review-login-overlay" role="alertdialog" aria-modal="true"
+         aria-labelledby="review-login-title" aria-describedby="review-login-body">
+        <div class="modal-card">
+            <h2 id="review-login-title" class="modal-title">{{ title }}</h2>
+            <p id="review-login-body" class="modal-body">Sign in to view AskTIM conversations.</p>
+            <form class="modal-form" method="post" action="{{ url_for('database.login_submit') }}" autocomplete="off">
+                <input type="password" name="password" class="email-input"
+                       placeholder="Enter your password" aria-label="Review password" autofocus required>
+                {% if login_error %}<div class="modal-error" role="alert">{{ login_error }}</div>{% endif %}
+                <div class="modal-actions">
+                    <button type="submit" class="modal-submit">Sign in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endif %}
     <!-- Looks like an empty bar. The current login's access scope is written here
          in the banner's own white, so it's invisible until you select the header
          text (a scoped reviewer shouldn't know the view is filtered). -->

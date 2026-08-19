@@ -11,8 +11,10 @@ This test builds the real app with the auth gate ACTIVE (a password
 configured) and no session cookie, then asserts:
 - GET /ui-core/css/chat.css -> 200 (public; the regression this fixes)
 - GET /static/css/database.css -> 200 (still public)
-- GET / (a protected route) -> 302 redirect to the login page (proves the
-  gate is genuinely active, so the 200s above are meaningful)
+- GET / -> 200 rendering the shell WITH the login overlay (signed-out visitors
+  see the site, blurred, behind the login modal)
+- GET /api/conversations -> 401 (the data endpoints stay blocked, so the
+  visible shell exposes no conversations — this is the real enforcement)
 
 Run with:
     python -m database_ui.test_auth_public_static
@@ -71,20 +73,31 @@ def test_own_database_css_is_public() -> None:
     )
 
 
-def test_protected_route_redirects_to_login() -> None:
-    """Assert a protected route redirects (302) to the login page when unauthed."""
+def test_unauthed_index_renders_shell_with_login_overlay() -> None:
+    """Assert signed-out ``/`` renders the shell (200) with the login overlay.
+
+    The shell is served (not redirected) so the login modal can sit over the
+    real site, but it must carry the login overlay and no conversation data.
+    """
     client = _make_client()
     resp = client.get("/", follow_redirects=False)
+    _check("GET / -> 200 (shell renders)", resp.status_code == 200, f"got {resp.status_code}")
+    body = resp.get_data(as_text=True)
+    _check("login overlay present", "review-login-overlay" in body, "overlay markup missing")
+
+
+def test_unauthed_data_api_is_blocked() -> None:
+    """Assert a data endpoint stays blocked (401) when unauthed.
+
+    This is the real enforcement: the shell is visible, but no chats leak
+    because the /api endpoints that fill it are refused server-side.
+    """
+    client = _make_client()
+    resp = client.get("/api/conversations", follow_redirects=False)
     _check(
-        "GET / -> 302",
-        resp.status_code == 302,
+        "GET /api/conversations -> 401 (data blocked)",
+        resp.status_code == 401,
         f"got {resp.status_code}",
-    )
-    location = resp.headers.get("Location", "")
-    _check(
-        "redirect targets login page",
-        location.endswith("/login"),
-        f"got Location={location!r}",
     )
 
 
@@ -93,7 +106,8 @@ def main() -> int:
     for t in (
         test_shared_chat_css_is_public,
         test_own_database_css_is_public,
-        test_protected_route_redirects_to_login,
+        test_unauthed_index_renders_shell_with_login_overlay,
+        test_unauthed_data_api_is_blocked,
     ):
         print(t.__name__)
         t()

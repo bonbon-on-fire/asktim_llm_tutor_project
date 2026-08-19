@@ -15,7 +15,7 @@ from __future__ import annotations
 import hmac
 from dataclasses import dataclass
 
-from flask import Flask, current_app, redirect, request, session, url_for
+from flask import Flask, current_app, jsonify, redirect, request, session, url_for
 
 _SESSION_KEY = "database_authed"
 _SESSION_ALL_ACCESS = "all_access"
@@ -106,9 +106,22 @@ def init_auth(app: Flask) -> None:
 
     @app.before_request
     def _require_auth():
-        """Redirect to the login page unless the endpoint is public or authed."""
+        """Gate every non-public route unless the session is authed.
+
+        Signed-out visitors still get the ``index`` shell so the login modal can
+        sit over the real review site (blurred). That shell carries no
+        conversation data (it's filled client-side from the ``/api`` endpoints,
+        which stay blocked below), so no chats are exposed — the same
+        display-vs-enforcement split as the main_ui maintenance overlay. Data and
+        action endpoints are refused server-side: ``/api/*`` gets a 401 JSON,
+        every other protected page redirects to the shell.
+        """
         if request.endpoint in _PUBLIC_ENDPOINTS:
             return None
         if is_authed():
             return None
-        return redirect(url_for("database.login"))
+        if request.endpoint == "database.index":
+            return None  # render the shell; login overlay shown, data blocked below
+        if request.path.startswith("/api/"):
+            return jsonify({"error": "auth_required"}), 401
+        return redirect(url_for("database.index"))

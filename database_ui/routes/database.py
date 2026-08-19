@@ -36,7 +36,7 @@ from flask import (
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from database_ui.auth import allowed_courses, clear_auth, mark_authed, resolve_scope
+from database_ui.auth import allowed_courses, clear_auth, is_authed, mark_authed, resolve_scope
 from database_ui.courses import course_display_name
 from database_ui.services import conversations as svc
 from ui_core.web.blueprints.history import content_disposition_attachment
@@ -80,31 +80,46 @@ def _scope_label() -> str:
     return " · ".join(name for name in names if name) or "Master"
 
 
+def _render_shell(*, login_error: str | None = None, status: int = 200):
+    """Render the review shell (index.html), optionally with the login overlay.
+
+    When the session is not authed, ``show_login`` drives a non-dismissable
+    login overlay in the template and the (hidden) scope label is blanked so a
+    signed-out visitor sees no scope hint. The shell itself carries no
+    conversation data — the ``/api`` endpoints that fill it stay blocked for
+    signed-out sessions — so the site is visible but empty of chats.
+    """
+    authed = is_authed()
+    return (
+        render_template(
+            "index.html",
+            title=current_app.config["DATABASE_UI_TITLE"],
+            accent=current_app.config["DATABASE_UI_ACCENT"],
+            scope_label=_scope_label() if authed else "",
+            show_login=not authed,
+            login_error=login_error,
+        ),
+        status,
+    )
+
+
 @database_bp.get("/")
 def index():
     """Render the review shell (sidebar plus transcript view).
 
     The scope label is rendered as background-colored text in the top banner:
     invisible in normal viewing (a scoped reviewer should not be able to tell
-    their view is filtered), but revealable by selecting the header text.
+    their view is filtered), but revealable by selecting the header text. For a
+    signed-out session the shell renders with the login overlay on top (see
+    ``_render_shell``).
     """
-    return render_template(
-        "index.html",
-        title=current_app.config["DATABASE_UI_TITLE"],
-        accent=current_app.config["DATABASE_UI_ACCENT"],
-        scope_label=_scope_label(),
-    )
+    return _render_shell()
 
 
 @database_bp.get("/login")
 def login():
-    """Render the shared-password login form."""
-    return render_template(
-        "login.html",
-        title=current_app.config["DATABASE_UI_TITLE"],
-        accent=current_app.config["DATABASE_UI_ACCENT"],
-        error=None,
-    )
+    """Legacy login URL — the login form now lives on the shell itself."""
+    return redirect(url_for("database.index"))
 
 
 @database_bp.post("/login")
@@ -115,15 +130,7 @@ def login_submit():
     if scope is not None:
         mark_authed(scope)
         return redirect(url_for("database.index"))
-    return (
-        render_template(
-            "login.html",
-            title=current_app.config["DATABASE_UI_TITLE"],
-            accent=current_app.config["DATABASE_UI_ACCENT"],
-            error="Wrong password, try again",
-        ),
-        401,
-    )
+    return _render_shell(login_error="Wrong password, try again", status=401)
 
 
 @database_bp.get("/logout")

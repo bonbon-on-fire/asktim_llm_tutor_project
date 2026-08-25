@@ -157,6 +157,9 @@
     <script src="{{ url_for('ui_core.static', filename='js/katex-marked.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
+    {# Optional app-specific scripts loaded (deferred, in order) just before
+       chat.js. Empty by default; main_ui uses it for outage_monitor.js. #}
+    {% block pre_chat_scripts %}{% endblock %}
     <script src="{% block chat_js_src %}{{ url_for('static', filename='js/chat.js') }}{% endblock %}" defer></script>
 </body>
 </html>

@@ -98,6 +98,120 @@
   // aborted when the student switches to a past conversation mid-request.
   let currentChatController = null;
 
+  // ---- Automatic outage detection -------------------------------------------
+  // When the tutor service (not just one message) is down or unresponsive during
+  // a large course, students otherwise see a hanging chat with no explanation and
+  // email support in bulk. This watches the outcomes of their own /api/chat sends
+  // and, once confident the *service* is down, shows the same "AskTIM is
+  // temporarily down" note automatically — then clears it after a cooldown so a
+  // recovered service becomes usable again with no human in the loop. The
+  // streak/confirm/recover state machine lives in outage_monitor.js (unit-tested
+  // in Node); this block only supplies the browser-backed side effects.
+  const OUTAGE_FAILURE_THRESHOLD = 3; // consecutive infra failures before we probe
+  const OUTAGE_HEALTH_TIMEOUT_MS = 6000; // confirmation /health probe timeout
+  const OUTAGE_COOLDOWN_MS = 60000; // auto-clear the note, then let retries re-trip
+
+  // If the server already forced the maintenance overlay (MAIN_UI_MAINTENANCE),
+  // the page is in a hard outage and the chat API is 503 anyway — the client
+  // monitor would only add a duplicate overlay, so stand down entirely.
+  const serverForcedMaintenance = !!document.querySelector(".maintenance-overlay");
+
+  let autoOutageOverlay = null;
+  function ensureOutageOverlay() {
+    if (autoOutageOverlay) {
+      return autoOutageOverlay;
+    }
+    // Reuse the shared .maintenance-overlay / .maintenance-card styling
+    // (ui_core/static/css/chat.css) so the auto note is visually identical to
+    // the server-forced one; a distinct id keeps the two independent.
+    const overlay = document.createElement("div");
+    overlay.className = "maintenance-overlay";
+    overlay.id = "auto-outage-overlay";
+    overlay.setAttribute("role", "alertdialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "auto-outage-title");
+    overlay.setAttribute("aria-describedby", "auto-outage-body");
+    overlay.style.display = "none";
+    const card = document.createElement("div");
+    card.className = "maintenance-card";
+    const title = document.createElement("h1");
+    title.className = "maintenance-title";
+    title.id = "auto-outage-title";
+    title.textContent = "AskTIM is temporarily down";
+    const bodyText = document.createElement("p");
+    bodyText.className = "maintenance-body";
+    bodyText.id = "auto-outage-body";
+    bodyText.textContent =
+      "We're having trouble reaching AskTIM right now. Our team is on it — " +
+      "please hold on a moment and try again shortly.";
+    card.appendChild(title);
+    card.appendChild(bodyText);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    autoOutageOverlay = overlay;
+    return overlay;
+  }
+
+  async function confirmOutage() {
+    // The confirmation probe's one job: don't blame AskTIM when it's the
+    // student's own connection. Reaching /health (even a shallow 200) means the
+    // web tier is up and this browser has connectivity, so a streak of failed
+    // tutor sends is a real tutor-side outage → confirm. If /health is
+    // unreachable we're either fully down (still an outage from the student's
+    // view) or offline — only the latter, provable via navigator.onLine ===
+    // false, suppresses the note.
+    let healthReachable = false;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(
+        () => controller.abort(),
+        OUTAGE_HEALTH_TIMEOUT_MS,
+      );
+      try {
+        const resp = await fetch("/health", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        healthReachable = resp.ok;
+      } finally {
+        clearTimeout(timer);
+      }
+    } catch (_) {
+      healthReachable = false;
+    }
+    if (healthReachable) {
+      return true;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return false;
+    }
+    return true;
+  }
+
+  function scheduleOutageCooldown(onElapsed) {
+    const handle = setTimeout(onElapsed, OUTAGE_COOLDOWN_MS);
+    return () => clearTimeout(handle);
+  }
+
+  // No-op stub when the server already forced maintenance, or if the monitor
+  // script failed to load — the chat must keep working either way.
+  const outageMonitor =
+    serverForcedMaintenance || typeof createOutageMonitor !== "function"
+      ? { recordSuccess() {}, recordFailure() {} }
+      : createOutageMonitor({
+          threshold: OUTAGE_FAILURE_THRESHOLD,
+          confirmOutage,
+          showOverlay() {
+            ensureOutageOverlay().style.display = "";
+          },
+          hideOverlay() {
+            if (autoOutageOverlay) {
+              autoOutageOverlay.style.display = "none";
+            }
+          },
+          scheduleCooldown: scheduleOutageCooldown,
+        });
+
   function updateSendButton() {
     const hasText = composerInput.value.trim().length > 0;
     sendButton.disabled =
@@ -1144,7 +1258,10 @@
               "Message is too long, shorten it or split it across multiple messages",
           );
         } else {
+          // Unrecognized non-OK response (server 5xx/503) — an infra failure,
+          // not a user error, so it feeds outage detection.
           showError("Something went wrong, please try again");
+          outageMonitor.recordFailure();
         }
         return;
       }
@@ -1221,6 +1338,7 @@
       if (streamError) {
         // Explicit error frame from the server: keep the bubble, offer retry.
         markTurnFailed();
+        outageMonitor.recordFailure();
         return;
       }
 
@@ -1228,8 +1346,13 @@
         // Stream closed with no done/error frame — same failure to the student
         // as an explicit error frame, so handle it identically.
         markTurnFailed();
+        outageMonitor.recordFailure();
         return;
       }
+
+      // A completed tutor turn: strongest proof the service is alive — reset the
+      // outage streak and clear the auto note if it was showing.
+      outageMonitor.recordSuccess();
 
       if (conversationLimitReached) {
         // Step 4: length-ceiling lockout takes priority over the login gate —
@@ -1251,11 +1374,15 @@
         studentBubble.remove();
         revokeOutgoing();
       } else {
+        // Network error or timeout reaching /api/chat — an infra failure that
+        // feeds outage detection (AbortError above is an intentional switch, not
+        // a failure, and is deliberately excluded).
         tutorBubble.remove();
         studentBubble.remove();
         revokeOutgoing();
         composerInput.value = originalText;
         showError("Something went wrong, please try again");
+        outageMonitor.recordFailure();
       }
     } finally {
       if (currentChatController === controller) {

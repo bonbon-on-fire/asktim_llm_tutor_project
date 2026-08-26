@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, Integer, Text, Uuid
+from sqlalchemy import Boolean, DateTime, false, Index, Integer, Text, Uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from ui_core.db.models_common import (
@@ -90,3 +90,36 @@ class UploadedFile(UploadedFileMixin, Base):
 
 class Feedback(FeedbackMixin, Base):
     pass
+
+
+class ServiceHealth(Base):
+    """Single-row (id=1) coordination record for automatic outage detection.
+
+    Read/written across the ~4 gunicorn workers (there is no Redis; Postgres is
+    the only shared store), so the runtime "AskTIM is down" banner can engage
+    from real ``/api/chat`` traffic instead of a startup-only env flag. See
+    ``main_ui/services/service_health.py`` for the state machine; the migration
+    seeds the single row.
+    """
+
+    __tablename__ = "service_health"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    degraded: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    degraded_since: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    consecutive_failures: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_failure_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )

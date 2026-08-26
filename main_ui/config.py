@@ -27,6 +27,14 @@ class Config:
     max_conversation_tokens: int
     free_messages_before_login: int
     maintenance_mode: bool
+    # Automatic outage detection (server-side, phase 2). Consecutive infra
+    # failures across all students before the auto "AskTIM is down" banner
+    # engages; how long a degraded state lasts before lazy expiry lets live
+    # traffic re-detect; and how long each worker caches the degraded read to
+    # bound DB load. See services/service_health.py.
+    outage_failure_threshold: int
+    outage_cooldown_seconds: int
+    outage_health_cache_seconds: int
 
 
 def load_config() -> Config:
@@ -45,6 +53,11 @@ def load_config() -> Config:
     # deployment (MAIN_UI_MAINTENANCE=1) without a code change and off again once
     # service is restored. Defaults off so normal environments are unaffected.
     maintenance_mode = _parse_bool(os.environ.get("MAIN_UI_MAINTENANCE"), default=False)
+    outage_failure_threshold = int(os.environ.get("OUTAGE_FAILURE_THRESHOLD", "5"))
+    outage_cooldown_seconds = int(os.environ.get("OUTAGE_COOLDOWN_SECONDS", "90"))
+    outage_health_cache_seconds = int(
+        os.environ.get("OUTAGE_HEALTH_CACHE_SECONDS", "5")
+    )
     return Config(
         secret_key=secret_key,
         database_url=database_url,
@@ -55,4 +68,7 @@ def load_config() -> Config:
         max_conversation_tokens=max_conversation_tokens,
         free_messages_before_login=free_messages_before_login,
         maintenance_mode=maintenance_mode,
+        outage_failure_threshold=outage_failure_threshold,
+        outage_cooldown_seconds=outage_cooldown_seconds,
+        outage_health_cache_seconds=outage_health_cache_seconds,
     )

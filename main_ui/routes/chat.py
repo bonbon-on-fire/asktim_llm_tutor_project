@@ -63,6 +63,8 @@ from main_ui.services.conversation import (
     start_exchange_student_only,
     sum_conversation_new_tokens,
 )
+from main_ui.services import service_health
+from main_ui.db.session import SessionLocal
 from ui_core.tutor_bridge import cached_history_enabled
 from utils.attachments import (
     AttachmentExtractionError,
@@ -74,6 +76,31 @@ from utils.uploads import UploadValidationError, enforce_combined_cap, images_to
 
 
 chat_bp = Blueprint("chat", __name__)
+
+
+def _record_chat_outcome_safe(ok: bool) -> None:
+    """Fold one chat outcome into the shared service_health row, best-effort.
+
+    Runs on a FRESH session (never the request/stream session, which is mid-
+    transaction and may be rolled back), and swallows every error — automatic
+    outage tracking must never break or delay a student's chat. This is the only
+    call site the rest of the route should use.
+    """
+    session = None
+    try:
+        session = SessionLocal()
+        service_health.record_chat_outcome(session, ok=ok)
+        session.commit()
+    except Exception:  # pragma: no cover - defensive; health tracking is optional
+        if session is not None:
+            try:
+                session.rollback()
+            except Exception:
+                pass
+        current_app.logger.warning("service_health record skipped", exc_info=True)
+    finally:
+        if session is not None:
+            session.close()
 
 
 def _bad_param(err: dict):
@@ -380,6 +407,7 @@ def chat():
                         break
             except Exception as exc:
                 current_app.logger.exception("tutor stream failed: %s", exc)
+                _record_chat_outcome_safe(False)
                 yield _sse_event(
                     "error", {"reason": f"{type(exc).__name__}: {exc}"}
                 )
@@ -390,6 +418,7 @@ def chat():
             # instead of rendering the fallback as a real answer. No tutor row
             # is persisted, matching the empty-reply / exception paths.
             if failed or not full_reply:
+                _record_chat_outcome_safe(False)
                 yield _sse_event(
                     "error", {"reason": "empty reply from tutor"}
                 )
@@ -417,12 +446,16 @@ def chat():
                 db.commit()
             except Exception as exc:
                 db.rollback()
+                _record_chat_outcome_safe(False)
                 yield _sse_event(
                     "error",
                     {"reason": f"persist_failed: {type(exc).__name__}: {exc}"},
                 )
                 return
 
+            # A fully persisted turn is the authoritative success signal — it
+            # clears any accumulated failure streak and lifts the auto banner.
+            _record_chat_outcome_safe(True)
             yield _sse_event(
                 "done",
                 {

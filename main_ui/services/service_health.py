@@ -28,6 +28,7 @@ unit-tested core.
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -36,6 +37,12 @@ from main_ui.config import load_config
 from main_ui.db.models import ServiceHealth
 
 _SINGLETON_ID = 1
+
+# Per-worker cache of the resolved degraded flag, so a burst of page loads costs
+# at most one DB read per ``outage_health_cache_seconds`` per gunicorn worker.
+# (worker-local; the authoritative state is the shared row.)
+_cache_value: bool = False
+_cache_expires_monotonic: float = 0.0
 
 
 def _utcnow() -> datetime:
@@ -132,6 +139,47 @@ def current_degraded(
         row.updated_at = now
         return False
     return True
+
+
+def is_degraded_cached(*, session_factory=None, cache_seconds: int | None = None) -> bool:
+    """Return the degraded flag for a page render, cached per worker.
+
+    Opens its own short-lived session (never the request session), applies lazy
+    expiry, and caches the boolean for ``outage_health_cache_seconds`` so a
+    traffic spike does not hammer the singleton row. Best-effort: any error
+    resolves to "not degraded" so a health-tracking fault never blocks a render.
+    """
+    global _cache_value, _cache_expires_monotonic
+    now_mono = time.monotonic()
+    if now_mono < _cache_expires_monotonic:
+        return _cache_value
+
+    cfg = load_config()
+    if cache_seconds is None:
+        cache_seconds = cfg.outage_health_cache_seconds
+    if session_factory is None:
+        # Imported lazily to avoid import-time coupling to the engine.
+        from main_ui.db.session import SessionLocal as session_factory
+
+    session = None
+    try:
+        session = session_factory()
+        value = current_degraded(session, cooldown_seconds=cfg.outage_cooldown_seconds)
+        session.commit()
+    except Exception:  # pragma: no cover - defensive; render must not break
+        if session is not None:
+            try:
+                session.rollback()
+            except Exception:
+                pass
+        value = False
+    finally:
+        if session is not None:
+            session.close()
+
+    _cache_value = value
+    _cache_expires_monotonic = now_mono + max(0, cache_seconds)
+    return value
 
 
 def health_snapshot(session: Session) -> dict:

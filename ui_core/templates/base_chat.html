@@ -9,11 +9,15 @@
 {% block head_extra %}{% endblock %}</head>
 <body data-has-email="{{ 'true' if has_email else 'false' }}">
     <script type="application/json" id="tutor-config">{{ tutor_config | tojson }}</script>
-{% if maintenance %}    <!-- Full-screen, non-dismissable maintenance overlay. Rendered only when the
-         server sets maintenance=True (MAIN_UI_MAINTENANCE); there is deliberately
-         no close control so it can't be removed while service is down. -->
+{% if maintenance %}    <!-- Full-screen, non-dismissable maintenance overlay. Rendered when the server
+         sets maintenance=True: either the manual MAIN_UI_MAINTENANCE env flag
+         (which also 503s the API) or, in main_ui, the auto server-derived
+         degraded signal. When auto_degraded is set the overlay carries
+         data-auto-degraded="true" so chat.js can poll /health/detail and hide it
+         on recovery without a reload; the manual case has no close control. -->
     <div class="maintenance-overlay" role="alertdialog" aria-modal="true"
-         aria-labelledby="maintenance-title" aria-describedby="maintenance-body">
+         aria-labelledby="maintenance-title" aria-describedby="maintenance-body"
+         {% if auto_degraded %}data-auto-degraded="true"{% endif %}>
         <div class="maintenance-card">
             <h1 id="maintenance-title" class="maintenance-title">AskTIM is temporarily down</h1>
             <p id="maintenance-body" class="maintenance-body">

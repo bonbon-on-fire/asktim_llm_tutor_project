@@ -35,6 +35,10 @@ _MAINTENANCE_ALLOWED_ENDPOINTS = frozenset(
         "static",         # /static/*   — vendored JS (marked, dompurify, chat.js)
         "ui_core.static",  # /ui-core/*  — chat.css (overlay styles) + katex
         "health",         # Railway liveness probe must keep passing
+        # main_ui's diagnostic endpoint — external monitors and chat.js's outage
+        # confirmation probe must keep reading it even during manual maintenance.
+        # (Registered only in main_ui; harmlessly never matches in sandbox_ui.)
+        "health_detail.detail",
     }
 )
 

@@ -22,6 +22,7 @@ from utils.curriculum import load_ui_labels
 
 from main_ui.config import load_config
 from main_ui.cookies import read_username_cookie
+from main_ui.services import service_health
 from main_ui.routes._validation import (
     DEFAULT_EXERCISE,
     DEFAULT_ROLE,
@@ -62,6 +63,13 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         # stays byte-identical to today. Stored as an int for the frontend echo.
         tutor_config["problem"] = int(problem)
     has_email = bool(read_username_cookie(request))
+    # Overlay drivers. `manual` is the startup env flag (also 503s the API);
+    # `degraded` is the auto server-derived signal from live /api/chat outcomes
+    # (banner only — see services/service_health.py). The template shows the
+    # overlay for either; `auto_degraded` marks the auto case so chat.js can poll
+    # for recovery and hide it without a reload.
+    manual = load_config().maintenance_mode
+    degraded = False if manual else service_health.is_degraded_cached()
     return render_template(
         "embed.html",
         course=course,
@@ -70,7 +78,8 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         course_name=load_course_name(course),
         tutor_config=tutor_config,
         has_email=has_email,
-        maintenance=load_config().maintenance_mode,
+        maintenance=manual or degraded,
+        auto_degraded=degraded and not manual,
     )
 
 

@@ -108,13 +108,21 @@
   // streak/confirm/recover state machine lives in outage_monitor.js (unit-tested
   // in Node); this block only supplies the browser-backed side effects.
   const OUTAGE_FAILURE_THRESHOLD = 3; // consecutive infra failures before we probe
-  const OUTAGE_HEALTH_TIMEOUT_MS = 6000; // confirmation /health probe timeout
+  const OUTAGE_HEALTH_TIMEOUT_MS = 6000; // confirmation /health/detail probe timeout
   const OUTAGE_COOLDOWN_MS = 60000; // auto-clear the note, then let retries re-trip
+  const OUTAGE_RECOVERY_POLL_MS = 15000; // how often to poll /health/detail to lift a server-rendered auto banner
 
-  // If the server already forced the maintenance overlay (MAIN_UI_MAINTENANCE),
-  // the page is in a hard outage and the chat API is 503 anyway — the client
-  // monitor would only add a duplicate overlay, so stand down entirely.
-  const serverForcedMaintenance = !!document.querySelector(".maintenance-overlay");
+  // Two server-rendered overlays are possible (ui_core/templates/base_chat.html):
+  //   * manual (MAIN_UI_MAINTENANCE): a hard outage; the chat API is 503 too, so
+  //     the client monitor would only duplicate the overlay — stand down entirely.
+  //   * auto-degraded (data-auto-degraded="true"): the server derived a likely
+  //     outage from aggregate traffic, but the API is STILL up (banner only). Here
+  //     the client keeps monitoring AND polls /health/detail so the banner lifts
+  //     without a reload once the service recovers.
+  const serverOverlay = document.querySelector(".maintenance-overlay");
+  const serverAutoDegraded =
+    !!serverOverlay && serverOverlay.getAttribute("data-auto-degraded") === "true";
+  const serverForcedMaintenance = !!serverOverlay && !serverAutoDegraded;
 
   let autoOutageOverlay = null;
   function ensureOutageOverlay() {
@@ -154,12 +162,13 @@
 
   async function confirmOutage() {
     // The confirmation probe's one job: don't blame AskTIM when it's the
-    // student's own connection. Reaching /health (even a shallow 200) means the
-    // web tier is up and this browser has connectivity, so a streak of failed
-    // tutor sends is a real tutor-side outage → confirm. If /health is
-    // unreachable we're either fully down (still an outage from the student's
-    // view) or offline — only the latter, provable via navigator.onLine ===
-    // false, suppresses the note.
+    // student's own connection. Reaching /health/detail (even a shallow 200)
+    // means the web tier is up and this browser has connectivity, so a streak of
+    // failed tutor sends is a real tutor-side outage → confirm. The endpoint's
+    // body makes it more certain (server-derived `degraded`, or `db != "ok"`),
+    // but reachability alone already confirms. If it's unreachable we're either
+    // fully down (still an outage from the student's view) or offline — only the
+    // latter, provable via navigator.onLine === false, suppresses the note.
     let healthReachable = false;
     try {
       const controller = new AbortController();
@@ -168,7 +177,7 @@
         OUTAGE_HEALTH_TIMEOUT_MS,
       );
       try {
-        const resp = await fetch("/health", {
+        const resp = await fetch("/health/detail", {
           cache: "no-store",
           signal: controller.signal,
         });
@@ -187,6 +196,46 @@
     }
     return true;
   }
+
+  // Recovery poll for a server-rendered auto-degraded banner. The server showed
+  // the overlay on page load from the aggregate signal; because the API stays up
+  // in that case, poll /health/detail and hide the banner in place once the
+  // service reports healthy — no reload, and the client monitor (still live)
+  // re-trips if this student's own sends start failing again.
+  function startAutoDegradedRecoveryPoll() {
+    if (!serverAutoDegraded || !serverOverlay) {
+      return;
+    }
+    const handle = setInterval(async () => {
+      let healthy = false;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(
+          () => controller.abort(),
+          OUTAGE_HEALTH_TIMEOUT_MS,
+        );
+        try {
+          const resp = await fetch("/health/detail", {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            healthy = data && data.degraded === false && data.db === "ok";
+          }
+        } finally {
+          clearTimeout(timer);
+        }
+      } catch (_) {
+        healthy = false;
+      }
+      if (healthy) {
+        clearInterval(handle);
+        serverOverlay.style.display = "none";
+      }
+    }, OUTAGE_RECOVERY_POLL_MS);
+  }
+  startAutoDegradedRecoveryPoll();
 
   function scheduleOutageCooldown(onElapsed) {
     const handle = setTimeout(onElapsed, OUTAGE_COOLDOWN_MS);

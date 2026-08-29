@@ -21,10 +21,10 @@ def session():
     s.close()
 
 
-# A no-network stand-in for the Haiku review synthesis: every course gets the
-# same canned paragraph, so run_week never reaches the network in tests.
-def _fake_review(course, material, model):
-    return f"review of {course}"
+# A no-network stand-in for the Haiku review synthesis: every (course, Practice #)
+# gets the same canned paragraph, so run_week never reaches the network in tests.
+def _fake_review(course, label, material, model):
+    return f"review of {course} / {label}"
 
 
 @pytest.fixture(autouse=True)
@@ -48,9 +48,21 @@ def test_run_week_writes_cache_and_report(tmp_path, monkeypatch, session):
     assert "Weekly report" in md
     # report.md written beside the cache
     assert (tmp_path / "report.md").exists()
-    # An AI-review paragraph was synthesized (offline fake) for each judged course.
-    assert blob["ai_review_by_course"]
-    assert all(v.startswith("review of ") for v in blob["ai_review_by_course"].values())
+    # An AI-review paragraph was synthesized (offline fake) for each judged
+    # (course, Practice #); each course maps to a list of {label, text} sections.
+    reviews = blob["ai_review_by_course"]
+    assert reviews
+    assert all(
+        s["label"] and s["text"].startswith("review of ")
+        for sections in reviews.values()
+        for s in sections
+    )
+    # Each judged entry bakes its stable assignment identity so the Flagged
+    # label renders without a live DB lookup.
+    assert all(
+        "exercise_kind" in c and "exercise_number" in c
+        for c in blob["conversations"].values()
+    )
 
 
 def test_run_week_reuses_verdict_when_hash_matches(tmp_path, monkeypatch, session):

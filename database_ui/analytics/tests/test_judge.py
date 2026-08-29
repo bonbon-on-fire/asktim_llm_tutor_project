@@ -37,6 +37,16 @@ def test_verdict_as_dict_includes_grade_when_present():
     assert d["grade"] == grade
 
 
+def test_verdict_as_dict_bakes_exercise_identity_when_given():
+    # The stable assignment identity is baked into the cache so the Flagged list
+    # can render "Practice 7" without a live DB lookup. Omitted when not passed.
+    v = Verdict(worked_well=False, one_line="gave answer")
+    d = v.as_dict("c1", exercise_kind="practice", exercise_number="7")
+    assert d["exercise_kind"] == "practice"
+    assert d["exercise_number"] == "7"
+    assert "exercise_kind" not in v.as_dict("c1")
+
+
 def test_fake_judge_accepts_exercise_kwarg():
     v = Verdict(worked_well=False, one_line="gave answer")
     j = FakeJudge(canned={"u1": v}, default=Verdict(worked_well=True, one_line="ok"))

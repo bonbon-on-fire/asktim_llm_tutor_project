@@ -93,7 +93,11 @@ def run_week(
                 print(f"skipped {conv.id}: {type(exc).__name__}: {exc}")
                 continue
         verdicts[conv.id] = verdict
-        judged_dict[conv.id] = verdict.as_dict(conv.course)
+        judged_dict[conv.id] = verdict.as_dict(
+            conv.course,
+            exercise_kind=conv.exercise_kind,
+            exercise_number=conv.exercise_number,
+        )
 
     flags = build_flags(convs, msgs, verdicts)
     topics = aggregate_topics(convs, verdicts, first_q)

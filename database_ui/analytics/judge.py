@@ -23,7 +23,13 @@ class Verdict:
     one_line: str = ""
     grade: dict | None = None
 
-    def as_dict(self, course: str) -> dict:
+    def as_dict(
+        self,
+        course: str,
+        *,
+        exercise_kind: str | None = None,
+        exercise_number: str | None = None,
+    ) -> dict:
         out = {
             "course": course,
             "worked_well": self.worked_well,
@@ -33,6 +39,14 @@ class Verdict:
         }
         if self.grade is not None:
             out["grade"] = self.grade
+        # The conversation's assignment identity is stable (set at creation),
+        # so it is baked into the cache. The Flagged list renders its
+        # "Practice 7 / Exercise 1" label from this, needing the live DB only
+        # for the mutable date + message count — so the label never degrades to
+        # a bare "open conversation" when the serving DB lacks the row.
+        if exercise_kind is not None or exercise_number is not None:
+            out["exercise_kind"] = exercise_kind
+            out["exercise_number"] = exercise_number
         return out
 
 

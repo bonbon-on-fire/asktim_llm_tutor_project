@@ -153,7 +153,7 @@
     const p = el("p", { class: "a-flag" });
     p.appendChild(el("span", { class: "a-flag-score" }, [score]));
     p.appendChild(document.createTextNode(" ("));
-    const link = el("button", { type: "button", class: "a-flag-open" }, [flagLabel(m)]);
+    const link = el("button", { type: "button", class: "a-flag-open" }, [flagLabel(c, m)]);
     link.addEventListener("click", () => openFlagged(id));
     p.appendChild(link);
     p.appendChild(document.createTextNode(")"));
@@ -164,21 +164,31 @@
     return p;
   }
 
-  // "Practice 7 · Aug 17 · 2 messages" from live meta — mirrors database.js's
-  // formatEntryHeader (minus the running cost). Falls back to a bare label when
-  // the conversation's live metadata is unavailable.
-  function flagLabel(m) {
-    if (!m) return "open conversation";
-    const num = parseInt(m.exercise_number, 10);
-    const kind = m.exercise_kind === "practice" ? "Practice" : "Exercise";
-    const parts = [kind + " " + (Number.isFinite(num) ? num : m.exercise_number)];
-    if (m.last_active_at) {
+  // "Practice 7 · Aug 17 · 2 messages" — mirrors database.js's formatEntryHeader
+  // (minus the running cost). The assignment identity (Practice/Exercise #) is
+  // stable, so it comes from the cached flag entry `c` first and always renders;
+  // the mutable date + message count come from live meta `m` when the serving DB
+  // has the row. Older caches lack the baked fields, so `c` falls back to `m`.
+  // Only a truly identity-less, meta-less flag degrades to "open conversation".
+  function flagLabel(c, m) {
+    const kind = (c && c.exercise_kind != null) ? c.exercise_kind
+      : (m ? m.exercise_kind : null);
+    const numRaw = (c && c.exercise_number != null) ? c.exercise_number
+      : (m ? m.exercise_number : null);
+    const parts = [];
+    if (numRaw != null && String(numRaw).trim() !== "") {
+      const num = parseInt(numRaw, 10);
+      const word = kind === "practice" ? "Practice" : "Exercise";
+      parts.push(word + " " + (Number.isFinite(num) ? num : numRaw));
+    }
+    if (m && m.last_active_at) {
       const d = new Date(m.last_active_at);
       parts.push(d.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
     }
-    const n = m.message_count;
-    if (typeof n === "number") parts.push(n + (n === 1 ? " message" : " messages"));
-    return parts.join(" · ");
+    if (m && typeof m.message_count === "number") {
+      parts.push(m.message_count + (m.message_count === 1 ? " message" : " messages"));
+    }
+    return parts.length ? parts.join(" · ") : "open conversation";
   }
 
   // Open a flagged conversation. database.js exposes an opener that swaps the
@@ -337,8 +347,10 @@
     const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");
     root.appendChild(card("Daily activity", barChart(byDay, { label: "Daily message activity, Sunday through Saturday" })));
 
-    // AI review sits under Daily activity: the week's narrative overview, one
-    // paragraph per course, scoped on read so a course login sees only its own.
+    // AI review sits under Daily activity: the week's narrative overview,
+    // scoped on read so a course login sees only its own. Each course is split
+    // by content week (Practice #) — one short paragraph per assignment — so a
+    // calendar week that spans several open Practice #s never blends them.
     // Like the Flagged card, the whole card is dropped when there's nothing to
     // show — before the week's cache exists, or when no course had enough
     // activity to review — rather than showing a placeholder note.
@@ -349,7 +361,19 @@
       const rBody = el("div");
       reviewedCourses.forEach((course) => {
         rBody.appendChild(el("p", { class: "a-review-course" }, [names[course] || course]));
-        rBody.appendChild(el("p", { class: "a-review" }, [reviews[course]]));
+        const val = reviews[course];
+        if (Array.isArray(val)) {
+          // New shape: [{label: "Practice 7", text: "..."}, ...] in assignment
+          // order. Each gets a Practice-# sub-heading above its paragraph.
+          val.forEach((sec) => {
+            rBody.appendChild(el("p", { class: "a-review-practice" }, [sec.label || ""]));
+            rBody.appendChild(el("p", { class: "a-review" }, [sec.text || ""]));
+          });
+        } else {
+          // Old shape: a single string paragraph (caches generated before the
+          // per-Practice split). Render it as-is so past weeks still show.
+          rBody.appendChild(el("p", { class: "a-review" }, [val]));
+        }
       });
       root.appendChild(card("AI review", rBody));
     }

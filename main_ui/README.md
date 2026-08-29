@@ -27,6 +27,7 @@ What works today:
 - **Non-image file attachments**: the composer also accepts CSV, TSV, XLSX, PDF, DOCX, and TXT (paperclip, drag-and-drop, or clipboard paste), shown as a file-icon chip. Files and images share one combined cap of 3 attachments per message ([`utils/uploads.py`](../utils/uploads.py) `enforce_combined_cap`). Each file is validated and text-extracted server-side by [`utils/attachments.py`](../utils/attachments.py) (5 MB per-file cap, 15000-char combined extracted-text budget, truncated with a marker past that) via [`services/files.py`](services/files.py); bytes + extracted text are stored in-DB (`uploaded_files`, added by the `eb96d85f90cf` migration) and the extracted text is re-injected into the tutor's history on every later turn, so file context persists across the conversation (the student-facing message stays the plain filename/text)
 - **Per-message thumbs up/down**: each tutor message renders a thumbs-up / thumbs-down control below its bubble. Clicking sets the message's rating (up / down); clicking the active thumb again clears it back to neutral. Submits to `POST /api/message/<id>/rating`, persisted to the `messages.rating` column (added by the `f1a2b3c4d5e6` migration). This replaces the old mid-conversation 1-5 star feedback toast; the legacy `feedback` table and `POST /api/feedback` route are kept but dormant
 - **KaTeX math rendering**: tutor replies render `\(...\)` / `\[...\]` LaTeX with a vendored KaTeX 0.16.11 (`$...$` is deliberately left alone as currency), via the shared `renderTutorMarkdown` helper in [`ui_core/static/js/katex-marked.js`](../ui_core/static/js/katex-marked.js)
+- **Automatic outage detection** — the "AskTIM is temporarily down" banner engages on its own from real chat traffic, with no health-check bot and no extra LLM calls. Each `/api/chat` turn is a success/failure vote folded into a single shared Postgres row (`service_health`, seeded by the `c4e8a1b6d902` migration); after `OUTAGE_FAILURE_THRESHOLD` consecutive infra failures (default 5) the server-rendered overlay shows for everyone (`data-auto-degraded`), and one success — or no failures for `OUTAGE_COOLDOWN_SECONDS` (default 90) — clears it. Recovery is keyed on the time since the last failure, so a sustained outage holds the banner instead of blinking off. It is **display-only** — chat is never 503'd (the hard lockout stays the manual `MAIN_UI_MAINTENANCE` flag). User errors (login gate, conversation-limit, stale session) never count as outages. The tutor request is bounded by `TUTOR_REQUEST_TIMEOUT_SECONDS` (default 30) so a hung turn surfaces as a recorded failure instead of a silently killed worker. `GET /health/detail` exposes the live state; a per-worker cache (`OUTAGE_HEALTH_CACHE_SECONDS`, default 5) keeps page renders cheap. See [`services/service_health.py`](services/service_health.py) for the full behavior and its documented limits, and a browser-side counterpart in [`static/js/outage_monitor.js`](static/js/outage_monitor.js) that reacts faster for a single user.
 
 ## Architecture
 
@@ -77,6 +78,10 @@ curl http://127.0.0.1:5000/health
 | `MAIN_UI_COOKIE_SECURE` | `true` | Set to `false` for non-HTTPS local testing if cookies aren't sticking. |
 | `MAIN_UI_COOKIE_MAX_AGE` | `15552000` (180 days) | Cookie lifetime in seconds. |
 | `PORT` | `5000` | TCP port the Flask dev server binds to. |
+| `OUTAGE_FAILURE_THRESHOLD` | `5` | Consecutive infra failures on `/api/chat` before the auto "down" banner engages. |
+| `OUTAGE_COOLDOWN_SECONDS` | `90` | With no new failure recorded for this long, a degraded row is lazily cleared. |
+| `OUTAGE_HEALTH_CACHE_SECONDS` | `5` | Per-worker cache of the degraded flag, so page renders don't re-read the row each time. |
+| `TUTOR_REQUEST_TIMEOUT_SECONDS` | `30` | Per-request Anthropic timeout (see [`tutor/README.md`](../tutor/README.md#environment-variables)); a stall raises inside gunicorn's window so it's recorded, not silently killed. |
 
 ## Database
 
@@ -87,7 +92,7 @@ Schema is managed with Alembic. Migrations live in [db/migrations/versions/](db/
 python -m alembic -c main_ui\db\migrations\alembic.ini upgrade head
 ```
 
-Seven tables in `public`:
+Eight tables in `public`:
 
 - `conversations` — one per chat thread (UUID PK, session_id, username, course, exercise_number, tutor_prompt)
 - `messages` — student/tutor turns (BigInt PK, FK to conversations, role, content, `pedagogical_reasoning`, `rating` — integer thumbs rating, `-1` down / `0` none / `1` up, default `0`, CHECK `rating IN (-1,0,1)`; legacy rows read `NULL` and are treated as `0`; `cost_usd` — nullable float, the estimated USD cost of producing a tutor turn (`NULL` on student rows and pre-feature rows), with its model-id + token breakdown in `usage_json` (nullable text); `retrieved_context` — nullable text, a JSON string of the RAG chunks retrieved for a tutor turn, `NULL` for non-RAG turns and pre-migration rows, added by the `c9f1a2b3d4e5` migration — persisted so cache-friendly history can re-render each prior turn's RAG block deterministically on replay)
@@ -95,6 +100,7 @@ Seven tables in `public`:
 - `uploaded_images` — student-uploaded images: `filename`, `mime_type`, `size_bytes`, and `data` (BYTEA bytes), FK to the student `messages` row
 - `uploaded_files` — student-uploaded non-image attachments: `filename`, `kind`, `extracted_text`, `size_bytes`, and `data` (raw bytes), FK to the student `messages` row
 - `feedback` — legacy 1-5 star ratings (dormant, superseded by `messages.rating`): `conversation_id` (FK, cascade), nullable `turn`, `rating` (CHECK 1..5), `created_at`
+- `service_health` — single coordination row (`id=1`) for automatic outage detection: `degraded`, `degraded_since`, `consecutive_failures`, `last_success_at`, `last_failure_at`, `updated_at`. Seeded by the `c4e8a1b6d902` migration so the service never depends on `create_all` in production
 - `alembic_version` — Alembic bookkeeping
 
 Inspect data with psql or pgAdmin:
@@ -110,6 +116,7 @@ psql -U postgres -h localhost -d asktim -c "SELECT turn, role, LEFT(content, 60)
 | --- | --- | --- |
 | GET | `/embed` | Render the chat page (params: `course`, `exercise`, `tutor`) |
 | GET | `/health` | Liveness probe |
+| GET | `/health/detail` | Diagnostic: live DB check + auto-outage state (`db`, `degraded`, `degraded_since`, `consecutive_failures`); always 200 so the body is readable |
 | GET | `/api/whoami` | Current session/username state |
 | POST | `/api/chat` | Stream a tutor reply as Server-Sent Events. JSON (text only) or `multipart/form-data` (text + `images` files + `files` non-image attachments) |
 | POST | `/api/identity/check` | Probe whether a username already has a password registered |
@@ -163,6 +170,7 @@ main_ui/
     identity.py           # GET /api/whoami, POST /api/identity[/check] — built from ui_core.web.blueprints.identity
     feedback.py           # POST /api/feedback (dormant) — built from ui_core.web.blueprints.feedback
     message_rating.py     # POST /api/message/<id>/rating — built from ui_core.web.blueprints.message_rating
+    health.py             # GET /health, /health/detail (live DB check + outage snapshot) — main_ui-specific
     _validation.py        # shared course/exercise/tutor validators — main_ui-specific
 
   services/
@@ -172,6 +180,7 @@ main_ui/
     files.py              # thin wrapper binding UploadedFile to ui_core.services.files (non-image attachments)
     feedback.py           # thin wrapper binding Feedback to ui_core.services.feedback
     tutor_bridge.py       # thin wrapper around one shared ui_core.tutor_bridge.TutorBridge()
+    service_health.py     # passive outage detection: folds /api/chat outcomes into the shared service_health row
 
   static/
     js/chat.js            # vanilla JS: streaming consumer, sidebar, modal, etc.

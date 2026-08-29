@@ -131,7 +131,11 @@ underscore) but documented here for maintainers.
   `max_tokens=8192` and thinking disabled — the tutor streams a strict two-field
   JSON via a char-level extractor, so adaptive thinking is turned off and the low
   unknown-model token fallback is overridden). Exposed so the streaming path can
-  call `model.stream(...)` directly. **Both chat apps now pick the provider per
+  call `model.stream(...)` directly. Both the `ChatAnthropic` model and the raw
+  `anthropic.Anthropic` streaming client are built with a per-request
+  `timeout=TUTOR_REQUEST_TIMEOUT_SECONDS` (default 30s) so a stalled call fails
+  fast and retries instead of pinning a gunicorn worker until its 120s hard kill.
+  **Both chat apps now pick the provider per
   call** (`main_ui` → `claude`/Sonnet 5 by default; `sandbox_ui` → the tester's
   wizard choice), resolved via `ui_core.tutor_bridge._resolve_provider`.
 - **`load_system_prompt(prompt_name="tutor_01", assignment_override=None)`** — read
@@ -318,3 +322,4 @@ This yields one batch of visible characters per LLM token batch, then a final `(
 | `OPENAI_MODEL` | No | OpenAI model name (default: `gpt-5.4`). |
 | `ANTHROPIC_API_KEY` | For Claude | Anthropic API key. Required only when `build_tutor_model(provider="claude")` is used. |
 | `ANTHROPIC_MODEL` | No | Anthropic model name (default: `claude-sonnet-5`). |
+| `TUTOR_REQUEST_TIMEOUT_SECONDS` | No | Per-request time-to-first-token budget applied to both Anthropic client builders (default: `30`). A no-bytes timeout is retryable, so a persistent stall gives up after the bounded retries instead of hanging a worker. Non-positive/unparseable values fall back to the default. |

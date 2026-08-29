@@ -27,6 +27,26 @@ Design notes:
 Callers use the *safe* wrappers (``record_chat_outcome_safe`` /
 ``is_degraded_cached``); the bare functions take an explicit session and are the
 unit-tested core.
+
+Known limits (inherent to a passive, traffic-driven, no-Redis design — not bugs):
+
+* **No partial-outage granularity.** There is one global streak, and *any*
+  success resets it. A per-course or per-model outage that still lets other
+  turns succeed will not trip the banner, and a broad outage clears the instant
+  one request happens to succeed.
+* **A total Postgres outage is undetectable.** The detector's own state lives in
+  Postgres; if the DB is down, the recorder's session also fails (swallowed by
+  the safe wrapper) and nothing is written. The banner can only reflect failures
+  that the store itself survives.
+* **Zero traffic = no signal.** Detection is driven entirely by real
+  ``/api/chat`` outcomes. With no requests in flight there is nothing to observe,
+  so an outage during a quiet period is invisible until traffic resumes.
+* **Per-worker render-cache skew.** ``is_degraded_cached`` caches the flag for
+  ``outage_health_cache_seconds`` per gunicorn worker, so for a few seconds after
+  a state change different students can briefly see different banner states.
+
+Closing these would require active probing or a shared cache and is out of scope
+for this design; see docs/superpowers/specs/2026-08-29-auto-detection-correctness-design.md.
 """
 
 from __future__ import annotations

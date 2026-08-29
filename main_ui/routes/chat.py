@@ -268,43 +268,73 @@ def chat():
             username=username,
         )
     except WrongSessionError:
+        # User error (stale/foreign session) — a client mistake, not an outage.
         return _abort_with(_wrong_session())
-
-    # Forced login: first N student messages free, then a username is required.
-    prior_student_count = count_student_messages(db, convo)
-    if not username and prior_student_count >= config.free_messages_before_login:
-        return _abort_with(_login_required("message_count"))
-
-    # Per-conversation token ceiling (post-hoc: reflects completed turns only).
-    if sum_conversation_new_tokens(db, convo) >= config.max_conversation_tokens:
+    except Exception as exc:
+        # Any other throw here is infra (DB/storage) — feed the outage detector
+        # so a backing-store failure that never reaches the stream still counts.
+        current_app.logger.exception("conversation lookup failed: %s", exc)
+        _record_chat_outcome_safe(False)
         return _abort_with(
             (
                 jsonify(
-                    {
-                        "error": "conversation_limit",
-                        "reason": "This chat reached its length limit, start a new chat to continue",
-                    }
+                    {"error": "conversation_failed", "reason": f"{type(exc).__name__}: {exc}"}
                 ),
-                403,
+                500,
             )
         )
 
-    # Snapshot the prior turns BEFORE we insert this turn's student message,
-    # so the tutor gets the same shape of history it always has.
-    history = get_history_for_tutor(db, convo)
-    stream_history_mode = "cached" if cached_history_enabled() else "legacy"
-    cached_history = (
-        get_cached_history_for_tutor(db, convo)
-        if stream_history_mode == "cached"
-        else []
-    )
+    # The forced-login and token-ceiling checks are user-facing limits (their
+    # early returns must NOT be recorded as outages), but the reads + student
+    # insert around them are infra: an infra throw here returns 500 and would
+    # otherwise never reach the stream's recorder, so record it explicitly.
+    try:
+        # Forced login: first N student messages free, then a username is required.
+        prior_student_count = count_student_messages(db, convo)
+        if not username and prior_student_count >= config.free_messages_before_login:
+            return _abort_with(_login_required("message_count"))
 
-    # Insert the student row up front and commit it. That way the student's
-    # message survives even if the tutor stream errors out partway through.
-    student_msg = start_exchange_student_only(
-        db, conversation=convo, student_text=student_text
-    )
-    student_turn = student_msg.turn
+        # Per-conversation token ceiling (post-hoc: reflects completed turns only).
+        if sum_conversation_new_tokens(db, convo) >= config.max_conversation_tokens:
+            return _abort_with(
+                (
+                    jsonify(
+                        {
+                            "error": "conversation_limit",
+                            "reason": "This chat reached its length limit, start a new chat to continue",
+                        }
+                    ),
+                    403,
+                )
+            )
+
+        # Snapshot the prior turns BEFORE we insert this turn's student message,
+        # so the tutor gets the same shape of history it always has.
+        history = get_history_for_tutor(db, convo)
+        stream_history_mode = "cached" if cached_history_enabled() else "legacy"
+        cached_history = (
+            get_cached_history_for_tutor(db, convo)
+            if stream_history_mode == "cached"
+            else []
+        )
+
+        # Insert the student row up front and commit it. That way the student's
+        # message survives even if the tutor stream errors out partway through.
+        student_msg = start_exchange_student_only(
+            db, conversation=convo, student_text=student_text
+        )
+        student_turn = student_msg.turn
+    except Exception as exc:
+        current_app.logger.exception("pre-stream persistence failed: %s", exc)
+        _record_chat_outcome_safe(False)
+        return _abort_with(
+            (
+                jsonify(
+                    {"error": "persist_failed", "reason": f"{type(exc).__name__}: {exc}"}
+                ),
+                500,
+            )
+        )
 
     # Persist uploaded images linked to the student row (bytes in-DB). Committed
     # together with the student message below, so a mid-stream tutor failure
@@ -314,6 +344,7 @@ def chat():
         try:
             images_service.persist_images(db, message=student_msg, images=images)
         except Exception as exc:
+            _record_chat_outcome_safe(False)
             return _abort_with(
                 (
                     jsonify(
@@ -332,6 +363,7 @@ def chat():
         try:
             files_service.persist_files(db, message=student_msg, files=attachments)
         except Exception as exc:
+            _record_chat_outcome_safe(False)
             return _abort_with(
                 (
                     jsonify(
@@ -356,6 +388,7 @@ def chat():
     try:
         db.commit()
     except Exception as exc:
+        _record_chat_outcome_safe(False)
         db.rollback()
         db.close()
         return jsonify(

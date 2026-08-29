@@ -188,6 +188,49 @@ def main() -> int:
     finally:
         health_route.SessionLocal = _ORIG_HEALTH_SESSION  # type: ignore[assignment]
 
+    # ---- G. Pre-stream infra failure (before streaming) feeds the recorder. ----
+    # Reset to a clean, healthy row first.
+    tutor_bridge.stream_tutor_reply = _ok_stream  # type: ignore[assignment]
+    _drain(_post(client))
+    degraded, cf = _health_row()
+    ok &= _check("cleared before pre-stream-failure check", degraded is False and cf == 0, f"{degraded},{cf}")
+
+    _orig_find = chat_route.find_or_create_conversation
+
+    def _find_boom(*a, **k):
+        raise RuntimeError("conversation store unreachable")
+
+    chat_route.find_or_create_conversation = _find_boom  # type: ignore[assignment]
+    try:
+        resp = _post(client)
+        body = resp.get_data(as_text=True)
+        ok &= _check("pre-stream infra failure returns 500 conversation_failed",
+                     resp.status_code == 500 and "conversation_failed" in body,
+                     f"{resp.status_code} :: {body}")
+        degraded, cf = _health_row()
+        ok &= _check("pre-stream infra failure records a failure", cf == 1, f"{degraded},{cf}")
+    finally:
+        chat_route.find_or_create_conversation = _orig_find  # type: ignore[assignment]
+
+    # ---- H. A user-facing limit (forced login) must NOT record a failure. ----
+    # Clear the streak, then force the login gate via a high prior-message count.
+    _drain(_post(client))  # _ok_stream still installed -> success clears streak
+    degraded, cf = _health_row()
+    ok &= _check("cleared before user-error check", degraded is False and cf == 0, f"{degraded},{cf}")
+
+    _orig_count = chat_route.count_student_messages
+    chat_route.count_student_messages = lambda *a, **k: 10 ** 9  # type: ignore[assignment]
+    try:
+        resp = _post(client)  # no username -> login_required (user error, not infra)
+        body = resp.get_data(as_text=True)
+        ok &= _check("forced-login is a user error (not 500)",
+                     resp.status_code in (401, 403) and "login" in body.lower(),
+                     f"{resp.status_code} :: {body}")
+        degraded, cf = _health_row()
+        ok &= _check("user error does NOT record a failure", cf == 0, f"{degraded},{cf}")
+    finally:
+        chat_route.count_student_messages = _orig_count  # type: ignore[assignment]
+
     engine.dispose()
     try:
         os.remove(_DB_PATH)

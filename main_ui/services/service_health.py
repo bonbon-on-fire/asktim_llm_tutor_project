@@ -14,9 +14,12 @@ Design notes:
   higher than phase 1's per-browser 3 because this aggregates *all* students),
   ``degraded`` flips true. One success clears it.
 * **Lazy recovery.** No background job clears the flag. ``current_degraded``
-  treats a ``degraded`` row whose ``degraded_since`` is older than
-  ``outage_cooldown_seconds`` (default 90) as recovered, resets it, and lets live
-  traffic re-detect if the outage persists. A recorded success also clears it.
+  treats a ``degraded`` row with no recorded failure for ``outage_cooldown_seconds``
+  (default 90) as recovered, resets it, and lets live traffic re-detect if the
+  outage returns. Keying on "quiet since the last failure" (``last_failure_at``)
+  rather than "elapsed since the trip" (``degraded_since``) is deliberate: an
+  ongoing outage keeps recording failures, so the flag holds through it instead
+  of blinking off mid-outage. A recorded success also clears it.
 * **Banner only.** This never 503s the API — the hard block stays the manual
   ``MAIN_UI_MAINTENANCE`` env flag. Keeping the API reachable is what lets a
   recovered service self-clear and bounds the blast radius of a false positive.
@@ -122,8 +125,13 @@ def current_degraded(
 ) -> bool:
     """Return whether the service is currently degraded, applying lazy expiry.
 
-    A degraded row older than the cooldown is reset in-place and reported
-    healthy, so live traffic re-detects a still-broken service. Caller commits.
+    A degraded row is reset in-place and reported healthy once no failure has
+    been recorded for ``cooldown_seconds`` (i.e. traffic has gone quiet or
+    recovered), so live traffic re-detects a still-broken service. Keying expiry
+    on ``last_failure_at`` rather than ``degraded_since`` keeps the flag engaged
+    through an ongoing outage — which keeps recording failures — instead of
+    blinking off after a fixed interval. Falls back to ``degraded_since`` when no
+    failure timestamp exists. Caller commits.
     """
     now = now or _utcnow()
     if cooldown_seconds is None:
@@ -131,8 +139,8 @@ def current_degraded(
     row = session.get(ServiceHealth, _SINGLETON_ID)
     if row is None or not row.degraded:
         return False
-    since = _as_aware(row.degraded_since)
-    if since is not None and (now - since) > timedelta(seconds=cooldown_seconds):
+    reference = _as_aware(row.last_failure_at) or _as_aware(row.degraded_since)
+    if reference is not None and (now - reference) > timedelta(seconds=cooldown_seconds):
         row.degraded = False
         row.degraded_since = None
         row.consecutive_failures = 0

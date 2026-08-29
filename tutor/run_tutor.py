@@ -166,6 +166,32 @@ def _build_invalid_input_reply() -> AIMessage:
     return AIMessage(content=json.dumps(payload, ensure_ascii=False))
 
 
+_DEFAULT_TUTOR_REQUEST_TIMEOUT = 30.0  # seconds; generous time-to-first-token budget
+
+
+def _tutor_request_timeout() -> float:
+    """Per-request timeout (seconds) for the Anthropic client, env-overridable.
+
+    Without this the SDK default is 600s; gunicorn kills a stalled worker at
+    --timeout 120 first and no outage recorder runs, so a frozen tutor is
+    invisible server-side. A tighter timeout turns a stall with no streamed
+    bytes into a retryable APITimeoutError that surfaces (and is recorded) well
+    inside the 120s window. Worst case before it propagates is
+    ~3 x timeout + backoffs; at the 30s default that is ~91.5s < 120s. Once
+    tokens stream, inter-token gaps are tiny, so 30s to first token is ample.
+    Tune via TUTOR_REQUEST_TIMEOUT_SECONDS; a non-positive/unparseable value
+    falls back to the default.
+    """
+    raw = os.environ.get("TUTOR_REQUEST_TIMEOUT_SECONDS")
+    if raw is None:
+        return _DEFAULT_TUTOR_REQUEST_TIMEOUT
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return _DEFAULT_TUTOR_REQUEST_TIMEOUT
+    return value if value > 0 else _DEFAULT_TUTOR_REQUEST_TIMEOUT
+
+
 def build_tutor_model(provider: str = "gpt"):
     """Construct a LangChain chat model for the tutor.
 
@@ -185,6 +211,10 @@ def build_tutor_model(provider: str = "gpt"):
             api_key=_require_anthropic_api_key(),
             max_tokens=8192,
             thinking={"type": "disabled"},
+            # Bound each request so a stalled tutor raises inside gunicorn's
+            # --timeout window instead of being killed silently — see
+            # _tutor_request_timeout.
+            timeout=_tutor_request_timeout(),
             # Emit token-usage metadata while streaming so the streaming chat path
             # can be cost-accounted (default True on Anthropic; explicit for parity).
             stream_usage=True,
@@ -1157,7 +1187,7 @@ def stream_tutor_reply_anthropic_raw(plan, *, model_name, api_key, images=None, 
     system_blocks, messages = build_anthropic_request(
         plan, images=images, images_by_student=images_by_student
     )
-    client = anthropic.Anthropic(api_key=api_key)
+    client = anthropic.Anthropic(api_key=api_key, timeout=_tutor_request_timeout())
     enforce = json_mode_enabled()
     stream_kwargs = dict(
         model=model_name, max_tokens=8192, system=system_blocks, messages=messages,

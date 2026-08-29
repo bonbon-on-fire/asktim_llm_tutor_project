@@ -178,8 +178,103 @@ def test_retries_transient_error_then_succeeds_on_tool_forcing_path():
     assert parsed["pedagogical-reasoning"] == reasoning
 
 
+# --- Fix 2: per-request timeout wiring + timeout-as-retryable behaviour ---
+
+
+class _OneShotClient:
+    """A client whose first (and only) stream() call returns a good stream."""
+
+    def __init__(self):
+        self.messages = self
+
+    def stream(self, **kwargs):
+        return _FakeStream(['{"pedagogical-reasoning":"r","Student-facing-answer":"ok"}'])
+
+
+def _capture_anthropic(captured):
+    def factory(**kwargs):
+        captured.update(kwargs)
+        return _OneShotClient()
+    return factory
+
+
+def _make_timeout_error():
+    import httpx
+    req = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    return anthropic.APITimeoutError(req)
+
+
+def test_timeout_helper_parses_env():
+    with mock.patch.dict("os.environ", {"TUTOR_REQUEST_TIMEOUT_SECONDS": "45"}):
+        assert rt._tutor_request_timeout() == 45.0
+    # unset -> default
+    with mock.patch.dict("os.environ", {}, clear=True):
+        assert rt._tutor_request_timeout() == rt._DEFAULT_TUTOR_REQUEST_TIMEOUT
+    # non-positive and unparseable both fall back to the default
+    with mock.patch.dict("os.environ", {"TUTOR_REQUEST_TIMEOUT_SECONDS": "-5"}):
+        assert rt._tutor_request_timeout() == rt._DEFAULT_TUTOR_REQUEST_TIMEOUT
+    with mock.patch.dict("os.environ", {"TUTOR_REQUEST_TIMEOUT_SECONDS": "abc"}):
+        assert rt._tutor_request_timeout() == rt._DEFAULT_TUTOR_REQUEST_TIMEOUT
+
+
+def test_raw_client_receives_configured_timeout():
+    captured = {}
+    with mock.patch.object(rt.anthropic, "Anthropic", side_effect=_capture_anthropic(captured)), \
+         mock.patch.dict("os.environ", {"TUTOR_JSON_MODE": "off", "TUTOR_REQUEST_TIMEOUT_SECONDS": "12.5"}), \
+         mock.patch.object(rt.time, "sleep"):
+        plan = [("system_static", "SYS"), ("student", "help")]
+        list(rt.stream_tutor_reply_anthropic_raw(
+            plan, model_name="claude-sonnet-5", api_key="k"))
+    assert captured.get("timeout") == 12.5, captured
+
+
+def test_build_tutor_model_passes_timeout():
+    captured = {}
+
+    def fake_chatanthropic(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(**kwargs)
+
+    with mock.patch.object(rt, "ChatAnthropic", side_effect=fake_chatanthropic), \
+         mock.patch.object(rt, "_require_anthropic_api_key", return_value="k"), \
+         mock.patch.dict("os.environ", {"TUTOR_REQUEST_TIMEOUT_SECONDS": "20"}):
+        rt.build_tutor_model("claude")
+    assert captured.get("timeout") == 20.0, captured
+
+
+def test_persistent_timeout_retries_bounded_then_propagates():
+    class _AlwaysTimesOut:
+        def __init__(self):
+            self.calls = 0
+            self.messages = self
+
+        def stream(self, **kwargs):
+            self.calls += 1
+            raise _make_timeout_error()
+
+    client = _AlwaysTimesOut()
+    with mock.patch.object(rt.anthropic, "Anthropic", return_value=client), \
+         mock.patch.dict("os.environ", {"TUTOR_JSON_MODE": "off"}), \
+         mock.patch.object(rt.time, "sleep"):
+        plan = [("system_static", "SYS"), ("student", "help")]
+        raised = False
+        try:
+            list(rt.stream_tutor_reply_anthropic_raw(
+                plan, model_name="claude-sonnet-5", api_key="k"))
+        except anthropic.APITimeoutError:
+            raised = True
+    # A no-bytes timeout is retryable: 1 initial + _MAX_STREAM_RETRIES, then re-raise.
+    assert client.calls == rt._MAX_STREAM_RETRIES + 1, client.calls
+    assert raised, "expected the persistent timeout to propagate (never loops)"
+
+
 if __name__ == "__main__":
     test_retries_transient_error_then_succeeds()
     test_gives_up_after_max_retries_and_reraises()
     test_retries_transient_error_then_succeeds_on_tool_forcing_path()
+    test_timeout_helper_parses_env()
+    test_raw_client_receives_configured_timeout()
+    test_build_tutor_model_passes_timeout()
+    test_persistent_timeout_retries_bounded_then_propagates()
     print("PASS - transient stream errors retry then succeed / give up")
+    print("PASS - per-request timeout wired into both client builders; timeouts retry bounded")

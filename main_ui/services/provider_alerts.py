@@ -151,8 +151,15 @@ def maybe_alert_provider_outage(exc: BaseException, *, logger) -> str | None:
             f"TUTOR_PROVIDER_DOWN ({reason}): AskTIM tutor is failing — the LLM "
             "provider rejected requests. Human action required."
         )
-        _post_webhook(webhook_url, message)
+        # Record the attempt (not the success) before firing the POST: this
+        # runs on every failing turn during exactly the outage it detects, so
+        # if the webhook endpoint itself is down/slow, debouncing on success
+        # would re-attempt (and re-eat the 3s timeout) on every single turn.
+        # A transient webhook failure just skips that one alert until the
+        # next window — acceptable, since the CRITICAL log is the durable
+        # signal and fires unconditionally regardless.
         _last_post_monotonic = now_mono
+        _post_webhook(webhook_url, message)
     except Exception as webhook_exc:  # best-effort: never let alerting break chat
         try:
             logger.warning("provider_alerts webhook failed: %s", webhook_exc)

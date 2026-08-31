@@ -160,8 +160,10 @@ def main() -> int:
 
         # --- maybe_alert_provider_outage: webhook POST raises, swallowed ---
         pa._reset_debounce_for_tests()
+        raising_post_calls = []
 
         def raising_post(url, message):
+            raising_post_calls.append((url, message))
             raise ConnectionError("network down")
 
         pa._post_webhook = raising_post
@@ -186,6 +188,18 @@ def main() -> int:
             "webhook POST raising: logs a warning",
             len(logger3.warning_calls) == 1,
             logger3.warning_calls,
+        )
+
+        # FIX (debounce-on-attempt) regression: debounce is set BEFORE the POST
+        # attempt, so a second immediate call after a FAILED first POST must
+        # also be debounced (no second attempt within the window) — otherwise
+        # every failing turn during a webhook-down outage would re-eat the
+        # 3s POST timeout.
+        reason4b = pa.maybe_alert_provider_outage(exc5, logger=logger3)
+        ok &= _check(
+            "webhook POST raising: immediate second call is ALSO debounced (no retry attempt)",
+            len(raising_post_calls) == 1 and reason4b == "permission_denied",
+            (raising_post_calls, reason4b),
         )
 
         # --- FIX 1 regression: logger.critical raising must not escape ---

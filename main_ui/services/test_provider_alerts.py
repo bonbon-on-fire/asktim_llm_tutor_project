@@ -187,6 +187,57 @@ def main() -> int:
             len(logger3.warning_calls) == 1,
             logger3.warning_calls,
         )
+
+        # --- FIX 1 regression: logger.critical raising must not escape ---
+        pa._reset_debounce_for_tests()
+        posts.clear()
+
+        class _RaisingCriticalLogger:
+            def __init__(self):
+                self.warning_calls = []
+
+            def critical(self, *args, **kwargs):
+                raise RuntimeError("logging backend down")
+
+            def warning(self, *args, **kwargs):
+                self.warning_calls.append(args)
+
+        pa._post_webhook = fake_post
+        raising_logger = _RaisingCriticalLogger()
+        reason5 = None
+        raised5 = False
+        try:
+            reason5 = pa.maybe_alert_provider_outage(exc1, logger=raising_logger)
+        except Exception:
+            raised5 = True
+        ok &= _check(
+            "CRITICAL log raising: swallowed, no exception escapes",
+            raised5 is False,
+            raised5,
+        )
+        ok &= _check(
+            "CRITICAL log raising: still returns reason and still posts webhook",
+            reason5 == "credit_exhausted" and len(posts) == 1,
+            (reason5, posts),
+        )
+
+        # --- FIX 2 regression: first-ever alert must not be suppressed by a
+        # low time.monotonic() reading (e.g. a freshly-started worker whose
+        # uptime is under provider_alert_min_interval_seconds) ---
+        pa._reset_debounce_for_tests()
+        posts.clear()
+        orig_monotonic = pa.time.monotonic
+        pa.time.monotonic = lambda: 10.0  # well under the 300s default interval
+        try:
+            logger4 = _FakeLogger()
+            reason6 = pa.maybe_alert_provider_outage(exc1, logger=logger4)
+            ok &= _check(
+                "first alert on low-uptime worker still posts (not suppressed)",
+                len(posts) == 1 and reason6 == "credit_exhausted",
+                (posts, reason6),
+            )
+        finally:
+            pa.time.monotonic = orig_monotonic
     finally:
         pa.load_config = orig_load_config
         pa._post_webhook = orig_post

@@ -66,7 +66,10 @@ _PERMISSION_SUBSTRINGS = (
 # Per-worker debounce: suppress a second webhook POST within
 # ``provider_alert_min_interval_seconds`` of the last one. Worker-local, like
 # ``service_health``'s render cache; the CRITICAL log itself is never debounced.
-_last_post_monotonic: float = 0.0
+# Sentinel is -inf (not 0.0) so the very first alert always fires even on a
+# freshly-started worker whose ``time.monotonic()`` is still under the
+# interval (e.g. < 300s uptime) — 0.0 would wrongly suppress that first POST.
+_last_post_monotonic: float = float("-inf")
 
 
 def classify_provider_outage(exc: BaseException) -> str | None:
@@ -106,9 +109,9 @@ def _post_webhook(url: str, message: str) -> None:
 
 
 def _reset_debounce_for_tests() -> None:
-    """Zero the module-global debounce clock. Test-only seam."""
+    """Reset the module-global debounce clock to its -inf sentinel. Test-only seam."""
     global _last_post_monotonic
-    _last_post_monotonic = 0.0
+    _last_post_monotonic = float("-inf")
 
 
 def maybe_alert_provider_outage(exc: BaseException, *, logger) -> str | None:
@@ -123,7 +126,14 @@ def maybe_alert_provider_outage(exc: BaseException, *, logger) -> str | None:
     if reason is None:
         return None
 
-    logger.critical("TUTOR_PROVIDER_DOWN reason=%s error=%s", reason, exc)
+    # The marker fires unconditionally (never debounced) but must never raise:
+    # the caller (chat.py) has no outer except around this call, inside a live
+    # SSE generator, so a logging failure here would abort the stream before
+    # the "error" frame is yielded.
+    try:
+        logger.critical("TUTOR_PROVIDER_DOWN reason=%s error=%s", reason, exc)
+    except Exception:
+        pass
 
     global _last_post_monotonic
     try:

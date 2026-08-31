@@ -63,6 +63,7 @@ from main_ui.services.conversation import (
     start_exchange_student_only,
     sum_conversation_new_tokens,
 )
+from main_ui.services import provider_alerts
 from main_ui.services import service_health
 from main_ui.db.session import SessionLocal
 from ui_core.tutor_bridge import cached_history_enabled
@@ -441,6 +442,7 @@ def chat():
             except Exception as exc:
                 current_app.logger.exception("tutor stream failed: %s", exc)
                 _record_chat_outcome_safe(False)
+                provider_alerts.maybe_alert_provider_outage(exc, logger=current_app.logger)
                 yield _sse_event(
                     "error", {"reason": f"{type(exc).__name__}: {exc}"}
                 )

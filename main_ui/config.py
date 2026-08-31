@@ -35,6 +35,13 @@ class Config:
     outage_failure_threshold: int
     outage_cooldown_seconds: int
     outage_health_cache_seconds: int
+    # Hard-down provider alerting (services/provider_alerts.py). Credit/auth/
+    # permission failures are human-actionable and don't self-heal, so on top of
+    # the passive outage counter above they get a CRITICAL log marker and,
+    # optionally, a webhook POST (None disables it) throttled to at most one
+    # per this many seconds per worker.
+    alert_webhook_url: str | None
+    provider_alert_min_interval_seconds: int
 
 
 def load_config() -> Config:
@@ -58,6 +65,10 @@ def load_config() -> Config:
     outage_health_cache_seconds = int(
         os.environ.get("OUTAGE_HEALTH_CACHE_SECONDS", "5")
     )
+    alert_webhook_url = os.environ.get("ALERT_WEBHOOK_URL") or None
+    provider_alert_min_interval_seconds = int(
+        os.environ.get("PROVIDER_ALERT_MIN_INTERVAL_SECONDS", "300")
+    )
     return Config(
         secret_key=secret_key,
         database_url=database_url,
@@ -71,4 +82,6 @@ def load_config() -> Config:
         outage_failure_threshold=outage_failure_threshold,
         outage_cooldown_seconds=outage_cooldown_seconds,
         outage_health_cache_seconds=outage_health_cache_seconds,
+        alert_webhook_url=alert_webhook_url,
+        provider_alert_min_interval_seconds=provider_alert_min_interval_seconds,
     )

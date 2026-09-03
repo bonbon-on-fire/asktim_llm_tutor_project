@@ -364,10 +364,18 @@
         const val = reviews[course];
         if (Array.isArray(val)) {
           // New shape: [{label: "Practice 7", text: "..."}, ...] in assignment
-          // order. Each gets a Practice-# sub-heading above its paragraph.
+          // order. The Practice-# label runs inline at the head of its own
+          // paragraph — "Practice 7 — …" — rather than sitting on a line above.
           val.forEach((sec) => {
-            rBody.appendChild(el("p", { class: "a-review-practice" }, [sec.label || ""]));
-            rBody.appendChild(el("p", { class: "a-review" }, [sec.text || ""]));
+            const label = sec.label || "";
+            const text = sec.text || "";
+            const kids = [];
+            if (label) {
+              kids.push(el("span", { class: "a-review-practice" }, [label]));
+              if (text) kids.push(" — ");
+            }
+            if (text) kids.push(text);
+            rBody.appendChild(el("p", { class: "a-review" }, kids));
           });
         } else {
           // Old shape: a single string paragraph (caches generated before the

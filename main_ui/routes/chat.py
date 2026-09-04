@@ -206,8 +206,8 @@ def chat():
 
     course = src.get("course")
     exercise = src.get("exercise")
-    raw_kind = src.get("exercise_kind")
-    exercise_kind = "practice" if str(raw_kind).strip().lower() == "practice" else "exercise"
+    _kind = str(src.get("exercise_kind")).strip().lower()
+    exercise_kind = _kind if _kind in ("practice", "case") else "exercise"
     # The role selects the prompt family; each role is locked to its default
     # prompt (production keeps its single-prompt lock). Unknown role -> 404.
     role = src.get("role") or DEFAULT_ROLE

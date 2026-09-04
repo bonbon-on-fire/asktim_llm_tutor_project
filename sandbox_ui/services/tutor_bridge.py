@@ -24,9 +24,8 @@ from pathlib import Path
 from ui_core.tutor_bridge import TutorBridge, _resolve_provider
 from utils.curriculum import (
     SOLUTION_CONTEXT_LABEL,
-    exercise_path,
     load_about_asktim,
-    practice_path,
+    problem_path,
     read_pinned_context,
     read_solution,
     subproblem_label,
@@ -94,12 +93,8 @@ def build_assignment_text(
         if _lectures:
             parts.append("Lecture transcripts:\n" + _lectures)
 
-    # Exercise — read exercise_<NN>.txt or practice_<NN>.txt.
-    _path = (
-        practice_path(course, exercise)
-        if exercise_kind == "practice"
-        else exercise_path(course, exercise)
-    )
+    # Problem — read exercise_<NN>.txt / practice_<NN>.txt / case_<NN>.txt.
+    _path = problem_path(course, exercise, exercise_kind)
     resolved_exercise = _path.read_text(encoding="utf-8").strip()
 
     # Optional focus directive: names the sub-problem the student was assigned

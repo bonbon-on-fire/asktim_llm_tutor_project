@@ -32,13 +32,13 @@ def main() -> int:
         ok &= _check("validate_selection practice", V.validate_selection(course, "1", "practice") is None)
         ok &= _check("validate_selection exercise", V.validate_selection(course, "1", "exercise") is None)
 
-        n, k, err = V.resolve_embed_selection(course, None, "1", "01")
+        n, k, err = V.resolve_embed_selection(course, None, "1", None, "01")
         ok &= _check("resolve practice", (n, k) == ("1", "practice") and err is None, (n, k, err))
-        n, k, err = V.resolve_embed_selection(course, "1", None, "01")
+        n, k, err = V.resolve_embed_selection(course, "1", None, None, "01")
         ok &= _check("resolve exercise", (n, k) == ("1", "exercise") and err is None, (n, k, err))
-        n, k, err = V.resolve_embed_selection(course, None, None, "1")
+        n, k, err = V.resolve_embed_selection(course, None, None, None, "1")
         ok &= _check("resolve default exercise", (n, k) == ("1", "exercise") and err is None, (n, k, err))
-        n, k, err = V.resolve_embed_selection(course, "1", "1", "01")
+        n, k, err = V.resolve_embed_selection(course, "1", "1", None, "01")
         ok &= _check("resolve both -> error", err is not None and n is None, (n, k, err))
     finally:
         shutil.rmtree(V._CURRICULUM_DIR / course, ignore_errors=True)

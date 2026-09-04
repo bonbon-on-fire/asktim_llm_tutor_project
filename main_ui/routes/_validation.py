@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tutor.roles import DEFAULT_ROLE, get_role
+from utils.curriculum import case_exists as _case_exists
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import practice_exists as _practice_exists
@@ -86,10 +87,26 @@ def validate_practice(course, practice) -> dict | None:
     return None
 
 
+def validate_case(course, case) -> dict | None:
+    """Return None if *case* is a digit string with a file under *course*, else a failure dict."""
+    if not case:
+        return _err("case", case, "missing")
+    if not (isinstance(case, str) and case.isdigit()):
+        return _err("case", case, "must be a non-negative integer (e.g. 4)")
+    if not _case_exists(course, case):
+        return _err(
+            "case", case,
+            f"no case_{case}.txt under curriculum/{course}/cases/",
+        )
+    return None
+
+
 def validate_selection(course, number, kind) -> dict | None:
     """Validate a (kind, number) selection against the matching content folder."""
     if kind == "practice":
         return validate_practice(course, number)
+    if kind == "case":
+        return validate_case(course, number)
     return validate_exercise(course, number)
 
 
@@ -110,20 +127,24 @@ def validate_problem(course, number, kind, problem) -> dict | None:
     return None
 
 
-def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise):
+def resolve_embed_selection(course, raw_exercise, raw_practice, raw_case, default_exercise):
     """Resolve (number, kind) from embed query params.
 
-    Returns ``(number, kind, err)``. ``err`` is a failure dict (mapped to 404 by
-    the route) when both params are supplied or the resolved value is invalid;
-    ``number``/``kind`` are None on the both-params error.
+    Returns ``(number, kind, err)``. At most one of ``exercise``/``practice``/
+    ``case`` may be explicitly supplied; supplying more than one is a
+    ``selection`` failure (mapped to 404 by the route), with ``number``/``kind``
+    None. Otherwise the resolved value is validated against its folder;
+    ``exercise`` falls back to *default_exercise* when none is given.
     """
-    if raw_exercise and raw_practice:
+    if len([p for p in (raw_exercise, raw_practice, raw_case) if p]) > 1:
         return None, None, _err(
-            "selection", "exercise+practice",
-            "cannot specify both exercise and practice",
+            "selection", "exercise+practice+case",
+            "specify at most one of exercise, practice, or case",
         )
     if raw_practice:
         return raw_practice, "practice", validate_practice(course, raw_practice)
+    if raw_case:
+        return raw_case, "case", validate_case(course, raw_case)
     number = raw_exercise or default_exercise
     return number, "exercise", validate_exercise(course, number)
 

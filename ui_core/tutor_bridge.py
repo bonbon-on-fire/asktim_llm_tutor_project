@@ -60,9 +60,8 @@ from tutor.run_tutor import stream_tutor_reply as _upstream_stream_tutor_reply
 from utils.curriculum import (
     SOLUTION_CONTEXT_LABEL,
     append_course_tutor_rules,
-    exercise_path,
     load_about_asktim,
-    practice_path,
+    problem_path,
     read_exercise,
     read_pinned_context,
     read_solution,
@@ -305,12 +304,7 @@ class TutorBridge:
         """
         mode = ctx.get("context_mode", "full_context")
         kind = ctx.get("exercise_kind", "exercise")
-        problem_path = (
-            practice_path(course, exercise)
-            if kind == "practice"
-            else exercise_path(course, exercise)
-        )
-        exercise_text = problem_path.read_text(encoding="utf-8").strip()
+        exercise_text = problem_path(course, exercise, kind).read_text(encoding="utf-8").strip()
 
         parts: list[str] = []
 

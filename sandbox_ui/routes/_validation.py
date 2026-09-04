@@ -14,10 +14,13 @@ from utils.curriculum import discover_exercises as _discover_exercises
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import practice_exists as _practice_exists
+from utils.curriculum import discover_cases as _discover_cases
+from utils.curriculum import case_exists as _case_exists
 from utils.curriculum import load_course_name as _load_course_name
 from utils.curriculum import list_courses as _list_active_courses
 from utils.curriculum import read_exercise as _read_exercise
 from utils.curriculum import read_practice as _read_practice
+from utils.curriculum import read_case as _read_case
 from utils.curriculum import subproblem_label
 from tutor.roles import DEFAULT_ROLE, get_role
 
@@ -90,6 +93,22 @@ def validate_practice(course, practice) -> dict | None:
     return None
 
 
+def validate_case(course, case) -> dict | None:
+    """Return a failure dict if case is missing, non-numeric, or absent for the course, else None."""
+    if not case:
+        return _err("case", case, "missing")
+    if not (isinstance(case, str) and case.isdigit()):
+        return _err(
+            "case", case, "must be a non-negative integer (e.g. 4)"
+        )
+    if not _case_exists(course, case):
+        return _err(
+            "case", case,
+            f"no case_{case}.txt under curriculum/{course}/cases/",
+        )
+    return None
+
+
 def validate_problem(course, number, kind, problem) -> dict | None:
     """None when problem is absent (no focus) or valid; else a failure dict.
 
@@ -154,6 +173,13 @@ def list_practice(course) -> list[str]:
     return _discover_practice(course)
 
 
+def list_cases(course) -> list[str]:
+    """Non-padded case-study numbers for a course, sorted numerically."""
+    if not course:
+        return []
+    return _discover_cases(course)
+
+
 def course_has_lectures(course) -> bool:
     """True if the course ships any lectures/*.txt that can be toggled into context."""
     if not course:
@@ -189,7 +215,7 @@ def list_context_options() -> dict:
     Shape:
         {
           "courses": [
-            {"slug": ..., "name": ..., "exercises": [...], "practice": [...], "has_lectures": bool, "has_rag": bool},
+            {"slug": ..., "name": ..., "exercises": [...], "practice": [...], "cases": [...], "has_lectures": bool, "has_rag": bool},
             ...
           ],
           "tutors": ["tutor_01", ...],
@@ -203,6 +229,7 @@ def list_context_options() -> dict:
                 "name": load_course_name(slug),
                 "exercises": list_exercises(slug),
                 "practice": list_practice(slug),
+                "cases": list_cases(slug),
                 "has_lectures": course_has_lectures(slug),
                 "has_rag": course_has_rag(slug),
             }
@@ -214,6 +241,8 @@ def validate_selection(course, number, kind) -> dict | None:
     """Validate a (kind, number) assignment selection against the right prefix."""
     if kind == "practice":
         return validate_practice(course, number)
+    if kind == "case":
+        return validate_case(course, number)
     return validate_exercise(course, number)
 
 
@@ -239,24 +268,33 @@ def load_selection_preview(course, number, kind) -> dict:
     Used by the Create-context wizard's exercise-preview step; callers validate
     the selection first (see :func:`validate_selection`).
     """
-    raw = _read_practice(course, number) if kind == "practice" else _read_exercise(course, number)
+    if kind == "practice":
+        raw = _read_practice(course, number)
+    elif kind == "case":
+        raw = _read_case(course, number)
+    else:
+        raw = _read_exercise(course, number)
     title, body = _split_title(raw)
     return {"title": title, "text": body}
 
 
-def resolve_embed_selection(course, raw_exercise, raw_practice, default_exercise):
+def resolve_embed_selection(course, raw_exercise, raw_practice, raw_case, default_exercise):
     """Resolve (number, kind) from embed query params.
 
-    Returns ``(number, kind, err)``. ``err`` is a failure dict (mapped to 404 by
-    the route) when both params are supplied or the resolved value is invalid;
-    ``number``/``kind`` are None on the both-params error.
+    Returns ``(number, kind, err)``. At most one of ``exercise``/``practice``/
+    ``case`` may be explicitly supplied; supplying more than one is a
+    ``selection`` failure (mapped to 404 by the route), with ``number``/``kind``
+    None. Otherwise the resolved value is validated against its folder;
+    ``exercise`` falls back to *default_exercise* when none is given.
     """
-    if raw_exercise and raw_practice:
+    if len([p for p in (raw_exercise, raw_practice, raw_case) if p]) > 1:
         return None, None, _err(
-            "selection", "exercise+practice",
-            "cannot specify both exercise and practice",
+            "selection", "exercise+practice+case",
+            "specify at most one of exercise, practice, or case",
         )
     if raw_practice:
         return raw_practice, "practice", validate_practice(course, raw_practice)
+    if raw_case:
+        return raw_case, "case", validate_case(course, raw_case)
     number = raw_exercise or default_exercise
     return number, "exercise", validate_exercise(course, number)

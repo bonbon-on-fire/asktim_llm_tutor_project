@@ -6,8 +6,9 @@ normally, but the first chat send fails course validation and surfaces the
 error banner (see `routes/chat.py`) — better than silently falling back to a
 default course that may have been archived. This matches main_ui. `exercise`
 still falls back to the module default when a course IS given. A `practice=<n>`
-param selects a practice problem instead of an exercise; supplying both
-`exercise` and `practice` is rejected (404). An optional `problem=<n>` param
+param selects a practice problem, and a `case=<n>` param selects a case study,
+instead of an exercise; supplying more than one of `exercise`/`practice`/`case`
+is rejected (404). An optional `problem=<n>` param
 marks a single sub-problem as the student's focus; an invalid value
 (non-integer or out-of-range) 404s. Supplied values are validated against the
 on-disk curriculum and tutor folders (via shared validators in `_validation`);
@@ -78,12 +79,13 @@ def context_exercise():
     """Title + full prompt text for one exercise/practice (the wizard's preview).
 
     Params: ``course``, ``number``, and ``kind`` (``exercise`` default, or
-    ``practice``). The selection is validated the same way the embed route
-    validates it, so an unknown course/number 404s.
+    ``practice``/``case``). The selection is validated the same way the embed
+    route validates it, so an unknown course/number 404s.
     """
     course = request.args.get("course") or ""
     number = request.args.get("number") or ""
-    kind = "practice" if request.args.get("kind") == "practice" else "exercise"
+    _kind = request.args.get("kind")
+    kind = _kind if _kind in ("practice", "case") else "exercise"
 
     err = validate_course(course)
     if err:
@@ -126,7 +128,11 @@ def embed():
         return _bad_param(err)
 
     number, kind, err = resolve_embed_selection(
-        course, request.args.get("exercise"), request.args.get("practice"), DEFAULT_EXERCISE
+        course,
+        request.args.get("exercise"),
+        request.args.get("practice"),
+        request.args.get("case"),
+        DEFAULT_EXERCISE,
     )
     if err:
         return _bad_param(err)

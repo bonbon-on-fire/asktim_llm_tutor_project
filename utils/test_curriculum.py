@@ -21,6 +21,7 @@ from utils.curriculum import (
     discover_exercises,
     discover_practice,
     exercise_exists,
+    _DEFAULT_UI_LABELS,
     list_archived_courses,
     list_courses,
     load_ui_labels,
@@ -339,7 +340,7 @@ def test_ui_labels() -> None:
     """Assert load_ui_labels merges a course's ui_labels.json over the defaults."""
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        defaults = {"exercise": "Exercise {n}", "practice": "Practice {n}"}
+        defaults = dict(_DEFAULT_UI_LABELS)
 
         # No file -> defaults (a copy, safe to mutate).
         (root / "bare").mkdir(parents=True)
@@ -354,7 +355,7 @@ def test_ui_labels() -> None:
         got = load_ui_labels("sc", curriculum_root=root)
         _check(
             "override -> practice replaced, exercise default",
-            got == {"exercise": "Exercise {n}", "practice": "Week {n} Practice Problems"},
+            got == {**_DEFAULT_UI_LABELS, "practice": "Week {n} Practice Problems"},
             f"got {got}",
         )
 
@@ -374,7 +375,7 @@ def test_ui_labels() -> None:
         got = load_ui_labels("typed", curriculum_root=root)
         _check(
             "non-string value ignored, string kept",
-            got == {"exercise": "Ex {n}", "practice": "Practice {n}"},
+            got == {**_DEFAULT_UI_LABELS, "exercise": "Ex {n}"},
             f"got {got}",
         )
         _check("empty course -> defaults", load_ui_labels("", curriculum_root=root) == defaults)

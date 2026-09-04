@@ -22,6 +22,9 @@ _EXERCISE_NAME_RE = re.compile(r"^exercise_(\d+)\.txt$")
 # practice_<N>.txt — one or more digits (parallel to exercises).
 _PRACTICE_NAME_RE = re.compile(r"^practice_(\d+)\.txt$")
 
+# case_<N>.txt — one or more digits (parallel to exercises/practices).
+_CASE_NAME_RE = re.compile(r"^case_(\d+)\.txt$")
+
 # Courses under curriculum/_archive/ are retired: hidden from the apps, still
 # readable by offline tooling via course_dir(). See
 # docs/superpowers/specs/2026-07-21-curriculum-archive-design.md.
@@ -116,6 +119,65 @@ def practice_path(
     resolve to ``practice_7.txt``).
     """
     return practices_dir(course, curriculum_root) / f"practice_{_norm_num(practice_number)}.txt"
+
+
+def cases_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the case-studies folder path (``curriculum/<course>/cases/``)."""
+    return course_dir(course, curriculum_root) / "cases"
+
+
+def case_path(
+    course: str,
+    case_number: str,
+    curriculum_root: Path | str | None = None,
+) -> Path:
+    """Return the path to a course's case-study file (existence not guaranteed).
+
+    The number is normalized to its non-padded form (``"01"`` and ``"1"`` both
+    resolve to ``case_1.txt``).
+    """
+    return cases_dir(course, curriculum_root) / f"case_{_norm_num(case_number)}.txt"
+
+
+def case_exists(
+    course: str,
+    case_number: str,
+    curriculum_root: Path | str | None = None,
+) -> bool:
+    """True when the case-study file exists on disk."""
+    if not course or not case_number:
+        return False
+    return case_path(course, case_number, curriculum_root).is_file()
+
+
+def read_case(
+    course: str,
+    case_number: str,
+    curriculum_root: Path | str | None = None,
+) -> str:
+    """Read a case-study file's text, or ``""`` when absent."""
+    path = case_path(course, case_number, curriculum_root)
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+
+def problem_path(
+    course: str,
+    number: str,
+    kind: str = "exercise",
+    curriculum_root: Path | str | None = None,
+) -> Path:
+    """Return the problem-file path for a ``(kind, number)`` selection.
+
+    Dispatches to :func:`exercise_path`, :func:`practice_path`, or
+    :func:`case_path` by ``kind`` (``"exercise"`` default). The counterpart to
+    :func:`solution_path`, so callers resolve the problem *and* its solution in
+    exactly one place per kind rather than branching inline.
+    """
+    if kind == "practice":
+        return practice_path(course, number, curriculum_root)
+    if kind == "case":
+        return case_path(course, number, curriculum_root)
+    return exercise_path(course, number, curriculum_root)
 
 
 def practice_exists(
@@ -246,6 +308,11 @@ def practices_solutions_dir(course: str, curriculum_root: Path | str | None = No
     return course_dir(course, curriculum_root) / "practices_solutions"
 
 
+def cases_solutions_dir(course: str, curriculum_root: Path | str | None = None) -> Path:
+    """Return the case-solutions folder (``curriculum/<course>/cases_solutions/``)."""
+    return course_dir(course, curriculum_root) / "cases_solutions"
+
+
 def solution_path(
     course: str,
     number: str,
@@ -254,14 +321,17 @@ def solution_path(
 ) -> Path:
     """Return the path to a problem's solution file (existence not guaranteed).
 
-    ``kind`` is ``"exercise"`` (``exercises_solutions/exercise_solution_<N>.txt``)
-    or ``"practice"`` (``practices_solutions/practice_solution_<N>.txt``); the
-    number is normalized to its non-padded form. The ``_solution_`` infix keeps
-    solution filenames distinct from the problem files they mirror.
+    ``kind`` is ``"exercise"`` (``exercises_solutions/exercise_solution_<N>.txt``),
+    ``"practice"`` (``practices_solutions/practice_solution_<N>.txt``), or
+    ``"case"`` (``cases_solutions/case_solution_<N>.txt``); the number is
+    normalized to its non-padded form. The ``_solution_`` infix keeps solution
+    filenames distinct from the problem files they mirror.
     """
     n = _norm_num(number)
     if kind == "practice":
         return practices_solutions_dir(course, curriculum_root) / f"practice_solution_{n}.txt"
+    if kind == "case":
+        return cases_solutions_dir(course, curriculum_root) / f"case_solution_{n}.txt"
     return exercises_solutions_dir(course, curriculum_root) / f"exercise_solution_{n}.txt"
 
 
@@ -279,23 +349,32 @@ def read_solution(
 
 
 # A sub-problem header line: "Practice Problem 2: SteelCo" / "Graded Assignment 1: ...".
-# The prefix is chosen by kind so a practice file never matches a graded header.
-_SUBPROBLEM_PREFIX = {"practice": "Practice Problem", "exercise": "Graded Assignment"}
+# The prefix is chosen by kind so one kind's file never matches another's header.
+_SUBPROBLEM_PREFIX = {
+    "practice": "Practice Problem",
+    "exercise": "Graded Assignment",
+    "case": "Case Question",
+}
 _SUBPROBLEM_RE_TMPL = r"^{prefix}\s+(\d+)\s*:\s*(.*)$"
+
+
+def _subproblem_prefix(kind: str) -> str:
+    """The header prefix for *kind*, falling back to the exercise prefix."""
+    return _SUBPROBLEM_PREFIX.get(kind, _SUBPROBLEM_PREFIX["exercise"])
 
 
 def list_subproblems(course, number, kind="exercise", curriculum_root=None):
     """Ordered ``[(n, title), ...]`` sub-problems in a week's file.
 
-    Scans the resolved practice_N/exercise_N file for header lines matching the
-    kind's prefix ("Practice Problem N:" or "Graded Assignment N:"). Returns
+    Scans the resolved problem file for header lines matching the kind's prefix
+    ("Practice Problem N:", "Graded Assignment N:", "Case Question N:"). Returns
     ``[]`` when the file is missing or has no such headers (e.g. a single-problem
     file with no header).
     """
-    path = (practice_path if kind == "practice" else exercise_path)(course, number, curriculum_root)
+    path = problem_path(course, number, kind, curriculum_root)
     if not path.is_file():
         return []
-    prefix = _SUBPROBLEM_PREFIX["practice" if kind == "practice" else "exercise"]
+    prefix = _subproblem_prefix(kind)
     rx = re.compile(_SUBPROBLEM_RE_TMPL.format(prefix=re.escape(prefix)))
     out = []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -313,7 +392,7 @@ def subproblem_label(course, number, kind, problem, curriculum_root=None):
     """
     for n, title in list_subproblems(course, number, kind, curriculum_root):
         if n == int(problem):
-            prefix = _SUBPROBLEM_PREFIX["practice" if kind == "practice" else "exercise"]
+            prefix = _subproblem_prefix(kind)
             return f"{prefix} {n}: {title}" if title else f"{prefix} {n}"
     return None
 
@@ -345,6 +424,22 @@ def discover_exercises(
     nums: set[str] = set()
     for path in folder.glob("exercise_*.txt"):
         m = _EXERCISE_NAME_RE.match(path.name)
+        if m:
+            nums.add(str(int(m.group(1))))
+    return sorted(nums, key=int)
+
+
+def discover_cases(
+    course: str,
+    curriculum_root: Path | str | None = None,
+) -> list[str]:
+    """Return non-padded case-study numbers for a course, sorted numerically (e.g. ``['1', '2', '10']``)."""
+    folder = cases_dir(course, curriculum_root)
+    if not folder.is_dir():
+        return []
+    nums: set[str] = set()
+    for path in folder.glob("case_*.txt"):
+        m = _CASE_NAME_RE.match(path.name)
         if m:
             nums.add(str(int(m.group(1))))
     return sorted(nums, key=int)
@@ -401,7 +496,7 @@ def load_course_name(course: str | None, curriculum_root: Path | str | None = No
 # curriculum/<course>/ui_labels.json with any subset of these keys (e.g.
 # supply_chain_design maps "practice" -> "Week {n} Practice Problems"); every
 # other course keeps these defaults with no file.
-_DEFAULT_UI_LABELS = {"exercise": "Exercise {n}", "practice": "Practice {n}"}
+_DEFAULT_UI_LABELS = {"exercise": "Exercise {n}", "practice": "Practice {n}", "case": "Case {n}"}
 
 
 def ui_labels_path(course: str, curriculum_root: Path | str | None = None) -> Path:

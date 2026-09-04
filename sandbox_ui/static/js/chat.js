@@ -1225,24 +1225,25 @@
       const exs = (courseObj && courseObj.exercises) || [];
       const pracs = (courseObj && courseObj.practice) || [];
       const cases = (courseObj && courseObj.cases) || [];
+      // Grouped by kind in a fixed order — Exercise, then Case, then Practice —
+      // with a numeric sort inside each group so "10" follows "2". The value
+      // prefix (exercise:/practice:/case:) carries the kind.
+      const byNumber = (a, b) =>
+        String(a).localeCompare(String(b), undefined, { numeric: true });
       options = [
-        // Flat, alphabetically-sorted list of every assignment across kinds
-        // (Case/Exercise/Practice), matching the other wizard dropdowns. The
-        // value prefix (exercise:/practice:/case:) carries the kind; numeric
-        // sort keeps "10" after "2" within a kind.
-        ...exs.map((n) => ({
+        ...[...exs].sort(byNumber).map((n) => ({
           value: "exercise:" + n,
           label: "Exercise " + (parseInt(n, 10) || n),
         })),
-        ...pracs.map((n) => ({
-          value: "practice:" + n,
-          label: "Practice " + (parseInt(n, 10) || n),
-        })),
-        ...cases.map((n) => ({
+        ...[...cases].sort(byNumber).map((n) => ({
           value: "case:" + n,
           label: "Case " + (parseInt(n, 10) || n),
         })),
-      ].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+        ...[...pracs].sort(byNumber).map((n) => ({
+          value: "practice:" + n,
+          label: "Practice " + (parseInt(n, 10) || n),
+        })),
+      ];
       const d = createDraft.exercise;
       const firstExisting =
         (exs[0] && "exercise:" + exs[0]) ||

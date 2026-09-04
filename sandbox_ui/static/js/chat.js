@@ -1226,8 +1226,10 @@
       const pracs = (courseObj && courseObj.practice) || [];
       const cases = (courseObj && courseObj.cases) || [];
       options = [
-        // Flat list: exercises, then practice problems, then cases (no group
-        // headers). The value prefix (exercise:/practice:/case:) carries the kind.
+        // Flat, alphabetically-sorted list of every assignment across kinds
+        // (Case/Exercise/Practice), matching the other wizard dropdowns. The
+        // value prefix (exercise:/practice:/case:) carries the kind; numeric
+        // sort keeps "10" after "2" within a kind.
         ...exs.map((n) => ({
           value: "exercise:" + n,
           label: "Exercise " + (parseInt(n, 10) || n),
@@ -1240,7 +1242,7 @@
           value: "case:" + n,
           label: "Case " + (parseInt(n, 10) || n),
         })),
-      ];
+      ].sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
       const d = createDraft.exercise;
       const firstExisting =
         (exs[0] && "exercise:" + exs[0]) ||

@@ -751,7 +751,12 @@
     // exercise number; show the most-recent-active date; append the running
     // estimated cost when the conversation has any.
     const exNumber = parseInt(c.exercise_number, 10);
-    const kindLabel = c.exercise_kind === "practice" ? "Practice" : "Exercise";
+    const kindLabel =
+      c.exercise_kind === "practice"
+        ? "Practice"
+        : c.exercise_kind === "case"
+        ? "Case"
+        : "Exercise";
     const parts = [
       `${kindLabel} ${Number.isFinite(exNumber) ? exNumber : c.exercise_number}`,
     ];
@@ -1173,9 +1178,10 @@
     }
 
     // Toggle label tracks the selected item's kind: "View/Hide exercise" for
-    // an exercise:* value, "View/Hide practice" for a practice:* one.
+    // an exercise:* value, "practice" for a practice:*, "case" for a case:*.
     function updateToggleLabel() {
-      const kind = (sel.value || "").split(":")[0] === "practice" ? "practice" : "exercise";
+      const prefix = (sel.value || "").split(":")[0];
+      const kind = prefix === "practice" || prefix === "case" ? prefix : "exercise";
       toggleText.textContent = (expanded ? "Hide " : "View ") + kind;
     }
 
@@ -1218,9 +1224,10 @@
       const courseObj = courseBySlug(cd.existing);
       const exs = (courseObj && courseObj.exercises) || [];
       const pracs = (courseObj && courseObj.practice) || [];
+      const cases = (courseObj && courseObj.cases) || [];
       options = [
-        // Flat list: exercises first, then practice problems (no group
-        // headers). The value prefix (exercise:/practice:) carries the kind.
+        // Flat list: exercises, then practice problems, then cases (no group
+        // headers). The value prefix (exercise:/practice:/case:) carries the kind.
         ...exs.map((n) => ({
           value: "exercise:" + n,
           label: "Exercise " + (parseInt(n, 10) || n),
@@ -1229,10 +1236,17 @@
           value: "practice:" + n,
           label: "Practice " + (parseInt(n, 10) || n),
         })),
+        ...cases.map((n) => ({
+          value: "case:" + n,
+          label: "Case " + (parseInt(n, 10) || n),
+        })),
       ];
       const d = createDraft.exercise;
       const firstExisting =
-        (exs[0] && "exercise:" + exs[0]) || (pracs[0] && "practice:" + pracs[0]) || "";
+        (exs[0] && "exercise:" + exs[0]) ||
+        (pracs[0] && "practice:" + pracs[0]) ||
+        (cases[0] && "case:" + cases[0]) ||
+        "";
       currentValue = d.existing ? d.kind + ":" + d.existing : firstExisting;
     } else if (step === "tutor") {
       // All tutor built-ins are listed for visibility, but the step is locked to
@@ -1333,7 +1347,7 @@
     if (step === "exercise") {
       const d = createDraft.exercise;
       const [kind, num] = sel.value.split(":");
-      d.kind = kind === "practice" ? "practice" : "exercise";
+      d.kind = kind === "practice" || kind === "case" ? kind : "exercise";
       d.existing = num || "";
       return;
     }
@@ -1414,7 +1428,7 @@
     config.course = c.existing;
 
     config.exercise = e.existing;
-    config.exerciseKind = e.kind === "practice" ? "practice" : "exercise";
+    config.exerciseKind = e.kind === "practice" || e.kind === "case" ? e.kind : "exercise";
 
     config.tutor = t.existing;
     config.provider = createDraft.provider || "gpt";

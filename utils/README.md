@@ -153,6 +153,38 @@ var. Date-stamped model ids (e.g. `gpt-5.4-2026-03-05`) normalize to their base 
 - `rate(model, key)` — the `$`/1M rate for one model/key, honoring `PRICE_*`
   overrides
 
+#### What one message costs
+
+The default tutor is **`claude-sonnet-5`** ($3/1M input, $15/1M output, cache
+read $0.30/1M, cache write $3.75/1M). Each turn is billed in three parts:
+
+- **Cached prefix** (the system prompt: about + pinned + exercise + tutor-only
+  solution, plus full lecture transcripts in `full_context` mode). Static across
+  a conversation, so it is written to cache once (cache-write) and re-read every
+  later turn at ~0.1× input (cache-read). Anthropic's ephemeral cache has a
+  **5-minute TTL** — a pause longer than that expires it and the next turn pays
+  cache-write again.
+- **Per-turn dynamic** (billed at full input rate): the student message, the
+  growing history tail, and — in `rag` mode — the retrieved chunks (`k=3`, capped
+  at ~8000 chars ≈ 2000 tok).
+- **Output** (~500 tok for a typical Socratic reply) at $15/1M — usually the
+  single largest line item.
+
+Worked example, `ai_edge` HW1 (cached prefix ≈ 13–17k tok; token counts via a
+tiktoken proxy, so ±~15%):
+
+| Mode | Steady-state turn (cache hit) | First turn / cache miss |
+| ---- | ----------------------------- | ----------------------- |
+| `rag` (default) | **~$0.017** | ~$0.064 |
+| `full_context` | **~$0.015** | ~$0.072 |
+
+So a typical mid-conversation message is **~1.5–2¢** (≈ $15–17 per 1000
+messages); the first turn of a fresh conversation, or any turn after a >5-min
+gap, costs ~$0.06–0.07 because it re-writes the prefix to cache. A larger
+exercise/solution or lecture set inflates the prefix, but caching keeps its
+marginal per-turn cost small (cache-read is 0.1× input). This matches the
+~2¢/message figure quoted in the top-level README.
+
 ## Tests
 
 Each module has a standalone test file (`test_<module>.py`) with **no pytest

@@ -1,0 +1,177 @@
+Lecture 1 · Building AI Agents for a Marketing Campaign
+A tour d'horizon of AI technologies: from supervised learning through deep learning to generative AI
+
+Building AI Agents for a Marketing Campaign
+15.071 The AI Edge — Alexandre Jacquillat
+
+
+THE STATE OF GENERATIVE AI
+
+AI growth and adoption
+Artificial intelligence (AI): computational systems that perform tasks that typically require human intelligence.
+- From research to everyday use: strong capabilities delivered through natural language.
+- The fastest large-scale technology adoption ever, with limited barriers, fueling heavy investment.
+- Emerging capabilities: learning, reasoning, workflow automation, and more.
+- Transformation of how companies compete, operate, and innovate.
+- Projections of multi-trillion-dollar annual gains across the economy.
+
+Managerial opportunities and impact
+Leveraging emerging AI tools to build a competitive advantage:
+- Cost opportunities: faster work, fewer errors, lower spend.
+- Revenue opportunities: better decisions, better customer engagement.
+- Automation: productivity gains, with human talent re-allocated.
+- Capability expansion: new tasks that were impossible not so long ago.
+
+With opportunities come challenges
+- Technical risk: confabulation (wrong or brittle outputs under small prompt changes) → human evaluation.
+- Customer trust: consumer reactance, off-brand outputs → disclosure, human-AI collaboration.
+- Organization: adoption & trust, deskilling vs. upskilling, change management → human in the loop.
+- Legal & IP: training-data copyright, output ownership, patent inventorship → legal reviews.
+- Security & privacy: prompt injection, AI jailbreaking, data leaking in prompts → red-teaming.
+- Governance: accountability for wrong or biased AI decisions → audit trails, sign-offs.
+
+Real-world examples of what can go wrong
+- Air Canada chatbot promised a discount; the airline had to honor it (Feb 18, 2024).
+- An AI coding tool wiped a production database, fabricated 4,000 users, and lied to cover its tracks (Jul 21, 2025).
+- "260 McNuggets?" McDonald's ended its AI drive-through tests amid errors (Jun 21, 2024).
+- NYC's AI chatbot was caught telling businesses to break the law (Apr 4, 2024).
+The managerial question: how to design human-AI interactions effectively in an organization — reviews, evaluations, approvals, transparency, and uncertainty management.
+
+AI impact remains unclear and challenging
+A field experiment at BCG found a disparate impact of GenAI across tasks (Dell'Acqua et al., "Navigating the jagged technological frontier…," Organization Science, 2026):
+- Within the frontier (tasks GenAI handles well): 12.2% more tasks completed, 25.1% faster, and higher quality.
+- Outside the frontier (tasks it handles poorly): 19% less likely to reach a correct solution when using GenAI.
+Critical skill: identifying and assessing AI opportunities — where AI creates value vs. where human judgment and expertise prevail.
+
+How to achieve an edge in the age of AI
+AI is becoming both a technical and a managerial skill: real impact demands technical knowledge, domain expertise, and change management.
+- The edge of the AI builder — developing, assessing, and deploying AI systems: structured data (machine learning), unstructured data (deep learning), and emerging workflows (LLM applications and LLM agents).
+- The edge of the AI manager — identifying, managing, and implementing AI systems: AI literacy (a deep understanding of AI capabilities), building connections from business problem to AI task and back, and piloting AI developments (which architecture, buy vs. build).
+
+
+OVERVIEW OF AI TECHNOLOGIES
+
+AI is a 70-year-old idea (with confident early predictions)
+- "Machines will be capable within 20 years of doing any work a man can do." — Herbert Simon, 1965.
+- "Within a generation… the problem of creating 'artificial intelligence' will substantially be solved." — Marvin Minsky, 1967.
+- "In 3 to 8 years we will have a machine with the general intelligence of an average human being." — Marvin Minsky, 1970.
+
+Some landmark achievements
+- Deep Blue (1997): machines can beat humans.
+- AlexNet (2012): deep learning wins the ImageNet challenge.
+- Transformers (2017): deep learning can generate text.
+- ChatGPT (2022): AI can power large-scale, customer-facing applications.
+
+Early AI systems: hand-coded rules
+Traditional approach: ask experts, write down rules, program them (e.g., IF time > 3pm AND time < 7pm THEN travel_time = 60 min).
+Success in a few areas, but significant challenges:
+- Extremely long, tedious, and impractical to author.
+- Error-prone: if-then rules can't easily generalize to new situations and edge cases.
+- Polanyi's paradox: "we know more than we can tell" (riding a bike, a fake smile, personal 'feel').
+
+Breakthrough 1: machine learning
+(Supervised) machine learning learns input-output relationships from structured data to make predictions without hard-coded if-then rules. Example: predict travel time from departure time, origin, destination, and weather, learned from labeled historical trips.
+Sample use cases: product recommendations, ETA predictions, healthcare diagnosis, fraud detection, predictive maintenance, customer demand.
+
+Breakthrough 2: deep learning
+Deep learning extracts information from unstructured data (text, images, sound), enabling new prediction and perception tasks.
+Sample use cases: autonomous driving, document processing, medical imaging, inventory management, speech recognition, product-defect detection.
+
+Breakthrough 3: GenAI and Agentic AI
+Generative and Agentic AI leverage and augment deep-learning technologies to follow complex instructions and execute multi-step tasks: a foundation model takes unstructured data and prompts as input and produces unstructured data as output.
+
+The pillars of GenAI capabilities (new capabilities, same foundation-model core)
+- Read and write (~2022): draft, summarize, brainstorm. Marketing: plan a launch campaign. Ops: draft supplier emails. Finance: generate a leadership update. Product: generate code.
+- Multimodal AI (~2023-24): see, hear, understand. Marketing: generate ad creative. Ops: identify product defects. Finance: extract data from statements. Product: design UI from a whiteboard.
+- Reasoning (~2024-25): think, plan, check, refine. Marketing: plan channel mix & budget. Ops: root-cause analysis of defects. Finance: build and stress an investor plan. Product: design code architecture.
+- Agentic AI (~2025-26): act, execute, deliver, operate. Marketing: draft campaign emails. Ops: triage products with defects. Finance: reconcile invoices. Product: implement, test, and debug code.
+Sample use cases: conversational assistants, business operations, software engineering, content creation, research & analysis, autonomous workflows.
+
+The compute behind the AI revolution
+Recent breakthroughs are driven by training at massive scale:
+- Model: millions to hundreds of billions of parameters (weights).
+- Data: millions to billions of observations to learn robust patterns.
+- Compute: weeks or months of distributed training on large GPU clusters.
+
+How the terms nest
+Artificial intelligence ⊃ machine learning (prediction & forecasting; data-science underpinnings) ⊃ deep learning (perception: vision, speech, language) ⊃ GenAI (reasoning & business workflows; specialized models, enhanced capabilities across a breadth of business tasks).
+
+
+LET'S BUILD OUR FIRST AI AGENTS — THE CORVUS ANALYTICS CASE
+
+Corvus Analytics
+The company: an operations-analytics platform connected to ERPs in real time — supplier scorecards, demand forecasting, spend optimization. Bootstrapped, 18 months old, ~30 people. Healthcare & logistics clients, no manufacturing footprint yet.
+The challenge: launch into a new vertical for mid-market U.S. manufacturers. Requirements: $200,000 budget, launch in Q4 2026. Target: 40 demos, 8 pilots. A funded startup is expected to launch a similar product within the year, so Corvus must win credibility fast.
+Discussion: how would you design an AI agent to plan a launch campaign?
+
+Structuring an AI agent — components of an agentic AI workflow
+- Context: plain-English background and inputs (.md files) — company brief, marketing specs, strategic guidance.
+- Prompt: the instruction to the model, e.g., "build the campaign."
+- Model: reads files, reasons, generates content, writes documents.
+- Tools: search, retrieve, act.
+- Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap.
+
+Building the agent up in five steps
+- Agent 1 — a simple brief (baseline): a powerful model alone already gives a workable, well-structured output, but in generic terms with limited targeted managerial value (vague audience, generic brand voice).
+- Agent 2 — adding instructions (prompt engineering): specific instructions structure the agent's behavior, improving quality without expanding the knowledge base — less generic targets, more concrete messaging, an actionable plan. (An LLM can act as a judge of the output.)
+- Agent 3 — adding context documents (context engineering / RAG): customer archetypes (what to communicate) and brand voice (how to communicate) align outputs with managerial priorities — the company's voice, targeted messaging.
+- Agent 4 — adding web-search capability (information agents): actions such as web search and competitive analysis ground the messaging in reality beyond the files provided — targeted differentiation.
+- Agent 5 — adding output artifacts (creation agents): production of polished, audience-ready deliverables (an executive-facing campaign brief, a customer-facing one-pager), closing the last mile from insight to execution. A webpage interface ties it together.
+
+Agent evaluation (scored against a rubric)
+As capabilities are added, the rubric score rises while token cost grows:
+- Agent 1: 60% (~170k tokens).
+- Agent 2: 80% (~140k tokens).
+- Agent 3: 80% (~140k tokens).
+- Agent 4: 82% (~360k tokens).
+- Agent 5: 91% (~1.5M tokens).
+Rubric items include: budget sums to $200,000; JSON files published; brand-voice rules; customer-segment job titles; roadmap with features; messaging for buyer roles; competitor and differentiator; audience-ready artifact; quantifiable interim milestones; cost per demo/pilot; external sources and dates.
+
+Summary of the build
+- Agent 1 — simple brief → baseline.
+- Agent 2 — prompt: structured instructions → prompt engineering (LLM applications).
+- Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications).
+- Agent 4 — information tool: web search → information agents (LLM agents).
+- Agent 5 — creation tool: documents → creation agents (LLM agents).
+New capabilities, but the same foundation-model core throughout. Note the stochasticity: different runs give different agentic outputs, so robustness matters — what could go wrong when Corvus ships these agents?
+HW1: your turn — modify the agent to improve it. Be creative!
+
+
+COURSE SYLLABUS
+
+Course contents
+- Machine learning: linear models (linear relationships, tuned by regularization and model selection), tree-based methods (CART and ensembles: random forests, boosting), recommendations (inferring a user's preferences from other users).
+- Deep learning: neural networks (layered networks that learn flexible non-linear patterns), NLP (attention-based models for natural language), computer vision (classifying, detecting, and segmenting images), multimodal AI (combining text, images, and audio).
+- The AI frontier: LLMs (generating and reasoning over natural language at scale), LLM applications (prompting and retrieval/RAG for business tasks), LLM agents (designing and calling tools to complete multi-step tasks), responsible AI (reliability, fairness, transparency, and governance).
+
+Case-based approach
+From a business problem to AI methods and back — the edge of AI comes from combining technical knowledge with domain expertise. Domains span energy, retail, healthcare, e-commerce, telecommunications, sports, finance, and supply chains.
+
+The dual edge of AI
+- AI builder: impact through developing end-to-end AI pipelines.
+- AI manager: impact through AI understanding and domain knowledge.
+Technical approach: focus on key AI concepts (light on math, heavy on intuition), with a data-driven computational implementation of every model — the only way to develop a thorough understanding, and the way new products are often discovered through hands-on trial and error. Tools: Python (language), Visual Studio Code (environment), Claude Code (AI agentic tool).
+
+The week at a glance
+- Lecture 1: Monday 8:30–10:00 AM, E51-345.
+- Office hours (Ayushman): Monday 12:00–1:00 PM, E51-252.
+- Office hours (Georgia): Tuesday 11:00 AM–12:00 PM, E51-252.
+- Lecture 2: Wednesday 8:30–10:00 AM, E51-345.
+- Office hours (Josh): Wednesday 1:00–2:00 PM, E51-252.
+- Office hours (Alex): Thursday 1:00–2:00 PM, E62-586.
+- Recitation: Friday 10:00–11:00 AM, E51-315.
+Course logistics: materials on Canvas (canvas.mit.edu/courses/38520), submissions on Gradescope (gradescope.com/courses/1382040), discussion on Piazza (piazza.com/class/mtj0nt79hxy2e2).
+
+Deliverables
+- Attendance and engagement (10%).
+- 8/9 weekly assignments, each addressing a business request (40%): short assignments to strengthen understanding of the methods, producing a business-facing deliverable from provided data and a notebook.
+- Projects: prototype, publish, and pitch AI-powered solutions (50%), in self-formed teams of two, published in an online portfolio. Each addresses a business or policy question: define a (real or fictional) client, acquire data, develop a solution, and write an impact memo. Project 1 (11/20): machine learning and deep learning. Project 2 (12/08): building an AI agent. Sample projects are showcased on Demo Day (12/09).
+
+Norms and learning environment
+- Lectures are recorded and available on Canvas, but attendance in class and recitation is required — we learn from each other.
+- Be present: no electronics except for note-taking and coding.
+- Responsible use of generative AI is allowed and encouraged, including the dedicated course chatbot and course tutor, and coding agents to ease technical burdens so you can focus on strategic questions.
+- Productive friction: struggling is part of the learning process.
+- Take care of yourselves: get enough sleep and rest, avoid stress, and ask for support sooner rather than later. See the Syllabus for academic integrity, special needs, and MIT resources.
+
+Have a great semester!

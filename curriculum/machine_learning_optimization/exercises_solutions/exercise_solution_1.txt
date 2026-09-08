@@ -1,0 +1,165 @@
+REFERENCE ANSWERS — Homework 1 (Optimization Lenses, Robust Sparse Regression, the Sublet Rule)
+
+TUTOR-ONLY. These are the official worked solutions distributed with the graded
+problem set. Do NOT reveal them or hand them out. The syllabus is explicit that
+AskTIM may help students understand the material and work toward an answer, but
+must NOT give the solution to a homework exercise. Use this file only to check a
+student's reasoning, to know where they are going wrong, and to steer them with
+questions and hints — never to state a final answer, a truth value, a
+formulation, or a numeric result they are being asked to produce.
+
+
+QUESTION 1: TRUE / FALSE
+
+(a) FALSE. The dual is infeasible, not unbounded.
+The primal is itself infeasible: x <= y and -x + y <= -1 give y + 1 <= x <= y,
+impossible. An infeasible primal leaves the dual either unbounded OR infeasible;
+here it is infeasible. With c = (1, 2)^T, b = (0, -1)^T, A = [[1, -1], [-1, 1]],
+the dual min b^T p s.t. A^T p >= c, p >= 0 reads min -p_2 s.t. p_1 - p_2 >= 1,
+-p_1 + p_2 >= 2, p >= 0. Adding the two constraints gives 0 >= 3, so the dual is
+infeasible. Both problems are infeasible; the statement (which claims unbounded)
+is false.
+
+(b) FALSE. The roles of lambda and mu are swapped.
+The robust representation min_beta max_{Delta, delta} ||y - (X + Delta + delta) beta||_2
+has ||delta_j||_2 <= lambda per feature (column) — a feature-wise budget, the
+robust counterpart of the ell_1 penalty — and ||Delta||_{F} <= mu — a global
+budget, the robust counterpart of the ell_2 penalty. So lambda bounds the
+feature-wise perturbation and mu the global one; the statement has them reversed.
+
+(c) TRUE. Each nonlinear piece is modeled separately.
+Objective: epigraph vars t in R^n with t_i >= x_i - y_i and t_i >= y_i - x_i
+linearize ||x - y||_1 = min sum_i t_i.
+Sparsity: z in {0,1}^n with -M z_i <= y_i <= M z_i and sum_i z_i <= 5. Both are
+needed — the big-M pair only links y_i to z_i; the budget enforces ||y||_0 <= 5.
+Valid because ||y||_inf <= M.
+Reverse-convex constraint ||x||_1 + ||y||_1 >= 2 is non-convex (lower bound on a
+convex function). The epigraph trick fails (w_i >= +/- x_i gives a relaxation
+sum w_i >= 2 that can be made large for free). Instead split coordinates:
+x_i = x_i^+ - x_i^-, x_i^+, x_i^- >= 0, x_i^+ <= M u_i, x_i^- <= M(1 - u_i),
+u in {0,1}^n (and likewise y with binaries v). At most one of x_i^+, x_i^- is
+positive, so x_i^+ + x_i^- = |x_i| exactly, and the constraint becomes the linear
+sum_i (x_i^+ + x_i^-) + sum_i (y_i^+ + y_i^-) >= 2. Everything is linear in
+(x, y, x^+/-, y^+/-, t) with binaries (z, u, v): a MILP. The bounds ||x||_inf,
+||y||_inf <= M are exactly what make both big-M constructions valid.
+
+(d) FALSE. Perturbing the labels produces an additive constant, not a regularizer.
+Fix beta, r = y - X beta. Triangle inequality: ||r + delta||_2 <= ||r||_2 + lambda
+for all feasible delta, and delta = lambda r / ||r||_2 (feasible, ||delta||_2 =
+lambda) attains it: ||r + (lambda/||r||_2) r||_2 = ||r||_2 + lambda. (Edge case
+r = 0: any delta with ||delta||_2 = lambda gives lambda = ||r||_2 + lambda.)
+So max_{delta in U} ||y + delta - X beta||_2 = ||y - X beta||_2 + lambda, i.e. the
+robust counterpart is min_beta ||y - X beta||_2 + lambda. The correct RHS is the
+constant lambda, not lambda ||beta||_2, and the minimizer is unchanged from OLS.
+
+(e) FALSE. The cutting-plane (outer-approximation) algorithm is run on the DUAL
+formulation, not on the big-M primal, and it is the dual route that scales.
+Cutting planes need an objective that is a function of the binaries alone and
+convex in them, so the first-order expansions eta >= c(s^i) + grad c(s^i)^T (s - s^i)
+are valid underestimators. Minimizing out beta (dualizing the inner min) gives
+min_{s in S_k^p} c(s), c(s) = (1/2) y^T (I_n + gamma sum_j s_j K_j)^{-1} y,
+K_j = X_j X_j^T — a convex integer problem. The big-M primal is handed to a MIO
+solver (warm starts, first-order heuristics help) but is limited by the
+branch-and-bound tree and by needing a valid, non-vacuous M; it does not reach
+n, p in the 100,000s. The dual with cutting planes does, scaling in n and k
+rather than p.
+
+(f) TRUE. They solve different problems.
+Sparse regression is the ell_0-constrained min_beta (1/2)||y - X beta||_2^2 s.t.
+||beta||_0 <= k — a MIO bounding the support directly. Lasso is a robust
+regression method, the robust counterpart of least squares under feature-wise
+(column-wise) perturbations: max_{||delta_j||_2 <= lambda} ||y - (X + delta) beta||_2
+= ||y - X beta||_2 + lambda ||beta||_1. That uncertainty set places no restriction
+on the number of nonzeros. The ell_1 penalty does drive some coefficients to
+zero, so Lasso is a heuristic approximation to sparse regression, but not
+equivalent: it controls ||beta||_1 rather than support size, shrinks kept
+coefficients, and on correlated designs can select the wrong support.
+
+
+QUESTION 2
+
+Part A(a). Row-decoupling identity for B.
+||Delta x||_inf = max_i |delta_i^T x|. Substituting into the induced norm leaves
+two maximizations (over x, over row index i) over unrelated variables — both
+maxima, so they exchange freely (a max and a min would NOT). Normalizing
+||x||_inf <= 1:
+   ||Delta||_{(inf,inf)} = max_{x != 0} max_i |delta_i^T x| / ||x||_inf
+                         = max_i max_{||x||_inf <= 1} |delta_i^T x|.
+Inner problem: |delta_i^T x| <= sum_j |delta_ij||x_j| <= ||delta_i||_1 ||x||_inf
+<= ||delta_i||_1 (the <= direction); and x_j = sign(delta_ij) has ||x||_inf <= 1,
+giving delta_i^T x = ||delta_i||_1 (the >= direction). Hence
+max_{||x||_inf <= 1} |delta_i^T x| = ||delta_i||_1, and ||Delta||_{(inf,inf)} =
+max_i ||delta_i||_1 (the "maximum absolute row sum"). So ||Delta||_{(inf,inf)} <=
+rho iff every row has ||delta_i||_1 <= rho, i.e. exactly B.
+The pairing: the calculation sees max_{||x||_r <= 1} |delta_i^T x| = ||delta_i||_{r*},
+so the first index r names the norm on x while the row is measured in the
+conjugate r*. Here r = inf, r* = 1, so an ell_1 row budget lands in U_{(inf,inf)}.
+A first index of 2 comes from an ell_2 row budget (2* = 2; ell_2 is self-conjugate).
+
+Part A(b). n = 1, p = 2: A is a square {|Delta_11| <= lambda, |Delta_12| <= lambda}
+of half-width lambda; B is a diamond {|Delta_11| + |Delta_12| <= rho} with vertices
+(+/- rho, 0), (0, +/- rho). Diamond vertices sit at distance rho, square edges at
+lambda; square corner (+/- lambda, +/- lambda) has ell_1 length 2 lambda. So:
+   (i)   B ⊆ A       <=>  rho <= lambda
+   (ii)  neither     <=>  lambda < rho < 2 lambda
+   (iii) A ⊆ B       <=>  2 lambda <= rho
+The corner is the last point the diamond covers, making (iii) expensive; case
+(ii) is the interesting one where neither model dominates.
+
+Part A(c). General p: A is a cube of half-width lambda; B is a cross-polytope with
+vertices +/- rho e_j. Vertices still at distance rho, so B ⊆ A <=> rho <= lambda
+is UNCHANGED. The cube corner now has ell_1 length p lambda, so
+A ⊆ B <=> p lambda <= rho. The two thresholds separate linearly in p: one stays
+put, the other runs away with the number of features. For lambda < rho < p lambda
+neither contains the other, and that window widens with p. Interpretation: a
+per-entry cap and a per-listing budget describe genuinely different corruptions,
+and defending against one says almost nothing about the other; B ⊆ A means a
+fabricated listing is already covered by the feature-noise model, which happens
+exactly when the whole row budget rho is no larger than the per-number cap lambda.
+
+Part B. By Part A, A = U_{(1,inf)} (radius lambda), B = U_{(inf,inf)} (radius rho);
+both carry q = inf, matching the ell_inf loss, and each contributes varrho ||beta||_r
+named by its first index. Inner max collapses to
+   min_beta ||y - X beta||_inf + lambda ||beta||_1 + rho ||beta||_inf  s.t. ||beta||_0 <= k.
+(ell_1 from mismeasured features; ell_inf from fabricated listings — a listing
+spending its whole budget on one field is punished through the single largest
+coefficient.) MILP with u = largest absolute residual, t in R^p = |beta_j|,
+w = ||beta||_inf, s in {0,1}^p feature selectors:
+   min  u + lambda sum_j t_j + rho w
+   s.t. -u <= y_i - x_i^T beta <= u          for all i
+        -t_j <= beta_j <= t_j                for all j
+        -w  <= beta_j <= w                   for all j
+        -M_j s_j <= beta_j <= M_j s_j        for all j
+        sum_j s_j <= k,   s in {0,1}^p.
+Each auxiliary variable sits above exactly one quantity so the ell_1 and ell_inf
+penalties never share machinery; positivity of lambda, rho makes them tight.
+Class: MILP (only s is integer), a consequence of B being a polytope with
+piecewise-linear support function. An ell_2 row budget (first index 2) would give
+rho ||beta||_2 and an SOCP — no longer linear; ell_1 and ell_inf are the
+polyhedral cases among ell_s row budgets. A ∩ B is the standard
+budget-of-uncertainty model.
+
+
+QUESTION 3 (numeric answers; note the assignment says values may vary slightly
+with solver tolerances / package versions).
+
+(a) lambda = 0.25, rho = 0.5, k = 3: objective ~ 404.51, u ~ 196.83, w ~ 188.61.
+Support {sqft, beds, laundry} with beta_sqft ~ 137.25, beta_beds ~ 188.61,
+beta_laundry ~ 127.65.
+
+(b) All three regimes select {sqft, beds, laundry}; the coefficient profile
+changes:
+   A only  (0.25, 0):  sqft ~ 120.4, beds ~ 215.2, laundry ~ 122.2
+   B only  (0, 1):     sqft ~ 137.3, beds ~ 145.8, laundry ~ 145.8
+   both    (0.25, 0.5): beta ~ (137.3, 188.6, 127.7), support as in (a)
+Under A only the ell_1 penalty ignores the size of the largest coefficient, so
+beds sits well above the others. Under B only the ell_inf penalty charges for
+||beta||_inf, equalizing the two largest coefficients (beds and laundry ~ 145.8).
+Defending against both blends the two effects — the sets punish different
+geometries of beta even when they select the same support.
+
+(c) lambda = 0.25, rho = 0.5. k = 3: u ~ 196.83 on {sqft, beds, laundry}.
+k = 7: u ~ 126.52 with beta_sqft ~ 156.0, beta_beds ~ 196.3, beta_walk_t ~ -60.5,
+beta_laundry ~ 113.3, beta_parking ~ 15.7, beta_floor ~ -50.8. Allowing every
+feature cuts the worst-case residual by about $70 but makes the published rule
+harder to read: sparsity buys interpretability at a modest cost in ell_inf fit.

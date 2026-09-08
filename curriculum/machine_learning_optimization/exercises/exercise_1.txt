@@ -1,0 +1,100 @@
+TITLE: Homework 1 — Optimization Lenses, Robust Sparse Regression, and the Sublet Rule
+
+Covers Lectures 1–3 and Recitations 1–2. This is a graded problem set (Pset #1), due September 21. Total: 100 points. We recommend attempting each question after the relevant content has been covered in class.
+
+Hand in: PDF upload to Gradescope. Please append any Julia code at the end of the whole PDF.
+
+
+QUESTION 1: TRUE / FALSE (30 points)
+
+Classify each statement as true or false and justify your answer. We assign 1 point for correctly classifying the answer, and 4 points for the validity of the justification/counterexample.
+
+(a) (5 points) Consider the linear optimization problem
+      max_{x, y in R}  x + 2y
+      s.t.  x <= y,
+            -x + y <= -1,
+            x, y >= 0.
+    The dual of this problem is unbounded.
+
+(b) (5 points) The Elastic Net problem
+      min_beta  ||y - X beta||_2 + lambda ||beta||_1 + mu ||beta||_2
+    simultaneously protects against global perturbations of X bounded by lambda and feature-wise perturbations bounded by mu.
+
+(c) (5 points) Let M >= 1 be a known constant. Consider the optimization problem
+      min_{x, y in R^n}  ||x - y||_1
+      s.t.  ||x||_1 + ||y||_1 >= 2,
+            ||y||_0 <= 5,
+            ||x||_inf <= M,
+            ||y||_inf <= M.
+    This problem can be reformulated as a mixed-integer linear optimization problem.
+
+(d) (5 points) Consider adding noise to the labels, with delta in U = {delta in R^n : ||delta||_2 <= lambda}. Then
+      min_beta max_{delta in U} ||y + delta - X beta||_2  =  min_beta ||y - X beta||_2 + lambda ||beta||_2.
+
+(e) (5 points) Recall the big-M formulation of sparse regression,
+      min_{beta in R^p, z in {0,1}^p}  (1/2) ||y - X beta||_2^2 + (1/(2 gamma)) ||beta||_2^2
+      s.t.  -M z_j <= beta_j <= M z_j  for all j in [p],
+            sum_j z_j <= k.
+    To scale sparse regression to instances with n and p in the 100,000s, we run the cutting-plane algorithm directly on this formulation.
+
+(f) (5 points) Recall the Lasso problem, min_beta ||y - X beta||_2 + lambda ||beta||_1. Lasso is not equivalent to sparse regression.
+
+
+QUESTION 2: WHAT IS THAT SUBLET ACTUALLY WORTH? (40 points)
+
+Every spring, hundreds of students look for a summer sublet in Cambridge and Somerville, and every spring they have no idea whether $2,400 for a one-bedroom near Central Square is a reasonable price or a fleecing. You decide to build a model that predicts the typical advertised monthly rent from a listing's features, and to publish it so incoming students have a benchmark to compare an asking price against before they sign.
+
+You scrape n listings. For listing i you record x_i in R^p, a vector of p features, and the advertised monthly rent y_i in R. Stack these into X in R^{n x p} and y in R^n, and let beta in R^p be the regression coefficients you are fitting.
+
+The advertised rent y_i is exactly what it says on the page, so y is reliable. The feature matrix X is not, and it can fail in two quite different ways. Individual recorded values may each be somewhat inaccurate: square footage is rounded, walking times are estimated by whoever wrote the listing, and neither error has a consistent direction. Or the recorded feature vector for a single listing may be unreliable as a whole, because one poster has substantially reshaped several attributes at once. Such a poster has only so much nerve, though: the more fields they stretch, the more obvious the listing looks, so what is really capped is the total distortion spent on that listing, not the distortion in any one field.
+
+Write Delta in R^{n x p} for a perturbation of X, with Delta_j in R^n its column j and delta_i in R^p its row i. The two failures give two sets:
+   A = { Delta | ||Delta_j||_inf <= lambda for all j in [p] },
+   B = { Delta | ||delta_i||_1 <= rho for all i in [n] },
+with radii lambda > 0 and rho > 0, so A caps how far any single recorded number can be off, and B gives each listing a budget of distortion to spend however it likes across its features.
+
+Recall the induced-norm sets from lecture,
+   U_{(r,q)} = { Delta | ||Delta||_{(r,q)} <= varrho },   ||Delta||_{(r,q)} := max_{x != 0} ||Delta x||_q / ||x||_r,
+and recall that U_{(1,2)} turned out to be exactly a per-column budget, because ||Delta||_{(1,2)} = max_j ||Delta_j||_2. Nothing in that argument used the 2: the same reasoning gives, for every q,
+   ||Delta||_{(1,q)} = max_{j in [p]} ||Delta_j||_q,     (*)
+so a first index of 1 means "budget each column on its own, measuring it in ell_q". You may use (*) without proof. Taking q = inf places the first of our two sets: A = U_{(1,inf)} with radius lambda. Note what that set actually is — capping every column in ell_inf is the same as capping every entry, so A is simply the box |Delta_ij| <= lambda. However, (*) is not enough to write the second set.
+
+Part A (25 points). This part is about what A and B are as regions of R^{n x p}.
+
+  (a) (10 points) The set B is also an induced-norm ball: B = U_{(inf,inf)} with radius rho. Verify this by proving ||Delta||_{(inf,inf)} = max_i ||delta_i||_1; both inequalities are needed. Then notice the pairing this exposes: the budget on a row is measured in ell_1, yet the set is U_{(inf,inf)}. Explain where the switch from 1 to inf comes from, and say which row budget would instead give a first index of 2.
+      Hints. (i) The ell_inf norm of Delta x separates the rows: ||Delta x||_inf = max_{i in [n]} |delta_i^T x|. That leaves two maximizations stacked on each other; consider whether they can be taken in either order. (ii) The ratio ||Delta x||_inf / ||x||_inf is unchanged if x is rescaled, so you may restrict to ||x||_inf <= 1. (iii) The constraint ||x||_inf <= 1 says each x_j lies in [-1, 1] independently of the others, so the inner maximum can be found one coordinate at a time.
+
+  (b) (10 points) Take the smallest case in which both sets are visible: one listing and two features, n = 1 and p = 2, so that a perturbation is a single row delta_1 = (Delta_11, Delta_12) in R^2 and each set is a region of the plane. Because rho and lambda are independent, the two sets can sit in three ways: B ⊆ A, neither one contained in the other, or A ⊆ B. For each case, sketch a B (against a copy of A) that realizes it, and state the condition on lambda and rho under which that case occurs.
+
+  (c) (5 points) Now step back out of the plane: keep one listing, but let the number of features be a general p rather than 2. How do your two containment conditions (B ⊆ A and A ⊆ B) change as p grows?
+
+Part B (15 points). You now fit the model, defending against both failures at once. Because one student badly misled by your published rule is a worse outcome than a small average error, you measure fit by ||y - X beta||_inf. And because students have to read the rule, it may use at most k of the p features.
+
+From lecture you may quote without proof that
+   max_{Delta in U_{(r,q)}} ||y - (X + Delta) beta||_q = ||y - X beta||_q + varrho ||beta||_r,
+and that perturbations drawn from two such sets and added to X together contribute both penalties. Formulate
+   min_beta  max_{Delta in A, Delta' in B} ||y - (X + Delta + Delta') beta||_inf     s.t.  ||beta||_0 <= k
+as a mixed-integer optimization problem. You may introduce auxiliary continuous or binary variables, and M_j denotes a big-M constant for coefficient j. State what each variable does.
+
+
+QUESTION 3: CODING THE SUBLET RULE (30 points)
+
+This question continues the Cambridge/Somerville sublet story from Question 2. You will implement the mixed-integer formulation you derived in Part B and run it on a small listing dataset.
+
+Use the accompanying Jupyter notebook hw1-starter.ipynb and the dataset sublets.csv. Place both files in the same directory, fill in the marked code cells, run the notebook, and report the numerical outputs below. You may assume access to JuMP and Gurobi (as in recitation).
+
+The file sublets.csv has n = 30 listings and p = 7 features. The response column is rent (monthly asking price in dollars). The feature columns are sqft, beds, baths, walk_t, laundry, parking, floor. Here walk_t is walking time in minutes to the nearest T stop, and laundry / parking are binary amenities. The starter notebook centers y and standardizes the columns of X (so no intercept is needed). Throughout, take the big-M constant M = 10^3 for every feature.
+
+  (a) (15 points) In the starter notebook, complete the function solve_robust_sparse that builds and solves this mixed-integer optimization problem with JuMP / Gurobi. Then run it with lambda = 0.25, rho = 0.5, k = 3. Report the optimal objective value, the optimal residual level u, the selected features (those with s_j = 1 and |beta_j| > 1e-6), and the corresponding coefficients beta_j.
+
+  (b) (10 points) Keep k = 3 and compare the three uncertainty regimes:
+        A only  (lambda, rho) = (0.25, 0)   — per-entry feature noise
+        B only  (lambda, rho) = (0, 1)      — per-listing fabrication budget
+        both    (lambda, rho) = (0.25, 0.5) — same as in (a)
+      For each case, report the selected features and coefficients. In one or two sentences, explain how the ell_1 penalty (from A) and the ell_inf penalty (from B) shape the coefficients differently.
+
+  (c) (5 points) Return to lambda = 0.25, rho = 0.5, and compare the sparse model k = 3 to the dense model k = 7 (no effective cardinality restriction). Report u in each case and the nonzero coefficients for k = 7. In one sentence, say what a student using your published rule gains or loses by insisting on at most three features.
+
+
+POLICY ON INDIVIDUAL WORK
+You may discuss problem sets with other students, but your answers must be your own. List everyone you talked to about each problem at the top of your submission. Copying a solution violates the individual-work policy. You may use the AskTIM tutor to deepen your understanding and to get help — but not the solution — on these exercises.

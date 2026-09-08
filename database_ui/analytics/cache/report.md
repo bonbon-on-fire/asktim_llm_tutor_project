@@ -1,45 +1,46 @@
-# Weekly report — Aug 16, 2026 — Aug 22, 2026
+# Weekly report — Aug 30, 2026 — Sep 5, 2026
 
 ## Overview
 
-- **Conversations:** 125 ▲
-- **Students:** 44 ▲ (27 new, 17 returning)
-- **Positive rating:** 100% – (1👍 / 0👎, 0% of turns rated)
-- **Cost:** $25.70 ▲ ($0.206/conversation)
+- **Conversations:** 135 ▲
+- **Students:** 39 ▲ (14 new, 25 returning)
+- **Positive rating:** 0% – (0👍 / 1👎, 0% of turns rated)
+- **Cost:** $20.61 ▲ ($0.153/conversation)
 - **RAG rate:** 100% –
 
 ## 🚩 Didn't work well
 
-18 flagged — 0👎 + 18 judge (0 overlap).
+20 flagged — 1👎 + 19 judge (0 overlap).
 
 | Course | Exercise | Student | Score | Issue | Severity | Note |
 | --- | --- | --- | --- | --- | --- | --- |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | keeshepren1@yahoo.com | 28/40 | 1.1.A.a | high | The tutor demonstrated good scaffolding and Socratic questioning through most of |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | mstalanina | 27/40 | 1.1.C.a | high | The tutor demonstrates reasonable scaffolding in Turn 1 by guiding the student t |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | keeshepren1@yahoo.com | 28/40 | 1.1.A.a | high | The tutor guided the student through the problem with good scaffolding and clear |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | sivagamisharein | 23/40 | 1.1.C.b | high | The tutor demonstrates reasonable assignment anchoring and supportive tone, and  |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | None | 28/40 | 1.1.A.a | high | The tutor used a generally Socratic approach in early turns, asking guiding ques |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | ghislain.paille@gmail.com | 30/40 | 1.1.C.b | high | The tutor generally does well guiding the student through a complex combinatoria |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | None | 24/40 | 1.1.A.a | high | The tutor was warm, well-organized, and kept the student engaged throughout. How |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | jerica budic | 30/40 | 1.1.C.a | high | The tutor demonstrates reasonable scaffolding and tone throughout the conversati |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | keeshepren1@yahoo.com | 23/40 | 1.1.C.b | high | The tutor made reasonable attempts to guide the student with questions but fell  |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | None | 24/40 | 1.1.A.a | high | The tutor used a Socratic approach initially but progressively revealed the answ |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | gorbulin.aleks@gmail.com | 30/40 | 1.1.C.b | high | The tutor generally does a good job guiding the student through activity-based c |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | kilovolt84 | 27/40 | 1.1.C.b | high | The tutor generally guided the student well through a multi-step costing problem |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | USMAN | 23/40 | 1.1.A.a | high | The tutor's primary failure is in Turn 2, where a near-complete answer is given  |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | xu.zhao2009@yahoo.de | 28/40 | 1.1.A.a | high | The tutor generally uses good Socratic questioning and guides the student throug |
-| MIT CTL.SC2x Supply Chain Design | practice:8 | Zac | 26/40 | 1.1.C.a | high | The tutor demonstrated solid scaffolding and generally good Socratic technique,  |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | keeshepren1@yahoo.com | 29/40 | 2.2.A.a | medium | The tutor's only response was a request for problem context rather than any actu |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | Adi | 28/40 | 2.2.A.a | medium | The transcript contains only one student turn and a completely blank tutor respo |
-| MIT CTL.SC2x Supply Chain Design | practice:7 | Adi | 28/40 | 2.2.A.a | medium | The tutor provided no response to the student's submission. The student posted a |
+| MIT CTL.SC2x Supply Chain Design | practice:7 | ashish.garcon@gmail.com | 28/40 | 1.1.A.a | high | The tutor demonstrated strong scaffolding, good diagnostic questioning, and appr |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | Anas Karrar | 30/40 | 1.1.C.b | high | The tutor demonstrates solid scaffolding and Socratic questioning through most o |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | ahmadfazal94 | 27/40 | 1.1.C.a | high | The tutor demonstrated some Socratic elements by ending with guiding questions,  |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | Anas Karrar | 31/40 | 1.1.C.a | high | The tutor generally used good Socratic questioning and guided the student step-b |
+| MIT CTL.SC2x Supply Chain Design | practice:10 | Ryan | 11/40 | 1.1.A.a | high | The tutor performed well in the early turns (1-11), using Socratic questioning t |
+| MIT CTL.SC2x Supply Chain Design | practice:8 | Ameya | 28/40 | 1.1.A.a | high | The tutor generally demonstrates good Socratic technique—asking guiding question |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | sazsaz1010@gmail.com | 25/40 | 1.1.A.a | high | The tutor showed strong diagnostic questioning in Turns 1-3, walking the student |
+| MIT CTL.SC2x Supply Chain Design | practice:8 | None | 26/40 | 1.1.C.b | high | The tutor generally used good Socratic scaffolding across Parts 1-3 and 5, guidi |
+| MIT CTL.SC2x Supply Chain Design | practice:10 | gorbulin.aleks@gmail.com | 26/40 | 1.1.A.a | high | The conversation is short (3 turns) and covers a supply chain invoice timing pro |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | edohabah@icloud.com | 28/40 | 1.1.A.a | high | The tutor demonstrates strong Socratic technique in Turns 1 and 3, using guiding |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | None | 29/40 | 2.2.A.a | medium | The tutor provided a completely blank response to the student's question. This i |
+| MIT CTL.SC2x Supply Chain Design | practice:10 | jocelyncky@gmail.com | 28/40 | 2.2.A.a | medium | The conversation consists of a single student turn with no tutor response. The s |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | None | 25/40 | 2.2.A.a | medium | The tutor provided a completely blank response to the student's question. This i |
+| MIT CTL.SC2x Supply Chain Design | practice:10 | elena.oskrogo@skynet.be | 29/40 | 3.1.A.a | medium | The conversation consists of a single student question with no tutor response. E |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | None | 25/40 | 2.2.A.a | medium | The tutor response is entirely blank — no tutoring occurred. The student asked f |
+| MIT CTL.SC2x Supply Chain Design | practice:10 | elena.oskrogo@skynet.be | 29/40 | 3.1.A.a | medium | The tutor's response is empty, meaning no tutoring occurred. Deductions are appl |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | None | 25/40 | 2.2.A.a | medium | The tutor provided no response to the student's question. This is a single-turn  |
+| MIT CTL.SC2x Supply Chain Design | practice:2 | aymanalhabib29@gmail.com | 29/40 | 3.1.A.a | medium | The conversation consists of a single student turn with no tutor response record |
+| MIT CTL.SC2x Supply Chain Design | practice:10 | jocelyncky@gmail.com | 30/40 | 2.2.B.a | medium | The conversation consists of a single student turn with no tutor response. Becau |
+| MIT CTL.SC2x Supply Chain Design | practice:9 | JakobVA | 36/40 | 2.2.A.a | medium | The tutor provided a pedagogically sound response using Socratic method, ending  |
 
 ## 🗣 Top topics
 
-- **MIT 8.03SC Physics III: Vibrations and Waves:** complex representations (1) · oscillations (1) · pendulum motion (1)
-- **MIT CTL.SC2x Supply Chain Design:** Activity-Based Costing (ABC) (16) · Activity-based costing (12) · Cost-to-Serve Analysis (8) · Cost-to-serve calculation (6) · net income calculation (6) · sourcing process (6) · supplier assessment (6) · Cost allocation (5)
+- **MIT CTL.SC2x Supply Chain Design:** <UNKNOWN> (17) · Free Cash Flow calculation (9) · NOPAT (6) · cash flow discounting (5) · Free Cash Flows (5) · Net Working Capital (5) · Payback period calculation (5) · credit sales calculation from income statement (3)
 
 ## Meta
 
-- Judged 125 conversations with `claude-sonnet-4-6`.
-- Average rubric score: 37.3/40 (over 125 graded).
-- Model mix: claude-sonnet-5 (463)
+- Judged 135 conversations with `claude-sonnet-4-6`.
+- Average rubric score: 37.4/40 (over 135 graded).
+- Model mix: claude-sonnet-5 (422)

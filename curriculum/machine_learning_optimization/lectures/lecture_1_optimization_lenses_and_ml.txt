@@ -1,0 +1,127 @@
+Lecture 1 · Optimization Lenses and ML
+Introduction: why a modern optimization treatment of machine learning, the three lenses, the guiding philosophy, and a lecture-by-lecture tour of the course.
+
+Optimization Lenses in Machine Learning
+15.095 — Dimitris Bertsimas
+
+
+MOTIVATION: WHY THIS CLASS?
+
+- Central problems in machine learning (ML) have been addressed using heuristic methods. This means we do not really know whether we have actually solved these problems.
+- In the last two decades, convex optimization (CO) methods have gained increasing importance — compressed sensing and matrix completion, among many others.
+- Mixed-integer optimization (MIO) and robust optimization (RO) are still widely unknown in ML. People in ML tend to believe MIO problems are intractable.
+- Yet MIO, RO, and CO have advanced very significantly. This class takes those advances seriously and applies them to ML.
+
+
+OBJECTIVES
+
+- Teach the "DB brand" of ML: a rigorous, non-heuristic approach that leads to better out-of-sample performance than heuristic approaches.
+- Demonstrate that with modern optimization, optimal solutions to large-scale ML instances:
+  - can be found in seconds,
+  - can be certified optimal in minutes,
+  - outperform classical heuristic approaches in out-of-sample experiments on real and synthetic data.
+- Link optimization to ML.
+- Emphasize interpretability, prescriptive methods, deep learning and multimodal ML, and debiasing observational data.
+
+
+THE THREE (AND MORE) OPTIMIZATION LENSES
+
+Mixed-Integer Optimization (MIO):
+  (MIO)  max  c'x + h'y   s.t.  Ax + By <= b,  x in Z^n_+ (x >= 0, integer),  y in R^m_+ (y >= 0).
+  (QMIO) max  x'Qx + c'x + h'y  s.t.  Ax + By <= b,  x in Z^n_+,  y in R^m_+.
+
+Progress of MIO (why "intractable" needs rethinking):
+- Speedup between CPLEX 1.2 (1991) and CPLEX 11 (2007): 29,000 times.
+- Gurobi 1.0 (2009) comparable to CPLEX 11; speedup Gurobi 1.0 to Gurobi 9.0 (2022): 160 times.
+- Total software speedup 1991–2022: 4,700,000 times. A MIO that would have taken 55 days to solve 30 years ago can now be solved on the same 25-year-old computer in less than one second.
+- Hardware speed: 450 PFlop/s in 2016 vs. 59.7 GFlop/s in 1993 — about 8,000,000 times.
+- Total speedup (software x hardware): about 37.6 trillion times. A MIO that would have taken 1.2 million years to solve 25 years ago can now be solved on a modern computer in less than one second.
+
+Robust Optimization in Regression:
+- Given data (y_i, x_i), i in [n], with y = (y_1, ..., y_n) and X = [x_1, ..., x_n]^T.
+- Ordinary regression: min_beta ||y - X beta||_2.
+- With errors in the data, X + Delta_X where Delta_X in U = {Delta_X : ||Delta_X|| <= lambda}, robust regression solves min_beta max_{Delta_X in U} ||y - (X + Delta_X) beta||_2.
+- Progress in RO: the time to solve the robust problem is of the same order of magnitude as the nominal problem.
+
+Convex Optimization (CO):
+- Given convex functions f(x), g_j(x), j in [m]: (CO) min f(x) s.t. g_j(x) <= 0, j in [m].
+- Progress in CO: first-order methods enable fast running times in high dimensions.
+
+Semidefinite Optimization (SDO):
+- min <C, X> s.t. <A_i, X> >= b_i for all i in [m], X >= 0 (positive semidefinite), where <C, X> = Tr(C^T X) = sum_{i,j} c_ij x_ij, and X >= 0 means u^T X u >= 0 for all u.
+- SDO scales to problems with X of dimension in the 100s. When X is diagonal, the problem reduces to linear optimization (LO), which scales to problems in millions of dimensions.
+
+Second-Order Cone Problems (SOCPs):
+- min c^T x s.t. ||A_i x + b_i||_2 <= f_i^T x + d_i for all i in [m], Dx = b.
+- When A_i = 0 for all i, SOCP reduces to LO. When f_i = 0 for all i, SOCP is equivalent to a convex quadratically constrained problem. SOCPs scale to problems in millions of dimensions.
+
+
+SOME PHILOSOPHY: REMARKS ON COMPLEXITY
+
+- A key requirement of a theory is to be positively correlated with empirical evidence. (Consider the simplex method and solving the TSP.)
+- A 37.6 trillion-times speedup forces us to reconsider what is tractable.
+- Practical tractability: a problem is tractable if it can be solved for sizes and in times appropriate for the application.
+  - Online trading problems need to be solved in milliseconds.
+  - Regression problems used for planning need to be solved in minutes or hours.
+- Under this definition, asymptotic polynomial solvability or NP-hardness is not the relevant criterion.
+
+
+THE CLASS LECTURE BY LECTURE
+
+1  (W 9/09)  Optimization Lenses and ML — Ch. 1
+2  (M 9/14)  Robust Linear Regression — Ch. 2
+3  (W 9/16)  Sparse Linear Regression — Ch. 3
+4  (M 9/21)  Stable Regression — Ch. 17
+5  (W 9/23)  Median and Convex Regression — Ch. 4
+6  (M 9/28)  Robust and Sparse Classification — Ch. 6
+7  (W 9/30)  Holistic Regression — Ch. 5
+8  (M 10/05) CART, Random Forest and Boosted Trees — Ch. 7
+9  (W 10/07) Optimal Classification and Regression Trees — Ch. 8–11
+10 (T 10/13) From Predictions to Prescriptions — Ch. 13
+11 (W 10/14) Optimal Prescriptive and Policy Trees — Ch. 14
+12 (M 10/19) Kernel methods — Ch. 14
+13 (W 10/21) Deep Learning — Handout
+14 (M 10/26) Deep Learning and Optimal Trees — Ch. 12
+15 (W 10/28) Multimodal AI — Handout
+16 (W 11/04) Explainable Multimodal AI — Handout
+17 (M 11/09) Prescriptive Deep Learning — Handout
+18 (M 11/16) The ROAD I to precision medicine — Handout
+19 (W 11/18) The ROAD II to precision medicine — Handout
+20 (M 11/23) Missing Data Imputations — Ch. 19
+21 (W 11/25) Interpretable Clustering — Ch. 20
+22 (M 11/30) Matrix Completion — Ch. 24
+23 (W 12/02) Interpretable Optimization — Ch. 26
+(Midterm I on M 11/02, Midterm II on M 12/07, project presentations on W 12/09.)
+
+
+THE TOPICS
+
+Regression topics:
+- Best subset selection: min_beta (1/2) ||y - X beta||_2^2 subject to ||beta||_0 <= k.
+- Robust regression: min_beta max_{Delta_X in U} ||y - (X + Delta_X) beta||_2.
+- The goal is a MIO-based algorithm that accommodates sparsity, limiting multicollinearity, categorical variables, group sparsity, nonlinear transformations, robustness, and statistical significance.
+- Median regression: min_beta median_{i in [n]} |y_i - x_i^T beta|.
+- Convex regression: min_{f convex} sum_{i in [n]} (y_i - f(x_i))^2.
+
+Classification topics:
+- Logistic regression: max_{beta, beta_0} - sum_{i in [n]} log(1 + e^{-y_i (beta^T x_i + beta_0)}).
+- SVM: min_{w, b} (1/2) ||w||_2^2 + C sum_{i in [n]} max{1 - y_i (w^T x_i - b), 0}.
+- Optimal trees: partition the space with hyperplanes to minimize misclassification error.
+
+Precision medicine:
+- Randomized clinical trials vs. observational data — the ROAD to precision medicine.
+
+Deep learning and multimodality:
+- A brief introduction to deep learning, deep learning and trees, and multimodality.
+
+Matrix problems:
+- Matrix completion: min_Theta sum_{(i,j) in Omega} (x_ij - theta_ij)^2 s.t. rank(Theta) <= r.
+- Tensor completion.
+
+
+ADMINISTRATION (from the first lecture)
+- Time: MW 4:00–5:30 pm. Place: E51-345. Recitation: F 11:00 am–12:00 pm (Julia, computational aspects, examples, applications).
+- Text: Bertsimas & Dunn, Machine Learning under a Modern Optimization Lens (Dynamic Ideas Press, 2019).
+- Requirements: 20% problem sets, 25% Midterm I, 25% Midterm II, 30% final team project.
+- Background required: a class in optimization (15.081/6.251 or 15.093/6.255 concurrently is OK).
+- Project: teams of two, student-chosen topic; proposal due 10/28, presentation 12/08, 8-page report due 12/14.

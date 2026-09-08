@@ -5,6 +5,8 @@ Returns the course-level text that should be *retrievable*, as labeled
 
 - top-level ``key_concepts.txt`` (too large to pin, so reached via retrieval)
 - every ``lectures/*.txt`` (transcripts)
+- every ``readings/*.txt`` (supplementary reading material, week-scoped like
+  lectures via the ``reading_<week>_<slug>`` filename)
 - every ``practices/*.txt`` (practice-problem prompts)
 
 Deliberately excluded because they are paired directly into tutor context and must
@@ -32,7 +34,7 @@ Doc = tuple[str, str]  # (source_label, text)
 
 
 def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> list[Doc]:
-    """Collect local key-concepts/lecture/practice text as labeled documents."""
+    """Collect local key-concepts/lecture/reading/practice text as labeled documents."""
     course_dir = _course_dir(course, curriculum_root)
     docs: list[Doc] = []
 
@@ -48,10 +50,11 @@ def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> l
             if text:
                 docs.append((f"local:{path.stem}", text))
 
-    # Retrievable per-item folders: lecture transcripts + practice-problem
-    # prompts. exercises/ (graded prompts) and *_solutions/ are paired directly
-    # into context, not retrieved; figures/ are images; rag_index/ is the index.
-    for subdir in ("lectures", "practices"):
+    # Retrievable per-item folders: lecture transcripts, supplementary readings,
+    # and practice-problem prompts. exercises/ (graded prompts) and *_solutions/
+    # are paired directly into context, not retrieved; figures/ are images;
+    # rag_index/ is the index.
+    for subdir in ("lectures", "readings", "practices"):
         folder = course_dir / subdir
         if folder.is_dir():
             for path in sorted(folder.glob("*.txt")):

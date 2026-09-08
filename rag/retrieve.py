@@ -39,18 +39,20 @@ def _lecture_index(course: str) -> dict[str, dict]:
             _LECTURE_INDEX_CACHE[course] = {}
     return _LECTURE_INDEX_CACHE[course]
 
-# ``local:lecture_<week>_<seq>_...`` and ``local:practice_<week>`` encode the
-# course week (module) as their first number; exercise_<N> shares it too. Used to
-# scope retrieval to weeks the student has reached — see ``max_week`` below.
-_WEEK_RE = re.compile(r"^local:(?:lecture|practice|exercise)_(\d+)")
+# ``local:lecture_<week>_<seq>_...``, ``local:practice_<week>``, and
+# ``local:reading_<week>_...`` encode the course week (module) as their first
+# number; exercise_<N> shares it too. Used to scope retrieval to weeks the student
+# has reached — see ``max_week`` below.
+_WEEK_RE = re.compile(r"^local:(?:lecture|practice|exercise|reading)_(\d+)")
 
 
 def _source_week(source: str) -> int | None:
     """Week number encoded in a source label, or None for week-agnostic material.
 
-    ``local:lecture_2_3_...`` -> 2, ``local:practice_4`` -> 4. Returns None for
-    course-level docs (``course``/``syllabus``/``key_concepts``) and OCW content,
-    which carry no week and are always in scope.
+    ``local:lecture_2_3_...`` -> 2, ``local:practice_4`` -> 4,
+    ``local:reading_1_...`` -> 1. Returns None for course-level docs
+    (``course``/``syllabus``/``key_concepts``) and OCW content, which carry no
+    week and are always in scope.
     """
     m = _WEEK_RE.match(source or "")
     return int(m.group(1)) if m else None
@@ -60,6 +62,9 @@ def _source_week(source: str) -> int | None:
 # -> ``Lecture 1.1 The Transportation Problem`` (week.seq + title-cased topic), so
 # the tutor can cite what it retrieved (see the tutor prompt's citation rule).
 _LECTURE_RE = re.compile(r"^local:lecture_(\d+)_(\d+)_(.+)$")
+# ``local:reading_<week>_<slug>`` -> ``Reading: <Titleized slug>``. The leading
+# week number scopes retrieval (see _WEEK_RE) but is not shown in the citation.
+_READING_RE = re.compile(r"^local:reading_\d+_(.+)$")
 _NUMBERED_RE = re.compile(r"^local:(practice|exercise)_(\d+)$")
 _NAMED_LABELS = {
     "local:course": "Course overview",
@@ -70,6 +75,7 @@ _NAMED_LABELS = {
 _ACRONYMS = {
     "roic", "roi", "milp", "mrp", "drp", "fph", "atp", "bom", "dc", "dcs",
     "sc1x", "sc2x", "ocw", "kpi", "cogs", "sku", "eoq", "lp", "mip",
+    "ai", "genai", "llm", "llms", "rag", "nlp", "gpu", "erp", "api",
 }
 
 
@@ -91,7 +97,8 @@ def _source_label(source: str, course: str | None = None) -> str:
     ``citation`` (the real "Week 10, Lesson 1 · Video 7: DuPont Analysis"
     coordinate) is used. Otherwise falls back to a label derived from the stem:
     ``local:lecture_1_1_the_transportation_problem`` -> ``Lecture 1.1 The
-    Transportation Problem``; ``local:practice_4`` -> ``Practice 4``;
+    Transportation Problem``; ``local:reading_1_jagged_frontier`` -> ``Reading:
+    Jagged Frontier``; ``local:practice_4`` -> ``Practice 4``;
     ``local:course``/``syllabus``/``key_concepts`` -> friendly names; OCW and
     anything unrecognized keep their label (minus a ``local:`` prefix).
     """
@@ -103,6 +110,9 @@ def _source_label(source: str, course: str | None = None) -> str:
     m = _LECTURE_RE.match(s)
     if m:
         return f"Lecture {m.group(1)}.{m.group(2)} {_titleize(m.group(3))}"
+    m = _READING_RE.match(s)
+    if m:
+        return f"Reading: {_titleize(m.group(1))}"
     m = _NUMBERED_RE.match(s)
     if m:
         return f"{m.group(1).capitalize()} {m.group(2)}"

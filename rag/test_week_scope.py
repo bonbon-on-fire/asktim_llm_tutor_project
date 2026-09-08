@@ -57,6 +57,12 @@ def test_practice_and_exercise_week_parsed():
     assert _source_week("local:exercise_7") == 7
 
 
+def test_reading_week_parsed():
+    # readings are week-scoped like lectures: reading_<week>_<slug> -> week
+    assert _source_week("local:reading_1_jagged_technological_frontier") == 1
+    assert _source_week("local:reading_10_ai_governance") == 10
+
+
 def test_source_label_lecture_number_and_title():
     assert (
         _source_label("local:lecture_1_1_the_transportation_problem")
@@ -64,6 +70,16 @@ def test_source_label_lecture_number_and_title():
     )
     # acronyms stay uppercase, not "Roic"
     assert _source_label("local:lecture_10_7_roic") == "Lecture 10.7 ROIC"
+
+
+def test_source_label_reading():
+    # readings cite as "Reading: <title>"; the leading week number scopes but is
+    # not shown, and acronyms stay uppercase.
+    assert (
+        _source_label("local:reading_1_jagged_technological_frontier")
+        == "Reading: Jagged Technological Frontier"
+    )
+    assert _source_label("local:reading_10_responsible_ai") == "Reading: Responsible AI"
 
 
 def test_source_label_practice_named_and_ocw():

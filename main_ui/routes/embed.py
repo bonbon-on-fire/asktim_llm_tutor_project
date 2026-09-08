@@ -64,13 +64,17 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         # stays byte-identical to today. Stored as an int for the frontend echo.
         tutor_config["problem"] = int(problem)
     has_email = bool(read_username_cookie(request))
-    # Overlay drivers. `manual` is the startup env flag (also 503s the API);
-    # `degraded` is the auto server-derived signal from live /api/chat outcomes
-    # (banner only — see services/service_health.py). The template shows the
-    # overlay for either; `auto_degraded` marks the auto case so chat.js can poll
-    # for recovery and hide it without a reload.
-    manual = load_config().maintenance_mode
-    degraded = False if manual else service_health.is_degraded_cached()
+    # Overlay drivers. `exam` is the deliberate exam-period lockout (distinct
+    # wording, also 503s the API); `manual` is the maintenance env flag (also
+    # 503s the API); `degraded` is the auto server-derived signal from live
+    # /api/chat outcomes (banner only — see services/service_health.py). Both
+    # forced flags suppress the auto signal so it never overrides their wording.
+    # `auto_degraded` marks the auto case so chat.js can poll for recovery and
+    # hide it without a reload.
+    cfg = load_config()
+    exam = cfg.exam_lockdown
+    manual = cfg.maintenance_mode
+    degraded = False if (exam or manual) else service_health.is_degraded_cached()
     return render_template(
         "embed.html",
         course=course,
@@ -81,6 +85,7 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         has_email=has_email,
         maintenance=manual or degraded,
         auto_degraded=degraded and not manual,
+        exam_lockdown=exam,
     )
 
 

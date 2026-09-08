@@ -73,31 +73,41 @@ def create_app(
     for bp in blueprints:
         app.register_blueprint(bp)
 
-    # Read once at startup: MAIN_UI_MAINTENANCE is set at deploy time and a change
-    # restarts the process (sandbox_ui has no such field, hence getattr default).
+    # Read once at startup: both flags are set at deploy time and a change
+    # restarts the process (sandbox_ui has neither field, hence getattr default).
+    # Exam lockdown is a deliberate closure (distinct wording); maintenance is an
+    # outage. Either one gates the API identically — only the 503 body differs.
     maintenance_mode = bool(getattr(config, "maintenance_mode", False))
+    exam_lockdown = bool(getattr(config, "exam_lockdown", False))
 
     @app.before_request
     def _maintenance_gate():
-        """Refuse functional endpoints while maintenance mode is on (503).
+        """Refuse functional endpoints while maintenance or exam lockdown is on (503).
 
-        Server-side companion to the maintenance overlay: the page still renders
-        (the embed endpoints stay allowed, so the overlay shows), but the chat
-        API and every other action are blocked here — so the outage can't be
-        clicked past by removing the overlay client-side. Registered first so a
-        blocked request short-circuits before the session/DB hooks run. Mirrors
-        database_ui's before_request auth gate.
+        Server-side companion to the overlay: the page still renders (the embed
+        endpoints stay allowed, so the overlay shows), but the chat API and every
+        other action are blocked here — so the lockout can't be clicked past by
+        removing the overlay client-side. Registered first so a blocked request
+        short-circuits before the session/DB hooks run. Mirrors database_ui's
+        before_request auth gate.
         """
-        if not maintenance_mode:
+        if not (maintenance_mode or exam_lockdown):
             return None
         if request.endpoint in _MAINTENANCE_ALLOWED_ENDPOINTS:
             return None
-        response = jsonify(
-            {
+        # Exam lockdown takes precedence in the message: it's the intentional
+        # closure, so students see why rather than an outage note.
+        if exam_lockdown:
+            payload = {
+                "error": "exam_lockdown",
+                "message": "AskTIM is unavailable during the exam period.",
+            }
+        else:
+            payload = {
                 "error": "maintenance",
                 "message": "AskTIM is temporarily down for maintenance.",
             }
-        )
+        response = jsonify(payload)
         response.status_code = 503
         response.headers["Retry-After"] = "120"
         return response

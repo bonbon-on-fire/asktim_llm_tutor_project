@@ -27,6 +27,11 @@ class Config:
     max_conversation_tokens: int
     free_messages_before_login: int
     maintenance_mode: bool
+    # Deliberate exam-period lockout. Distinct from maintenance_mode so ops can
+    # tell "closed for exams" apart from "down for maintenance / real outage"
+    # (and so each shows the right wording). Like maintenance it also 503s the
+    # API, so the lockout can't be clicked past. See app_factory's gate.
+    exam_lockdown: bool
     # Automatic outage detection (server-side, phase 2). Consecutive infra
     # failures across all students before the auto "AskTIM is down" banner
     # engages; how long a degraded state lasts before lazy expiry lets live
@@ -60,6 +65,10 @@ def load_config() -> Config:
     # deployment (MAIN_UI_MAINTENANCE=1) without a code change and off again once
     # service is restored. Defaults off so normal environments are unaffected.
     maintenance_mode = _parse_bool(os.environ.get("MAIN_UI_MAINTENANCE"), default=False)
+    # Full-screen "AskTIM is unavailable during exams" overlay + API lockout.
+    # Env-driven like maintenance so it flips on the deployment without a code
+    # change (MAIN_UI_EXAM_LOCKDOWN=1) and off once the exam window ends.
+    exam_lockdown = _parse_bool(os.environ.get("MAIN_UI_EXAM_LOCKDOWN"), default=False)
     outage_failure_threshold = int(os.environ.get("OUTAGE_FAILURE_THRESHOLD", "5"))
     outage_cooldown_seconds = int(os.environ.get("OUTAGE_COOLDOWN_SECONDS", "90"))
     outage_health_cache_seconds = int(
@@ -79,6 +88,7 @@ def load_config() -> Config:
         max_conversation_tokens=max_conversation_tokens,
         free_messages_before_login=free_messages_before_login,
         maintenance_mode=maintenance_mode,
+        exam_lockdown=exam_lockdown,
         outage_failure_threshold=outage_failure_threshold,
         outage_cooldown_seconds=outage_cooldown_seconds,
         outage_health_cache_seconds=outage_health_cache_seconds,

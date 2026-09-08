@@ -82,6 +82,8 @@ curl http://127.0.0.1:5000/health
 | `OUTAGE_COOLDOWN_SECONDS` | `90` | With no new failure recorded for this long, a degraded row is lazily cleared. |
 | `OUTAGE_HEALTH_CACHE_SECONDS` | `5` | Per-worker cache of the degraded flag, so page renders don't re-read the row each time. |
 | `TUTOR_REQUEST_TIMEOUT_SECONDS` | `30` | Per-request Anthropic timeout (see [`tutor/README.md`](../tutor/README.md#environment-variables)); a stall raises inside gunicorn's window so it's recorded, not silently killed. |
+| `MAIN_UI_MAINTENANCE` | `false` | Set to `1` to force the full-screen "AskTIM is temporarily down" overlay **and** 503 every `/api/*` call (a hard lockout for a real outage/maintenance). Read once at startup — flipping it triggers a redeploy. Set back to `0` to restore. |
+| `MAIN_UI_EXAM_LOCKDOWN` | `false` | Set to `1` for a deliberate exam-period closure: the "AskTIM is currently unavailable" overlay **and** a 503 on every `/api/*` call. Distinct from `MAIN_UI_MAINTENANCE` so "closed for exams" is never confused with an outage (each shows its own wording); exam wording takes precedence if both are on. Read once at startup; set back to `0` when the exam window ends. |
 
 ## Database
 

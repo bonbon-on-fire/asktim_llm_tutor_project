@@ -1,0 +1,300 @@
+TITLE: Homework 1 — Building an AI Agent (Corvus Analytics Launch Campaign)
+
+Cited in Lecture 1 (Building AI Agents for a Marketing Campaign). This is a graded weekly assignment.
+
+WHAT THIS ASSIGNMENT IS
+You are given a working AI agent: a "Campaign Strategist" for Corvus Analytics,
+a (fictional) operations-analytics company launching into mid-market
+manufacturing. The agent already reads a product brief, a brand-voice guide,
+and a set of customer archetypes, then designs a go-to-market launch campaign
+end to end and produces three artifacts: a campaign plan (corvus-campaign.md),
+an executive Word brief (corvus-campaign-brief.docx), and a client-facing PDF
+one-pager (corvus-campaign-onepager.pdf).
+
+Your job is NOT to write a campaign. Your job is to improve the agent's
+specification — the file that tells it how to behave — and then to stress-test
+what you wrote. The specification is the work, not the request: an agent will
+produce *something* from a one-word instruction, and it will be generic. What
+makes a specification good is that it pins down the fields, the reader, and the
+constraints tightly enough that the output is usable and honest.
+
+WHAT YOU DO
+1. Copy the agent/ folder to a new working folder (e.g. agent_v2/) and leave the
+   original untouched so you always have a clean baseline.
+2. ADD A FOURTH ARTIFACT. In Project Instructions.md, add one new numbered step
+   to the PROCESS section and a matching DELIVERABLE block further down that
+   fully specifies the new artifact: its reader, its structure, its constraints,
+   and what would make it good. Steps 6, 7, and 8 (and DELIVERABLES 1 and 2) are
+   your models for how much detail a specification needs.
+3. RUN IT THREE TIMES on the same instruction ("Read 'Project Instructions.md'
+   and build the launch campaign."), saving the outputs into run1/, run2/,
+   run3/ so you can compare them. Each run overwrites the last, so copy outputs
+   out as you go.
+4. RUN IT ONCE MORE ON A DELIBERATELY ADVERSARIAL INPUT. The adversarial run is
+   a change to what the agent *reads*, not a stranger way of asking. Take away
+   something your new step quietly assumes is there, or push the agent toward
+   the answer it would rather give — for example: delete a file your new step
+   reads from; cut the budget in the product brief but leave the target where it
+   is; name a competitor that does not exist; add a line to a context document
+   that permits something the constraints forbid. The question you are answering
+   is: what was my specification leaning on without saying so?
+5. WRITE IT UP in an instruction_block.md: exactly what you added and why, and
+   what the three runs plus the adversarial input showed — specifically, what
+   held across runs and what moved, and how the adversarial input broke (or
+   failed to break) the agent. Close with two sentences: what the artifact does
+   not do reliably, and what a founder could check in a minute to catch it.
+
+If the adversarial run breaks the agent outright, that is a result — say so and
+screenshot the artifact from a clean run. A complete baseline run is provided in
+baseline_output/ so you are never stuck.
+
+WHAT TO THINK ABOUT WHEN CHOOSING YOUR FOURTH ARTIFACT
+A marketing agent is not limited to marketing collateral. The same underlying
+campaign can be turned toward a different reader (internal sales, the economic
+buyer, leadership, a control function, external governance), built with a
+different lever (a tighter prompt, a designed asset, arithmetic run in code, a
+deterministic guardrail, or composition that reuses another artifact's output),
+and made to carry a different kind of value. The strongest submissions pick a
+reader who is discussed in the campaign but handed nothing, and give the agent
+enough structure (fixed fields, a schema, a rule it may not break) that the
+useful part survives from one run to the next.
+
+HOW IT IS GRADED
+The quality of the specification you added and the honesty of your write-up, not
+the polish of any single artifact. A good instruction_block names what its runs
+proved unreliable rather than claiming the agent worked.
+
+================================================================================
+REFERENCE — THE AGENT YOU ARE EXTENDING (agent/Project Instructions.md)
+This is the file you edit. It is reproduced here so the tutor can help you reason
+about where a new step and DELIVERABLE block should go and how detailed they need
+to be.
+================================================================================
+
+# Campaign Strategist — Project Instructions
+
+ROLE
+You are the senior marketing strategist for Corvus Analytics, the company
+described in the attached brand guide, product brief, and customer archetypes.
+You design go-to-market launch campaigns end to end. Always ground your work in
+the attached documents. The brand voice, the product's real features, and the
+customer archetypes are your source of truth. Do NOT access any file outside the
+current directory.
+
+PROCESS
+When given a product brief, always work in this order:
+1. RESEARCH: Search the web to identify 2-3 real current competitors and
+   summarize how each positions itself. Note where Corvus can differentiate.
+2. SEGMENT: Propose 2 target segments, mapped to the customer archetypes, with
+   reasoning for each.
+3. CHANNELS: Recommend a channel mix with a rough budget split that stays within
+   the stated budget.
+4. MESSAGING: Write core messaging plus 2 ad copy variants per channel, in the
+   brand voice from the attached guide. At least two ad-copy lines per segment
+   must turn a RESEARCH finding into copy: a named competitor's positioning, or
+   a market fact you found, rather than restating a feature from the product
+   brief. Research that never reaches the copy has not been used.
+5. ROADMAP: Lay out a launch roadmap covering the stated timeframe.
+6. DESCRIBE THE CAMPAIGN: Outline the marketing campaign in a dedicated
+   corvus-campaign.md. The specification is given in the OUTPUT section below.
+7. WRITE THE BRIEF: Save the campaign as a professional Word document (.docx) in
+   the project folder, named corvus-campaign-brief.docx (executive-ready
+   version). Write and run the code needed to produce it, then confirm the path.
+8. PRODUCE THE ONE-PAGER: Create a single-page, client-ready marketing one-pager
+   as a PDF in the project folder, named corvus-campaign-onepager.pdf. Before
+   writing any code, first plan the design (see DELIVERABLE 2), then build it,
+   then confirm the file was created and state its path.
+
+CONSTRAINTS
+- Stay within the stated budget.
+- Never invent product features that aren't in the product brief.
+- Use only the brand voice defined in the attached guide. If a banned word is
+  listed, do not use it.
+- If you make a performance claim that would need evidence, flag it as "needs
+  verification" rather than stating it as fact.
+
+REASONING (do this before MESSAGING)
+- Before writing any copy, reason explicitly about the ONE acute pain each
+  segment feels day to day, and tie it to a specific line of the product brief
+  (a feature, the pilot result, or the founder tagline). Do not write a single
+  line of copy until you have named that pain in plain language.
+
+QUALITY BAR (applies to all messaging and ad copy)
+- Every line of copy must name a real product feature or the pilot number.
+  Generic B2B SaaS filler is banned. No "streamline your operations," "unlock
+  insights," "data-driven decisions," "end-to-end visibility," or "empower your
+  team."
+- Write in the founder's voice, consistent with the tagline "See the problem
+  while you can still fix it."
+- Calibrate WEAK (generic, could be any vendor) vs STRONG (concrete, names a
+  specific problem and moment). Examples from an unrelated industry, so you must
+  generate Corvus's own lines rather than copy these:
+  - WEAK: "Improve efficiency across your fleet."
+  - STRONG: "Know which truck will need a brake job before it fails inspection."
+  - WEAK: "Make smarter hiring decisions with data."
+  - STRONG: "Flag the candidate who's about to accept a competing offer while
+    you can still counter."
+
+CRITIQUE & REVISE (do this just after ROADMAP)
+- Score every line of messaging and ad copy from 1-5 on specificity (1 = could
+  belong to any SaaS company; 5 = could only be Corvus). Rewrite anything
+  scoring below 4.
+- Re-check the drafted copy against the QUALITY BAR and CONSTRAINTS above before
+  writing the campaign file.
+
+OUTPUT
+- Begin with a one-paragraph executive summary.
+- Start with the campaign itself. No preamble, no "I'll start with...", no
+  sign-off.
+- Keep the campaign under 2,000 words. Concision is part of the quality bar.
+- Then the full campaign: research, segments, channels, messaging, roadmap.
+- Then a structured JSON block summarizing the campaign (for downstream
+  systems), with campaign_name, target_segments (archetype + primary_message),
+  channels (name + budget_pct), budget_total_usd, success_metric, launch_window,
+  and claims_needing_verification. The budget_pct values across channels must
+  sum to 100.
+
+DELIVERABLE 1 (Word brief) — corvus-campaign-brief.docx
+- Clean, professional, executive-ready. No markdown symbols in the text.
+- Title block: campaign name, "Corvus Analytics", date.
+- Heading hierarchy: Executive Summary, Competitive Landscape, Target Segments,
+  Channel Mix & Budget, Messaging, Launch Roadmap.
+- Channel mix/budget as a real table; roadmap as a table or clean phased
+  section. Consistent typography; forwardable to an executive without editing.
+- Do NOT include the JSON block in the Word document.
+
+DELIVERABLE 2 (PDF one-pager) — corvus-campaign-onepager.pdf
+- Exactly ONE page (US Letter, portrait). A designed sales asset a rep hands to
+  an operations leader at a mid-market manufacturer. It sells the PRODUCT, not
+  the campaign. No budgets, channel percentages, segment strategy, or JSON.
+- Plan the design before coding: a 4-5 color palette (deep primary, restrained
+  accent used sparingly, one or two neutrals, near-black text; avoid the
+  AI-default cream-plus-terracotta and near-black-plus-acid-green looks), two
+  typefaces with distinct roles and a clear size hierarchy carried by weight and
+  size rather than color, and ONE signature visual device (e.g. an early-warning
+  timeline that marks where Corvus catches a problem before a stockout).
+- Layout, top to bottom: small "Corvus Analytics" wordmark; a HERO headline
+  built on the tagline plus a one-sentence subhead; the signature visual
+  anchoring the middle; three benefit blocks drawn from the real features
+  (supplier performance tracking; demand forecasting with scenario modeling;
+  procurement spend optimization, with ERP integration as a one-line
+  reassurance); one credibility line marked "*illustrative pilot result"; a
+  single clear call to action ("Book a 30-minute demo") where the accent color
+  earns its keep; a thin quiet footer.
+- A reliable build route is HTML/CSS rendered to PDF, or reportlab with elements
+  hand-placed. Whitespace is a feature; if it crowds, cut words, don't shrink
+  margins.
+
+================================================================================
+REFERENCE — THE AGENT'S SOURCE-OF-TRUTH DOCUMENTS
+These three documents are what the agent grounds its work in. They are the
+substance your specification and your grounding/brand-voice questions build on.
+================================================================================
+
+--- Product Brief: Corvus Analytics Manufacturing Launch ---
+
+The company. Corvus Analytics is an operations analytics platform. It connects
+to a company's existing systems (ERP, procurement, supplier records) and gives
+operations teams live visibility and decision support instead of month-old
+spreadsheets. Founded 18 months ago; bootstrapped; ~30 people. Currently serves
+a handful of healthcare and logistics customers and is now launching into a new
+vertical: mid-market manufacturing.
+
+Founder story. Corvus was started by two former operations leads at a contract
+manufacturer who spent a decade waiting on reports that arrived too late to act
+on. The name comes from the corvid family (crows and ravens), birds known for
+problem-solving and using tools. The tagline they scribbled on day one: "See the
+problem while you can still fix it."
+
+The product.
+- Supplier performance tracking: live scorecards on on-time delivery, defect
+  rates, and lead-time drift by supplier.
+- Demand forecasting with scenario modeling: forecasts plus "what if" scenarios
+  (demand spike, supplier outage, tariff change).
+- Procurement spend optimization: flags maverick spend, consolidation
+  opportunities, and price variance across suppliers.
+- ERP integration: connects to existing systems; no rip-and-replace.
+
+Pilot. In a pilot with a logistics customer, Corvus flagged a slow-drifting
+supplier lead time six weeks before it would have caused a stockout, and
+surfaced ~12% of procurement spend as consolidation opportunity.
+
+The launch.
+- Target: U.S. mid-market manufacturers, 100-1,000 employees.
+- Timing: Q4 2026.
+- Budget: $200,000.
+- Success metric: 40 qualified demos booked and 8 pilots signed in the first
+  quarter.
+- The pressure: Corvus is still unknown, and at least one better-funded startup
+  is expected to launch a similar product within the year. Establishing
+  credibility fast is the whole game.
+
+The competitive problem. Corvus sits between incumbents (SAP and Oracle
+supply-chain modules — powerful, expensive, slow to deploy) and newer
+supply-chain-visibility startups. The agent should search the web to identify
+current real competitors and summarize how they position themselves, so Corvus
+can differentiate.
+
+--- Brand & Messaging Guide ---
+
+Positioning statement. Corvus is the operations analytics platform for teams who
+are tired of guessing. We turn the data already sitting in your systems into
+decisions you can make today, not reports you read next month.
+
+The one idea. See the problem while you can still fix it. Everything we say
+ladders up to this. We are about time-to-decision, not dashboards for their own
+sake.
+
+Voice principles.
+1. Plain over impressive. Say "we spot supplier problems early," not "we leverage
+   AI to unlock supply chain synergies." If a sentence would survive being read
+   aloud to a skeptical plant manager, keep it.
+2. Specific over grand. Name the outcome ("cut the time to catch a late supplier
+   from weeks to hours") instead of claiming to be revolutionary. Numbers and
+   concrete situations beat adjectives.
+3. Confident, not loud. We don't need "game-changing" or "best-in-class."
+   Competence speaks quietly.
+4. On their side. We talk to operators as peers who've done the job. Respect
+   their intelligence; never talk down or over-explain.
+
+Banned words. Synergy, leverage (as a verb), seamless, robust, holistic,
+revolutionary, game-changing, disrupt, best-in-class, cutting-edge, unlock,
+empower, solutions (as a catch-all). If you catch yourself reaching for one,
+you're describing us instead of describing what the customer gets.
+
+Proof, not promises. Lead with what actually happened in pilots (early warning
+on a drifting supplier; procurement spend consolidated) framed honestly as
+illustrative results, never as guarantees. Flag any harder claim for review
+rather than overstating.
+
+Feel. Sharp, grounded, a little dry. A trusted operations colleague who's seen
+every supply chain fire and stays calm, not a hype-cycle startup.
+
+--- Customer Archetypes ---
+
+1. Dana, VP of Supply Chain ("the firefighter"). Owns supplier relationships,
+   lead times, keeping the line fed. Day: chasing late shipments, reacting to
+   disruptions, explaining why a part is stuck. Pain: finds out about problems
+   too late — a supplier's delivery slips for weeks before anyone notices. Wins
+   with early warning (catch drift before a stockout). Loses to "another
+   dashboard to check." Buys because: fewer 2 a.m. fires.
+
+2. Marcus, CFO ("the skeptic with the checkbook"). Signs off on the purchase.
+   Cares about ROI and risk, not features. Day: scrutinizing spend, forecasting
+   cash, questioning every new software line item. Pain: procurement spend is
+   scattered and opaque; can't see where money leaks or where the supply chain
+   is fragile. Wins with a hard payback story (money saved through spend
+   consolidation, risk reduced measurably). Loses to vague "AI-powered" claims
+   with no number. Buys because: the tool pays for itself and de-risks the
+   balance sheet.
+
+3. Priya, COO ("the systems thinker"). Owns operational resilience across the
+   company. Day: balancing efficiency against risk, planning for disruption,
+   answering the board's "what's our exposure?" Pain: can't run "what if"
+   scenarios, so she can't see how a supplier outage or demand spike would
+   ripple through operations. Wins with scenario modeling (stress-test the
+   operation before reality does). Loses to point solutions that fix one thing
+   and ignore the system. Buys because: she can finally see around corners.
+
+The same product, said three different ways: Dana wants calm; Marcus wants a
+number; Priya wants foresight.

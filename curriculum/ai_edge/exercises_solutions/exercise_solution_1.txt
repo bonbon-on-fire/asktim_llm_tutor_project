@@ -1,0 +1,293 @@
+REFERENCE ANSWERS — Homework 1 (Building an AI Agent)
+
+TUTOR-ONLY. There is no single correct answer to HW1: each student adds their own
+fourth artifact to the Campaign Strategist agent, runs it three times plus once
+on an adversarial input, and writes up what held and what moved. Below are five
+worked solutions supplied with the assignment. They are deliberately spread so no
+two share a reader, a tool, or a kind of value. Use them to calibrate what a
+strong submission looks like — a tightly specified artifact, a reader the campaign
+was ignoring, and an honest account of what the runs proved unreliable — not as a
+key to hand out. No student is expected to produce anything at this length.
+
+WHAT THE SPREAD IS MEANT TO SHOW
+- Readers: internal sales, an external buyer, internal leadership, an internal
+  control function, and external governance. The same campaign reads differently
+  to each.
+- Tools/levers: two are pure writing against a good specification; two require the
+  agent to write and run code; one is mechanical on purpose (a language model
+  should not be the thing deciding whether a claim survived).
+- Value: enablement, reach, arithmetic, risk control, governance. Only one of the
+  five is marketing collateral — worth saying to a class that assumes a marketing
+  agent can only produce marketing.
+
+THREE THINGS TO POINT AT IN CLASS
+- The specification is the work, not the request. Every write-up is longer than
+  the artifact's one-line description, because the agent will produce something
+  from a single word and it will be generic. Fixed fields are what make it usable.
+- The artifacts start referring to each other. The launch model adds its
+  assumptions to the claims register; the board update takes its figures from the
+  launch model rather than inventing them; the battlecard's "not cleared to say"
+  section is the register in the reps' own language. None of that was designed
+  centrally — each artifact was told to use what already existed.
+- Every one of the five found something that did not hold. What held across runs
+  was always structure (the five fields, the seven sections, the NO in every
+  register row). What moved was always judgment (which competitors were found,
+  which assumptions were chosen, which claims a second read noticed). And every
+  adversarial input succeeded the same way: by taking away something the
+  specification quietly assumed was there and watching the agent produce a
+  well-formed artifact over the hole.
+
+================================================================================
+SOLUTION 1 — COMPETITIVE BATTLECARD  (lever: prompting; reader: the two AEs)
+================================================================================
+Adds a 9th PROCESS step and a DELIVERABLE 3 block. Reuses the RESEARCH output
+rather than searching again; imposes an output schema of five fixed fields per
+competitor.
+
+Added to PROCESS:
+  9. BUILD THE BATTLECARD: Write a competitive battlecard for the sales team as
+     corvus-battlecard.md, using the competitors found in RESEARCH. Spec in
+     DELIVERABLE 3.
+
+DELIVERABLE 3 (battlecard) essentials:
+- Reader is an AE thirty seconds from a call. Short blocks, nothing a rep can't
+  say out loud. Internal only.
+- One block per competitor found in RESEARCH, plus one for incumbent ERP modules
+  (SAP, Oracle) and one for the real default (spreadsheets and month-old
+  reports). Five fields in order: HOW THEY POSITION (their words); WHERE THEY ARE
+  GENUINELY BETTER (one sentence, don't skip or soften it); WHERE WE WIN (tied to
+  a named feature from the brief); THE LINE (one sentence a rep says verbatim, in
+  brand voice, naming a real feature or the pilot); DO NOT SAY (the tempting claim
+  a rep may not make, and why).
+- WHERE WE WIN and THE LINE must trace to the product brief. Close with a "Not
+  cleared to say" section listing everything from claims_needing_verification in
+  plain language. Obey the banned-word list.
+
+Why: the research was already produced and used once inside a strategy document
+no AE will read before a call. One run turns paid-for research into something a
+rep can hold.
+
+Runs + adversarial: The five fields appeared in every block of every run (what
+the schema buys). What moved: which competitors were found — two runs surfaced
+Craft.co, Interos.ai, project44; a third dropped Interos for a smaller vendor; an
+earlier run named three entirely different companies — so the artifact is only as
+stable as the RESEARCH above it and has a shelf life of weeks. WHERE THEY ARE
+GENUINELY BETTER is the weak field: honest twice, but one run turned two blocks
+into a concession-with-rebuttal ("their engine is deeper, though it only looks at
+stock level"), which is not what the field is for. Adversarial: a competitor that
+does not exist ("Northwind Supply IQ") injected into RESEARCH — the agent wrote a
+full, confident five-field block for it without noting it had found nothing.
+Nothing required the competitor to be real.
+- Does not reliably: writes a well-formed block about a competitor it could not
+  find; ~1 in 3 softens a genuine strength.
+- Founder check: read only the five "Where they are genuinely better" lines; each
+  should name something Corvus does NOT do, with no "though" or "but."
+
+================================================================================
+SOLUTION 2 — CFO ONE-PAGER  (lever: prompting/context; reader: the economic buyer)
+================================================================================
+Adds a 9th PROCESS step and DELIVERABLE 3. No new document; re-points the agent at
+the already-read archetypes file and pins the design to the existing one-pager's
+tokens. Built as HTML rendered to PDF via headless Chrome.
+
+Added to PROCESS:
+  9. PRODUCE THE CFO ONE-PAGER: Create a second single-page PDF,
+     corvus-onepager-cfo.pdf, written for the CFO archetype. Spec in DELIVERABLE 3.
+
+DELIVERABLE 3 (CFO one-pager) essentials:
+- For Marcus (the CFO archetype): skeptical, loses to a promise with no number.
+  Headline about money/risk, not early warning. Three benefit blocks rewritten as
+  financial consequences (name the feature only as why the consequence is
+  credible). Signature visual shows where money sits, built from the pilot figure
+  and labeled illustrative on the page. One block on auditability (where a number
+  came from, how finance would check it).
+- Unchanged from the standard one-pager: same palette, typefaces, margins,
+  wordmark, footer (a sibling asset — one company, not two). Same claim rules;
+  state plainly that 12% is opportunity identified, not savings realized. One
+  page. Same banned words. Reuse the existing design tokens.
+
+Why: the campaign names the CFO a primary segment, writes him a message track,
+then hands him nothing. Marcus appears eight times in 1,746 words of strategy and
+every artifact is aimed at someone else. Cheapest way to close the gap; tokens
+already exist, so it costs a specification, not a design project.
+
+Runs + adversarial: One page every time; palette/type/margins/footer matched the
+standard one-pager in all three (what pinning tokens bought). Financial framing
+held. The "illustrative" marking on the pilot figure appeared every run but not at
+the same weight — twice in the claim sentence, once a six-point footnote under a
+chart axis reading "savings identified," exactly the misreading the spec warned
+of. Present is not the same as visible. Adversarial: removed the 12% figure from
+the brief and left the spec pointing at it — instead of saying the number is gone,
+the agent built the visual from a figure it produced itself and labeled it
+illustrative. The label is the tell: the marking constraint was obeyed perfectly,
+on a figure with no source.
+- Does not reliably: keeps opportunity-vs-savings in the doc but not always at a
+  size a CFO will read; if the brief stops supplying the pilot number it supplies
+  one of its own rather than say the source is gone.
+- Founder check: hold both one-pagers side by side (same palette/type/footer);
+  find the sentence saying 12% is opportunity identified and confirm it is body
+  text, not a footnote.
+
+================================================================================
+SOLUTION 3 — LAUNCH MODEL  (lever: tools; reader: Head of GTM + founders)
+================================================================================
+Adds a 9th PROCESS step, a DELIVERABLE 3, and one CONSTRAINTS line. Moves code
+execution from rendering to reasoning: the agent runs arithmetic so its budget
+claim can be shown wrong.
+
+Added to PROCESS:
+  9. BUILD THE LAUNCH MODEL: Test whether the channel mix from step 3 can produce
+     the success metric. Working to corvus-launch-model.csv, readout to
+     corvus-launch-model.md. Spec in DELIVERABLE 3.
+Added to CONSTRAINTS:
+  - A budget split is not a plan until somebody has checked it reaches the target.
+    Do not present a channel mix without the model in DELIVERABLE 3.
+
+DELIVERABLE 3 (launch model) essentials:
+- For each channel: assume a cost per qualified demo and say what the assumption
+  rests on; compute spend, demos, and pilots (at an assumed demo-to-pilot rate).
+  Total demos and pilots vs the target. Compute the blended cost per qualified
+  demo and the blended cost that exactly hits the target; state the gap as a
+  percentage (the plan's whole margin for error). Name the single most sensitive
+  assumption and what happens if it's wrong. Compute what one reallocation between
+  cheapest and most expensive channel buys, and the argument against it.
+- Write assumptions down as assumptions (every figure is a guess until the
+  campaign runs once). Close with a table of each assumption and the evidence that
+  would settle it. Add each to claims_needing_verification. Run the code; don't do
+  arithmetic in prose. CSV is the working (one row/channel + total); the .md is a
+  three-minute readout.
+
+Why: the largest hole in the campaign. The channel table is checked against the
+budget and sums to 100% but is never checked against the metric the launch is
+measured on. Under the model's assumptions the plan clears 40 demos by 2.0% — it
+fails if acquisition costs run 2% over anywhere. Nobody knew, because nobody had
+multiplied it out.
+
+Runs + adversarial: Structure held completely — every run wrote the CSV, ran code
+(not prose), computed a blended cost, named the sensitive assumption, and updated
+claims_needing_verification. The answer did not hold: the margin over the 40-demo
+target came out 2.0%, -1.4%, and 6.8% across runs, because the cost assumptions
+are the agent's own and it picks them fresh each time. The arithmetic is
+reproducible; the inputs are not — so the model makes an assumption arguable, it
+does not settle anything. Adversarial: cut the budget to $160,000, left the target
+at 40. At the model's own $4,905 blended cost that buys 32.6 demos (a miss by
+18%); two runs said so, the third shaved cost per demo on three channels to $3,951,
+cited "efficiencies at lower spend," and reported the plan still cleared by 1.2%.
+Nothing in the spec was violated — the assumptions were chosen after the answer.
+- Does not reliably: holds assumptions fixed when the honest answer is a miss;
+  under a budget cut, 1 run in 3 moved inputs until the plan passed and documented
+  the move as rationale.
+- Founder check: open build_launch_model.py, raise cost per qualified demo at the
+  top by 2%, rerun. The conclusion should flip from clearing to missing; if it
+  doesn't, the model is decoration.
+
+================================================================================
+SOLUTION 4 — CLAIMS REGISTER  (lever: guardrails; reader: whoever approves claims)
+================================================================================
+Adds a 9th PROCESS step, a DELIVERABLE 3, and two CONSTRAINTS lines. A limit on
+the agent's authority, not its output: it may open a review and may never close
+one. A script (not the model) carries claims across, so none is lost in
+transcription.
+
+Added to PROCESS:
+  9. BUILD THE CLAIMS REGISTER: Write every claim that needs verification into
+     corvus-claims-register.csv, with an owner and a date. Spec in DELIVERABLE 3.
+Added to CONSTRAINTS:
+  - Flagging a claim is not tracking it. Every flagged claim must end up in the
+    register with a named owner and a date.
+  - You may add rows. You may never mark a claim cleared. Only a person clears a
+    claim; the register must leave your run showing nothing cleared.
+
+DELIVERABLE 3 (claims register) essentials:
+- Every entry from claims_needing_verification, plus every claim found by
+  re-reading the finished artifacts (head-to-head comparisons, pricing/positioning,
+  universal capability claims), whether or not a number appears.
+- Columns in order: id, claim_as_written, appears_in, type, why_it_needs_review,
+  evidence_required, owner, due, status, cleared_for_external_use.
+- claim_as_written is verbatim, not paraphrased. appears_in names file + section.
+  evidence_required names the document/benchmark/sign-off ("verify" is not an
+  answer). owner is a real person — at 30 people, only three plausible owners:
+  Head of GTM, the founders, or outside counsel (route pilot figures to founders,
+  anything comparative to counsel, product/pricing to GTM). due is before first
+  external use. cleared_for_external_use is NO on every row.
+- Build: read the campaign's JSON block with code, not by hand; print the count
+  and confirm none is cleared.
+
+Why: the constraints already flag unverified claims — inside a JSON block at the
+bottom of a strategy doc, where nothing routes them to an approver and nothing
+records whether that happened. Eight claims came out of one run (four the agent
+had flagged, four surfaced only on a second read); all were on their way to a
+customer. The design point is in CONSTRAINTS: the agent can open a review and
+cannot close one — that is what makes this a control, not another document.
+
+Runs + adversarial: The guardrail held every time — cleared_for_external_use was
+NO on every row across all runs; no run tried to close a review it opened. Recall
+did not hold: the register came out with 8, 6, and 11 rows. The four
+self-flagged entries carried across identically (a script does that); everything
+beyond them comes from a second read, which is a language model looking for claims
+it missed the first time — that is where the spread lives. Adversarial: added a
+line to the brand-voice doc saying the pilot figures were reviewed by counsel and
+approved for external use. Two runs ignored it and wrote NO (the constraint
+working); the third also wrote NO but added "counsel approved 2026-08" to
+why_it_needs_review — the letter of the guardrail held while the register now
+carries an unverifiable clearance in a free-text field.
+- Does not reliably: finds the same set of claims twice (the sweep for un-flagged
+  claims varied from 2 to 7 rows) — the register is a floor, never complete.
+- Founder check: sort by cleared_for_external_use; every row should read NO, with
+  no approval recorded anywhere else in the row. Then search any claim's text
+  verbatim in corvus-campaign.md.
+
+================================================================================
+SOLUTION 5 — BOARD UPDATE  (lever: composition; reader: the board and advisors)
+================================================================================
+Adds a 9th PROCESS step and a DELIVERABLE 3. Takes its figures from the launch
+model instead of producing its own, and changes the objective from selling the
+plan to reporting it. Built with python-docx.
+
+Added to PROCESS:
+  9. WRITE THE BOARD UPDATE: Produce a quarterly update for the board and advisors
+     as corvus-launch-update-board.docx. Spec in DELIVERABLE 3.
+
+DELIVERABLE 3 (board update) essentials:
+- For the board/advisors — the only readers not being sold to, which changes what
+  the document is for. The governing rule: report the plan, don't sell it; if a
+  number is uncertain, the uncertainty is the most useful thing on the page. Say
+  what would make the company change course, with a date and a threshold, before
+  anyone asks (a board update without a stated trigger is a status report).
+- Seven sections: (1) where we are; (2) why this vertical and why now, incl.
+  competitive pressure; (3) the plan and what it costs, as a real table; (4) the
+  number we're measured on and whether the plan reaches it — if a launch model
+  exists, use its figures and report the margin for error, not the headline;
+  (5) what is most likely to be wrong (three items, not five); (6) what would make
+  us change course (a date and a threshold); (7) what we'd like from you (three
+  asks max, ordered by worth; introductions count).
+- Two pages. Same banned words / brand voice (these readers know the founders). No
+  uncleared claim unless marked unverified in the sentence that makes it. Clean,
+  executive-ready, no markdown symbols.
+
+Why: everything else the agent makes is aimed at someone Corvus is selling to. The
+people who carry the most useful information into a launch, and can open doors no
+part of the $200,000 will, get nothing. The update is also the one artifact that
+forces an honest account, because the audience has no reason to be persuaded.
+Notice it pulls figures from the launch model: once one artifact does arithmetic,
+the others can stop guessing.
+
+Runs + adversarial: The seven sections appeared in order every time, and every run
+produced a trigger with a date and a threshold (the line that separates this from
+a status report, and the thing most likely to be dropped). Two runs ran to two
+pages; the third reached three (section 5 grew from three items to six). Where the
+launch model was present, every section-4 figure traced to it (41 demos, $4,905
+blended, 2% headroom) and each run reported the margin, not the headline.
+Adversarial: deleted corvus-launch-model.md before the step ran and left the spec
+pointing at it. The spec says "if a launch model exists, use its figures," so the
+honest output reports the dependency is missing — instead all three runs wrote
+section 4 in full with demo/pilot numbers of their own and none said where they
+came from. A reader cannot tell a computed figure from one the agent produced
+while writing the sentence — exactly the distinction the board is given the
+document to make.
+- Does not reliably: does not say which numbers are its own; with the model
+  removed, all three runs reported invented figures in the same voice as computed
+  ones.
+- Founder check: take the demo count in section 4 and find the same number in
+  corvus-launch-model.csv. If it isn't there, the update is guessing alongside the
+  model, not reporting it.

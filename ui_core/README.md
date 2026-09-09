@@ -362,6 +362,27 @@ database_ui). Exposes a browser global (and CommonJS export for
   `DOMPurify.sanitize` before use. Each app's `chat.js` calls this from
   `setMessageContent` instead of a bare `marked.parse`/`textContent` render.
 
+### `static/js/reveal_queue.js`
+
+Typewriter reveal queue, shared by both chat apps' `chat.js` (loaded from
+`base_chat.html`, deferred, before `chat.js`). The tutor answer doesn't trickle
+in evenly: Claude spends a few seconds on hidden reasoning then bursts the whole
+answer in ~30ms, while GPT trickles progressively. This queue unifies both —
+text pushed in (all at once or in pieces) is revealed a few words at a time on a
+timer, so the answer **types out** instead of popping in as a block.
+
+- `createRevealQueue({onReveal, schedule?, cancel?, tickMs?, charsPerTick?, maxBacklog?})`
+  → `{push(text), finish(cb?), cancel(), pendingLength()}`. `push` accepts bursts
+  or trickles; `finish` drains whatever's buffered then fires `cb` once; `cancel`
+  aborts and drops the buffer. Whole words are kept intact (each slice extends to
+  the next whitespace), and once the backlog exceeds `maxBacklog` the slice scales
+  up so a long answer still finishes typing in ~1–2s instead of dragging on.
+- **Pure logic, no DOM and no real timers** — the caller injects `onReveal`
+  (append the revealed chunk to the message element), `schedule`, and `cancel`,
+  which keeps it unit-testable with a fake clock (see `reveal_queue.test.js`).
+- Dual export: a `window.createRevealQueue` browser global and a CommonJS export
+  for the Node test.
+
 ### `web/blueprints/identity.py`, `web/blueprints/history.py`, `web/blueprints/feedback.py`, `web/blueprints/message_rating.py`
 
 Blueprint factories, byte-identical in body across `main_ui`/`sandbox_ui`
@@ -410,8 +431,9 @@ was removed; superseded by `make_message_rating_bp`):
 ### `templates/base_chat.html`
 
 The shared page shell (head, sidebar, message list, composer, image-attach
-modal, username/password modal, and the KaTeX + `katex-marked.js` script/link
-tags) that each app's own `embed.html` extends: `{% extends "base_chat.html" %}`.
+modal, username/password modal, and the KaTeX + `katex-marked.js` +
+`reveal_queue.js` script/link tags) that each app's own `embed.html` extends:
+`{% extends "base_chat.html" %}`.
 The old star `feedback-toast` markup has been removed; per-message thumbs
 up/down controls take its place, and `chat.css` swaps the old star styles for
 `.msg-rating`/`.rating-btn`. Exposes override
@@ -476,9 +498,12 @@ functions instead: `test_files_service.py` (`services/files.py`'s
 `test_uploaded_file_model.py` (imports `sandbox_ui.db.models.UploadedFile` —
 another exception to the "no app imports" rule — to assert the
 `UploadedFileMixin` columns are present). Run with `pytest` rather than `python -m`.
-KaTeX rendering (`static/js/katex-marked.js`) has its own Node test,
-`static/js/test_katex_marked.js` (`node --test`), covering inline/display
-math rendering and that `$...$` currency stays literal.
+Two browser modules have their own Node tests (`node --test`):
+`static/js/test_katex_marked.js` for KaTeX rendering
+(`static/js/katex-marked.js`) — covering inline/display math and that `$...$`
+currency stays literal — and `static/js/reveal_queue.test.js` for the typewriter
+reveal queue (`static/js/reveal_queue.js`), driving it with a fake clock to
+assert word-boundary slicing, backlog acceleration, and the finish/cancel paths.
 
 ## How the apps consume it
 

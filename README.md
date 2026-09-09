@@ -76,8 +76,8 @@ flowchart LR
 Real captures from the live Railway deployments (course: MIT CTL.SC2x Supply
 Chain Design). Student identities are anonymized.
 
-**AskTIM student chat** — the iframe-embeddable Socratic tutor. Replies stream in
-token-by-token, render markdown + KaTeX math, and never state the answer outright.
+**AskTIM student chat** — the iframe-embeddable Socratic tutor. Replies type out
+as they stream, render markdown + KaTeX math, and never state the answer outright.
 [Open →](https://asktim-beta-plus.up.railway.app/)
 
 ![AskTIM student chat](docs/screenshots/asktim-student-chat.png)

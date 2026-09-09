@@ -3,8 +3,8 @@
 **🔗 Live: <https://asktim-sandbox.up.railway.app/>**
 
 Developer/TA **testing website** for the tutor. It mirrors the student-facing
-[`main_ui/`](../main_ui/README.md) chat experience — token-streamed replies,
-persistent cross-session history, username + password identity — but adds a
+[`main_ui/`](../main_ui/README.md) chat experience — replies that type out as
+they stream, persistent cross-session history, username + password identity — but adds a
 **Create context** wizard so a tester can switch course and exercise on the fly
 (picking from built-in options, with a toggleable lectures step and a RAG mode
 selector), and runs against its **own separate database** so test chats never touch
@@ -16,7 +16,7 @@ Branding is deliberately distinct from production: the accent is teal-blue
 ## What it shares with main_ui
 
 - iframe-style chat at `/embed?course=...&exercise=...&tutor=...` (and a bare `/` that uses defaults)
-- Server-Sent Events streaming — tutor replies token-by-token, `pedagogical-reasoning` hidden server-side
+- Server-Sent Events streaming with a **typewriter reveal** — the answer types out via the shared [`reveal_queue.js`](../ui_core/README.md#staticjsreveal_queuejs) instead of popping in as a block; `pedagogical-reasoning` hidden server-side
 - Sanitized-markdown rendering of tutor replies (tables/lists/bold) — `marked` → `DOMPurify`, same `setMessageContent()` path as `main_ui`
 - Conversation / Message / Student tables; username + password identity (bcrypt), cross-browser history sidebar (opens by default on wider screens >480px; stays closed on narrow/mobile screens until the toggle is tapped)
 - The same tutor pipeline via `tutor.run_tutor` (through `services/tutor_bridge.py`)

@@ -13,7 +13,7 @@ Steps 1–10 complete and **deployed on Railway** (containerized via the root `D
 What works today:
 
 - iframe-embedded chat at `/embed?course=...&exercise=...&tutor=...`
-- Server-Sent Events streaming — tutor replies token-by-token, with hidden `pedagogical-reasoning` server-side
+- Server-Sent Events streaming with a **typewriter reveal** — the answer types out a few words at a time (a shared [`reveal_queue.js`](../ui_core/README.md#staticjsreveal_queuejs) smooths Claude's ~30ms burst and GPT's trickle into the same cadence) instead of popping in as a block; hidden `pedagogical-reasoning` stays server-side
 - Sanitized-markdown rendering of tutor replies — tables, lists, and bold display cleanly (`marked` → `DOMPurify`, vendored locally under `static/js/`; rendered on stream completion; falls back to plain text if the libs don't load)
 - Postgres-backed persistence (Conversation / Message / Student tables, Alembic migrations)
 - Two-stage username + password identity (`/api/identity/check` → `/api/identity`) with bcrypt hashing

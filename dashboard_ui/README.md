@@ -1,5 +1,15 @@
 ﻿# Transcripts Dashboard
 
+> **Legacy / not deployed.** This is a local-only browsing tool from the earlier
+> single-tutor `_raw/` + `_judge/` transcript era. It is **not** part of the
+> Railway deployment (no Dockerfile or entrypoint), and it still globs
+> `transcripts/<group>/<group>_raw/*.json` — a layout the current corpus no
+> longer uses (see [`transcripts/README.md`](../transcripts/README.md): the
+> corpus is now `<group>_{cmp,phys}_{asktim,stem}/` with in-place
+> `_graded.json`). Pointed at the current repo it lists nothing. Kept for
+> reference and for use against an older `_raw/` corpus via `TRANSCRIPTS_DIR`.
+> The live review UI is [`database_ui/`](../database_ui/README.md).
+
 Flask dashboard to browse the raw tutor/student transcripts in `transcripts/`. Lists every
 transcript across persona groups and opens each one to read the full turn-by-turn conversation.
 

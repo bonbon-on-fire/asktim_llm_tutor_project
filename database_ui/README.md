@@ -105,9 +105,11 @@ Routes live in `routes/database.py`; the read-only queries backing them live in
 message count, snippet, and summed `total_cost_usd`, batched to avoid N+1), one
 conversation's full transcript (`pedagogical_reasoning`, model + `cost_usd`, RAG
 `retrieved`, per-message `rating`), and image/file bytes. Course keys are resolved to
-their full display names (e.g. `MIT CTL.SC2x Supply Chain Design`) via a mirror
-in `courses.py` — `database_ui`'s image excludes `curriculum/`, so it can't read
-`course_name.txt` at runtime the way the live apps do.
+their full display names (e.g. `MIT CTL.SC2x Supply Chain Design`) by `courses.py`,
+which reads `course_name.txt` at runtime like the live apps. `database_ui`'s image
+excludes the bulk of `curriculum/` but bundles just the `course_name.txt` files
+(active and `_archive/`; see `Dockerfile_database`), so names stay in sync with the
+single source of truth without a hand-maintained mirror.
 
 ## Run locally
 

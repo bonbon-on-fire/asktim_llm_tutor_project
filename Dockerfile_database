@@ -1,3 +1,13 @@
+# Stage 1: reduce curriculum/ to just its course_name.txt files (active +
+# _archive). database_ui shows course display names but never runs the tutor, so
+# it ships only the name files -- not pinned prompts, exercises, or RAG indexes.
+# This keeps display names in sync with the single source of truth
+# (curriculum/<key>/course_name.txt) with no hand-maintained mirror in code.
+FROM python:3.12-slim AS curriculum-names
+COPY curriculum/ /curriculum/
+RUN find /curriculum -type f ! -name course_name.txt -delete \
+    && find /curriculum -depth -type d -empty -delete
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -17,11 +27,14 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code (database_ui = read-only conversation review dashboard).
-# No tutor/ rag/ curriculum/ — this app never runs the tutor; it only reads the DB.
+# No tutor/ or rag/ — this app never runs the tutor; it only reads the DB. Only
+# curriculum/'s course_name.txt files are bundled (from the stage above), so
+# database_ui.courses resolves display names without a hardcoded mirror.
 # ui_core/ is required: database_ui imports ui_core.db.session and registers the
 # shared ui_core static blueprint (serves chat.css at /ui-core/css/chat.css).
 COPY database_ui/ database_ui/
 COPY ui_core/ ui_core/
+COPY --from=curriculum-names /curriculum/ curriculum/
 # The Flagged card's (i) icon serves the calibrated grading rubric (markdown);
 # analytics.default_rubric() reads it from eval/tutor_judge/rubrics/ — the same
 # rubric the judge uses, kept as the single source of truth (not vendored here).

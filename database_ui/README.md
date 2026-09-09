@@ -14,9 +14,12 @@ that turn, and **display-only** thumbs reflecting the student's stored rating
 images are rendered inline. The sidebar opens by default on wider screens
 (>480px) and stays closed on narrow/mobile screens (where it covers the full
 transcript) until the toggle is tapped. Each sidebar entry leads with the
-student's username in the crimson accent (anonymous rows read "Anonymous",
-italicized), then the full course name, then the exercise header with the
-conversation's running total cost appended. Any non-image attachments a student
+student's **display identity** in the crimson accent (anonymous rows read
+"Anonymous", italicized) — the real username for a master/local-dev login, or a
+stable pseudonym for a course-scoped login (see [Per-course access
+scoping](#read-only-by-construction) and `anonymize.py`) — then the full course
+name, then the exercise header with the conversation's running total cost
+appended. Any non-image attachments a student
 uploaded (PDF/CSV/XLSX/DOCX/TXT) render as "📎 filename" chips under
 the message — the same treatment `main_ui`/`sandbox_ui` give them; clicking a
 chip downloads the stored file (served from `/api/file/<id>` as an attachment).
@@ -81,6 +84,15 @@ checklist in [`PLANNING.md`](PLANNING.md).
   with `hmac.compare_digest`; malformed `DATABASE_UI_COURSE_PASSWORDS` fails
   closed to "no course access" (the master password still works) — a bad config
   never widens access.
+- **Pseudonymized identities for scoped reviewers.** A course-scoped login must
+  not see real student identities, so `anonymize.py` maps each username to a
+  stable, one-way, alliterative `"Adjective Animal"` pseudonym (SHA-256 of the
+  username, e.g. `Brave Bear`) — the same username always renders the same pair,
+  and it's applied everywhere an identity would show (sidebar list, transcript,
+  CSV export via `services/conversations.py`). A **master** (or open local-dev)
+  login is all-access and sees the **real** usernames instead. The switch is
+  `display_identity(username, all_access=…)`, where `all_access` comes from
+  `auth.py`'s `is_all_access`.
 
 ## Architecture: what's shared with `main_ui` / `sandbox_ui`, what isn't
 
@@ -170,14 +182,17 @@ reading the same Postgres as **askTIM-main**. To reproduce:
 | `GET /api/file/<int>` | download an uploaded non-image file's bytes |
 | `GET /api/export/filters` | list courses + their assignments for the download wizard |
 | `GET /api/export.csv?assignment=<course>::<exercise>&…` | download selected conversations as a one-row-per-message CSV |
-| `GET /analytics` | weekly report page — see [Weekly report](#weekly-report) |
-| `GET /api/analytics?week=YYYY-MM-DD` | one week's live stats + judged cache (scoped) as JSON |
+| `GET /api/analytics?week=YYYY-MM-DD` | one week's live stats + judged cache (scoped) as JSON — the weekly report renders in-place on `/`, there is no standalone page (see [Weekly report](#weekly-report)) |
+| `GET /api/analytics/rubric` | the grading rubric markdown behind the Flagged card's (i) icon (one global rubric, not scoped) |
 | `GET /api/analytics/weeks` | week-picker options + `range: {min, max}` bounds (scoped) |
 | `GET /health` | liveness (open, no auth) |
 
 ## Weekly report
 
-`GET /analytics` shows a Sunday–Saturday weekly report. Weeks are defined in
+A Sunday–Saturday weekly report renders **in-place on the conversation
+dashboard (`/`)** — there is no standalone `/analytics` page; the report panel is
+toggled open in `index.html` and populated by `static/js/analytics.js` from the
+`/api/analytics` JSON. Weeks are defined in
 America/New_York (`database_ui/analytics/weeks.py`); a week's label is
 `Mon D, YYYY — Mon D, YYYY` (em dash), e.g. `Aug 9, 2026 — Aug 15, 2026`. The
 week is chosen with a calendar popover (`/api/analytics/weeks` supplies its
@@ -200,7 +215,7 @@ content:
   "This week's review is coming soon" note; the flagged conversations,
   examples, and topics appear once that week's weekly-report PR is merged.
 
-**Scoping.** Like the rest of the app, `/analytics` and `/api/analytics`
+**Scoping.** Like the rest of the app, the `/api/analytics` endpoints
 respect `allowed_courses()`: a per-course login only sees its own course's
 live stats and its own course's entries in the cached sections. The master
 password sees everything.
@@ -223,7 +238,7 @@ Relevant environment variables:
 | -------- | ----------- |
 | `DATABASE_UI_DATABASE_URL` | DB to read (same variable `database_ui` itself uses). |
 | `ANTHROPIC_API_KEY` | Used by the LLM judge. |
-| `ANALYTICS_JUDGE_MODEL` | Judge model id. Defaults to `claude-sonnet-5`. |
+| `ANALYTICS_JUDGE_MODEL` | Judge model id. Defaults to `claude-sonnet-4-6` (`rubric_judge.py`'s `DEFAULT_JUDGE_MODEL`). |
 
 ### Weekly GitHub Action
 

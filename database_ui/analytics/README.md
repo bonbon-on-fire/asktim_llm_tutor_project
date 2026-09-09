@@ -14,10 +14,11 @@ understand before reading the code.
 | Shown as | Overview cards + daily-activity chart | Per-course "AI review" paragraph + "🚩 Didn't work well" + "🗣 Top topics" |
 
 If a week has no cache file yet, the dashboard still shows live stats and simply
-renders **"This week's review is coming soon"** for the AI-review sections. That
-is exactly the current state — the [`cache/`](cache/) directory holds only
-`.gitkeep`, so no week has been judged yet. Generating and merging the first
-cache (see [Setup](#setup-one-time)) is what turns the AI review on.
+renders **"This week's review is coming soon"** for that week's AI-review
+sections. The weekly job is live: [`cache/`](cache/) now holds several committed
+week files (`2026-07-12.json` … `2026-08-30.json`) plus a rendered `report.md`,
+so those weeks show a full AI review. Each new week is turned on the same way —
+by generating and merging its cache (see [Setup](#setup-one-time)).
 
 ---
 

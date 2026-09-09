@@ -8,6 +8,9 @@ LangGraph-based Socratic tutor for MIT OCW humanities courses. The tutor guides 
 tutor/
   __init__.py               — package exports
   run_tutor.py              — LangGraph engine, system-prompt loading, response parsing
+  json_mode.py              — API-level structured-output enforcement (the JSON contract)
+  cached_history.py         — cache-friendly interleaved message plan (streaming path)
+  roles.py                  — role → prompt-folder mapping (tutor / future ta)
   prompts/
     tutor_01.txt            — baseline system prompt
     tutor_02.txt            — revised system prompt variant
@@ -314,6 +317,30 @@ for chunk in stream_tutor_reply(messages, model=model, system_prompt=system_prom
 
 This yields one batch of visible characters per LLM token batch, then a final `("__done__", full_raw_json, ai_message)` sentinel so the caller can recover the hidden `pedagogical-reasoning` field via `parse_tutor_response()` and the turn's token usage from `ai_message`.
 
+## Enforced structured output (`json_mode.py`)
+
+The tutor's whole contract is a two-field JSON object (`pedagogical-reasoning` +
+`Student-facing-answer`). Rather than *trust* the model to hand-serialize valid
+JSON and then repair it, this is **enforced at the API layer** — and
+`tutor/json_mode.py` is the single owner of that contract, so every code path
+(raw Anthropic SDK, langchain streaming, langchain invoke) uses one schema and
+one on/off gate:
+
+- **Anthropic** — tool-forcing: a single `tutor_reply` tool whose `input_schema`
+  is the two-field object, with `tool_choice` pinned to it so the model must
+  emit a valid tool call.
+- **OpenAI** — native `response_format` structured output against the same
+  schema.
+- **`json_mode_enabled()`** — enforcement is the **default**. Set
+  `TUTOR_JSON_MODE` to `0`/`false`/`no`/`off` for an instant rollback to the
+  legacy best-effort parse/repair path (the `parse_tutor_response` →
+  `_repair_latex_json` chain documented above). Any other value, or unset, keeps
+  it on. Mirrors `cached_history_enabled()`.
+
+Enforcement removes the class of failures where the tutor emitted prose or
+single-backslash LaTeX that broke the JSON and leaked raw output; the
+repair/parse code stays as the fallback for the gate-off path.
+
 ## Environment variables
 
 | Variable | Required | Description |
@@ -323,3 +350,6 @@ This yields one batch of visible characters per LLM token batch, then a final `(
 | `ANTHROPIC_API_KEY` | For Claude | Anthropic API key. Required only when `build_tutor_model(provider="claude")` is used. |
 | `ANTHROPIC_MODEL` | No | Anthropic model name (default: `claude-sonnet-5`). |
 | `TUTOR_REQUEST_TIMEOUT_SECONDS` | No | Per-request time-to-first-token budget applied to both Anthropic client builders (default: `30`). A no-bytes timeout is retryable, so a persistent stall gives up after the bounded retries instead of hanging a worker. Non-positive/unparseable values fall back to the default. |
+| `TUTOR_JSON_MODE` | No | **Default ON.** API-level structured-output enforcement (see [Enforced structured output](#enforced-structured-output-json_modepy)). Set to `0`/`false`/`no`/`off` to roll back to the legacy parse/repair path. |
+| `TUTOR_CACHED_HISTORY` | No | **Default ON** (streaming path). Cache-friendly interleaved history (see [Prompt caching](#prompt-caching)). Set to `0`/`false`/`no`/`off` for the legacy static-prefix path. |
+| `TUTOR_CONTEXT_MODE` | No | How much course material goes in the prompt: `rag` (default when a course has no custom context), `full_context`, or `exercise_only`. Resolved per call in [`ui_core.tutor_bridge`](../ui_core/README.md); a per-request choice overrides this env. |

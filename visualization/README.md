@@ -23,7 +23,14 @@ outputs (no prompts or modes): the six persona-type evaluation charts
 
 - `transcripts/<persona_type>/<persona_type>_judge/transcript_*.json` — judged (graded) transcripts
 
-Paths follow the current repo layout: one folder per persona family (`chaotic`, `cooperative`, `clueless`) with graded subfolders.
+> **The `_judge/` folders are currently empty.** They belong to the older
+> single-tutor pipeline (`internal_testing.run_transcript_judge`); the corpus on
+> disk today is the comparison study, which grades in place and does not fill
+> `_judge/`. So `run_visualization` run against the current repo finds nothing
+> and exits — the committed `01`–`11` charts (and the parallel set under
+> `outputs/rag/`) are **historical artifacts** from when a `_judge/` corpus
+> existed. The chart set that is recomputable from the repo today is
+> `run_comparison_viz` (see [Comparison charts](#comparison-charts)).
 
 ## Run
 
@@ -44,6 +51,15 @@ zero-padded `##_` prefix:
 
 | File | Description |
 | ---- | ----------- |
+| `01_total_by_persona_type.png` | Total score by persona type (bar). |
+| `02_sections_by_persona_type.png` | Per-rubric-section score by persona type. |
+| `03_exercise_vs_practice.png` | Score split by problem kind (exercise vs practice). |
+| `04_score_distribution.png` | Score distribution by persona type (boxplot). |
+| `05_heatmap_type_x_section.png` | Persona-type × rubric-section score heatmap. |
+| `06_by_problem.png` | Mean score by individual problem. |
+| `07_score_histogram_all.png` | Score-distribution histogram across all graded transcripts. |
+| `08_grades_all_transcripts.png` | Per-transcript grade line, all personas. |
+| `09_grades_chaotic_transcripts.png` | Same chart restricted to chaotic persona. |
 | `10_grades_clueless_transcripts.png` | Same chart restricted to clueless persona. |
 | `11_grades_cooperative_transcripts.png` | Same chart restricted to cooperative persona. |
 
@@ -51,6 +67,11 @@ All charts are built from one shared `GradeRow` model, so transcripts are read
 once per run and fed to both the persona-type (`01`–`06`) and line/histogram
 (`07`–`11`) families. The per-transcript line charts annotate transcript count and
 mean score with integer y-ticks.
+
+`outputs/rag/` holds a **parallel, historical** copy of the same 11-chart set,
+generated from a RAG-context `_judge/` corpus that is no longer on disk. It is
+kept as a reference snapshot; `run_visualization` writes only to
+`outputs/`, not `outputs/rag/`.
 
 ## Sorting
 

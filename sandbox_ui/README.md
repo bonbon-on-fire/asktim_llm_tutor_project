@@ -75,7 +75,7 @@ package, plus its own sandbox-specific additions on top:
 | Database | Postgres `asktim` (`DATABASE_URL`) | **Separate Postgres** `asktim_test`, also via `DATABASE_URL` (each Railway service has its own env, so the same var name resolves to a different DB per service) |
 | Schema mgmt | Alembic migrations | `Base.metadata.create_all` on boot (throwaway DB) |
 | Accent / header | Crimson · Beta+ | `#126f9a` · **Sandbox Beta+** |
-| Port | `5001` | `5000` |
+| Port (local `python -m`) | `5000` | `5001` |
 
 Both apps can run side by side.
 
@@ -144,10 +144,11 @@ live in `curriculum/<course>/pinned/` and are always folded into context.)
 python -m sandbox_ui
 ```
 
-Binds to `127.0.0.1:5000` by default. Override with the `PORT` env var.
+Binds to `127.0.0.1:5001` by default (`config.py`'s `PORT` fallback). Override
+with the `PORT` env var.
 
 ```text
-http://127.0.0.1:5000/embed?course=supply_chain_design&exercise=01&tutor=tutor_09
+http://127.0.0.1:5001/embed?course=supply_chain_design&exercise=01&tutor=tutor_09
 ```
 
 Add `&problem=<n>` *(optional)* to focus a single sub-problem within the selected week file (`Practice Problem N:` / `Graded Assignment N:`). The whole file still loads; the tutor is told the student is working on problem `n` and treats the rest as reference. The focus is persisted per conversation. An unknown `n` (or a non-integer) returns 404.
@@ -155,7 +156,7 @@ Add `&problem=<n>` *(optional)* to focus a single sub-problem within the selecte
 Health check:
 
 ```powershell
-curl http://127.0.0.1:5000/health
+curl http://127.0.0.1:5001/health
 # {"service":"sandbox_ui","status":"ok"}
 ```
 

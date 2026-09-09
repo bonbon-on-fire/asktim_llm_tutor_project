@@ -72,7 +72,7 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
     # `auto_degraded` marks the auto case so chat.js can poll for recovery and
     # hide it without a reload.
     cfg = load_config()
-    exam = cfg.exam_lockdown
+    exam = cfg.is_exam_locked(course)
     manual = cfg.maintenance_mode
     degraded = False if (exam or manual) else service_health.is_degraded_cached()
     return render_template(

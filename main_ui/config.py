@@ -6,6 +6,10 @@ import os
 from dataclasses import dataclass
 
 
+_TRUTHY_WORDS = {"1", "true", "yes", "on"}
+_FALSY_WORDS = {"0", "false", "no", "off", ""}
+
+
 _DEFAULT_COOKIE_MAX_AGE_SECONDS = 180 * 24 * 3600  # 180 days
 
 
@@ -27,11 +31,16 @@ class Config:
     max_conversation_tokens: int
     free_messages_before_login: int
     maintenance_mode: bool
-    # Deliberate exam-period lockout. Distinct from maintenance_mode so ops can
-    # tell "closed for exams" apart from "down for maintenance / real outage"
-    # (and so each shows the right wording). Like maintenance it also 503s the
-    # API, so the lockout can't be clicked past. See app_factory's gate.
-    exam_lockdown: bool
+    # Deliberate exam-period lockout, scoped PER COURSE. Distinct from
+    # maintenance_mode so ops can tell "closed for exams" apart from "down for
+    # maintenance / real outage" (and so each shows the right wording). Unlike the
+    # global maintenance flag, this locks only the chosen courses: the embed
+    # overlay shows and the API 503s only for a locked course. `exam_lockdown_all`
+    # captures the legacy bare-truthy value (locks every course); otherwise the
+    # named slugs in `exam_lockdown_courses` are locked. Use is_exam_locked() to
+    # test a course. See app_factory's gate.
+    exam_lockdown_all: bool
+    exam_lockdown_courses: frozenset[str]
     # Automatic outage detection (server-side, phase 2). Consecutive infra
     # failures across all students before the auto "AskTIM is down" banner
     # engages; how long a degraded state lasts before lazy expiry lets live
@@ -47,6 +56,31 @@ class Config:
     # per this many seconds per worker.
     alert_webhook_url: str | None
     provider_alert_min_interval_seconds: int
+
+    def is_exam_locked(self, course: str | None) -> bool:
+        """True when *course* is under exam lockdown (all-courses mode, or listed)."""
+        if self.exam_lockdown_all:
+            return True
+        return course is not None and course in self.exam_lockdown_courses
+
+
+def _parse_exam_lockdown(raw: str | None) -> tuple[bool, frozenset[str]]:
+    """Parse MAIN_UI_EXAM_LOCKDOWN into (lock_all, course_slugs).
+
+    Unset or a single falsy word -> nothing locked. A single truthy word
+    (``1``/``true``/``yes``/``on``) -> lock every course (back-compat with the old
+    boolean). Anything else is a comma-separated list of course slugs to lock.
+    """
+    tokens = [t.strip() for t in (raw or "").split(",") if t.strip()]
+    if not tokens:
+        return False, frozenset()
+    if len(tokens) == 1:
+        word = tokens[0].lower()
+        if word in _TRUTHY_WORDS:
+            return True, frozenset()
+        if word in _FALSY_WORDS:
+            return False, frozenset()
+    return False, frozenset(tokens)
 
 
 def load_config() -> Config:
@@ -65,10 +99,14 @@ def load_config() -> Config:
     # deployment (MAIN_UI_MAINTENANCE=1) without a code change and off again once
     # service is restored. Defaults off so normal environments are unaffected.
     maintenance_mode = _parse_bool(os.environ.get("MAIN_UI_MAINTENANCE"), default=False)
-    # Full-screen "AskTIM is unavailable during exams" overlay + API lockout.
-    # Env-driven like maintenance so it flips on the deployment without a code
-    # change (MAIN_UI_EXAM_LOCKDOWN=1) and off once the exam window ends.
-    exam_lockdown = _parse_bool(os.environ.get("MAIN_UI_EXAM_LOCKDOWN"), default=False)
+    # Full-screen "AskTIM is unavailable during exams" overlay + API lockout,
+    # scoped per course. Env-driven like maintenance so it flips on the deployment
+    # without a code change and off once the exam window ends. Set to a
+    # comma-separated list of course slugs (e.g. MAIN_UI_EXAM_LOCKDOWN=
+    # supply_chain_design) to lock only those; a bare 1/true still locks all.
+    exam_lockdown_all, exam_lockdown_courses = _parse_exam_lockdown(
+        os.environ.get("MAIN_UI_EXAM_LOCKDOWN")
+    )
     outage_failure_threshold = int(os.environ.get("OUTAGE_FAILURE_THRESHOLD", "5"))
     outage_cooldown_seconds = int(os.environ.get("OUTAGE_COOLDOWN_SECONDS", "90"))
     outage_health_cache_seconds = int(
@@ -88,7 +126,8 @@ def load_config() -> Config:
         max_conversation_tokens=max_conversation_tokens,
         free_messages_before_login=free_messages_before_login,
         maintenance_mode=maintenance_mode,
-        exam_lockdown=exam_lockdown,
+        exam_lockdown_all=exam_lockdown_all,
+        exam_lockdown_courses=exam_lockdown_courses,
         outage_failure_threshold=outage_failure_threshold,
         outage_cooldown_seconds=outage_cooldown_seconds,
         outage_health_cache_seconds=outage_health_cache_seconds,

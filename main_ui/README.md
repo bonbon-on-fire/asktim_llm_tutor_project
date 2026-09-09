@@ -83,7 +83,7 @@ curl http://127.0.0.1:5000/health
 | `OUTAGE_HEALTH_CACHE_SECONDS` | `5` | Per-worker cache of the degraded flag, so page renders don't re-read the row each time. |
 | `TUTOR_REQUEST_TIMEOUT_SECONDS` | `30` | Per-request Anthropic timeout (see [`tutor/README.md`](../tutor/README.md#environment-variables)); a stall raises inside gunicorn's window so it's recorded, not silently killed. |
 | `MAIN_UI_MAINTENANCE` | `false` | Set to `1` to force the full-screen "AskTIM is temporarily down" overlay **and** 503 every `/api/*` call (a hard lockout for a real outage/maintenance). Read once at startup — flipping it triggers a redeploy. Set back to `0` to restore. |
-| `MAIN_UI_EXAM_LOCKDOWN` | `false` | Set to `1` for a deliberate exam-period closure: the "AskTIM is currently unavailable" overlay **and** a 503 on every `/api/*` call. Distinct from `MAIN_UI_MAINTENANCE` so "closed for exams" is never confused with an outage (each shows its own wording); exam wording takes precedence if both are on. Read once at startup; set back to `0` when the exam window ends. |
+| `MAIN_UI_EXAM_LOCKDOWN` | *(unset)* | Deliberate exam-period closure, **scoped per course**: the "AskTIM is currently unavailable" overlay **and** a 503 on `/api/*` calls, but only for the named courses. Set to a comma-separated list of course slugs (e.g. `supply_chain_design` or `supply_chain_design,urban_transportation`) to lock only those; other courses stay open. A bare `1`/`true` locks **every** course (back-compat). Empty/`0` locks none. Distinct from `MAIN_UI_MAINTENANCE`, which is a global outage across all courses (each shows its own wording; maintenance takes precedence if both are on). Read once at startup; clear it when the exam window ends. |
 
 ## Database
 

@@ -74,11 +74,30 @@ def create_app(
         app.register_blueprint(bp)
 
     # Read once at startup: both flags are set at deploy time and a change
-    # restarts the process (sandbox_ui has neither field, hence getattr default).
-    # Exam lockdown is a deliberate closure (distinct wording); maintenance is an
-    # outage. Either one gates the API identically — only the 503 body differs.
+    # restarts the process (sandbox_ui has neither field, hence getattr defaults).
+    # Maintenance is a global outage (blocks every course). Exam lockdown is a
+    # deliberate closure scoped per course: `exam_lockdown_all` locks every course
+    # (legacy bare-truthy value), else only the courses in `exam_lockdown_courses`.
     maintenance_mode = bool(getattr(config, "maintenance_mode", False))
-    exam_lockdown = bool(getattr(config, "exam_lockdown", False))
+    exam_lockdown_all = bool(getattr(config, "exam_lockdown_all", False))
+    exam_lockdown_courses = frozenset(getattr(config, "exam_lockdown_courses", ()))
+    exam_lockdown_active = exam_lockdown_all or bool(exam_lockdown_courses)
+
+    def _request_course() -> str | None:
+        """Best-effort read of the request's course, for per-course exam scoping.
+
+        POST /api/chat carries ``course`` in its form (multipart) or JSON body;
+        get_json(silent=True) caches the parse so the chat handler re-reads it
+        cleanly. Everything else may carry it as a query param. Endpoints with no
+        course (e.g. /api/history) return None and so are never course-locked.
+        """
+        if request.method == "POST":
+            if (request.content_type or "").startswith("multipart/form-data"):
+                return request.form.get("course")
+            data = request.get_json(silent=True)
+            if isinstance(data, dict):
+                return data.get("course")
+        return request.args.get("course")
 
     @app.before_request
     def _maintenance_gate():
@@ -90,23 +109,28 @@ def create_app(
         removing the overlay client-side. Registered first so a blocked request
         short-circuits before the session/DB hooks run. Mirrors database_ui's
         before_request auth gate.
+
+        Maintenance blocks everything; exam lockdown blocks only requests for a
+        locked course (an unlisted or course-less request passes through).
         """
-        if not (maintenance_mode or exam_lockdown):
+        if not (maintenance_mode or exam_lockdown_active):
             return None
         if request.endpoint in _MAINTENANCE_ALLOWED_ENDPOINTS:
             return None
-        # Exam lockdown takes precedence in the message: it's the intentional
-        # closure, so students see why rather than an outage note.
-        if exam_lockdown:
+        # Maintenance is the broader, global block, so it's checked first.
+        if maintenance_mode:
+            payload = {
+                "error": "maintenance",
+                "message": "AskTIM is temporarily down for maintenance.",
+            }
+        elif exam_lockdown_all or _request_course() in exam_lockdown_courses:
             payload = {
                 "error": "exam_lockdown",
                 "message": "AskTIM is unavailable during the exam period.",
             }
         else:
-            payload = {
-                "error": "maintenance",
-                "message": "AskTIM is temporarily down for maintenance.",
-            }
+            # Exam lockdown is on but not for this course — serve normally.
+            return None
         response = jsonify(payload)
         response.status_code = 503
         response.headers["Retry-After"] = "120"

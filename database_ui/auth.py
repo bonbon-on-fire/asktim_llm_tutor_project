@@ -86,6 +86,17 @@ def allowed_courses() -> list[str] | None:
     return list(session.get(_SESSION_COURSES, []))
 
 
+def is_all_access() -> bool:
+    """True if the session may see real student identities.
+
+    All-access means the master password or open local-dev (no gate). Course-
+    scoped sessions are ``False``, so callers pseudonymize usernames for them.
+    Derived from the session scope, independent of any per-request course
+    filter — a master login that filters to one course still sees real names.
+    """
+    return allowed_courses() is None
+
+
 def mark_authed(scope: Scope) -> None:
     """Mark the session authenticated for *scope* and make the cookie permanent."""
     session[_SESSION_KEY] = True

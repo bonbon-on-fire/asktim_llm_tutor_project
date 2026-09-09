@@ -30,6 +30,7 @@ they can be pointed at fixtures in tests.
 | [`uploads.py`](uploads.py) | Validate student-uploaded images. |
 | [`attachments.py`](attachments.py) | Validate + extract text from student-uploaded non-image files. |
 | [`pricing.py`](pricing.py) | Best-effort USD cost estimation from model token usage. |
+| [`tokens.py`](tokens.py) | Pure per-message token estimate for the chat composer's size cap. |
 
 ### `parsing.py`
 
@@ -49,11 +50,18 @@ resolvers normalize any input to that form.
   `""`), `discover_exercises` (sorted `["1", "2", …]`)
 - Practice problems (parallel set): `practice_path`, `practice_exists`,
   `read_practice`, `discover_practice`
+- Case studies (third content kind): `cases_dir`, `case_path`, `case_exists`,
+  `read_case`, `discover_cases`, plus `cases_solutions_dir`
+- Sub-problem focus (a single part of a multi-part file): `list_subproblems`,
+  `subproblem_label` (both take `kind="exercise"|"practice"|"case"`), matching
+  the kind's header prefix (`Graded Assignment N:` / `Practice Problem N:` /
+  `Case Question N:`)
 - Solutions (tutor-only correct answers): `solution_path`, `read_solution` (both
-  take `kind="exercise"|"practice"`, reading
-  `exercises_solutions/exercise_solution_<N>.txt` or
-  `practices_solutions/practice_solution_<N>.txt`),
-  plus `exercises_solutions_dir` / `practices_solutions_dir` and the
+  take `kind="exercise"|"practice"|"case"`, reading
+  `exercises_solutions/exercise_solution_<N>.txt`,
+  `practices_solutions/practice_solution_<N>.txt`, or
+  `cases_solutions/case_solution_<N>.txt`),
+  plus the `*_solutions_dir` helpers and the
   `SOLUTION_CONTEXT_LABEL` constant prefixed to the injected answer block
 - `list_courses()` — sorted ACTIVE course folder names (excludes `_archive/` and
   its contents)
@@ -185,6 +193,19 @@ exercise/solution or lecture set inflates the prefix, but caching keeps its
 marginal per-turn cost small (cache-read is 0.1× input). This matches the
 ~2¢/message figure quoted in the top-level README.
 
+### `tokens.py`
+
+A pure per-message **token estimate** for the chat composer's size cap. No
+tokenizer is available in the repo, so it approximates ~4 chars/token for text
+(typed text + extracted attachment text) plus a flat per-image cost. Used
+server-side in the chat handler and **mirrored by the browser composer** — keep
+the constants in sync with `chat.js`.
+
+- `estimate_message_tokens(text, extracted_texts, n_images)` — estimated token
+  cost of one student message (text + attachment text + images)
+- Constants: `CHARS_PER_TOKEN` (4), `TOKENS_PER_IMAGE` (1600, ~Claude's
+  per-image maximum)
+
 ## Tests
 
 Each module has a standalone test file (`test_<module>.py`) with **no pytest
@@ -193,9 +214,12 @@ exits non-zero if any assertion fails. Run one module's tests with:
 
 ```powershell
 python -m utils.test_curriculum
+python -m utils.test_cases          # cases resolvers
+python -m utils.test_subproblems    # multi-part sub-problem parsing
 python -m utils.test_figures
 python -m utils.test_lectures
 python -m utils.test_uploads
+python -m utils.test_tokens         # per-message token estimate
 ```
 
 Fixtures use `tempfile` directories via the `curriculum_root` override;

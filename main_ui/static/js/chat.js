@@ -1195,7 +1195,33 @@
     const outgoingAttachments = outgoingFiles.map((item) => ({ filename: item.file.name }));
     const studentBubble = renderMessage("student", text, previewSrcs, outgoingAttachments, undefined, undefined, insertBefore);
     const tutorBubble = renderThinking(insertBefore);
-    let tutorBubbleActive = false; // false until first delta lands
+    let tutorBubbleActive = false; // false until the first text actually types out
+    // Typewriter reveal: the tutor answer arrives in a ~30ms burst (Claude) or a
+    // progressive trickle (GPT). Either way we buffer it here and reveal a few
+    // words at a time so the student sees it type out instead of popping in as a
+    // block. onReveal morphs the thinking placeholder into the tutor bubble on
+    // the first characters, then appends each chunk.
+    const onRevealChunk = (chunk) => {
+      if (!tutorBubbleActive) {
+        convertThinkingToTutor(tutorBubble);
+        tutorBubbleActive = true;
+      }
+      tutorBubble.textContent += chunk;
+      messageList.scrollTop = messageList.scrollHeight;
+    };
+    // Fall back to a synchronous passthrough (old block-at-once behavior) if the
+    // shared module failed to load, so a missing script never breaks sending.
+    const revealQueue =
+      typeof createRevealQueue === "function"
+        ? createRevealQueue({ onReveal: onRevealChunk })
+        : {
+            push: onRevealChunk,
+            finish: (cb) => {
+              if (typeof cb === "function") cb();
+            },
+            cancel: () => {},
+            pendingLength: () => 0,
+          };
     const originalText = composerInput.value;
     composerInput.value = "";
     // Detach staged previews from the composer; the object URLs stay alive on
@@ -1252,6 +1278,7 @@
     // sendMessage so the bubble slots back into its original position rather
     // than jumping to the bottom (matches iMessage/WhatsApp retry behavior).
     const markTurnFailed = () => {
+      revealQueue.cancel(); // stop any pending typewriter ticks writing to a removed bubble
       tutorBubble.remove();
       const retryStatus = renderRetryStatus(studentBubble, () => {
         if (isSending) return; // don't disturb an in-flight send
@@ -1335,31 +1362,27 @@
           if (parsed.event === "delta") {
             const piece = parsed.data && parsed.data.text;
             if (typeof piece === "string" && piece.length > 0) {
-              if (!tutorBubbleActive) {
-                convertThinkingToTutor(tutorBubble);
-                tutorBubbleActive = true;
-              }
-              tutorBubble.textContent += piece;
-              messageList.scrollTop = messageList.scrollHeight;
+              // Buffer for the typewriter; onReveal handles the bubble + scroll.
+              revealQueue.push(piece);
             }
           } else if (parsed.event === "done") {
             sawDone = true;
             const finalReply = parsed.data && parsed.data.reply;
+            const tutorMessageId = parsed.data && parsed.data.tutor_message_id;
             if (typeof finalReply === "string") {
-              if (!tutorBubbleActive) {
-                convertThinkingToTutor(tutorBubble);
-                tutorBubbleActive = true;
-              }
-              // Server's parsed reply is authoritative — replace
-              // any tokens we'd accumulated in case they drifted. Render
-              // markdown now that the full (table-complete) reply is in hand.
-              setMessageContent(tutorBubble, "tutor", finalReply);
-              appendRating(
-                tutorBubble,
-                parsed.data && parsed.data.tutor_message_id,
-                0,
-              );
-              messageList.scrollTop = messageList.scrollHeight;
+              // Let the typewriter finish draining what's buffered, THEN swap in
+              // the rendered markdown. Server's parsed reply is authoritative —
+              // it replaces the plain typed-out text in case they drifted, and
+              // renders markdown/LaTeX now that the full reply is in hand.
+              revealQueue.finish(() => {
+                if (!tutorBubbleActive) {
+                  convertThinkingToTutor(tutorBubble);
+                  tutorBubbleActive = true;
+                }
+                setMessageContent(tutorBubble, "tutor", finalReply);
+                appendRating(tutorBubble, tutorMessageId, 0);
+                messageList.scrollTop = messageList.scrollHeight;
+              });
             }
             if (parsed.data && parsed.data.conversation_id) {
               conversationId = parsed.data.conversation_id;
@@ -1419,6 +1442,7 @@
       if (err && err.name === "AbortError") {
         // Student switched to a past conversation mid-request.
         // Roll back the optimistic bubbles without showing an error.
+        revealQueue.cancel();
         tutorBubble.remove();
         studentBubble.remove();
         revokeOutgoing();
@@ -1426,6 +1450,7 @@
         // Network error or timeout reaching /api/chat — an infra failure that
         // feeds outage detection (AbortError above is an intentional switch, not
         // a failure, and is deliberately excluded).
+        revealQueue.cancel();
         tutorBubble.remove();
         studentBubble.remove();
         revokeOutgoing();

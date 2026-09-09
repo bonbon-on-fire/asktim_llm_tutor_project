@@ -171,6 +171,10 @@
     <script src="{{ url_for('ui_core.static', filename='js/katex-marked.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
+    {# Typewriter reveal queue: buffers streamed tutor text and reveals it a few
+       words at a time so the answer types out instead of popping in as a block.
+       Shared by both apps' chat.js, so loaded here (deferred, before chat.js). #}
+    <script src="{{ url_for('ui_core.static', filename='js/reveal_queue.js', v='1') }}" defer></script>
     {# Optional app-specific scripts loaded (deferred, in order) just before
        chat.js. Empty by default; main_ui uses it for outage_monitor.js. #}
     {% block pre_chat_scripts %}{% endblock %}

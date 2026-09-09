@@ -1636,7 +1636,33 @@
       insertBefore,
     );
     const tutorBubble = renderThinking(insertBefore);
-    let tutorBubbleActive = false; // false until first delta lands
+    let tutorBubbleActive = false; // false until the first text actually types out
+    // Typewriter reveal: the tutor answer arrives in a ~30ms burst (Claude) or a
+    // progressive trickle (GPT). Either way we buffer it here and reveal a few
+    // words at a time so the student sees it type out instead of popping in as a
+    // block. onReveal morphs the thinking placeholder into the tutor bubble on
+    // the first characters, then appends each chunk.
+    const onRevealChunk = (chunk) => {
+      if (!tutorBubbleActive) {
+        convertThinkingToTutor(tutorBubble);
+        tutorBubbleActive = true;
+      }
+      tutorBubble.textContent += chunk;
+      messageList.scrollTop = messageList.scrollHeight;
+    };
+    // Fall back to a synchronous passthrough (old block-at-once behavior) if the
+    // shared module failed to load, so a missing script never breaks sending.
+    const revealQueue =
+      typeof createRevealQueue === "function"
+        ? createRevealQueue({ onReveal: onRevealChunk })
+        : {
+            push: onRevealChunk,
+            finish: (cb) => {
+              if (typeof cb === "function") cb();
+            },
+            cancel: () => {},
+            pendingLength: () => 0,
+          };
     const originalText = composerInput.value;
     composerInput.value = "";
     stagedImages = [];
@@ -1692,6 +1718,7 @@
     // stays visible, so its image object URLs are NOT revoked here — the retry
     // reuses them by restoring outgoingImages/Files to the staged lists.
     const markTurnFailed = () => {
+      revealQueue.cancel(); // stop any pending typewriter ticks writing to a removed bubble
       tutorBubble.remove();
       const retryStatus = renderRetryStatus(studentBubble, () => {
         if (isSending) return; // don't disturb an in-flight send
@@ -1749,42 +1776,38 @@
           if (parsed.event === "delta") {
             const piece = parsed.data && parsed.data.text;
             if (typeof piece === "string" && piece.length > 0) {
-              if (!tutorBubbleActive) {
-                convertThinkingToTutor(tutorBubble);
-                tutorBubbleActive = true;
-              }
-              tutorBubble.textContent += piece;
-              messageList.scrollTop = messageList.scrollHeight;
+              // Buffer for the typewriter; onReveal handles the bubble + scroll.
+              revealQueue.push(piece);
             }
           } else if (parsed.event === "done") {
             sawDone = true;
             const finalReply = parsed.data && parsed.data.reply;
+            const doneData = parsed.data || {};
+            // Capture the provider now: the swap runs after the typewriter
+            // drains (~1-2s later), and the selector could change meanwhile.
+            const doneProvider = activeProvider;
             if (typeof finalReply === "string") {
-              if (!tutorBubbleActive) {
-                convertThinkingToTutor(tutorBubble);
-                tutorBubbleActive = true;
-              }
-              // Server's parsed reply is authoritative — replace
-              // any tokens we'd accumulated in case they drifted. Render
-              // markdown now that the full (table-complete) reply is in hand.
-              setMessageContent(tutorBubble, "tutor", finalReply);
-              appendModelLabel(
-                tutorBubble,
-                activeProvider,
-                parsed.data && parsed.data.model,
-                parsed.data && parsed.data.cost_usd,
-              );
-              appendReasoning(
-                tutorBubble,
-                parsed.data && parsed.data.pedagogical_reasoning,
-              );
-              appendRetrieved(tutorBubble, parsed.data && parsed.data.retrieved);
-              appendRating(
-                tutorBubble,
-                parsed.data && parsed.data.tutor_message_id,
-                0,
-              );
-              messageList.scrollTop = messageList.scrollHeight;
+              // Let the typewriter finish draining what's buffered, THEN swap in
+              // the rendered markdown. Server's parsed reply is authoritative —
+              // it replaces the plain typed-out text in case they drifted, and
+              // renders markdown/LaTeX now that the full reply is in hand.
+              revealQueue.finish(() => {
+                if (!tutorBubbleActive) {
+                  convertThinkingToTutor(tutorBubble);
+                  tutorBubbleActive = true;
+                }
+                setMessageContent(tutorBubble, "tutor", finalReply);
+                appendModelLabel(
+                  tutorBubble,
+                  doneProvider,
+                  doneData.model,
+                  doneData.cost_usd,
+                );
+                appendReasoning(tutorBubble, doneData.pedagogical_reasoning);
+                appendRetrieved(tutorBubble, doneData.retrieved);
+                appendRating(tutorBubble, doneData.tutor_message_id, 0);
+                messageList.scrollTop = messageList.scrollHeight;
+              });
             }
             if (parsed.data && parsed.data.conversation_id) {
               conversationId = parsed.data.conversation_id;
@@ -1826,10 +1849,12 @@
       if (err && err.name === "AbortError") {
         // Student switched to a past conversation mid-request.
         // Roll back the optimistic bubbles without showing an error.
+        revealQueue.cancel();
         tutorBubble.remove();
         studentBubble.remove();
         revokeOutgoing();
       } else {
+        revealQueue.cancel();
         tutorBubble.remove();
         studentBubble.remove();
         revokeOutgoing();

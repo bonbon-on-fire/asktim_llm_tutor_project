@@ -115,7 +115,10 @@ their embed URLs return 404.
    of the course folder — it stays right where offline tooling can still read it.
 
 Existing conversations that reference an archived course still render in
-`database_ui` — its display-name map is hardcoded and never reads `curriculum/`.
+`database_ui` with their proper display name: its image bundles the tiny
+`course_name.txt` files for both active and `_archive/` courses (see
+`Dockerfile_database`) and reads them at runtime, so an archived slug resolves
+from `curriculum/_archive/<key>/course_name.txt` — no hand-maintained map.
 
 Offline tooling still reaches an archived course by explicit slug (for example
 the eval runners, or reading its `rag_index/` directly), because `course_dir()`

@@ -661,7 +661,7 @@
         passwordInput.placeholder = "Enter your password";
         passwordInput.setAttribute("autocomplete", "current-password");
         passwordHint.textContent = "";
-        emailSubmit.textContent = "Sign in";
+        emailSubmit.textContent = "Sign In";
       } else {
         passwordInput.placeholder = "Create a password (6+ characters)";
         passwordInput.setAttribute("autocomplete", "new-password");

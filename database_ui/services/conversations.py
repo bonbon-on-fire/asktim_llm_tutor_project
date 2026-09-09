@@ -15,6 +15,7 @@ from uuid import UUID
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
+from database_ui.anonymize import display_identity
 from database_ui.courses import course_display_name
 from database_ui.db.models import Conversation, Message, UploadedFile, UploadedImage
 from ui_core.usage import model_from_usage_json, records_from_retrieved_context
@@ -27,6 +28,7 @@ def list_all_conversations(
     limit: int | None = None,
     offset: int = 0,
     courses: list[str] | None = None,
+    all_access: bool = False,
 ) -> list[dict]:
     """Return summaries for all conversations.
 
@@ -38,7 +40,10 @@ def list_all_conversations(
     ``limit`` / ``offset`` paginate the conversation list (counts/snippets are
     fetched only for the page returned, so this stays cheap on large tables).
     ``courses`` restricts the list to those course keys; ``None`` returns every
-    course.
+    course. ``all_access`` shows real usernames when ``True``; otherwise each
+    student's ``email`` is replaced by a stable pseudonym. It defaults to
+    ``False`` (fail closed) so a caller that forgets to pass a scope hides
+    identities rather than leaking them.
     """
     order = _order_by(sort)
     stmt = select(Conversation).order_by(*order)
@@ -52,7 +57,7 @@ def list_all_conversations(
     counts = _message_counts(db, ids)
     snippets = _last_message_snippets(db, ids)
     costs = _total_costs(db, ids)
-    return [_summarize(c, counts, snippets, costs) for c in convos]
+    return [_summarize(c, counts, snippets, costs, all_access) for c in convos]
 
 
 def get_conversation(db: Session, conversation_id: UUID) -> Conversation | None:
@@ -270,11 +275,16 @@ def _summarize(
     counts: dict[UUID, int],
     snippets: dict[UUID, str],
     costs: dict[UUID, float],
+    all_access: bool = False,
 ) -> dict:
-    """Build the list-view summary dict for one conversation from prefetched maps."""
+    """Build the list-view summary dict for one conversation from prefetched maps.
+
+    ``all_access`` gates the ``email`` field: real username when ``True``,
+    stable pseudonym otherwise (see ``database_ui.anonymize``).
+    """
     return {
         "id": str(c.id),
-        "email": c.username,
+        "email": display_identity(c.username, all_access=all_access),
         "session_id": c.session_id,
         "course": c.course,
         "course_name": course_display_name(c.course),
@@ -413,8 +423,13 @@ def _export_row(
     c: Conversation,
     image_counts: dict[int, int],
     file_counts: dict[int, int],
+    all_access: bool = False,
 ) -> dict:
-    """Build one export CSV row (dict keyed by EXPORT_COLUMNS) from a message+convo."""
+    """Build one export CSV row (dict keyed by EXPORT_COLUMNS) from a message+convo.
+
+    ``all_access`` gates the ``username`` column: real username when ``True``,
+    stable pseudonym otherwise (see ``database_ui.anonymize``).
+    """
     return {
         "conversation_id": str(c.id),
         "course": c.course,
@@ -422,7 +437,7 @@ def _export_row(
         "exercise_number": c.exercise_number,
         "exercise_kind": c.exercise_kind or "exercise",
         "focus_problem": "" if c.focus_problem is None else c.focus_problem,
-        "username": c.username or "",
+        "username": display_identity(c.username, all_access=all_access) or "",
         "started_at": c.started_at.isoformat() if c.started_at else "",
         "last_active_at": c.last_active_at.isoformat() if c.last_active_at else "",
         "turn": m.turn,
@@ -441,7 +456,10 @@ def _export_row(
 
 
 def iter_export_rows(
-    db: Session, pairs: set[tuple[str, str]], courses: list[str] | None = None
+    db: Session,
+    pairs: set[tuple[str, str]],
+    courses: list[str] | None = None,
+    all_access: bool = False,
 ):
     """Yield one export row per message across conversations matching *pairs*.
 
@@ -449,7 +467,8 @@ def iter_export_rows(
     by ``last_active_at`` (newest first), then ``turn``, then ``message.id`` — the
     same order the transcript view uses. Empty *pairs* yields nothing. ``courses``
     intersects *pairs* down to those course keys before querying; ``None`` applies
-    no restriction.
+    no restriction. ``all_access`` shows real usernames when ``True``; otherwise
+    the ``username`` column is pseudonymized (fail closed by default).
     """
     if not pairs:
         return
@@ -473,4 +492,4 @@ def iter_export_rows(
     image_counts = _export_image_counts(db, message_ids)
     file_counts = _export_file_counts(db, message_ids)
     for m, c in result:
-        yield _export_row(m, c, image_counts, file_counts)
+        yield _export_row(m, c, image_counts, file_counts, all_access)

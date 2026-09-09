@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from database_ui.anonymize import pseudonym
 from database_ui.conftest import seed
 from database_ui.db.models import UploadedFile, UploadedImage
 from database_ui.db.session import SessionLocal
@@ -120,6 +121,56 @@ def test_master_export_rows_include_supply_chain(seeded):
     body = resp.get_data(as_text=True).lstrip("﻿")
     lines = [ln for ln in body.splitlines() if ln.strip()]
     assert len(lines) >= 3  # header + 2 message rows
+
+
+# --- Username anonymization: only the master password sees real identities. ---
+
+_REAL = "stu@mit.edu"  # the seeded student username on the supply_chain conversation
+
+
+def test_master_list_shows_real_username(seeded):
+    client = _login(_app(), MASTER)
+    data = client.get("/api/conversations").get_json()
+    emails = {c["email"] for c in data["conversations"]}
+    assert _REAL in emails
+
+
+def test_scoped_list_hides_username_behind_pseudonym(seeded):
+    # The supply_chain conversation's student is real, but a course-scoped login
+    # must see the stable pseudonym instead of the real address.
+    client = _login(_app(), SC_PW)
+    data = client.get("/api/conversations").get_json()
+    sc = next(c for c in data["conversations"] if c["course"] == "supply_chain_design"
+              and c["email"] is not None)
+    assert sc["email"] == pseudonym(_REAL)
+    assert _REAL not in {c["email"] for c in data["conversations"]}
+
+
+def test_master_detail_shows_real_username(seeded):
+    client = _login(_app(), MASTER)
+    data = client.get(f"/api/conversation/{seeded['sc_id']}").get_json()
+    assert data["email"] == _REAL
+
+
+def test_scoped_detail_shows_pseudonym(seeded):
+    client = _login(_app(), SC_PW)
+    data = client.get(f"/api/conversation/{seeded['sc_id']}").get_json()
+    assert data["email"] == pseudonym(_REAL)
+    assert data["email"] != _REAL
+
+
+def test_master_export_shows_real_username(seeded):
+    client = _login(_app(), MASTER)
+    resp = client.get("/api/export.csv?assignment=supply_chain_design::1")
+    assert _REAL in resp.get_data(as_text=True)
+
+
+def test_scoped_export_shows_pseudonym_not_real_username(seeded):
+    client = _login(_app(), SC_PW)
+    resp = client.get("/api/export.csv?assignment=supply_chain_design::1")
+    body = resp.get_data(as_text=True)
+    assert pseudonym(_REAL) in body
+    assert _REAL not in body
 
 
 def test_scoped_user_cannot_fetch_other_course_image(seeded):

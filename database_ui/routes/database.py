@@ -36,7 +36,15 @@ from flask import (
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from database_ui.auth import allowed_courses, clear_auth, is_authed, mark_authed, resolve_scope
+from database_ui.anonymize import display_identity
+from database_ui.auth import (
+    allowed_courses,
+    clear_auth,
+    is_all_access,
+    is_authed,
+    mark_authed,
+    resolve_scope,
+)
 from database_ui.courses import course_display_name
 from database_ui.services import conversations as svc
 from ui_core.web.blueprints.history import content_disposition_attachment
@@ -150,7 +158,12 @@ def api_conversations():
     offset = _clamp_int(request.args.get("offset"), default=0, lo=0, hi=None)
     try:
         conversations = svc.list_all_conversations(
-            g.db, sort=sort, limit=limit, offset=offset, courses=allowed_courses()
+            g.db,
+            sort=sort,
+            limit=limit,
+            offset=offset,
+            courses=allowed_courses(),
+            all_access=is_all_access(),
         )
     except SQLAlchemyError as exc:
         g.db.rollback()
@@ -202,7 +215,9 @@ def api_export_csv():
         return jsonify({"error": "bad_selection",
                         "message": "Select at least one assignment"}), 400
     try:
-        rows = list(svc.iter_export_rows(g.db, pairs, allowed_courses()))
+        rows = list(
+            svc.iter_export_rows(g.db, pairs, allowed_courses(), all_access=is_all_access())
+        )
     except SQLAlchemyError as exc:
         g.db.rollback()
         if _is_schema_drift(exc):
@@ -249,7 +264,7 @@ def api_conversation(conversation_id: str):
     return jsonify(
         {
             "id": str(convo.id),
-            "email": convo.username,
+            "email": display_identity(convo.username, all_access=is_all_access()),
             "session_id": convo.session_id,
             "course": convo.course,
             "exercise_number": convo.exercise_number,

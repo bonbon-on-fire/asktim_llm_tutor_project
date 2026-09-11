@@ -278,7 +278,7 @@
       }
       if (ALLOWED_IMAGE_TYPES.includes(file.type)) {
         if (file.size > MAX_IMAGE_BYTES) {
-          showError("Images must be 10 MB or smaller.");
+          showError("Images must be 10 MB or smaller");
           continue;
         }
         stagedImages.push({ file: file, url: URL.createObjectURL(file) });
@@ -286,7 +286,7 @@
       }
       if (ALLOWED_FILE_EXTS.includes(fileExtension(file.name))) {
         if (file.size > MAX_FILE_BYTES) {
-          showError("Files must be 5 MB or smaller.");
+          showError("Files must be 5 MB or smaller");
           continue;
         }
         stagedFiles.push({ file: file });
@@ -295,7 +295,7 @@
       showError(
         "Only PNG/JPEG images or " +
           ALLOWED_FILE_EXTS.join(", ") +
-          " files are supported.",
+          " files are supported",
       );
     }
     renderStagedPreviews();
@@ -850,7 +850,7 @@
         `/api/conversation/${encodeURIComponent(targetConversationId)}`,
       );
       if (!response.ok) {
-        showError("Could not load that conversation.");
+        showError("Could not load that conversation");
         return;
       }
       const data = await response.json();
@@ -877,7 +877,7 @@
       }
       highlightActiveEntry();
     } catch (err) {
-      showError("Could not load that conversation.");
+      showError("Could not load that conversation");
     }
   }
 
@@ -1173,7 +1173,7 @@
         if (sel.value !== value) return; // selection moved on while fetching
         paintPanel(data);
       } catch (e) {
-        panel.textContent = "Couldn't load the exercise text.";
+        panel.textContent = "Couldn't load the exercise text";
       }
     }
 
@@ -1376,7 +1376,7 @@
 
     if (!contextOptions) {
       createStepBody.innerHTML = "";
-      createError.textContent = "Could not load context options.";
+      createError.textContent = "Could not load context options";
       createError.hidden = false;
       return;
     }
@@ -1491,7 +1491,7 @@
       passwordInput.focus();
     } catch (err) {
       emailError.textContent =
-        "Cannot reach AskTIM Sandbox. Check your connection and try again.";
+        "Cannot reach AskTIM Sandbox, check your connection and try again";
       emailError.hidden = false;
       emailSubmit.disabled = false;
     }
@@ -1515,7 +1515,7 @@
       });
 
       if (!response.ok) {
-        let reason = "Could not save your details. Please try again.";
+        let reason = "Could not save your details, please try again";
         let errorCode = "";
         try {
           const body = await response.json();
@@ -1548,7 +1548,7 @@
       }
     } catch (err) {
       emailError.textContent =
-        "Cannot reach AskTIM Sandbox. Check your connection and try again.";
+        "Cannot reach AskTIM Sandbox, check your connection and try again";
       emailError.hidden = false;
       emailSubmit.disabled = false;
     }
@@ -1762,7 +1762,7 @@
           /* not JSON — fall through to the generic message below */
         }
         if (errorBody && errorBody.error === "invalid_param") {
-          showError("No course or assignment set, click Edit Context to choose one.");
+          showError("No course or assignment set, click Edit Context to choose one");
         } else {
           showError("Something went wrong, please try again");
         }
@@ -1834,7 +1834,7 @@
           } else if (parsed.event === "error") {
             streamError =
               (parsed.data && parsed.data.reason) ||
-              "Something went wrong. Please try again.";
+              "Something went wrong, please try again";
           }
         }
       }

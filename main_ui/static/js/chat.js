@@ -978,7 +978,7 @@
         `/api/conversation/${encodeURIComponent(targetConversationId)}`,
       );
       if (!response.ok) {
-        showError("Could not load that conversation.");
+        showError("Could not load that conversation");
         return;
       }
       const data = await response.json();
@@ -993,7 +993,7 @@
       }
       highlightActiveEntry();
     } catch (err) {
-      showError("Could not load that conversation.");
+      showError("Could not load that conversation");
     }
   }
 
@@ -1405,7 +1405,7 @@
           // first send fails course validation). A configuration problem, not an
           // infra failure — give it its own wording and keep it OUT of outage
           // detection so a missing course never trips the degraded banner.
-          showError("No course selected, open AskTIM from your course link to start.");
+          showError("No course selected, open AskTIM from your course link to start");
         } else {
           // Unrecognized non-OK response (server 5xx/503) — an infra failure,
           // not a user error, so it feeds outage detection.
@@ -1475,7 +1475,7 @@
           } else if (parsed.event === "error") {
             streamError =
               (parsed.data && parsed.data.reason) ||
-              "Something went wrong. Please try again.";
+              "Something went wrong, please try again";
           }
         }
       }

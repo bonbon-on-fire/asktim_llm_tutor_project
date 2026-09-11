@@ -11,8 +11,9 @@ Current defaults in code (`eval/tutor_judge/run_judge.py`):
 ## Structure
 
 ```text
-judge/
+eval/tutor_judge/
   run_judge.py                       — unified single-transcript judge core (provider: gpt|claude, default claude)
+  batch_judge.py                     — async Batch-API grader (default path; ~50% cheaper, see Usage)
   hand_grade_workbook.xlsx           — manual grading workbook for judge calibration
   hand_grade_workbook_build.py       — build workbook from stratified sample + run Claude fill
   hand_grade_workbook_claude_fill.py — fill compiled `claude` rows from *_claude transcript grades
@@ -69,17 +70,22 @@ In `compiled grading`, rows for `faizan`/`romain`/`nishita` auto-pull deduction 
 ### Single Transcript Judging
 
 ```python
-from judge.run_judge import judge_transcript
+from eval.tutor_judge.run_judge import judge_transcript
 
-result = judge_transcript("chaotic/chaotic_gpt/transcript_01")
+result = judge_transcript("chaotic/chaotic_cmp_asktim/transcript_01")
 print(result.total_score, result.max_score)  # e.g. 37, 40 (rubric_08)
 ```
+
+The stem is the transcript path under `transcripts/` without the `.json`
+extension. `judge_transcript` writes the `grade` back into that same file by
+default; pass `output_name=` to write a differently-named copy (the comparison
+corpus uses `output_name="transcript_01_graded"` to keep the raw file intact).
 
 You can also choose specific judge prompt + rubric versions:
 
 ```python
 result = judge_transcript(
-    "chaotic/chaotic_gpt/transcript_01",
+    "chaotic/chaotic_cmp_asktim/transcript_01",
     provider="gpt",
     prompt_name="judge_06",
     rubric_name="rubric_06",
@@ -89,47 +95,56 @@ result = judge_transcript(
 Claude example:
 
 ```python
-from judge.run_judge import judge_transcript
+from eval.tutor_judge.run_judge import judge_transcript
 
-result = judge_transcript("chaotic/chaotic_claude/transcript_01", provider="claude")
+result = judge_transcript("chaotic/chaotic_cmp_asktim/transcript_01", provider="claude")
 print(result.total_score, result.max_score)
 ```
 
 ### Judging All Transcripts Individually
 
 Grade every raw transcript across all persona types using the judge runner
-in `internal_testing/`:
+in `internal_testing/`. It reads `transcripts/*/*_raw/transcript_*.json` and
+writes graded copies to the **provider-agnostic `*_judge/` folder** under the
+same filename — the provider/prompt/rubric used are recorded inside each graded
+file's `grade` object, not in the folder name:
 
 ```powershell
-# GPT judge — grades all *_raw/ transcripts into *_gpt/ folders
-python -m internal_testing.run_transcript_judge --provider gpt
-
-# Claude judge — grades all *_raw/ transcripts into *_claude/ folders
+# Claude judge (primary) — grades all *_raw/ transcripts into *_judge/ folders
 python -m internal_testing.run_transcript_judge --provider claude
+
+# GPT judge — same target folder; provider is recorded in the grade object
+python -m internal_testing.run_transcript_judge --provider gpt
 ```
 
-All flags:
+All flags (`--provider`, `--prompt`, `--rubric`, `--source-suffix`, `--yes`,
+`--live`):
 
 ```powershell
-# --prompt and --rubric select versions; --yes skips confirmation prompt
-python -m internal_testing.run_transcript_judge --provider gpt --prompt judge_08 --rubric rubric_08 --yes
+# --prompt and --rubric select versions; --yes skips the confirmation prompt
+python -m internal_testing.run_transcript_judge --provider claude --prompt judge_08 --rubric rubric_08 --yes
 
-# --source-suffix reads from *_{suffix}/ instead of *_raw/
-# --output-suffix independently overrides the target folder suffix
-python -m internal_testing.run_transcript_judge --provider claude --prompt judge_08 --rubric rubric_08 \
-  --source-suffix raw_tutor_05 --output-suffix tutor_05 --yes
+# --source-suffix reads from *_{suffix}/ instead of *_raw/ (e.g. 'mini');
+# output still always goes to *_judge/
+python -m internal_testing.run_transcript_judge --provider claude --source-suffix mini --yes
 ```
+
+> The **comparison corpus** is graded differently — in place as
+> `transcript_NN_graded.json` next to each raw file, not into `*_judge/` (see
+> [`transcripts/README.md`](../../transcripts/README.md)).
 
 **Batch mode is the default.** Grading is offline and each transcript is
 independent, so requests go through the async **Batch API** (Anthropic /
-OpenAI) — ~50% cheaper. The runner submits one batch and polls to completion
-(minutes–hours). Any transcript carrying figures or whose result fails
-validation falls back to the synchronous judge (which has the repair loop), and
-a batch submission/poll error degrades the *whole* run to sync — so a run never
-breaks, worst case it loses the discount. Pass **`--live`** for the old
-synchronous thread-pool path (faster to start, ~2× the cost) — handy for quick
-spot-checks. Thread-pool parallelism (live mode) is controlled by the
-`PARALLEL_WORKERS` constant at the top of each runner file (default: 6).
+OpenAI) via [`eval/tutor_judge/batch_judge.py`](batch_judge.py)
+(`judge_transcripts_batch`) — ~50% cheaper. The runner submits one batch and
+polls to completion (minutes–hours). Any transcript carrying figures or whose
+result fails validation falls back to the synchronous judge (which has the
+repair loop), and a batch submission/poll error degrades the *whole* run to
+sync — so a run never breaks, worst case it loses the discount. Pass
+**`--live`** for the old synchronous thread-pool path (faster to start, ~2× the
+cost) — handy for quick spot-checks. Thread-pool parallelism (live mode) is
+controlled by the `PARALLEL_WORKERS` constant at the top of each runner file
+(default: 6).
 
 ## Rubric summary
 

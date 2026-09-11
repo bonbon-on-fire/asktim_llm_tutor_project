@@ -1752,7 +1752,20 @@
         studentBubble.remove();
         revokeOutgoing();
         composerInput.value = originalText;
-        showError("Something went wrong, please try again");
+        // Distinguish "no context configured yet" (course/assignment missing, so
+        // the send fails validation) from a genuine failure: point testers at the
+        // Edit Context wizard instead of the generic try-again text.
+        let errorBody = null;
+        try {
+          errorBody = await response.json();
+        } catch (_) {
+          /* not JSON — fall through to the generic message below */
+        }
+        if (errorBody && errorBody.error === "invalid_param") {
+          showError("No course or assignment set, click Edit Context to choose one.");
+        } else {
+          showError("Something went wrong, please try again");
+        }
         return;
       }
 

@@ -1333,6 +1333,12 @@
             (errorBody && errorBody.reason) ||
               "Message is too long, shorten it or split it across multiple messages",
           );
+        } else if (errorCode === "invalid_param") {
+          // No course was set (embed opened without a `course` param, so the
+          // first send fails course validation). A configuration problem, not an
+          // infra failure — give it its own wording and keep it OUT of outage
+          // detection so a missing course never trips the degraded banner.
+          showError("No course selected, open AskTIM from your course link to start.");
         } else {
           // Unrecognized non-OK response (server 5xx/503) — an infra failure,
           // not a user error, so it feeds outage detection.

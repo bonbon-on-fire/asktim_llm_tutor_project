@@ -1,0 +1,482 @@
+TITLE: Week 1 Practice Problems — Answer Key & Explanations
+
+TUTOR-ONLY reference. Problem statements together with the correct answers
+and official explanations for the ungraded Week 1 practice problems,
+captured from MITx CTL.SC1x 3T2026 (the course's "Show Answer" data).
+Maps one-to-one to practices/practice_1.txt. Do NOT surface verbatim to
+students; use only as the tutor's correct-answer / explanation context.
+
+================================================================
+Practice Problem 1: Uncertainty in Supply Chains
+
+Suppose that daily demand for bagels at the local coffee shop where you work is found to be Normally distributed with a
+mean of 250 and a standard deviation of 75 units.
+Part 1
+Suppose you have 350 bagels ready to sell on a certain day. What is the probability that you will run out? That is, what is the
+probability that the demand is greater than 350 on a certain day? (Enter your solution as a probability between 0 and 1 rather
+than as a percentage.)
+Enter your answer in decimal form using three decimal places. For example, if your answer is 23.24%, you should enter .232 in the box below.
+Answer: 0.0918
+Part 2
+This is not good enough for you! How many bagels do you need to prepare to have only 5% probability of running out?
+Enter your answer rounded to the nearest integer.
+Answer: 373
+Part 3
+You want to be even surer that you do not run out of bagels! How many bagels do you need to prepare to have only 1%
+probability of running out?
+Enter your answer rounded to the nearest integer.
+Answer: 425
+Explanation
+We can transform this into the Unit Normal, where
+. Using this k in the Unit Normal Table
+tells us the probability that demand is less than or equal to 350 is equal to 0.9082. The probability of stocking out is one
+minus this value or = 1 - 0.9082 = 0.0918. So, this level of inventory leads to just about 9% probability of running out of
+bagels! You can use the function NORMSDIST(k) or NORMDIST(x,mean,StdDev,true) in a spreadsheet in lieu of the tables.
+
+Explanation
+We follow the same procedure as before.
+This time we start with the table and work backwards. We want to find the k value that gives me a probability less than k
+of 0.950. The closest from the table is k=1.645 (I interpolated between the last two values). With this k, I transform back
+into the given Normal distribution, where x = (mean) + k*(StdDev) = 250 + 1.645(75) = 373.375 = 373. We can also use the
+formula NORMINV(.95,250,75) in a spreadsheet.
+
+Part 4
+You make an interesting observation. Keeping 350 bagels ready to sell provides you with about a 90% probability of not
+stocking out. Increasing this by 23 bagels improves this probability of not running out to 95%! However, to get this just 4%
+higher, it takes 52 additional bagels!!
+Why is this?
+Explanation
+This time we start with the table and work backwards. We want to find the k value that gives me a probability less than k
+of 0.99. The closest from the table is k=2.33. With this k, I transform back into the given Normal distribution, where x =
+(mean) + k*(StdDev) = 250 + 2.33(75) = 424.75 = 425. Likewise, we can use the formula NORMINV(.99,250,75) in a
+spreadsheet.
+
+Bagels do not follow normal probability rules
+The long tails of the Normal Distribution make it increasingly hard to improve upon high levels of
+service
+
+The Poisson Distribution is more appropriate
+The Normal Distribution has a naturally skewed distribution to the right that creates a long tail
+Explanation
+The Normal Distribution is not bounded. The tails on either side go on forever, so covering more of the distribution
+requires going further and further. The Normal Distribution is symmetric, though, so this same effect occurs at the left
+tails.
+
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+
+================================================================
+Practice Problem 2: Three Month Salary Stores
+
+3-Month Salary (3MS) is a high-end retailer of engagement rings for the Greater Boston Region. They carry around 75
+different types of engagement ring mountings and 25 different types of diamonds, for a total of 100 SKUs. They have
+traditionally kept their inventory in a vault in their flagship store in downtown Boston. However, as real estate prices rise
+and their sales volume increases, they are considering moving the safety inventory of all but the most profitable SKUs to
+a safe warehouse in the nearby town of Watertown, where real estate is somewhat cheaper. The company has decided to
+implement an ABC segmentation of their SKUs, and it has asked for your help.
+The company has decided to do this segmentation based on profitability: type A products are those that are most
+profitable, bringing the retailer a 34% of its monthly profit; type B products are those that bring the next 37% of the
+profit; and type C are the rest. In the linked file (W01_PP_ThreeMonthStore_data), you will find the information you need
+regarding the monthly sales per SKU, along with their price and cost.
+Part 1
+What is the least profitable of the type A products (total units, not per unit)? Please, write down its SKU in the answer box.
+Answer: SKU-3MS-559570
+Part 2
+What type of product is SKU-3MS-507011?
+Explanation
+First, find the profit associated to each SKU, by multiplying the monthly volume of units sold by the difference between its
+unit price and cost. Second, sort these values from largest to smallest profit. Calculate the total profit: it is ~$599K. For
+each SKU in the sorted list, calculate the cumulative percentage of the profit corresponding to its position in the ranking.
+Since the Type A products end when we have reached 34% of the profit, the least profitable product among Type A SKUs
+is SKU-3MS-559570.
+You can download the solution spreadsheet here:
+here • For Excel (link Three Month Salary.xlsx)
+
+A
+B
+
+C
+Explanation
+Using the same table that you created earlier (and shown below again) you can determine that the part in question is in
+the B type range.
+You can download the solution spreadsheet here:
+• For Excel (link Three Month Salary.xlsx here)
+The cumulative profit by the time we reach SKU-3MS-507011 in the list is 59%. Since this is less than the threshold
+between Type B and Type C SKUs, this item is a Type B product.
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+
+
+================================================================
+Practice Problem 3: Cakes at the Bagel Shop
+
+At the bagel shop, you have some cakes that you sell that are pretty slow movers.  The chocolate cake, for example, only
+sells on average 2.5 cakes per week.  You have noticed that the demand follows a Poisson distribution.
+Part 1
+What is the probability that you will sell more than 3 cakes in a week?
+Enter your answer in decimal form using two decimal places. For example, if your answer is 23.24%, you should enter 0.23 in the box below.
+Answer: 0.24
+Part 2
+What is the probability that you will sell no cakes in a week?
+Enter your answer in decimal form using three decimal places. For example, if your answer is 23.24%, you should enter 0.232 in the box below.
+Answer: 0.082
+Part 3
+Suppose you have 5 cakes made ready to sell. What is the probability that you will sell all your cakes in one week?
+Enter your answer in decimal form using three decimal places. For example, if your answer is 23.24%, you should enter 0.232 in the box below.
+Answer: 0.109
+Explanation
+Using the Poisson Table, we want to find the probability that we sell up to 3 cakes for lambda = 2.5. This is 0.7576. So, the
+probability that I will sell more than 3 cakes = 1 - 0.7576 = 0.2424 or about 24%. Alternatively, we can use the formula 1-
+POISSON(3,2.5,true) to obtain the same answer in a spreadsheet.
+
+Explanation
+Using the table, I can see the the probability of selling 0 cakes = 0.08208 = 0.082 or about 8% of the time. The spreadsheet
+formula is POISSON(0,2.5,false).
+
+Explanation
+OK - this one trips people up sometimes. What are we asking? We want to know the probability that we will have demand
+greater than or equal to the number of cakes I have. When will I NOT sell all my cakes? I will NOT sell all my cakes if my
+demand is 0 or 1 or 2 or 3 or 4. In any other case, I will sell all my cakes. So, what is the probability that I will have a
+demand of 4 or fewer cakes when the average demand (lambda) is equal to 2.5? This is simply the cumulative probability
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+of having demand of up to 4 which is equal to 0.89118. So, the probability that I will sell 5 or more cakes = 1 - 0.89118 =
+0.10882 =0.109 or about 11% of the time. This can also be put into a spreadsheet as 1-POISSON(4,2.5,true).
+Lets look at it one more way. Let's find the probability of demand being equal to the lower demand values given our
+lambda=2.5:
+P[demand = 0] =POISSON(0,2.5,0) = 0.08
+P[demand = 1] =POISSON(1,2.5,0) = 0.21
+P[demand = 2] =POISSON(2,2.5,0) = 0.26
+P[demand = 3] =POISSON(3,2.5,0) = 0.21
+P[demand = 4] =POISSON(4,2.5,0) = 0.13
+And if I sum this it becomes= 0.89. So, since the total probability must sum to one, then the probability that I sell five or
+more cakes (i.e., I sell out) = 1 - 0.89 = 0.11 or 11%.
+
+
+================================================================
+Practice Problem 4: Zaragoza Auto Supply
+
+The Zaragoza Auto Supply (ZAS) company is located in Zaragoza Spain near the largest logistics hub in Europe (PLAZA)
+and one of the largest automobile manufacturing plants.  ZAS provides replacement parts to various auto repair
+dealerships across the state of Aragon and beyond.  The company has historically managed all of its parts in an identical
+fashion.  However, a recent graduate of the Zaragoza Logistics Center (ZLC) Master's Program has been hired to manage
+the supply chain.  She believes that the parts should be segmented and has asked you to run an ABC analysis on a
+sample of 50 of ZAS's parts.
+In the linked file (W01_PP_ZaragozaAuto_data), you will find the information you need regarding the weekly sales volume,
+weekly sales standard deviation, unit cost, and unit sales price for each SKU.  All currencies are in Euros.
+Please enter all your numerical answers with at least 4 significant figures.
+Part 1
+Let's start by getting comfortable with the data set. Which SKU has the highest average weekly cost?
+Answer: II762
+Part 2
+Which SKU has the highest average weekly revenue? Weekly revenue is defined as AverageWeeklySales*UnitSalesPrice
+Answer: K261
+Part 3
+Which SKU has the highest percent profit margin (profit/revenue) per unit?
+Answer: Q61
+Explanation
+Product II762 has the highest total cost per week at 5,840.64 euros. It sells on average 117 per week at a cost of 49.92
+euros each.
+
+Explanation
+Product K261 has the highest total revenue per week at 8,503.32 euros. It sells on average 212 per week at a price of
+40.11 euros each.
+
+Explanation
+Product Q61 has the highest unit margin at 44% euros. It selling at 139.40 euros and at a cost of 78.40 euros each.
+Part 4
+Which SKU has the highest average weekly profit? Profit is defined as AverageWeeklySales*(UnitSalesPrice-UnitCost)
+Answer: K261
+Part 5
+Which SKU has the most volatile demand in terms of coefficient of variation? The coefficient of variation is defined as
+.
+Answer: L977
+Part 6
+You want to get a handle on how the A items might be distributed by total weekly profitability.
+What percentage of the total profit is contributed by the top 20% of the 50 SKUs (by profit)?
+Just enter a value and do not include the % sign. For example, if you think the value is 35.5%, just enter 35.5
+Answer: 73.4
+What percentage of the total profit is contributed by the bottom 50% of the 50 SKUs (by profit)?
+Just enter a value and do not include the % sign. For example, if you think the value is 35.5%, just enter 35.5
+Answer: 7.18
+
+Explanation
+Product K261 has the highest total profit per week at 3,466.20 euros. It sells on average 212 per week at a price of 40.11
+euros at a cost of 23.76 euros each.
+
+Explanation
+Product L977 has the highest coefficient of variation (
+) at 1.81! This is very high! It sells on average just 4 per
+week but with a standard deviation of 7.23. The coefficient of variation is used to measure the volatility or dispersion of a
+distribution with respect to the mean of the population.
+
+Part 7
+You believe that the fast moving, highly volatile SKUs should be managed separately with more time spent on improving
+the forecasting capabilities. You select the criteria for fast moving to be selling 50 or more units per week and the criteria
+for highly volatile as having a CV greater than or equal to 0.50.
+What percentage of the total profit is contributed by these Fast Moving AND Highly Volatile SKUs (both criteria satisfied)?
+Just enter a value and do not include the % sign. For example, if you think the value is 35.5%, just enter 35.5
+Answer: 32.7
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+A total of 73.4% of the profit is contributed by the top 20% of the items. The top 20% of SKUs by profit consists of 10 parts
+(K261, RR621, UU885, F948, A48, KK558, Z719, BB806, M336, and B842). Note that there is some, but not complete,
+overlap in the highest revenue and the most profitable SKUs.
+
+Explanation
+A total of 32.7% of the profit is contributed just the 4 SKUs fall into this category (UU885, KK558, K261, and DD914)! That
+means it is probably worth treating them a little differently!
+
+
+================================================================
+Practice Problem 5: KindaFresh
+
+Jane works at her family grocery store, KindaFresh. Jane is currently taking SC1x and realizes that there is a lot to improve!
+Her brother, the current COO, made it a strict policy that “every SKU is as important as any other SKU” and that they
+should be managed the same way. Fortunately, her father started using an electronic accounting device to keep track of
+the sales data over the last year. Using this data, Jane created a chart and a table showing the distribution of revenue by
+SKU at KindaFresh.
+% of revenue
+% of SKUs
+0
+0
+40
+10
+60
+20
+75
+30
+82
+40
+87
+50
+91
+60
+94
+70
+96
+80
+98
+90
+100
+100
+Part 1
+Analyze the revenue distribution by SKU for KindaFresh and consider the potential impact of implementing SKU
+segmentation. Select all statements that accurately describe the distribution pattern and the expected outcomes of SKU
+segmentation.
+Select all correct answers
+SKU segmentation will allow the company to focus efforts on the high revenue products.
+
+SKU segmentation will lead to higher customer service for low revenue products.
+Part 2
+Propose an ABC segmentation strategy for the SKUs. Specify the percentage of SKUs and the percentage of revenue that
+define segments A and C.
+Percentage of SKUs and percentage of revenue in segment A.
+Write the percentage of SKUs (as a multiple of 10) followed by "/" and the percentage of revenue for that segment, without percentage signs. (Example:
+If your segment contains 10% of the SKUs and represents 90% of the revenue, you should introduce 10/90 in the answer box.)
+Answer: 20/60 or 30/75 or 40/82
+Percentage of SKUs and percentage of revenue in segment C (assume that segment C is the bottom 6% of SKUs by value).
+Write the percentage of SKUs (as a multiple of 10) followed by "/" and the percentage of revenue for that segment, without percentage signs. (Example:
+If your segment contains 10% of the SKUs and represents 90% of the revenue, you should introduce 10/90 in the answer box.)
+Answer: 30/6 or 20/4
+Part 3
+You have decided to drill in to some specific SKUs to better understand the situation The table below shows the demand
+It does not make sense to adopt a segmentation strategy in this case.
+A small percentage of SKUs contributes to a large percentage of the revenue.
+
+The revenue by SKU data follows a power law distribution.
+
+None of the above.
+Answer
+One of the main benefits of segmentation is to allow managers to shift focus to the hot-button areas such as high-
+revenue products. Looking the data we can see that a small portion of the SKUs account for a much larger portion of
+revenues. The data follows a power law distribution. Given the above we would very much like to adopt the segmentation
+strategy and focus attention on high revenue products.
+
+Explanation
+The top 30% of SKUs account for 75% of the revenues. This group appears to be the most important group and we can
+select it as Segment A. However this selection is arbitrary. Depending on the situation we could have selected the top 20%
+of SKUs which account for 60% of revenue or the top 40% of SKUs which account for 82%. Similarly, for Segment 3 we
+focus on the SKUs with the least revenue. The bottom 30% of SKUs account for only 6% of revenues (alternatively, the
+bottom 20% account for 4%). Please note that selecting what percentage corresponds to segment A or C depends on the
+expert. For example, in the video Chris says that Segment C should be the bottom 5% by value (that is the most common
+choice) but some companies may choose differently.
+
+You have decided to drill in to some specific SKUs to better understand the situation. The table below shows the demand
+for one class A SKU, Jelly Pop Soda, for one week:
+Jelly Pop Soda
+Monday
+58
+Tuesday
+53
+Wednesday
+40
+Thursday
+44
+Friday
+45
+Saturday
+42
+Sunday
+40
+To ensure that all demand is met 97 % of the time for Jelly Pop Soda, what is the minimum number of bottles of soda that the
+owner should have ready to sell everyday? Assume a normal distribution.
+Round your answer to the nearest integer.
+Answer: 59
+Part 4
+Another product is Ace Batteries. Jane knows that the daily demand for Ace Batteries follows a Poisson distribution with an
+average of 2.4. To ensure that 97 % of the demand for Ace Batteries is met, what is the minimum number of packets that the
+owner should have ready to sell everyday?
+Answer: 6
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+From the cumulative normal distibution table (or using excel formulas) choose point where 97 % of the distribution is
+covered to the left of it. The answer is 59
+
+Similar to the above.
+
+
+================================================================
+Practice Problem 6: Boston Art Supplies
+
+Boston Art Supplies Inc. (BAS Inc.) is a distributor of art supplies in Massachusetts. They carry around fifty different SKUs,
+which they keep in a warehouse (WH) located 2 hours' drive away from Boston. As business grows, they have decided to
+lease space closer to Boston to serve as a 'forward distribution center' (FDC) for valuable products sold in the greater
+Boston area. Since not all products can be kept in the limited space they will lease, the company has decided to
+implement an ABC segmentation of their inventory, and it has asked for your help.
+The company has decided to do this segmentation based on value: type A products are those that bring more than a
+million dollars in sales per year; type B products are those that bring less than a million but more than $200K in sales per
+year; and type C are the rest. In the linked file (W01_MM_PP_BostonArt_data.xlsx), you will find the information you need
+regarding the annual volume of sales per SKU and their price.
+Part 1
+BAS Inc. wants to move type A and type B products to the newly leased forward distribution center, while keeping all type C
+SKUs in the old warehouse. Which of the following SKUs belong in the FDC (use ABC inventory segmentation) ?
+BAS Inc. wants to move type A and type B products to the newly leased forward distribution center, while keeping all type C
+SKUs in the old warehouse. Which of the following SKUs belong in the warehouse (use ABC inventory segmentation) ?
+PC420169
+
+PC359910
+PC619194
+PC412621
+
+PC151007
+
+PC649702
+
+PC535850
+PC420169
+PC359910
+
+PC619194
+
+PC412621
+PC151007
+PC649702
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+PC535850
+
+Explanation
+First, find the value associated to each SKU, by multiplying the volume of parts sold for each SKU by its unit price. Second,
+sort these values from largest to smallest. Identify the threshold values of $1M and $200K, as shown in the table below:
+You will see that there is only one Type A product: PC420169 (the value should be $2,368,462.95). Drop it in the FDC. You
+will see that the PC412621, PC151007 and PC649702 SKUs fall between $1M and $200K in sales per year, which makes
+them Type B. Drop them in the FDC, too. Drop the rest (e.g. PC359910, PC619194 and PC535850) in the warehouse.
+
+
+================================================================
+Practice Problem 7: Uncertainty at Dog Co
+
+You have joined the supply chain group at Dog Co - the leading dog supplies and food store operating in the United
+States.  You discover that prior to your arrival all inventory and stocking decisions were being made on just the average
+weekly demand.  The distribution of the demand was being tracked, but it was not being used at all in any of the
+inventory calculations.
+Your manager, Hank, however, does not think you need to consider the distribution of demand.  "The average has always
+been good enough for me!" he proclaims often and loudly.   He prefers to use the average demand and then add in 10%
+on top, "Just to be safe".  This is known as "Hank's Rule" at Dog Co.
+You do not want to get fired, but you would like to demonstrate to Hank that the distribution of demand does matter and
+perhaps "Hank's Rule" should be changed.
+Please enter all your numerical answers with at least 4 significant figures.
+Part 1
+You identified two SKUs that have common average weekly demand, but very different standard deviations.
+SKU #87990_A (Wilson Chew Toys) cost $5.95 each and you sell them for $9.99. The weekly demand is distributed
+normally with a mean of 625 units and a standard deviation of 225 units.
+SKU #333_99_J_4 (Dexter Delight Dog Treats) cost $4.25 and you sell them for $8.00. The weekly demand is distributed
+normally with a mean of 630 units and a standard deviation of 50 units.
+If you stocked exactly the mean of the demand for any one of the items (that is 625 of the Wilson Chew Toys or 630 of the
+Dexter Delights), what is the probability that your demand will exceed what you have in stock for that item? Just enter a number
+from 0 to 1.00 for the probability.
+Answer: .50
+Part 2
+Now you want to see how Hank's Rule applies to each of the products and how it impacts the probability of stocking out.
+What is the probability that the weekly demand for SKU #87990_A (Wilson Chew Toys) will exceed the level set by Hanks Rule,
+that is setting the inventory level at 688 (= 625 + 62.5)? Just enter a number from 0 to 1.00 for the probability.
+Answer: 0.390
+Explanation
+Exactly 50% of the time! The Normal distribution is symmetric. If we have the mean value, then 50% of the time we will
+have demand below the average and 50% of the time we will have demand above the average.
+
+Explanation
+We need to transform this value into the unit normal function and use the Unit Normal Tables or your spreadsheet
+NORMDIST functions. For the Wilson Chew Toys this gives us the following, k=(x-mean)/(Std Dev) = (688-625)/225 = 0.28.
+Using the tables, we get Probability of Demand being less than 688 = 0.6103 so that the Probability of Stocking out
+Part 3
+What is the probability that the weekly demand for SKU #333_99_J_4 (Dexter Delight Dog Treats) will exceed the level set by
+Hanks Rule, that is setting the inventory level at 693 (= 630 + 63)? Just enter a number from 0 to 1.00 for the probability.
+Answer: 0.1038
+Part 4
+Hank kind of believes you, but he says that that only works on the fast moving items. He applies a different rule to slow
+moving items called "Hank's Slow Mover Rule." This rule says that if average weekly demand is less than 10, then stock
+the average, plus 1 unit. You pick two slow moving items for a test:
+SKU #11_9 (Griffin's Dog Bed) cost $195.95 each and you sell them for $275. The weekly demand is Poisson distributed
+with a mean of 3 units.
+SKU #3765 (Cody Indestructible Chewables) cost $35.50 and you sell them for $78.00. The weekly demand is Poisson
+distributed with a mean of 6 units.
+What is the probability that your demand for Griffin Beds will exceed the level set by Hank of 4 units (=3+1)? Just enter a
+number from 0 to 1.00 for the probability.
+Answer: 0.18
+(demand exceeding this value) = 1 - 0.6103 = 0.3887 or 0.39.
+I also could have used the NORMDIST function, where stocking out = 1 - NORMDIST(688, 625, 225, 1) = 1- 0.6103 = 0.3897
+= 0.39. Or, I could use the NORMSDIST function once I had already transformed it to the Unit Normal and found the k
+value. Stocking out = 1 - NORMSDIST(0.28) = 0.3897 = 0.39. There are many ways to get to the same answer.
+
+Explanation
+We need to transform this value into the unit normal function and use the Unit Normal Tables or your spreadsheet
+NORMDIST functions. For the Dexter Delights this gives us the following, k=(x-mean)/(Std Dev) = (693-630)/50 = 1.26.
+Using the tables, we get Probability of Demand being less than 693 = 0.8962 so that the Probability of Stocking out
+(demand exceeding this value) = 1 - 0.8962 = 0.1038
+So, the Wilson Chew Toys will stock out almost 40% of the time while the Dexter Delights will only stock out 10% of the
+time - with the same amount of extra "Hank Rule" inventory of 10% of average! We will learn more in later weeks about
+how to set inventory levels using service levels such as this. But this simple analysis shows that the shape of the
+distribution matters!
+
+Explanation
+Using the Poisson Distribution tables, looking at lambda = 3, we can see the the probability that there are no more than 4
+units of demand is equal to 0.81526. So, the probability of having too little inventory and stocking out = 1-0.81526 =
+0.18474 = 0.18.
+Part 5
+What is the probability that your demand for Cody Indestructible Chewables will exceed the level set by Hank of 7 units (=6+1)?
+Just enter a number from 0 to 1.00 for the probability.
+Answer: 0.26
+Part 6
+Even after presenting your analysis, Hank is hesitant to change his rules.
+What should you do?
+
+Explanation
+Using the Poisson Distribution tables, looking at lambda = 6, we can see the probability that there are no more than 7
+units of demand is equal to 0.74398. So, the probability of having too little inventory and stocking out = 1-0.74398 =
+0.25602 = 0.26
+Alternatively, you could use the POISSON function in your spreadsheet.
+So, Hank's "add 1 unit" rule does not have the same effect. You can see that it might over protect really slow movers and
+under protect faster movers. We will learn later how to set these inventory levels.
+
+Quit Dog Co and get a job at Zaragoza Auto Supply or Boston Arts
+Suggest that Hank take CTL.SC1x
+Create a presentation that demonstrates how the lost sales and/or extra inventory costs impact
+Hank's bonus
+Create a presentation that demonstrates how the lost sales and/or extra inventory costs impact Dog
+Co for Hank to use in a presentation to his boss
+
+Explanation
+We did not include points for this one - it is just for you to think about. As we will learn later, sometimes the form of the
+message and how it is delivered matters as much (if not more) than the actual message. Perhaps Hank feels threatened
+by you and perhaps he does not know how to translate the inventory savings into bottom line impacts to the overall
+company.
+
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!

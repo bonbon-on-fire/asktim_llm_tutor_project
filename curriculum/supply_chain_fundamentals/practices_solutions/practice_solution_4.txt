@@ -1,0 +1,949 @@
+TITLE: Week 4 Practice Problems — Answer Key & Explanations
+
+TUTOR-ONLY reference. Problem statements together with the correct answers
+and official explanations for the ungraded Week 4 practice problems,
+captured from MITx CTL.SC1x 3T2026 (the course's "Show Answer" data).
+Maps one-to-one to practices/practice_4.txt. Do NOT surface verbatim to
+students; use only as the tutor's correct-answer / explanation context.
+
+================================================================
+Practice Problem 1: Basic EOQ
+
+This is a simple problem to make sure you understand the basic trade-offs involved in determining the Economic Order
+Quantity.  Suppose you have the following information for a certain item that you are managing:
+Annual Demand = D = 4600 units/year and is very stable with neither trend nor seasonality
+Cost of placing an order =
+= 250 dollars/order
+Holding cost = h = 25% dollars/dollars/year
+Product cost = c = 12 dollars/unit
+Selling price = p = 19 dollars/unit
+Part 1
+Calculate the Economic Order Quantity. Round your answer to the nearest integer value.
+Answer: 876
+Part 2
+The vendor for this item only sells in quantities of 50 units. What order quantity do you recommend? Round your answer to the
+nearest integer value.
+Answer: 900
+Part 3
+Explanation
+This is a simple plug and chug problem. Recall that
+= 875.59 ~ 876 units/order.
+The price is a red herring here. The EOQ does not consider price - just the cost.
+
+Explanation
+Hmmm - we are right in the middle between ordering 850 or 900! Recall though, that it is always better to order a little
+over EOQ than a little under EOQ because of the non-linear Order costs. So, you should have a pretty good idea that the
+right answer would be 900 rather than 850. But, we can check:
+TRC(Q=850) =
+= 1352.94 + 1275.00 = $2627.94 per year.
+TRC(Q=900) =
+= 1277.78 + 1350.00 = $2627.78 per year.
+It is pretty trivial difference right! It is essentially a rounding error difference here - thus the robustness of the EOQ!
+
+You would like to keep the ordering pattern for this item on your existing schedule. You currently order inventory following the
+Power of Two rule (weekly, every two weeks, every four weeks, etc.). Assume that there are 52 weeks in a year for this problem.
+How frequently should I order this item? Round your answer to the nearest integer value in number of weeks.
+Answer: 8
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+Explanation
+OK, we know that the T* = Q*/D = 876/4600 = 0.1904 years/order = 9.90 weeks/order. For a power of two policy, we
+would want to order either every 8 (
+) or 16 (
+) weeks.
+We can do this a couple of different ways. First, lets just see how the TRC differs for the different values of T. Note that if I
+set the T to some value, it dictates the Q, that is, Q=DT.
+If T=8 weeks, then
+= 707.69 ~ 750 units/order (since we have to order in increments of 50 and
+this is closer to the optimal than 700)
+TRC(T=8) =
+= 1533.33 + 1125.00 = $2658.33 ~ $2658 per year.
+If T=16 weeks, then
+= 1415.38 ~ 1400 units/order (since we have to order in increments of 50
+and 1400 is closer to optimal than 1450)
+TRC(T=16) =
+= 821.43 + 2100.00 = $2921.43 ~ $2921 per year.
+So, we should order 750 units every 8 weeks. Notice the trade off between ordering costs (higher for T=8 than T=16) and
+holding costs (higher for T=16 than T=8).
+Similary, we could have selected k such that:
+or
+which simplifies to
+so that k = 3 or T=8 weeks. We know from the Power of Two
+policy that this is within 6% of optimal - not bad!
+
+
+================================================================
+Practice Problem 2: Partial Foods
+
+You are responsible for managing the inventory for the trendy upscale specialty food store, Partial Foods.  You are trying
+to set the inventory policy for one of your most popular cheeses, Mad Cow Cheddar, which comes in 1 pound wheels.   It
+is a stable selling cheese with an average weekly demand of 14 wheels/week.
+Your fixed cost of placing an order from the farm that produces Mad Cow Cheddar is $90/order and the cheese itself
+costs you $12.50 per wheel.   Assume that there are 52 weeks in a year and that the annual inventory holding charge is
+20%.
+Part 1
+What should your economic order quantity be, in wheels? Round to the nearest integer value.
+Answer: 229
+Part 2
+Under this ordering policy, how many weeks on average will a wheel of Mad Cow Cheddar be on your shelf? Round to the
+nearest integer value.
+Answer: 8
+Part 3
+Your manager tells you that you cannot simply use all of the shelf space you want for free. There is an opportunity cost
+for shelf space at Partial Foods of $10/sqft/week and each wheel of Mad Cow Cheddar occupies 0.15 sqft of space.
+What should your economic order quantity, in wheels, be now? Round to the nearest integer value.
+Explanation
+We know that
+= $90/order and Demand = 14 wheels/week * 52 weeks = 728 wheels/year and
+= 12.50*0.20 = 2.50
+$/wheel/year.
+= 228.94 ~ 229 wheels/order.
+
+Explanation
+To determine how long on average the cheese will sit on the shelf, we need to know the order cycle length, T*, from this
+policy. T* = Q*/D = 229/728 = 0.314 year = 16.3 weeks. Since our demand is assumed to be uniform and constant
+(assumptions of the EOQ), then the average time is simply T*/2 = 8.16 ~ 8 weeks.
+I do not know what kind of cheese you like, but that seems like a long time!
+
+Answer: 40
+Part 4
+Your manager still thinks you order too much cheese and has limited your shelf space to a maximum of 3 square feet.
+There is not back room, so all of your Mad Cow Cheese wheels need to fit within that space.
+What should your economic order quantity, in wheels, be now? Round to the nearest integer value.
+Answer: 20
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+Explanation
+We now have an additional variable cost, that of space. The original information has not changed:
+= $90/order and D =
+728 wheels/year. However,
++ $10/sqft/week * 52 weeks * 0.15 sqft/wheel = 2.50 + 78 = 80.50 $/wheel/year.
+= 40.34 ~ 40 wheels/order.
+At this order rate, the average shelf life = (40/728/2) = 0.0274 years = 1.42 weeks. This is a little better!
+
+Explanation
+This means your order quantity cannot exceed 3 square feet. You can fit 3 / 0.15 = 20 wheels of Mad Cow Cheddar in this
+space. Therefore, that is your order quantity. This is essentially a constrained problem now.
+We could figure out how much more this is going to cost by using the EOQ sensitivity ratio.
+= 1.25 or 25% more expensive!
+
+
+================================================================
+Practice Problem 3: Graphical Determination of EOQ
+
+Graphical Determination of EOQ
+The image shows the familiar cost curves for Ordering Cost, Carrying Cost (Holding Cost), and Total Cost (TC = OC + HC)
+Select the location where the optimum order quantity
+is on the x axis
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+A
+B
+
+C
+D
+Explanation
+is the order quantity which corresponds to the lowest total cost. The lowest TC occurs when Ordering cost = Holding
+cost, which is at the point of intersection of OC and HC.
+
+
+================================================================
+Practice Problem 4: EOQ Manipulations
+
+This problem is designed just to get you comfortable with manipulating the EOQ equations.
+Part 1
+You have established an EOQ with a given demand, D, ordering cost,
+, and holding charges,
+. Suppose your demand
+is increased by 25%, that is,
+. How much would the ordering cost,
+, need to be reduced in order to keep
+the EOQ the same? Enter your answer in decimal form using three decimal places. For example, if your answer is 23.24%,
+you should enter .232 in the box below.
+Answer: 0.20
+Part 2
+You have established an EOQ with a given demand, D, ordering cost,
+, and holding charges,
+. Suppose your demand
+is increased by 25%, that is,
+. How much would the ordering cost,
+, need to be reduced in order to keep
+the new total relevant cost (TRC) penalty within 5% of the original TRC?
+Enter your answer in decimal form using three decimal places. For example, if your answer is 23.24%, you should enter
+.232 in the box below.
+Answer: 0.118
+Explanation
+For
+to remain the same:
+If old demand rate is
+, then new Demand rate is
+Let old ordering cost be
+, and the new ordering cost be
+We know that
+and
+Setting
+=
+=>
+= 0.8
+In other words, the ordering cost has to be reduced by 20% to use the same
+when demand increases by 25%
+
+Explanation
+We know that
+We can then set the new TRC equal to 5% more than this:
+Reducing this gives:
+and then squaring both sides:
+=>
+In other words, the ordering cost has to be reduced by at least 11.8% to incur only a 5% TRC penalty when demand
+increases by 25%
+
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+
+================================================================
+Practice Problem 5: The Volta Car Batteries
+
+An auto parts supplier sells electric batteries to the most promising electric car manufacturer, a company called Volta.
+The annual demand is approximately 360 batteries. The supplier estimates that the annual holding cost is $1.00 per unit.
+It costs approximately $100 to place an order (managerial and clerical costs).
+Annual Demand = 360 units
+Holding cost per year = $1.00 per unit
+Order cost = $100 per order
+Part 1
+What should your economic order quantity be, in batteries? Round to the nearest integer value.
+Answer: 268
+Part 2
+Using the solution from part 1 and assuming a 300-day work year, how many orders should be processed per year? Enter the
+answer with 2 decimal places
+Answer: 1.34
+What is the expected time between orders in days? Enter the answer as an integer.
+Answer: 223
+Explanation
+= 268.33 ~ 268 batteries/order.
+The EOQ model assumes any real quantity is feasible. The actual quantity ordered may need to be an integer value and
+may be affected by packaging or other item characteristics. In the following Problems an EOQ of 268 is assumed.
+
+Explanation
+For the first part, this is simply the definition of the optimal number of orders, N*, where N = D/Q* = 360/268 = 1.34
+replenishment cycles per year. For the second part, we want to find the optimal order interval, T*, where T* = Q*/D = 268
+/ 360 = 0.7444 years per order. But, we wanted this in days. So, we just multiply this by the number of days in a year. T* =
+(0.7444)(300) = 223.3 ~ 223 days between orders.
+Part 3
+What is the annual total relevant cost for this inventory policy? Round to the nearest integer and do not enter the dollar sign.
+Answer: 268
+Part 4
+Based on the results from previous questions, suppose the actual demand was 500 units per year instead of the 360 units that
+you used to calculate the EOQ. But, you still used the order quantity determined in part 1 (268 units). What will be the actual
+total relevant cost? Round to the nearest integer and do not enter the dollar sign.
+Answer: 321
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+
+Explanation
+Again, this is a simple definition, where TRC =
+= 134 + 134 = $268 per year. Notice that at
+the EOQ Total Holding Cost and Total Ordering Cost are equal.
+Alternatively, we could have calculated this by using the equation TRC =
+
+Explanation
+TRC =
+= 186.57 + 134 = $320.57 per year.
+If I knew that the actual demand was going to be 500 units per year, then I would have used
+. This would give you a
+=
+$316.22 dollars per year.
+Comparing these two, we see that the increase in total relevant cost is 320.57/316.22 = 1.0137 ~ 1.4% higher than if I used
+the optimal Q for an annual demand of 500 units. Not so bad! Of course, I could also find this percentage increase by
+calculating
+Note that while demand was underestimated by nearly 50%, annual releant cost increases by less than 2%. This is an
+illustration of the degree to which the EOQ model is relatively insensitive to small errors in estimation of demand.
+
+
+================================================================
+Practice Problem 6: iWidget
+
+You are the inventory planner for the iWidget – the world’s bestselling widget.  The demand for the iWidget is very steady
+at 15,000 units per month with virtually no variability.  The iWidgets are manufactured in China, assembled in Brazil, and
+shipped to your Dallas, Texas distribution center (DC) for delivery to the US market.
+The product cost, excluding transportation, of an iWidget to your DC is $125 per unit.  The sales price across all of your
+channels averages $575 per unit. The ordering process costs $275 to place an order.  All orders are shipped in containers
+that cost $1,250 per container, regardless of how many iWidgets are in the container as long as the number does not
+exceed the container capacity of 5,000 iWidgets.  You also have to order in multiples of 100.  Your company has an annual
+holding cost of 25%.  Assume 52 weeks per year.
+Part 1
+What order quantity of iWidgets do you recommend? Enter your answer rounded to the nearest whole number. For
+example, if your answer is 12.3456, you should enter 12 in the box below.
+Answer: 4200
+Part 2
+Using the Q* from the answer to part 1, what is your order cycle time, T, in days? Enter a decimal value with three
+significant digits. For example, if your answer is 12.509 then enter 12.5.
+Answer: 8.52
+Part 3
+What is the Total Annual Cost (in dollars)? (Hint: I am asking for the total cost, not just the relevant cost) Round to nearest
+integer and do not enter a dollar sign.
+Answer: 22630982
+Explanation
+Since we need to order in multiples of 100, we round up to: You can verify that rounding up to 4200 has a lower TRC than
+rounding down to 4100.
+We need to check that this all fits into a single container that holds 5000 iWidgets, and it does. But if it exceeded the
+capacity of one container we would incur an additional cost for the extra container.
+
+Explanation
+
+Your manager just read a book on just-in-time inventory and wants you to order product in the quantity so that you
+would expect to place an order every week. What is the impact in terms of total cost for following this order policy where
+you place an order once every week, that is, 52 times per year?
+Part 4A
+What is your new Total Cost in $? Round to nearest integer and do not enter a dollar sign.
+Answer: 22633988
+Part 4B
+Using the solution from part 4A (please read the explanation for part 4A), how much more does this new policy cost in $?
+Answer: 3006
+Part 5
+Ignoring your manager’s suggestion you are now being approached by your transportation provider They are
+Explanation
+The Total Cost is comprised of the Purchase Cost (PC) plus the Ordering Cost (OC) plus the Holding Cost (HC).
+
+Explanation
+We are currently ordering 42 times a year – so going to 52 is not that big of a deal – and much more practical. If I order 52
+times a year, my Quantity ordered will become = 3,462 per order = 3,500 to have even cases.
+The new Total Cost is comprised of the Purchase Cost (PC) plus the Ordering Cost (OC) plus the Holding Cost (HC).
+per year
+Now, you could have found the new ordering costs by dividing but we went to great pains to tell you that you order 52
+times per year, not 51.4 times. But, we did allow this as a correct answer within the tolerance range. However, BE SURE
+TO USE THE ANSWER PROVIDED IN OUR SOLUTION FOR THE FOLLOWING QUESTION.
+
+Explanation
+The difference can be calculated as:
+Hence, this will only cost me $3,006 more per year on a total cost of more than $22M!
+
+Ignoring your manager s suggestion, you are now being approached by your transportation provider. They are
+recommending a new shipment option that would reduce the cost per container to $1000 per shipment. What is the new
+Total Annual Cost?
+Enter new Total Annual Cost:
+Answer: 22619770
+Part 6
+Separately, your vendor offers to provide you a quantity discount, but only if you stay with your original transportation
+option ($1,250 per shipment). If you order a full container (5,000 units) per shipment they will reduce the purchase cost of
+each iWidget by 1%. What is the Total Annual Cost?
+Enter the Total Annual Cost:
+Answer: 22407244
+Part 7
+If you are only able to take advantage of either the lower transportation cost (part 5) or the price discount (part 6), which
+should you take?
+Select your choice here:
+Explanation
+This means the new = 275 + 1000 = 1275 per order (assuming that we do not exceed a container per order). All other
+values are the same.
+We typically always round up for EOQ because a percentage increase in Q will result in a lower cost than an equal
+percentage decrease of Q. However, rounding up to 3900 is a 1.77% increase while rounding down to 3800 is only a
+1.09% decrease. So, rounding down is slightly cheaper. We accepted both answers here - notice how it barely makes a
+difference!
+For rounding up we get
+For rounding down we get
+
+Explanation
+We know the without the discount is 4200 units – which does not qualify. The discounted price is (.99)(125) = $123.75 per
+unit. This means that This is less than a container and thus does not qualify. So, let's check if it is best to order exactly one
+container's worth, 5000 units.
+
+a. Lower transportation cost (part 5)
+b. Quantity discount (part 6)
+
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+c. Both options are equivalent
+d. More information is needed to conclude
+Explanation
+The shipping reduction results in annual costs of $22,619,770 per year while the quantity discount (order 5000) is
+$22,407,244 per year.
+Therefore I save $212,526 with the discount for full containers. Hence, I chose quantity discount!
+
+
+================================================================
+Practice Problem 7: HikeBike (All Units Discount)
+
+HikeBike is a bike retail company that sells different kinds of bikes and related accessories. They purchase a famous type
+of purple electric bike from Purple Bikes company. The annual demand HikeBike sees for this particular bike is 5000 units
+and it costs them $200 each. Their inventory holding charge is 10% per year and it costs about $100 to place an order.
+Part 1
+What is the economic order quantity for the purple electric bikes? Round your answer to the nearest integer and use that
+value for the next question.
+Answer: 224
+What is the total annual cost for this economic order quantity? Round your answer to two decimal places. If your answer
+is 1.236, enter 1.24.
+Answer: 1004472.14
+Part 2
+Purple bikes is offering an all-units discount of 10% if HikeBike orders at least 2500 units. What is the Total annual cost if
+HikeBike orders this quantity at the discount price? Should they take this deal? Round your answer to two decimal places.
+If your answer is 1.236, enter 1.24.
+Answer: 922700
+Part 3
+After considering the all-units discount, HikeBike feels they would not have enough space to keep that many bikes. They
+Explanation
+= 223.607 ~ 224 units / order.
+TC(Q*=224) =
+=
+= $1004472.14.
+
+Explanation
+The c value now is $180 with 10% discount.
+TC(Q*=2500) =
+= $922700. This is less than TC in Q1 so it is a good deal!
+
+discussed with Purple Bikes about this and Purple Bikes offered an incremental discount option.
+HikeBike will receive a 2% discount on the bikes ordered above 500 units and a 5% discount on orders above 1000 units.
+What is the first discount fixed cost per breakpoint
+? Round your answer to nearest integer.
+Answer: 2000
+What is the second discount fixed cost per breakpoint
+? Round your answer to nearest integer.
+Answer: 8000
+Part 4
+Based on Part 3 scenario, what should HikeBike's order quantity be? Round your answer to nearest integer.
+Answer: 2065
+Part 5
+What is the total annual cost associated with the quantity ordered in part 4? Hint: you need to update the value of
+. Enter your
+answer in two decimal places. If your answer is 1.236, enter 1.24.
+Explanation
+The "zero" breakpoint is:
+The first discount breakpoint is:
+The second discount breakpoint is:
+
+Explanation
+Now we need to calculate the EOQ for each of the new discount prices to see if they qualify.
+We know that
+=224 units from part 1.
+For discount 1:
+= 1035 units / order. This qualifies since it is greater than 500.
+However, since it is also greater than the next discount break point (1000 units), you can expect to find that the EOQ
+computed with the next discount price will have lower TRC.
+For discount 2:
+= 2065 units / order. This also qualifies since it is greater than
+1000 units!
+This is a better discount option provided by Purple Bikes.
+
+Answer: 989630.13
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+per unit
+
+
+================================================================
+Practice Problem 8: HikeBike Cont. (One Time Buy Discount)
+
+Part 1
+HikeBike, the bike retail company, decided to order 2065 bikes at $193.87 each offered by Purple Bikes, the seller of
+electric purple bikes.
+A year has passed since then, and the seller, Purple Bikes, is now facing some financial difficulties. The company has
+decided to sell its entire remaining inventory of bikes to HikeBike. The quantity they are offering is 10,000 bikes at $160
+each. The order cost is $100.
+For HikeBike, the annual holding cost is 10% per year, and the annual demand D is still 5000 bikes.
+HikeBike wants to assess if this is a reasonable price Purple Bikes is offering for a one time buy.
+What is the actual order quantity
+that HikeBike should be ordering at the one time price, $160, being offered by
+Purple Bikes?
+Round your answer to nearest integer.
+Answer: 13087
+Part 2
+What is the total cost associated with the special price?
+Round your answer to the nearest integer.
+Answer: 1760100
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+Since this quantity is greater than 10,000 units for one time buy, this deal is good to go ahead with.
+
+Explanation
+=
+
+
+================================================================
+Practice Problem 9: Dog World (Incremental Discounts)
+
+You run the inventory department at the global retailer, Dog World.   One of your products, a food and water bowl set,
+has an annual demand of 2500 units per year and they cost you $22 each.  Your inventory holding charge is 25% per year
+and you estimate it costs about $175 to place an order.   The supplier requires you to order in increments of 10 at a time.
+Part 1
+What is your economic order quantity for this item?
+Answer: 400
+Part 2
+Your supplier has offered you an incremental discount on their product. You will receive a 5% discount on the items
+ordered that are above 500 units and a 10% discount off of those items ordered that are above 750 units. So,
+- If you order 400 then you pay full price for all items
+- If you order 600 then you pay full price for the first 500 items, and 5% discounted price for the last 100 items
+- If you order 800 then you pay full price for the first 500 items, 5% discounted price for the next 250 items, and 10%
+discounted price for the last 50 items.
+What is your new economic order quantity for this item? Remember you have to order in increments of 10.
+Answer: 1250
+Explanation
+This is a simple EOQ. You should be an expert on this by now!
+= 398.86 ~ 400 units / order to stay within increments of 10.
+
+Explanation
+OK, this is an incremental discount problem with two different price breaks. The first step is to find the Fixed Cost for
+each of the breakpoints.
+The "zero" breakpoint is easy:
+The first discount breakpoint is:
+The second discount breakpoint is:
+= 550+(20.90 -
+19.80)*750 = 1375
+Now we want to find the EOQ for each of the new discount prices to see if they qualify.
+We know that
+=400 units from part 1.
+For discount 1:
+= 832.93 items / order. This qualifies since it is greater than
+500. However, since it is also greater than the next discount break point (750 units), you can expect to find that the EOQ
+computed with the next discount price will have lower TRC.
+For discount 2:
+= 1251.26 items / order. This also qualifies since it is greater
+than 750 units!
+You should go with the 10% discount option. The discount at the greater level will always be better.
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+But just to prove the point, let's look at TRC for each level of discount. The first is easy.
+For the discounted regions we need to first calculate the effective cost per item,
+.
+per item
+per item
+We can then use this in the TRC calculations. I used the actual values for Q instead of rounding them to increments of 10.
+You can see for yourself it will not change the decision.
+Thus, setting Q* = 1251 (really probably 1250 in practice) will lead to lower total costs- but not much better than the
+middle discount, right? The savings is mainly in the reduced purchase cost while the ordering costs go down since I am
+ordering less frequently. The inventory holding cost, of course, goes up since I will have more product on hand. This
+raises the question, do I have the room and appetite to order half a year's supply ahead of time? So, while the EOQ says
+order more than 1,000 items, some other practical considerations that the EOQ is not considering, might dictate a smaller
+order quantity.
+Also, please note that the final answer has been rounded to 1250 to fulfill the "multiples of 10" requirement.
+
+
+================================================================
+Practice Problem 10: DirtCo (All Units Discount)
+
+DirtCo sells and distributes quality dirt to dirt connoisseurs across the world.  The monthly demand for your most
+popular variety, Cambridge Red, is very stable at 12,000 pounds.  You order this item from an outside vendor, Muck Inc.
+The cost of placing an order is $30 and the material costs you $10 per pound. The annual holding cost rate is estimated at
+15%.
+Part 1
+What is your order size for your orders of Cambridge Red? Round to the nearest integer value.
+Answer: 2400
+Part 2
+How many orders do you expect to place over a year?
+Answer: 60
+Part 3
+What is your order cycle time, i.e. number of days between orders? Assume 365 days in a year. Enter your answer
+rounded to one decimal place. For example, if your answer is 12.34, you should enter 12.3 in the box below.
+Answer: 6.1
+Explanation
+This is just a straightforward EOQ. We know that
+So
+that
+lbs per order
+
+Explanation
+Since we can calculate the yearly demand D and know the order size Q:
+
+Explanation
+Ordering cycle time,
+which is also just the inverse of N, the number of orders per year. Thus,
+=
+0.01667 years. Multiplying by 365 days/year gives you 6.0833 ~ 6.1 days.
+Part 4
+What is the annual total relevant cost for this inventory policy? Round to the nearest integer and do not enter the dollar sign.
+Answer: 3600
+Part 5
+Suppose Muck Inc. is now offering a volume discount program. If you order at least 4000 pounds of Cambridge Red, then
+the price for the entire order quantity drops to $9.25 per pound. (Hint, this is an all units discount)
+What do you recommend your new economic order quantity to be? Round to the nearest integer value.
+Answer: 4000
+
+Explanation
+As long as we are ordering the economic order quantity, Q*, then we know that TRC* =
+= $3600
+We can check this of course. TRC(Q*=2400) =
+= 1800 + 1800 = $3600 per year.
+Whew!
+Note that at Q*, the annual holding costs will equal the annual ordering costs. If we end up rounding the Q* due to
+package size or changing the order cycle time, this will no longer hold.
+
+Explanation
+We want to see if the all units discount is worth taking. First step is to calculate the EOQ at
+= $10, the original price, to
+see if we qualify for the discount already. We found that Q* = 2400 pounds, so since this is less than the minimum
+quantity for the discount, 4000 pounds, we do not qualify.
+Second step is to see what the EOQ at the new price would be and if it is about the 4000 pound per order threshold, we
+would go for it. Let's see. Q* at c=$9.25 =
+= 2495 pounds. So, this does not qualify.
+Third step is to see if it best to order the minimum to get the discount, that is, find the total cost when Q=4000 pounds
+and c=$9.25 per pound. We will then compare this to the total cost of our earlier Q* with c=$10 per pound and select the
+lowest one.
+Ok, TC(Q=4000 and c=9.25) =
+= 1,332,000 + 1080 +
+2775 = $1,335,855.
+We now compare this to TC(Q=2400 and c=10) =
+=
+1,440,000 + 3600 = $1,443,600.
+The TC for the discount (ordering 4000 pounds at a time) will save us $1.444M - $1.336M ~$108k per year. That buys a lot
+of dirt!
+So, you should take the discount and plan on ordering 4000 pounds every (Q/D = 365*4000/144000 = 10.1) ~ 10 days.
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+
+
+================================================================
+Practice Problem 11: Planned Backorders
+
+A company currently has a small cost of overstocking at $2 per unit and larger cost of understocking at $8 per unit.  The
+company's current policy allows backorders. The reorder quantity they have now,
+, has been determined to
+be 100 units.
+Part 1
+For each replenishment cycle, what should be the optimal backorder quantity
+?
+Answer: 20
+Part 2
+The company decides to switch to an EOQ policy without stockouts. Since you know the value of
+, what is the
+economic order quantity
+that would satisfy the demand? Please round it to the closest multiple of 10.
+Answer: 90
+Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+We have been told that
+. For EOQ with planned backorders, we know that the
+backorder quantity
+for an economic order quantity of
+is given by:
+. This gives
+
+Explanation
+This is a simple case of converting from
+to
+. For EOQ with planned backorders we know that
+. This gives
+. We round this up to 90.
+
+
+================================================================
+Practice Problem 12: Planned Backorders at MedCo
+
+You are managing the inventory for the national distribution of a medical device for MedCo.  The device sells for $1,900
+each. Your cost is $612 per unit and the demand is exceptionally stable (no variability) at 750 per month. Placing an order
+is time consuming and costly at $5,000 per order – mainly due to the expedited transportation costs. The minimum order
+quantity is 100 units and you need to order in increments of 100. Your company has a very high holding cost of 25% per
+year.
+Please enter all your numerical answers with 4 significant figures.
+Part 1
+Noticing the stable demand, you decide that you could set up an EOQ inventory policy. What is the optimal order quantity?
+Enter your answer as an integer value.
+Answer: 800
+Part 2
+You just received information from your Marketing Team that backorders are actually acceptable for this product. The
+customer will still order the device and is willing to wait for delivery. However, the Marketing Team has calculated that the
+cost of this planned backorder in terms of pain to the customer is $1788 per unit short per year.
+What is your new optimal order quantity if you now allow planned back orders? Submit your answer as an integer value.
+Answer: 800
+Explanation
+This should be second nature by now. Using the EOQ Formula:
+D = 750*12 = 9,000
+C = $612;
+P= $1,900;
+= $5,000
+= (.25)(612) = $153
+= 766.9 = 767 units. But, since we need to order in 100 unit increments,
+= 800 units
+To be sure, you can always check what TRC would be at these different ordering quantities:
+TRC(Q=700)=117,836 $/year,
+TRC(Q*=767)=117,346 $/year, and
+TRC(Q=800)=117,450 $/year.
+But by now, you should have the intuition that Q=800 is better than Q=700 but both are worse than Q*, obviously. But,
+not really by much!
+
+Explanation
+Lets just apply the EOQ with Planned Backorders. We were given the Shortage Cost
+= 1788 and the Excess Cost
+=
+612*0.25=153.
+We next need to find the critical ratio =
+Finally, we can calculate the new
+using the pure
+(without rounding) we can solve for:
+,
+Part 3
+How many units need to be backordered for you to place a new order? Use order quantity solution from the previous question.
+Answer: 63
+Part 4
+Using the order quantity from Part 2, how many orders per year do you expect to be placed?
+Answer: 11.25
+Part 5
+Lets take a look at the different costs for the plan with backorders (proposed by the Marketing team). Try calculating
+them all before checking your solutions - remember, this is just practice!
+Round your answers to the nearest thousands of dollars, e.g., if your solution is $45,245.04 then enter 45 and if your
+solution is $2,678 then enter 3.
+What is the expected annual purchasing cost? (in thousands of dollars)
+Answer: 5508
+since we can only order in batches of 100, We round this up to
+units.
+The new order policy is to order 800 units at a time.
+You might have tried to calculate the shortage cost,
+as something like p-c+b as we do later on with the single period
+Newsvendor models. This is incorrect since this formulation assumes that you are losing the sale and thus the margin!
+We state in the question that customers are willing to wait so we do not lose the margin - it is just delayed.
+
+Explanation
+We know
+So we will order 800 units whenever the backorders hit ~ 63
+In practice, it might be easier to set this value to 60 units to keep it simple.
+
+Explanation
+Number of orders per year: N =
+
+Answer: 5508
+What is the expected annual ordering cost? (in thousands of dollars)
+Answer: 56
+What is the expected annual holding cost? (in thousands of dollars)
+Answer: 52
+What is the expected annual shortage cost? (in thousands of dollars)
+Answer: 4
+What is the total relevant cost (TRC)? (in thousands of dollars)
+Answer: 113
+Part 6
+Should you take the Marketing Team’s suggestion and implement planned backorders or stay with your current plan?
+Explanation
+These should be straightforward calculations. Recall that $k means "thousands of dollars".
+Purchase Cost
+= 5508 $k
+Ordering Cost =
+= 56 $k
+Holding Cost =
+‐
+‐
+= 52 $k
+Shortage Cost =
+= 4 $k
+Substituting values from previous questions we can find TRC:
+Total Relevant Cost =
+= Transaction Cost + Holding Cost + Shortage Cost =
+= 113 $k
+If you used the rounded the solutions you would get: TRC = 56 + 52 + 4 = 112 $k as well. However, if you included the
+Purchase cost then you need to look back at week 4 content to understand what is relevant and what is not! The
+purchase price does NOT influence the size of the order, Q, so it is not relevant.
+
+Yes, we should use the new
+No, we should stick with the original
+More information is needed to conclude
+
+Questions, comments and suggestions about this section
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+
+Never trust marketing - ignore them!
+Explanation
+This is never a simple yes or no answer, of course. Remember, this is just a practice question.
+But, if we assume that all of the Marketing Team's numbers (especially for the value of the Shortage Costs
+), then we
+could conclude that it makes sense.
+TRC(
+= 112k (from the last part)
+TRC(
+= 117 $k
+So, the math would indicate that this is worth doing and you will save 117-112 = 5 $k per year.
+However, do you believe the numbers? It seems awfully precise - that is, $1788 for each unit backordered. You are selling
+medical devices - we can assume that people might be injured or worse if they do not receive their treatment from these
+devices. So, is it really worth saving $5k a year on cost of goods sold (COGS) that exceeds $5M per year! hmmmm - I am
+not so sure. So, this is worth exploring more.
+
+
+================================================================
+Practice Problem 13: Applying EOQ at Cowbell Soups
+
+Cowbell Soups
+You are managing the inventory for the distribution center of a chain of grocery stores.  You want to establish the
+inventory policy for Cowbell Soups, a well known brand of canned soups and chowders.   The demand for Cowbell Soups
+is exceptionally stable with no discernible trend or seasonality.  In fact, the demand on a monthly basis is essentially
+uniform and constant.  You want to set the inventory for one of their flavors, Red Herring.
+You have the following information on the Red Herring soup:
+Monthly demand = 2000 cans / month
+Cost of placing an order =
+= 575 dollars/order
+Holding cost = h = 15% dollars/dollars/year
+Product cost = c = 1.75 dollars/unit
+Selling price = p = 3.25 dollars/unit
+Must be ordered in increments of cases that hold 20 cans each.
+Part 1
+Calculate the Economic Order Quantity for Red Herring Soup in terms of cases. Round your answer to the nearest integer value.
+Answer: 513
+Part 2
+Looking at the EOQ calculated in Part 1, how reasonable is that ordering quantity?
+Explanation
+OK - lets figure out what we know and put things into easier terms of cases. Our annual demand, D, is simply = 12(2000) =
+24000 cans per year which is 1200 cases per year. The
+= (.15)(1.75)(20) = 5.25 dollars per year per case.
+This is now just a simple plug and chug problem. Recall that
+= 512.6 ~ 513
+cases/order.
+So, the EOQ would tell you to order 513 cases.
+Again, the price is not considered here since the EOQ does not consider price - just the cost.
+
+a. It is the EOQ - it is obviously the best and correct answer
+b. It seems pretty reasonable
+c. It is impossible to determine if it is reasonable
+d. It is not that reasonable
+
+e. It is highly unreasonable
+Part 3
+Your warehousing manager has informed you that the maximum space they can allocate to your Red Herring soup at any one
+time is 200 cases or 4,000 cans. What is the percent increase in total annual relevant costs if you adhere to this maximum order
+capacity? Enter the answer as an integer without the percentage sign, e.g., if your answer is 23%, enter 23, if your answer is
+124.3% enter 124.
+Answer: 48
+Part 4
+Which action would you recommend taking? You can only select one here.
+g
+y
+Explanation
+This is just a question to get you thinking of an answer in real terms. Recall that demand is 1200 cases per year. The EOQ
+from part 1 was 513 cases per order. That means we would order our Cowbell Soup once every Q*/D = 513 / 1200 =
+0.4275 ~ every 22 weeks! I am not sure when it would ever make sense to order almost half of a year's worth of soup
+unless you were expecting a Zombie Apocalypse!
+First, while soup could probably have a long shelf life - lets say, 3 years, this would mean that on average your soup would
+be 3 months old before it even got to the shelf!
+Second, space is precious for retailers - why would you want to waste such valuable space for almost 6 months worth of
+soup!
+Third, when you have so much product sitting around for a long time it tends to get damaged or disappear.
+
+Explanation
+So we are setting Q = 200 cases. Recall that Q* = 513 cases per order.
+Thus,
+= 1.4775 ~48% increase! Yikes!
+How much is this in dollars? We are working in cases so
+Ordering with Q* would cost (kkeping units in cases):
+= 1,346 + 1,346 = 2,692 $/year
+Ordering with Q=200
+= 3,450 + 525 = 3,975 $/year
+So, we see that this is a 48% increase in expected cost. And notice that it is almost totally in ordering costs with a
+decrease in holding costs!
+
+Look at ways of lowering the ordering costs
+
+Look at ways of lowering the demand
+k
+f l
+h
+h
+f
+b ll
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+Look at ways of lowering the purchase cost from Cowbell Soups
+Look at ways to reduce the holding cost per year
+Fire the Warehouse Manager and increase the storage space allowed
+Submit your resume for a new job
+Explanation
+Your best option is to try to reduce the ordering costs, as they represent the highest cost of the TRC(Q). This could be
+done by reducing the cost per order (Ct), which is directly proportional to the ordering cost. Suppose you were able to cut
+Ct in half from $575 to $287.50.
+Ordering Q* at the original Ct ($575) would cost:
+= 1,346 + 1,346 = 2,692 $/year
+Ordering 200 cases at the original Ct ($575) would cost:
+= 3,450 + 525 = 3,975 $/year
+Ordering 200 cases at
+:
+= 1,725 + 525 = 2,250 $/year
+Even when Ct= 287.5, you should note that ordering 200 cases at a time increases the ordering costs by about 30% when
+compared to when Ct= 575 and the order quantity is 513 cases ($1,725 vs $1,346). This is why reducing ordering costs is
+so important when using smaller order quantities (Q).
+Reducing the demand would lead to lower revenue (not a good idea). Lowering the purchase cost or the holding costs
+would have a minimal effect - by ordering 200 cases at a time, this is already very low (525 $/year). Firing the Warehouse
+Manager might feel good, but ordering more than two months of product at a time seems like a bad idea in the grocery
+business!
+EOQ is a good way to help you focus in on where you should spend your time and energy. In this case, it is reducing the
+cost of placing orders - since this is the primary driver!
+
+
+================================================================
+Practice Problem 14: Simsbury Steel Distributors
+
+Simsbury Steel Distributors (SSD) have long been considered a power house in the manufacturing and distribution of
+precision steel ball bearings and other steel parts.  It offers a wide range of products; from highly engineered one of a
+kind fittings that they manufacture to standard ball bearings and other more common parts that they source from other
+suppliers.  Their customers vary dramatically as well; from original equipment manufacturers (OEMs) to construction
+companies.
+You have been brought in to settle an internal feud.  They want you to come up with an inventory policy for a product, the
+Trojan1980, that SSD sources from a smaller local vendor.  The problem is that the finance and planning groups do not
+agree with each other.
+Part 1
+The finance team has conducted an analysis of the Trojan1980 and has estimated that the ordering cost is $750 per
+order, annual demand is 900 units, and cost of holding inventory is 10% per year. The planning group, on the other hand,
+estimates that the ordering cost is $1350 per order, annual demand is 1600 units, and cost of holding inventory is 24%
+per year. The two things they agree on are that demand is stable and that the cost of the item is $1200 per unit.
+You decide to see how big a difference these input factors make.
+Using only the value estimates submitted by the finance and planning groups, what is the LARGEST possible economic order
+quantity that you would order? Round your answer to the nearest integer. (You can pick and choose parameters from each
+group's estimate to make the largest EOQ.)
+Answer: 190
+Part 2
+Using only the value estimates submitted by the finance and planning groups, what is the SMALLEST possible economic order
+quantity that you would order? Round your answer to the nearest integer.
+Answer: 68
+Explanation
+The answer is 189.7 or 190 items per order. The first step is to select which of the inputs would increase the size of the
+EOQ. Increased demand, increased ordering costs, and decreased holding costs will all lead to bigger EOQ. Therefore, we
+find EOQ where
+=1350 $/order, D=1600 items/year, and
+=(1200)(0.10) = $120 $/year.
+= 189.73 ~ 190 items/order
+
+Explanation
+The answer is 68.46 or 68 items per order. You need to select the inputs that lead to the smallest possible EOQ.
+Decreased demand, decreased ordering costs, and increased holding costs will all lead to smaller EOQ. Therefore, we find
+EOQ where
+=750 $/order, D=900 items/year, and
+=(1200)(0.24) = $288 per year.
+= 68.46 ~ 68 items/order. If you rounded to 69, that is ok, but use 68 for the following
+problems.
+Part 3
+You now want to test the sensitivity of possible solutions. Using the largest and smallest EOQ values you just calculated, what is
+the biggest percent increase in total relevant costs that you would incur? In other words, what is the worst case error if, for
+example, you used the smallest Q* value when, in fact, the conditions were such that the largest Q* should have been used. Or,
+vice versa. Enter your answer in decimal form using three decimal places. For example, if your answer is 23.24%, you should
+enter .232 in the box below.
+Answer: 0.576
+Part 4
+After finding the widest possible penalty-cost ratio you realize that this will probably never happen since it assumes you
+select the biggest Q and the conditions yielding the smallest Q are the true values. You decide to estimate EOQ using the
+average, not the extreme, values of the inputs. Let's call this
+.
+What is the maximum management-cost penalty if you order
+? Enter your answer in decimal form using two decimal
+places. For example, if your answer is 23.24%, you should enter .23 in the box below.
+Answer: 0.14
+
+Explanation
+Using these estimated input values, the worst case is that we pick the biggest Q* when the smallest Q* was optimal or
+just the opposite. Notice that these two errors will be the same!
+So, to find this percent error we just want to use the EOQ sensitivity analysis equation with the values of
+and
+. The penalty cost ratio is simply:
+= 1.5760 ~
+57.6%
+So, this means that the worst management cost penalty is 57% - even with these extremely wide input estimates.
+
+Explanation
+The answer is between 13.1% and 13.8% - we allowed anything between 12.5 and 15.5%. Based on the estimates from
+the finance and planning groups, we want to find EOQ where
+=(1350+750)/2= 1050 $/order, D=(1600+900)/2 = 1250
+items/year, and
+=(1200)(0.10 + 0.24)/2 = $204 $/year.
+Using these values gives us
+= 113.43 ~ 113 items/order.
+Now we want to plug this into the EOQ sensitivity equation using
+= 1.131 ~ 13%
+= 1.138 ~ 14%
+So, this means that by selecting the middle ground in estimating the EOQ your worst possible cost penalty is about 13%!
+That is amazing. This shows how robust the EOQ model can be in estimating order size.
+This problem is based on an example by L.B. Schwarz (2008), "Economic Order Quantity Model," Building Intuition:
+Insights from Basic Operations Management Models and Principles.
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+

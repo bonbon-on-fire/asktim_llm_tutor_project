@@ -1,0 +1,570 @@
+TITLE: Week 3 Practice Problems — Forecasting II - Seasonality and Special Cases
+
+Ungraded practice problems for Week 3. Correct answers and explanations are kept in the tutor-only key; some problems reference figures or spreadsheets from the course that are not reproduced here.
+
+Practice Problem 1: DoNutRide
+
+DoNutRide is a company that specializes in providing doorstep delivery of their donuts. Their idea is to not have people
+ride all the way to a store but have the store available close to the customers. Customers can check when a mini-van of
+this company is closer to their location on an app and can ‘ring a bell’ for the driver to arrive at their place. They can then
+purchase their favourite donuts!
+They are still in the early stages of their company and have seen variations in their level of demand. Also, the number of
+orders fluctuate during the week with Friday, Saturday and Sunday seeing the highest number of orders. DoNutRide has
+been using forecasting methods to try to stay on top of their game! For this particular case they use double exponential
+smoothing (seasonality and level) technique.
+Varun, the demand planner, has observed that the new level of demand
+is 130 donuts today, on a Thursday. He
+has also calculated the seasonality indices for each day from previous week to this week. His values are Friday: 1.345,
+Saturday: 1.669, Sunday: 1.760, Monday: 0.304, Tuesday: 0.475, Wednesday: 0.607, Thursday: 0.840. He estimates the
+smoothing factor to be alpha 0.1 and gamma 0.05.
+Part 1
+What is the forecast demand value for Friday? Round your answer to the nearest integer. Note: Do not normalize your answer.
+Part 2
+However, the actual demand they saw on Friday was 140. What is the forecast demand value for Saturday? Round your
+answer to the nearest integer. Note: Do not normalize your answer.
+
+Part 3
+What would be the normalized value of seasonality index for Saturday?
+Round your answer to three decimal places. Ex: If your value is 0.1266 then insert value as 0.127.
+Part 4
+Varun is satisfied with the method he has established for Donuts. He continued this until next thursday. Now, in week 2,
+he observed that along with the donuts, their to-go shakes were gaining popularity too. So, he proposed to introduce a
+combo offer for the weekdays to boost sales - buy a special variety donut and a shake at 5% off.
+To calculate the demand forecast value, he assumed the new normalised seasonality indices (as calculated in Part 3) but
+in addition introduced a trend as he felt the sales would pick up gradually due to the offer. So he decided to use the Holt-
+Winter exponential smoothing model. Assume that the value of trending factor,  is 0.2. Consider
+= 140,
+= 150. If the value of
+= 15, what would be the forecast demand for combo offer on Monday seated on Friday?
+Round your answer to nearest integer.
+
+
+
+
+Practice Problem 2: Beers Looking At You, Kid
+
+You are the lead demand planner for Beers Looking At You, Kid (or BLAYK) a restaurant that features sandwiches,
+appetizers, and, of course, beer. The restaurant is known for its very fresh beer so the management tries to monitor beer
+consumption by each shift. You have been tasked to look at how the beer consumption is being forecasted in order to
+improve the quality and lower the costs of having fresh beer.
+There are four shifts in each day the restaurant is open:
+Shift 1 from 11 AM to 2 PM
+Shift 2 from 2 PM to 5 PM
+Shift 3 from 5 PM to 8 PM
+Shift 4 from 8 PM to 11 PM
+The data for every shift’s beer sales for the month of June is attached.
+[W03_PP_BLAYK_data]
+The fields in the spreadsheet are:
+Time Period (t) – a sequential numbering of each shift in your data from 1 to 120
+Date – the date of the record
+Shift Number – the shift number for that record (1, 2, 3, or 4), and
+Pints Sold – the number of pints of beer sold on that day during that shift.
+Part 1a
+Lets make sure we understand the data. How many pints of beer were sold in June?
+Part 1b
+How many pints of beer were sold during Shift 1 in June? Hint, you may want to use the SUMIF function in your spreadsheet
+here.
+
+
+a.
+= 1.00,
+= 1.00,
+= 1.00,
+= 1.00
+
+b.
+= 0.25,
+= 0.25,
+= 0.25,
+= 0.25
+c.
+= 0.25,
+= 0.50,
+= 0.75,
+= 1.00
+d. None of the above
+
+a. The Seasonality Factor for Shift 1 will be less than 1, F1 < 1.00
+b. The Seasonality Factor for Shift 1 will be exactly 1, F1 = 1.00
+c. The Seasonality Factor for Shift 1 will be greater than 1, F1 > 1.00
+
+Part 3a
+Lets now try to calculate the Seasonality Factors for each shift. We will try two different methods to illustrate that there is
+no single best method. First off, lets assume there is no trend. We can calculate the Seasonality Factors as:
+That is, the Seasonality Factor for shift i is equal to the sum of all demand occurring during Shift i divided by the average
+demand for a shift. Recall, that
+is the Seasonality Factor for shift i,
+is the demand for beer for specific time period t,
+and P is the number of periods in our season (4 in our case). The numerator for the equation above can be read as “The
+sum of the demand each time period from time period 1 to n for all time periods that are in Seasonality Factor i”. The
+denominator can be read as “The sum of the demand each time period from time period 1 to n divided by the number of
+periods, P.”
+Using this method, and keeping your answer to 2 decimal places, what are the Seasonality Factors? (Hint - they should
+sum up to P which is 4 in our problem)
+For Shift 1
+For Shift 2
+For Shift 3
+For Shift 4
+d. None of these statements are true.
+
+Part 3b
+Another way to estimate Seasonality Factors is to use the Centered Moving Average method. This is used when you think
+there might be a trend. It is a little tricky when the number of periods is an even number, but lets give it a try. The idea is
+to find the moving average for the time periods around each individual shift and then average those.
+We will find two separate P-period moving averages for each day. The first Moving Average (MA1) will start on June 1, Shift
+1 and include the first four data points (357, 49, 242, and 391) for a value of 259.75. Since the “center” of this average is
+between Shifts 2 & Shifts 3, we place it on the same row as June 1, Shift 3.
+The second Moving Average (MA2) will start on June 1, Shift 2 and include the
+,
+,
+, and
+data points (49, 242,
+391, and 373) for a value of 263.75. The “center” of this average is between Shifts 3 & Shifts 4 so we will place it on the
+same row as June 1, Shift 3.
+We now have two estimates for the “average demand” for Shift 3 taking the nearby time periods to make an average. We
+next take the average of these two 4-period Moving Averages (259.75 and 263.75) to get 261.75. This is now our first
+estimate for the average demand for Shift 3. We can then divide the actual demand for June 1, Shift 3 (242) by the newly
+found average (261.75) to get an estimate of the Shift 3 Seasonality factor (242 / 261.75) = 0.92. That is, the average
+demand during the third shift (5 PM to 8 PM) is 92% of the average. We continue this process to find estimates for the
+Seasonality Factor for each and every time period and then find the average for each of the individual shifts, that is, find
+the average value for Shift 1, Shift 2 etc..
+Note that you can only calculate MA1 and MA2 until you run out of actual demand. That is, the last MA1 that can be
+calculated is for time period 119 while MA2 can only be calculated up to time period 118.
+Using this method, and keeping your answer to 2 decimal places, what are the Seasonality Factors:
+For Shift 1
+For Shift 2
+For Shift 3
+For Shift 4
+
+Part 4
+You are ready to move on to the next step initializing the Holt-Winter model. This involves estimating the initial values of
+the level and trend. As shown in the videos, we can do this by “de-seasoning” the actual demand by the Seasonality
+Factors we just found and then running a regression on those values to determine the intercept (level at time 0) and the
+trend (slope). We will spend more time in a later lesson on regression, so lets just provide you with the results. The
+regression gives you an estimated level of 265 pints per each shift with a trend of 0.80 additional pints per time period.
+This means that the sales of beer is increasing about 3.2 pints per day.
+So, this means we have the following information ready for use in our model:
+•
+= 1.38
+•
+= 0.18
+•
+= 0.94
+•
+= 1.50
+•
+= 265 + 120(0.80) = 361.00
+•
+= 0.80
+Note that
+is the estimated level made at the end of time period 120 (June 30 Shift 4) it is calculated as the intercept
+from the regression (265) plus the trend for over the previous 120 time periods.
+Suppose that for our Holt-Winter model we assume alpha = 0.15, beta = 0.06, and gamma = 0.05. Suppose further that the
+sales of beer during July 1 Shift 1 (time period t=121) was 520 pints. What is the forecast, at the end of July 1 Shift 1, for July 2
+Shift 1? In other words, what is
+?
+
+
+
+Practice Problem 3: Max’s Slice Problem
+
+On April 1, 2014, Max opened “Max’s Slice” in Kendall Square to cater to the nearby MIT student population. Frustrated
+by throwing out unsold pizzas or conversely running out of supplies as students lined up around the corner, Max decided
+to start tracking his pizza sales from May 1 to July 31. In order to more accurately predict pizza sales, Max has contacted
+you to help develop a regression, so he can better predict future sales. For this purpose, he gathered data for you to use
+for your analysis. For this problem, please enter all numerical responses to three decimal places.
+Part 1a
+Max thinks that his pizza chain is beginning to generate some buzz with the MIT students and that sales are going up with
+time. Run a regression against time only to determine how many additional pizzas are sold each day. What is the
+?
+Please state your answer to three decimal places.
+=
+Part 1b
+What is the adjusted
+for this problem? Please state your answer to three decimal places.
+Part 2
+About how many additional pizzas are sold each day? That is, what is the daily trend for the number of pizzas sold each
+day? Please state your answer to three decimal places.
+
+
+Part 3
+Max has read that pizza sales are highest on Fridays and Saturdays? Using a regression that includes both time (days) and
+a dummy variable for weekend sales, how many additional pizzas are sold on Fridays and Saturdays. Please state your
+answer to just one decimal place.
+Part 4
+Finally, Max has heard that Mondays and Tuesdays are the slowest days for the restaurant industry, so he has
+experimented by offering a deal on these days in June and July (specifically from June 9th to July 31st). Running a
+regression include time, weekends, and this discount, determine the p-value as a percentage associated with sales on
+days with the discount. Enter your answer without a % sign i.e. 12.3 rather than 12.3%.
+Part 5
+What variable(s) do you recommend that Max use to predict pizza sales?
+
+
+
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+Time only
+Discount Only
+Weekend Only
+Time and Discount
+Time and Weekend
+
+Weekend and Discount
+Time, Weekends and Discount
+There is not enough data to predict pizza sales
+
+
+Practice Problem 4: Edison Currents
+
+The Charles River runs next to many universities, including MIT and Harvard. Boating along the slow-flowing river is one
+of the favorite Spring and Summer activities for students, residents and visitors. Between April and October, the rental of
+equipment such as kayaks, canoes and row boats in the banks of the Charles River is a thriving business.
+A Cambridge-based company called Edison Currents, specializes in the short-term rental of kayaks to students from
+universities in the Greater Boston area. The owner of Edison Currents has asked you to help him understand better the
+factors that shape the demand for his business, so that he can plan his capacity better. He has provided you with data on
+the number of rentals per day for the whole month of September 2014. You can download this data here:
+Download the data in Excel format.
+Download the data in LibreOffice format.
+Part 1
+Create a linear regression model of daily rentals as a function of time only. What is the
+value for this model? Please
+enter your answer to three decimal places.
+Part 2
+From this, can we claim that there is a clear trend in time for the demand?
+
+a. Yes, the positive
+value indicates a positive slope, that is to say, an increase of demand over
+time.
+b. Yes, the value of
+is smaller than 0.7, which is a clear sign that the demand is decreasing over
+time.
+c. No, the
+value is too small to be meaningful as an indication that time is a good predictor of
+demand.
+
+d. There is not enough information at this point to answer this question.
+
+
+
+Part 5
+Consider the regression coefficients in model you created for the previous question. Are these coefficients statistically
+significant at p=0.01?
+Part 6
+You suspect that a better model could be obtained by using a multiple regression approach. You want to try out three
+models to predict rentals using two independent variables: (A) one model using time and coupons as the independent
+variables, (B) another using time and weekends as independent, and (C) a last one using weekends and coupons as
+independent variables. Which of these models, if any, has more predictive power than the simple model using just
+weekends as independent variable?
+a. Neither
+nor
+are statistically significant at p=0.01.
+b. Both
+and
+are statistically significant at p=0.01.
+
+c. Only
+is statistically significant at p=0.01.
+d. Only
+is statistically significant at p=0.01.
+
+a. The model using time and coupons is better
+b. The model using time and weekend is better
+c. The model using weekend and coupons is better
+
+d. None of the models is better than the single variable one
+Part 7
+Consider the model you created in the previous question, where you used weekends and coupons as the two
+independent variables. Which of this model's coefficients – if any – are statistically significant at p=0.01?
+Part 8
+Make now a multiple regression model using three independent variables: time, coupons and weekend, as predictors of
+the rentals. What is
+value (not adjusted) for this model? Please enter your answer to three decimal places.
+Part 9
+Is the regression model with all three independent variables a better model for forecasting than the model that uses
+weekend and coupon as independent variables?
+
+a. None of the coefficients are statistically significant at p=0.01.
+b. All of the coefficients are statistically significant at p=0.01.
+
+c. Only
+is statistically significant at p=0.01.
+d. Only
+and
+are statistically significant at p=0.01.
+
+
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+a. Yes, since its
+(0.905) is larger than that of the previous model (0.896)
+b. Yes, since its adjusted
+(0.894) is larger than that of the previous (0.888)
+c. Yes, both "a" and "b"
+d. No.
+
+
+
+Practice Problem 5: DrugCo
+
+DrugCo is a moderately sized retailer that sells over the counter drugs and other items.  It consists of 20 stores in two
+different cities (A and B).  The stores have a variety of different schedules.  The open hours for the stores ranges from 40
+to 168 hours per week.  The average weekly revenue for these stores, organized by the number of open hours per week,
+is attached in these Excel and LibreOffice files.
+Please enter all your numerical answers with 4 significant figures.
+Part 1
+You believe there is a linear relationship between the number of hours a store is open and the weekly revenue. Develop a
+linear regression equation for weekly revenue for City A where Weekly Revenue =
+.
+What is the value for the intercept or
+for this model for City A?
+Part 2
+What is the value for the coefficient for hours or
+for this model for City A?
+Part 3
+What is the adjusted
+for this model for City A? Enter the value as a decimal, so if it is 37.89%, enter 0.3789.
+A
+0 8762
+
+
+Part 4
+Develop a linear regression equation for weekly revenue for City B where Weekly Revenue =
++
+*(Hours Open).
+What is the value for the intercept or
+for this model for City B?
+Part 5
+What is the value for the coefficient for hours or
+for this model for City B?
+Part 6
+0
+i
+ibl (
+d d)
+
+
+
+What is the adjusted
+for this model for City B? Enter the value as a decimal, so if it is 37.89%, enter 0.3789.
+Part 7
+You notice that the regression model implies that the store economics are different in each of the cities. For example,
+according to the regression model, stores with lower operating hours (e.g., 40 hours per week) are estimated to generate
+more revenue in City A than a comparable store in City B.
+How many hours per week would a store need to operate so that the expected weekly revenue in City B would equal that of a
+comparable store in City A?
+Part 8
+You are not really sure if it makes sense to run two separate models; one for each city. You decide instead, to create a
+single linear regression model for the weekly revenue of the form:
++
+*(Hours) +
+*(CityBFlag). The variable
+CityBFlag = 1 if the store is in city B and = 0 otherwise.
+What is the value for the intercept or
+for the combined model?
+What is the value for the coefficient for hours or
+for the combined model?
+
+
+What is the value for the coefficient for CityBFlag or
+for the combined model?
+What is the adjusted
+for the combined model?
+Part 9
+Which model should you use for estimating weekly revenues?
+
+a. The separate "two city" models
+b. The combined model as in Part 8
+c. Neither, explore the combined model more
+
+d. It does not matter, life is too short anyway
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+
+
+Practice Problem 6: Get It and Go!
+
+The Get It and Go (GIG) company operates small convenience stores throughout the mid west of the United States as well
+as in some parts of Canada.  The GIG stores are small format and are located in semi-urban areas.  You have collected
+some data on 26 stores and want to develop a forecasting model.
+You note immediately, that the more people that live near a store will generate more sales, so you created a new variable
+called Sales Density to reflect the sales revenue generated by each person in a store's region.  You also noticed, by
+plotting the Sales Density to the Median Income, that while the relationship seems linear (with more sales for areas with a
+higher household income) it appears to taper off as income level increases.  So, you have created a new variable called
+Median Income Squared which is just the square of the median income for each store.  The final piece of information you
+have is whether the store uses a traditional or new format for how the store is organized.  The "new" format consist of
+lower shelves with more colorful packaging and brighter lighting.  Management believes the new formats will lead to
+more sales.
+Data Resources:
+Download the data in Excel format.
+Download the data in LibreOffice format.
+The fields in the data files are:
+Store ID - the identification number of the store
+Weekly Sales - the average weekly sales in US dollars for that store
+Local Population - the number of people living within one mile of that store
+Sales Density - the average revenue per person in the area of that store (=Weekly Sales /Local Population)
+Median Income - the median household income for residents near that store in thousands of dollars
+Median Income Squared - Median Income ^2
+New Format - =1 if the store is using the new format, =0 otherwise
+Using this data set, answer the following questions.
+Part 1
+You want to see what the relationship is between Sales Density and Median Income. Develop a regression equation
+where Sales Density is the dependent variable and Median Income is the only independent variable (as well as an
+intercept).
+_____________________________________________________________________________
+What is the
+for this model? Please use three decimal places for your answer
+What is the intercept
+value for this model? Please use three decimal places for your answer
+What is the Median Income coefficient
+value for this model? Please use three decimal places for your answer
+Part 2
+While you like Model #1 (Median Income), you want to test the non-linear effect of household income. Develop a
+regression equation where Sales Density is the dependent variable and the independent variables are Median Income
+and Median Income Squared along with an intercept. Call this Model #2.
+_____________________________________________________________________________
+What is the
+for this model? Please use three decimal places for your answer
+What is the intercept
+value for this model? Please use three decimal places for your answer
+What is the Median Income coefficient
+value for this model? Please use three decimal places for your answer
+What is the Median Income Squared coefficient
+value for this model? Please use three decimal places for your answer
+P
+t 3
+
+
+Part 3
+You like Model #2, but now you want to test the new format impact. Develop a regression equation where Sales Density
+is the dependent variable and the independent variables are Median Income, Median Income Squared, and New Format
+along with an intercept. Call this Model #3.
+_____________________________________________________________________________
+What is the
+for this model? Please use three decimal places for your answer
+What is the intercept
+value for this model? Please use three decimal places for your answer
+What is the Median Income coefficient
+value for this model? Please use three decimal places for your answer
+What is the Median Income Squared coefficient
+value for this model? Please use three decimal places for your answer
+What is the New Format Flag coefficient
+value for this model? Please use three decimal places for your answer
+Part 4
+Based on your development of Model 3, assuming that you accept the model as is, what is the impact of the New Store
+Formats?
+_____________________________________________________________________________
+A store with a new format seems to
+
+a. Increase sales density by about 0.088 dollars per week
+Part 5
+What would you tell management about the effect of the new format on store sales?
+Part 6
+Which model do you recommend?
+a. Increase sales density by about 0.088 dollars per eek
+b. Decreases sales density by about 0.088 dollars every time we use the new format
+
+c. Doubles the sales density
+d. You cannot determine this from the Model 3
+
+a. The new format is great! You guys are the best management team anywhere!
+b. The new format is horrible! We lose money every time we use the new format.
+c. The data is inconclusive, we should probably look at a larger sample to better understand the
+impact.
+
+d. The new format is not great - but not horrible - less than a dime in lost sales density. We should
+keep it.
+
+a. Model #1
+b Model #2
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+b. Model #2
+
+c. Model #3
+d. None
+
+
+Practice Problem 7: Art school
+
+Vijaya is an artist who runs an art school and sells paintings for a living. She has made an arrangement with a new startup
+company that sells non-toxic oil paints, that she would purchase their oil paints' set every alternate week. The company
+has agreed to supply to her but is finding it difficult to keep a track on her order quantity. In week 1, she purchased 50
+sets of oil paints whereas in week 3, she ordered a 100. In week 4, she ordered 120, and in week 6, the quantity was back
+to 50. The demand planner of the company is finding it difficult to forecast so has decided to use Croston's model to
+figure out how much inventory he should keep on hand to be ready to supply to her art school. He has decided to
+consider an alpha value of 0.1 and beta of 0.2. Consider the previous order quantity during week 1 as 100 and that it was
+done 2 weeks back i.e
+= 100 and
+= 2.
+Part 1
+Before we get to the estimates for week 7, what is the average estimate demand in week 1 i.e what is the value of
+?
+Round your answer to two decimal places. If your answer is 1.236, enter as 1.24.
+Part 2
+What is the estimate for the average order size in week 2?
+Round your answer to nearest integer.
+What is the estimate for frequency of ordering in week 2?
+Round your answer to nearest integer.
+
+Part 3
+How many sets should the demand planner estimate as the average demand for week 7?
+Round your answer to nearest integer.
+What would be his estimate of order size for week 7?
+Round your answer to nearest integer.
+
+
+
+Practice Problem 8: Avocados
+
+Two weeks ago, a farmer in Honduras made a verbal agreement to sell fresh avocados to the owner of a high-end Tex-
+Mex restaurant in Tegucigalpa. The verbal agreement did not commit either party to a specific quantity of avocados or a
+specific time for their sale. Instead, the restaurant owner said he would stop by the avocado orchard “every three days or
+so” and buy “about a hundred avocados per visit.” In the intervening two weeks, the restaurant’s owner has in fact
+stopped by the avocado orchard five times, each time buying a different number of avocados. The farmer is curious to
+know if the original estimate of 100 avocados every three days is materializing. The information on the five sales and the
+times at which they occurred is given below. The variable t refers to time in days: we are now at t=0. The farmer has
+gathered and prepared these data for you to analyze.
+t
+Demand
+-14
+0
+-13
+0
+-12
+120
+-11
+0
+-10
+75
+-9
+0
+-8
+0
+-7
+0
+-6
+120
+-5
+0
+-4
+0
+-3
+0
+-2
+125
+-1
+0
+0
+90
+Q1
+The farmer knows you are taking SC1x and has asked for your help in updating the estimate of the demand. Using
+Croston’s Method, produce an updated forecast for the purchase size and the time between purchases. Use both alpha
+and beta equal to 0.333, and initialize the model with the original estimate given by the restaurant. That is, assume that
+for time t=-14 the most previous order was the day before, that the expected order size is 100 avocados, and that your
+estimate for periods since last order is 3.
+What is your estimate for average daily demand at t=0? (answer to 3 significant digits)
+What is your estimate for frequency of ordering (in days) at t=0? (answer to 3 significant digits)
+What is your estimate for the average order size at t=0? (answer to 3 significant digits)
+What is your estimate for the average order size at t 0? (answer to 3 significant digits)
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+posts first.
+

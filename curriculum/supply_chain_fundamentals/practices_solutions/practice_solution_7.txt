@@ -1,0 +1,990 @@
+TITLE: Week 7 Practice Problems — Answer Key & Explanations
+
+TUTOR-ONLY reference. Problem statements together with the correct answers
+and official explanations for the ungraded Week 7 practice problems,
+captured from MITx CTL.SC1x 3T2026 (the course's "Show Answer" data).
+Maps one-to-one to practices/practice_7.txt. Do NOT surface verbatim to
+students; use only as the tutor's correct-answer / explanation context.
+
+================================================================
+Practice Problem 1: Zahara Blouses
+
+You have been asked to determine an inventory policy for special blouses for Zahara, a fast-fashion womens clothing
+retailer based in Portugal. These blouses will only be offered in the month of April. The sales price is 120 and the total
+landed cost to manufacture and ship them to a store is 48 per blouse. You can only order them from the manufacturer
+once in March - there are no reorders. Any left over inventory at the end of April will be sent to an outlet store where it
+can be sold for one third of its original price. You have found an Excel file with demand for relevant or similar items in the
+past and you quickly calculated the average monthly demand will be 375 with a standard deviation of 220.
+Part 1
+What is the Critical Ratio for the blouses?
+Answer: 0.90
+Part 2
+You assume that the demand is normally distributed. How many blouses should you order to max profit?
+Round to the nearest integer.
+Answer: 656.94
+Part 3
+If you order the amount of blouses calculated in Part 2:
+How many blouses do you expect to be short?
+Round to the nearest integer.
+Answer: 10.4
+Explanation
+In this case, the cost of shortage will be the profit per blouse sold:
+And the cost of excess will be the cost minus the salvage value:
+Therefore the Critical Ratio is
+
+Explanation
+You just have to calculate the value of  for which the probability of stocking out is less than 10%. Assuming a normal
+distribution, you can easily calculate it in excel by applying this formula
+
+How many blouses will you expect to sell?
+Round to the nearest integer.
+Answer: 364.6
+Part 4
+What is your expected profitability?
+Round to the nearest integer.
+Answer: 23912.48
+Part 5
+Upon further analysis, you notice that the minimum demand in your data set was about 50 units and the maximum was
+1000 with the mode or most common demand being just 75 units.
+Should you reconsider your analysis?
+Explanation
+E[units short] are easy to calculate for a normal distribution:
+First we need to calculate the value of k, that depends on the probability of not stocking out. For a probability of not
+stocking out of 90%, our k will be
+.
+Once we have k, we can find G(k) by using the standard normal table or excel
+And now you just need to multiply G(k) by the standard deviation of the normal distribution.
+Explanation
+E[Units Sold]=E[Demand]-E[Units Short]=375-10.4=364.6
+
+Explanation
+In this case: Profit = (price * E[Units Sold]) - (cost * Q) + (salvage value * (Q-E[Units Sold])
+
+Yes
+
+No - it is fine
+Explanation
+The correct answer is yes. It appears that you have a long long right hand tail.
+Also realize that the probability of having negative demand if we assume a normal distribution is almost 5%
+Part 6
+You decide to model this problem assuming a Triangle distribution.
+What is your new Critical Ratio?
+Answer: 0.90
+Part 7
+Assuming a Triangle distribution, how many blouses should you order?
+Round to the nearest integer.
+Answer: 704
+Part 8
+Assuming a Triangle distribution, and ordering the amount of blouses calculated in Part 7:
+How many blouses do you expect to be short?
+Round to the nearest integer.
+Answer: 10
+(=NORM.DIST(0,375,220,1) = 0.045). And having negative demand, as everybody knows, is just not possible!
+
+Explanation
+This is a trick question. The Critical Ratio does not change! We are assuming a different probability distribution, but the
+price, cost and salvage value of the blouses do not change.
+
+Explanation
+Calculating the value of Q in the case of a Triangle distribution is a little more lengthy, but you just need to apply the
+formulas provided in Week 7 - Lesson 1. You can also use this spreadsheet.
+
+Explanation
+How many will you expect to sell?
+Round to the nearest integer.
+Answer: 365
+What is your expected profitability?
+Round to the nearest integer.
+Answer: 23581
+Part 9
+Suppose you ordered as in Part 2, but the demand is really distributed ~Triangle as in Part 7.
+How much does your profitability change?
+Enter the difference between both profitability numbers as an absolute value (no negative sign).
+Answer: 62
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+In this case, we will calculate the E[Units Short], because the value of Q is between the value of the parameters c and b.
+You just need to apply the formulas provided in Week 7 - Lesson 1. You can also use this spreadsheet.
+Explanation
+E[Units Sold]=E[Demand]-E[Units Short]=375-10=365
+Explanation
+In this case: Profit = (price * E[Units Sold]) - (cost * Q) + (salvage value * (Q-E[Units Sold])
+Note: The answers might vary slightly based on how you rounded the intermediate values. We usually build a tolerance in
+our solutions to account for different types of intermediate value roundings, as long as they are done within reason. (only
+if the rounding expectations were not explicitly stated)
+
+Explanation
+If we order as in Part 2 (Q=657) but assuming a Triangle distribution~(50,1000,75), the profitability will be $23,519. The
+difference in profitability is $62, very small!
+
+
+================================================================
+Practice Problem 2: DogFest Custom Mugs
+
+Your firm designs, manufactures, and sells customized t-shirts, coffee mugs, and other materials to consumers for one-
+time fairs, concerts, and other events to commemorate it.  These products can usually only be sold during the event itself
+and due to the manufacturing lead time, they have to be created ahead of time.  Over the last several months, your
+company has been losing money due to poor inventory planning.  For some events, they have produced too many
+products and have had to destroy the excess.  For other events, they produced too few and end up stocking out on the
+first day - losing potential profits.
+You have been asked to develop an inventory model to help them better plan how many customized coffee mugs to
+make ahead of this year's 3 day long DogFest 2015.  As everyone knows, DogFest is run each year in Boston where
+thousands of people (and dogs) come to listen to bands, drink coffee, and talk to other dog owners.
+You have been told the following information.
+Custom coffee mugs cost $1.20 each to produce
+The selling price for the DogFest2015 Custom Coffee mugs is $7.50 each
+DogFest only lasts three days and the mugs can only be sold during DogFest
+The demand for your mugs over the duration of DogFest has been estimated to be 750 plus or minus 150
+Mugs have to be ordered in increments of 10
+Any unsold mugs at the end of the DogFest have to be destroyed and there is no time to deliver additional mugs during
+DogFest
+Part 1
+How many DogFest 2015 Coffee Mugs do you recommend ordering for this year's festival in order to maximize estimated
+profits? Assume that the demand is distributed Normally with a mean of 750 and a standard deviation of 150. Round your
+answer to the nearest increment of 10.
+Answer: 900
+Part 2
+What is your expected profit for DogFest 2015 assuming you order the Q* as found in part 1? Assume that the demand is
+Explanation
+Lets start with what we know. Demand is ~N(750, 150), c=1.20, p = 7.50. This is an obvious Newsvendor problem since we
+can only order once ahead of the selling period and have to destroy the unsold mugs at the end of the event. We need to
+estimate the shortage and excess costs in order to calculate the Critical Ratio.
+Using Spreadsheet,
+µ
+= NORMINV(0.84, 750, 150) = 899.17 ~ 900 mugs.
+OR
+Using Normal Tables we can find  value for the P(u≤k) = 0.840 to be ~ 0.995.
+µ
+=
+So, in order to maximize profit, we would order 900 of the customized DogFest 2015 Coffee Mugs. Regardless of your
+answer, use Q* = 900 mugs for the next part of the problem.
+
+What is your expected profit for DogFest 2015 assuming you order the Q as found in part 1? Assume that the demand is
+distributed Normally with a mean of 750 and a standard deviation of 150. Round your answer to the nearest dollar.
+Answer: 4450
+Part 3
+What is the probability that you will run out of coffee mugs during the DogFest 2015 event? Assume that the demand is
+distributed Normally with a mean of 750 and a standard deviation of 150. Enter the probability as a number from 0.00 to 1.00
+rounded to 2 decimal places, e.g., if your solution is 0.5678, enter 0.57 and if your solution is 0.2234, then enter 0.22.
+Answer: 0.16
+Part 4
+Your boss does not like the result from the previous part. She would like to make sure that the probability of stocking out of
+custom DogFest 2015 Coffee Mugs is less than 1 percent. How many mugs do you need to order meet this level of service?
+Assume that the demand is distributed Normally with a mean of 750 and a standard deviation of 150. Round your answer to the
+nearest increment of 10 mugs.
+Answer: 1100
+Explanation
+We learned to calculate the expected profitability from a Newsboy problem in Lesson 2.
+The expected profit can be calculated as
+where x is the demand during
+the event, p is the sales price, E(US) is the expected units short during the event, c is the cost for each mug, and Q is the
+quantity of mugs ordered.
+We already know that
+.
+To find the E(US) we can see that ordering Q=900 mugs gives us a k = 0.995 (value correpsonding to a CR=0.84). Using the
+Normal tables we can now pick the Loss Function
+for a k value of 0.995
+. Thus, the expected units
+short is given by the formula:
+Finding cQ = 1.20*900 = 1080
+Putting this all together:
+~ $4450 profit.
+Your number might vary a little - we accepted a range to account for rounding issues.
+
+Explanation
+We have already calculated this! By ordering 900 mugs, we can calculate probability that we will NOT stockout as being
+equal to (P(x < = 900) = 0.840). Thus, the probability of stocking out = 1 - 0.840 = 0.16 or 16%.
+Your number might vary a little - we accepted a range to account for rounding issues.
+
+Explanation
+If we want the probability of stocking out to be 0.01, then we need to set the probability of NOT stocking out to be equal
+Part 5
+What is your expected profit if you set your Q to stockout at a probability of 1% or less as requested by your boss? Assume that
+the demand is distributed Normally with a mean of 750 and a standard deviation of 150. Round your answer to the nearest
+dollar.
+Answer: 4301
+Part 6
+What is the implied additional penalty for not satisfying demand, B, if you order Q to meet your boss's level of service of
+stocking out less than 1% of the time? Assume that the demand is distributed Normally with a mean of 750 and a standard
+deviation of 150. Round your answer to the nearest dollar.
+Answer: 113
+to 0.99. Using the Normal Tables, we can see that the probability of not stocking out 99 percent of the time requires
+k=2.33. Or, we could use the spreadsheet function NORMSINV(0.99) = 2.326 ~ 2.33.
+This means that we want to find the Q that satisfies
+. Rearranging, we get
+~ 1100 mugs.
+Your number might vary a little - we accepted a range to account for rounding issues.
+
+Explanation
+The expected profit can be calculated as
+.
+We already know that
+. This does not change regardless of how many mugs I order!
+With a k=2.33, using the Normal tables we find
+. Thus, the expected units short is =
+Finding cQ = 1.20*1100 = 1320
+Putting this all together:
+~
+$4301 profit.
+Your number might vary a little - we accepted a range to account for rounding issues.
+So, this means that you will give up 4450 - 4301 = $149 in expected profit by meeting this higher level of service.
+
+Explanation
+This is easier than it seems. We know that in order to set the probability of stocking out to 1% or less, we need to set the
+probability to 99%. That means, we want the Critical Ratio to be 0.99. If we now include an additional penalty for not
+satisfying demand, B, then our CR becomes:
+solving for B, we get,
+. Rearranging,
+. So that
+= $113.
+That means, by ordering such that the probability of stocking out is 1% or less, you are implying that each stockout event
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+costs you an an additional penalty of $113. Perhaps this is reputational risk - if you stock out a lot, then people will stop
+buying your products or maybe the organizers for DogFest will stop allowing you to sell your mugs! It is a big amount, but
+this analysis lets you quantify what your boss's somewhat arbitrary level of service means.
+
+
+================================================================
+Practice Problem 3: Soda-tastic!
+
+You run a store, Soda-tastic!, that specializes in selling soda and other carbonated drinks.  Your suppliers will often want
+to run a promotion for certain products.  Promotions usually involve a discounted price that lasts a set amount of time,
+typically a week.  Many fast moving consumer goods (FMCG), like soda, are primarily sold under promotions.
+One of your suppliers, Ispep Bottling, has offered to run a promotion on a special version of their popular Milk flavored
+soda, Cow-ca-cola.  For this promotion, the Cow-ca-cola soda will be bottled with special labels celebrating National Dairy
+Month.   These sodas can only be sold during the one week promotional period. Any unsold bottles at the end of the
+promotion week must be destroyed.  You need to place your order for this promotional item ahead of time and you
+cannot replenish within the promotional period.  You also have to order in full cases.  The promotional price that you can
+sell a case of Cow-ca-cola is $24 and each case costs you $6.75 from Ispep Bottling.
+Luckily, you have some past history with Cow-ca-cola promotions.  Historical weekly sales data for the Cow-ca-cola priced
+at $24 a case can be accessed through an Excel spreadsheet.
+Part 1
+(Hint: You should probably solve this problem using a data table, as shown in Video 2 of Lesson 2.)
+How many cases of Cow-ca-cola soda should you order for the upcoming week long promotion in order to maximize your
+profit? You must order full cases, so enter an integer value.
+Answer: 16
+Part 2
+What is your estimated profit from this Cow-ca-cola promotion? Enter the dollar value rounded to the nearest $10
+increment, for example, if your answer is $202.50 then you would enter 200.
+Answer: 190
+Explanation
+This is a straightforward single period model that can be solved using a data table, as shown in video 2 of Lesson 2. You
+know that the price is $24.00 and the cost is $6.75 per case. This means the shortage cost
+= p - c = 24.00 - 6.75 = 17.25
+and the excess cost
+= 6.75 which gives us a critical ratio, CR
+= 0.72. That means we want to
+cover at least 72% of the demand distribution for the promotion week.
+Using the demand distribution, we can calculate the cumulative probability for each level of demand. From this, we can
+see that ordering 16 cases of Cow-ca-cola will cover 73.3% of the weekly promotional demand. Ordering 15 cases will only
+cover 66% of the demand, so we should order 16 cases of Cow-ca-cola for this promotion.
+A full solution using data tables will be provided in a spreadsheet in the answer to the last question.
+
+Explanation
+We will use the estimated profit function:
+E[Profit(Q)] = (p-g)E[Demand] - (c-g)Q - (p-g+B) E[Units Short]
+where:
+p = $24 per case
+c = $6.75 per case
+g = 0 since there is no salvage value
+B = 0 since we have not specified any penalty for being short
+Part 3
+You have found in the past that people who buy Cow-ca-cola on promotion tend to buy other produts as well. You are
+considering discounting the price you sell Cow-ca-cola during this period to $20 per case. Luckily, you have history with
+this price and you have a historical demand distribution for Cow-ca-cola priced at $20 per case. Historical weekly sales
+data for the Cow-ca-cola priced at $20 a case is shown in an Excel file here. This discount would come out of your margin,
+since Ispep will still charge you $6.75 per case.
+If you went with this reduced promotional price, how many cases of Cow-ca-cola should you order to maximize your profit?
+Answer: 23
+Part 4
+What is your new estimated profit from this Cow-ca-cola promotion if you price it at $20 per case? Enter the dollar value
+rounded to the nearest $10 increment, for example, if your answer is $202.50 then you would enter 200.
+Answer: 230
+E[x] = expected weekly demand of cases of Cow-ca-cola. This is simply the sum of the product of the demand and its
+respective probability. E[x] = (0)(0.0) + (1)(0.012) + (2)(0.013) + (3)(0.01) + . . . + (30)(0.001) = 13.39. Or, I could just use the
+formula: =SUMPRODUCT(A2:A32,B2:B32) in the spreadsheets provided earlier.
+E[Units Short] = We don't have a nice Unit Normal Loss function here since it is not Normally distributed. Instead, since
+we know that Q=16 from part 2.1, then the expected units short will be: (17-16)(.0610) + (18-16)(0.0510) + (19-16)(0.0405)
++ . . . + (30-16)(0.0010) = 1.056 cases short per week.
+Putting it all together gives us:
+E[Profit(Q=16)] = (24 - 0)(13.39) - (6.75 - 0)(16) - (24 - 0 + 0)(1.056) = $188.02 so we round o $190 per week.
+The solutions are available for Excel here and for LibreOffice here .
+
+Explanation
+This is a straightforward single period model that can be solved using a data table, just like part 2.1. You know that the
+price is $20.00 and the cost is $6.75 per case. This means the shortage cost
+= p - c = 20.00 - 6.75 = 13.25 and the excess
+cost
+= 6.75 which gives us a critical ratio, CR
+= 0.66. That means we want to cover at least 66% of
+the demand distribution for the promotion week.
+Using the demand distribution, we can calculate the cumulative probability for each level of demand. From this, we can
+see that ordering 23 cases of Cow-ca-cola will cover 69.2% of the weekly promotional demand. Ordering 22 cases will only
+cover 61.6% of the demand, so we should order 23 cases of Cow-ca-cola for this promotion at this new price.
+A full solution using data tables will be provided in a spreadsheet in the answer to the last question.
+
+Explanation
+We will use the estimated profit function:
+E[Profit(Q)] = (p-g)E[Demand] - (c-g)Q - (p-g+B) E[Units Short]
+where:
+p = $20 per case
+c = $6.75 per case
+Part 5
+Based on your analysis, what should you do for the Cow-ca-cola promotion?
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+c  $6.75 per case
+g = 0 since there is no salvage value
+B = 0 since we have not specified any penalty for being short
+E[x] = expected weekly demand of cases of Cow-ca-cola. This is simply the sum of the product of the demand and its
+respective probability. E[x] = (0)(0.0) + (1)(0.00) + . . . + (29)(0.015) + (30)(0.00) = 20.36. Or, I could just use the formula:
+=SUMPRODUCT(A2:A32,B2:B32) in the spreadsheets provided earlier.
+E[Units Short] = We don't have a nice Unit Normal Loss function here since it is not Normally distributed. Instead, since
+we know that Q=23 from part 2.3, then the expected units short will be: (24-23)(.0690) + (25-23)(0.0730) + . . . + (29-23)
+(0.0150) + (30-23)(0.0000) = 0.879 cases short per week.
+Putting it all together gives us:
+E[Profit(Q=23)] = (20 - 0)(20.36) - (6.75 - 0)(23) - (20 - 0 + 0)(0.879) = $234.37 so we round to $230 per week.
+The solutions are available for Excel here and for LibreOffice here .
+
+Keep the original promotion price of $24 a case
+Go with the $20 a case promotion even though it reduces your margin per case
+
+Stop selling milk based soda!
+None of the above
+Explanation
+Looking at the expected weekly profits, it makes sense to reduce the sales price to $20 a case, even though it reduces
+your margin per case from $17.25 to $13.25. The price reduction seems to dramatically increase the demand. The
+expected demand at $24 a case was ~13 cases and for $20 a case it jumped to a little over 20 cases.
+Some other things you might want to consider, would be seeing if Ispep, the supplier, would consider "buying back" the
+unsold soda for some small amount per case. This would essentially set a salvage price, g, for you and would induce you
+to, perhaps, order more. We will cover more of these types of "supply contracts" in SC2x Supply Chain Design.
+
+
+================================================================
+Practice Problem 4: Sportswear company O'yeah
+
+Sportswear company O'yeah designs and sells wetsuits to the U.S. market. The designs of the wetsuits are updated each
+year. The process for updating the design typically starts in January the year before the designs are to be released. At this
+time, the purchasing, design, and sales departments have a two-day meeting to discuss the product portfolio for the
+upcoming year, including design, functionality, and price. In March, the designs are finalized, and the purchasing
+department starts negotiating with suppliers across the world.
+Production usually starts in September or October the year before the designs are to be released, and lasts until
+December or January depending on the supplier. In February, retailers start placing their orders to O'yeah, with retail
+sales of the new designs typically starting in early April.
+The season stretches from April to September. As the season progresses, retailers place replenishment orders to O'yeah,
+who supplies the retailers from a central warehouse. Sales peak in early summer. Towards the end of the summer, sales
+decline dramatically. When the season ends in September, O'yeah pushes out any remaining inventory to the retailers by
+offering all models at only 30% of the original selling price.
+Part 1
+Consider a specific SKU# 004507 (Model B150, size XL).
+For the upcoming year, O'yeah has negotiated with a supplier to have SKU# 004507 produced and delivered to O'yeah at
+$140 per unit. SKU# 004507 is sold to retailers at $180, for a unit margin of $40.
+Suppose total demand for SKU# 004507 for the upcoming season (the time during which the product is sold at full price)
+is estimated to follow a Normal distribution with mean 3,200 and standard deviation 300.
+How many B150, size XL, should O'yeah produce to maximize expected profit? Please round to closest integer.
+Answer: 3058
+Part 2
+Last year, SKU# 004507 turned out to be extremely popular and sold out quickly. Since O'yeah makes a good margin on
+the product, management has decided they do not want the same situation again.
+"We cannot have the probability for out-of-stock during the season to be more than 10% on this model", said the sales
+manager recently.
+Explanation
+Since each unit of SKU# 004507 costs $140 and it has a salvage value of $54 (0.30*180), the excess holding cost per unit is
+given by:
+= 140 - 54 = 86
+The shortage cost is the lost profit:
+= 180 - 140 = 40
+Given these values of
+and
+, the critical ratio is:
+We know that demand is D=3200 with a standard deviation of σ=300. We can find the size of Q using this instruction in
+Excel or LibreOffice:
+=NORMINV(0.3175,3200,300)
+This way we find that Q = 3058.
+
+How many SKU# 004507 should O'yeah produce to ensure that the stock-out probability is less than or equal to 10% during the
+season? Assume the same demand distribution as in Part 1. Please round to closest integer.
+Answer: 3584
+Part 3
+Consider the policy from Part 2.
+With your suggested production quantity, how many units of SKU# 004507 can O'yeah expect to be short during the regular
+season? Please answer with two decimals.
+Answer: 14.25
+Part 4
+Consider the policy from Part 2.
+What is the expected profit from SKU# 004507? Please round to closest integer dollars. Answer without the dollar symbol.
+Answer: 93181
+Explanation
+Since the stock-out probability
+is equal to 0.10, the critical ratio is:
+We know that demand is D=3200 with a standard deviation of σ=300. We can find the size of Q using this instruction in
+Excel or LibreOffice:
+=NORMINV(0.90,3200,300)
+This way we find that Q = 3584.
+
+Explanation
+The value of k is calculated as:
+For this value of k, we find the value of the unit normal loss function G(k) using this formula in Excel or LibreOffice:
+= NORMSDIST(1.28,0) - 1.28*(1-NORMSDIST(1.28,1))
+This returns a value of G(k) = 0.0475.
+We can find the expected units short per deployment thus:
+E(US) = σ G(k) = 300 (0.0475) = 14.25
+
+Explanation
+The expected profit can be calculated as
+Part 5
+The policy suggested by the sales manager leads to a lower expected profit than the "optimal" policy calculated in Part 1.
+The sales manager motivates this by claiming that the policy in Part 1 is not taking into account future lost profits by
+being out of stock. "So", he argues, "the expected profit implied by the 'optimal policy' is biased upwards."
+Suppose there is an additional cost per unit out-of-stock, . Suppose further that the policy suggested in Part 2 is the
+policy that maximizes expected contribution when this additional cost is taken into account.
+What is the additional cost ? Please round to closest integer dollars. Answer without the dollar symbol Enter a positive number.
+Answer: 734
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+The mean value is given as 3200, therefore
+.
+The expected profit is $93,181.
+
+Explanation
+The critical ratio considering salvage value and penalty cost is:
+Solving for B:
+
+
+================================================================
+Practice Problem 5: Banapples
+
+You run a popular fruit stand in New York City called Manhattan Fruit.  Your company has a reputation for selling
+premium fresh, 100% organic and socially responsible fruits from around the world at the peak of ripeness. One
+distinctive feature of your stand, which allows you to charge premium prices, is that any fruit the customer picks from the
+shelf will be just perfect.
+For fruits such as the rare and fragile banapple (a hybrid cross featuring the thick skin of a banana and the
+overabundance of seeds of an apple) this means removing it from the shelves as soon as it starts to lose its premium
+color. You receive daily deliveries from your banapple supplier because, sadly, they only last one day. It costs you $0.30 to
+procure each organic, 100% socially responsible bananapple. You sell each bananapple in your stand at $1.50 a
+piece. Historical daily sales data for the banapples can be accessed in this Excel spreadsheet.
+Part 1
+(Hint: You should probably solve this problem using a data table, as shown in Video 3 of Lesson 1.)
+Each evening you need to let your supplier know how many banapples you want delivered the next morning at 4 AM. Because
+they are the only banapple supplier in the city, they only deliver in multiples of 50 with a maximum daily order of 500 pieces.
+How many banapples should you order each evening to maximize your profit?
+Answer: 200
+Part 2
+What is your estimated weekly profit from selling banapples? Your stand is only open 5 days a week since no one eats
+banapples on the weekend. Enter the dollar value rounded to the nearest $50 increment, for example, if your answer is $202.50
+then you would enter 200.
+Answer: 650
+Explanation
+This is a straightforward single period model that can be solved using a data table, as shown in video 5 of Lesson 1. You
+know that the price is $1.50 and the cost is $0.30 per banapple. This means the shortage cost
+= p - c = 1.50 - 0.30 =
+1.20 and the excess cost
+= 0.30 which gives us a critical ratio, CR
+= 0.80. That means we want to
+cover at least 80% of the demand distribution each day. Looking at the distribution provided, we can see that ordering 50
+banapples will only cover 19% of the demand, ordering 100 banapples will cover 49% of the demand, ordering 150
+banapples will cover 74% of the demand, and ordering 200 banapples will cover 85% of the demand. So, the smallest
+allowable order quantity that covers at least 80% of the daily demand is 200. We should order 200 banapples each day.
+A full solution using data tables will be provided in a spreadsheet in the answer to the last question.
+
+Explanation
+We will use the estimated profit function:
+E(Profit(Q)) = (p-g)E(Demand) - (c-g)Q - (p-g+B) E(Units Short)
+where:
+p = $1.50 per item
+c = $0.30 per item
+g = 0 since there is no salvage value
+B = 0 since we have not specified any penalty for being short
+E(x) = expected daily demand of banapples. This is simply the sum of the product of the demand and its respective
+probability. E(x) = (0)(0.04) + (50)(0.15) + (100)(0.30) + (150)(0.25) + (200)(0.11) + (250)(0.10) + (300)(0.05) = 137. Or, I could
+j
+t
+th
+f
+l
+SUMPRODUCT(A2 A8 B2 B8) i
+th
+d h
+t
+id d
+li
+Part 3
+The New York City health Department is now cracking down on the improper disposal of fruit - especially banapples. Rather
+than just throwing the unsold banapples out at the end of each day, you have to pay the city to pick them up and haul them
+away. This costs you $0.15 for each banapple. Considering this new health policy, how many banapples should you order each
+evening to maximize your profit?
+Answer: 150
+Part 4
+What is your estimated weekly profit from selling banapples under this new disposal policy? Your stand is only open 5 days a
+week since no one eats banapples on the weekend. Enter the dollar value rounded to the nearest $50 increment, for example, if
+your answer is $202.50 then you would enter 200.
+Answer: 600
+just use the formula: =SUMPRODUCT(A2:A8,B2:B8) in the spreadsheets provided earlier.
+E(Units Short) = We don't have a nice Unit Normal Loss function here since it is not Normally distributed. Instead, since
+we know that Q=200 from part 2.1, then we will be 50 units short (250-200) 10% of the time and 100 units short (300-200)
+5% of the time and 0 units short the remaining 85% of the time. This gives us an expected units short of (50)(0.10) + (100)
+(0.05) = 10 units short.
+Putting it all together gives us:
+E(Profit(Q=200)) = (1.50 - 0)(137) - (0.30 - 0)(200) - (1.50 - 0 + 0)(10) = $130.5 per day or $652.50 per week.
+A full solution using data tables will be provided in a spreadsheet in the answer to the last question.
+
+Explanation
+This introduces a salvage value - but it is negative! Usually we would be able to sell an item for some reduced price, but in
+this case I incur an additional cost! So, my value for g = -0.15 per banapple while the price and cost remain at $1.50 and
+$0.30 per banapple, respectively. This means the shortage cost remains unchanged at
+= p - c = 1.50 - 0.30 = 1.20 while
+the excess cost
+= c - g = 0.30 - (-0.15) = $0.45. The critical ratio, CR, becomes
+= 0.727.
+That means we want to cover at least 73% of the demand distribution each day. Looking at the distribution provided, we
+can see that ordering 150 banapples will cover 74% of the demand. Therefore, we should order 150 banapples each day.
+A full solution using data tables will be provided in a spreadsheet in the answer to the last question.
+
+Explanation
+We will use the estimated profit function:
+E(Profit(Q)) = (p-g)E(Demand) - (c-g)Q - (p-g+B) E(Units Short)
+where:
+p = $1.50 per item
+c = $0.30 per item
+g = -0.15 since there is a negative salvage value
+B = 0 since we have not specified any penalty for being short
+E(x) = expected daily demand of banapples. This is simply the sum of the product of the demand and its respective
+probability. E(x) = (0)(0.04) + (50)(0.15) + (100)(0.30) + (150)(0.25) + (200)(0.11) + (250)(0.10) + (300)(0.05) = 137. Or, I could
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+just use the formula: =SUMPRODUCT(A2:A8,B2:B8) in the spreadsheets provided earlier.
+E(Units Short) = We don't have a nice Unit Normal Loss function here since it is not Normally distributed. Instead, since
+we know that Q=150 from part 2.3, then we will be 50 units short (200-150) 11% of the time, 100 units short (250-150)
+10% of the time, 150 units short (300-150) 5% of the time and 0 units short the remaining 74% of the time. This gives us
+an expected units short of (50)(0.11) + (100)(0.10) + (150)(0.05) = 23 units short each day.
+Putting it all together gives us:
+E(Profit(Q=150)) = (1.50 + 0.15)(137) - (0.30 + 0.15)(150) - (1.50 + 0.15 + 0)(23) = $120.6 per day or $603 per week. Round
+this to $600 per week.
+So, we can see that this policy is costing us on average about $50 a week in lost profit. You could use this model to test
+the sensitivity of the parameters to see, for example, what price would I have to charge to maintain my profitability,
+assuming the demand does not change, of course. Or, what cost would I need to negotiate in order to maintain
+profitability, etc.
+The solutions are available for Excel here and for LibreOffice here .
+
+
+================================================================
+Practice Problem 6: The last run
+
+A new model of the very popular iGalaxy smartphone is about to be launched. The iGalaxy 52 is to be replaced by the
+brand new iGalaxy H52 which allow users to watch all their favorite videos in 3D (including the SCx videos) thanks to a
+new technology developed by in some researchers from the MIT Media Lab.
+The manufacturer wants to celebrate this launch by creating a collector's edition of a Gold iGalaxy 52 for its most valuable
+clients and must decide how much to make with the last manufacturing run before iGalaxy 52 is discontinued. The firm
+currently has zero Gold smartphones in stock and the forecast for the  demand is 4 units. (The forecast is the mean of
+the distribution.)
+The demand over the lifetime of the product is assumed to be a Poisson distributed random variable (a reasonable
+assumption: table attached). It costs you $100 to procure and manufacture each phone overseas. You sell each iGalaxy
+52  at $1,100 a unit.
+Tables of the cumulative Poisson Distribution
+Part 1
+(Hint: You should probably solve this problem using a Poisson data table, as shown in Video 5 of Lesson 1.)
+For this last batch, you want to know how many of the Gold iGalaxy 52 phones to produce. How many Gold iGalaxy 52 should
+you manufacture to maximize your profit?
+Answer: 7
+Explanation
+This is a straightforward single period model that can be solved using a Poisson data table.
+You know that the price is $1,100 and the cost is $100 per smartphone. This means the shortage cost
+= p - c = 1,100 -
+100 = 1,000 and the excess cost
+= 100 which gives us a critical ratio, CR
+= 0.909. The
+parameter is large because a stockout will disappoint customers and because the product will not be manufactured
+again. That means we want to cover at least 90.9% of the demand distribution.
+The table provided shows the Poisson probabilities p(D) and the cumulative Poisson probabilities P(D) for lambda=4. The
+optimal (maximum expected profit) value of Q can be found by finding the smallest value of Q such that P(Q) > 0.909.
+Looking at the tables for
+, we can see that ordering 6 Gold smartphones will only cover 88.9% of the demand, and
+ordering 7 gold smartphones will cover 94.9% of the demand. So, the smallest allowable order quantity that covers at
+least 90.9% of the demand is 7. We should produce 7 smartphones for the last batch.
+
+Part 2
+What is your estimated profit from selling this Gold iGalaxy 52 if you produce the quantity determined in part one? Remember
+that for a Poisson distribution, the expected profit is
+. Enter the dollar
+value rounded to the nearest $100 increment, for example, if your answer is $202.50 then you would enter 200.
+Answer: 3600
+Part 3
+The Supply Chain Manager is not sure to sell all his special smartphones. Rather than just throwing the unsold phones out, you
+can use the resell some of the gold you used in the manufacturing process to a jewelry store for $80 salvage value. Considering
+this new policy, how many Gold iGalaxy 52 smartphones should you now produce to maximize your profit?
+Answer: 9
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+We will use the estimated profit function:
+E(Profit(Q)) =
+.
+where:
+p = $1,100 per item
+c = $100 per item
+g = 0 since there is no salvage value
+E(x) = 4
+Putting it all together gives us:
+E(Profit(Q=7)) = ( 1,100)(4*P(6) -7*P(7))+( 1,100 - 100)7 =( 1100)*(4*0.8893-7*0.9489)+( 1100-100)*7=$3,607
+
+Explanation
+This introduces a salvage value! So, my value for g = 80 per phone while the price and cost remain the same.
+This means the shortage cost remains the same at
+= p - c = 1,100 - 100 = 1,000 and the excess cost
+= c - g =100 - 80
+= 20 which gives us a critical ratio, CR
+= 0.9803. The optimal (maximum expected profit) value of Q
+can be found by finding the smallest value of Q such that P(Q) > 0.9803.
+Looking at the distribution provided, we can see that ordering 8 Gold smartphones will only cover 97.86% of the demand,
+and ordering 9 gold smartphones will cover 99.19% of the demand. So, the smallest allowable order quantity that covers
+at least 98.0% of the demand is 9. We should now produce 9 smartphones for the last batch with the salvage value policy.
+
+
+================================================================
+Practice Problem 7: The Supply Chain Management Textbook
+
+The MIT Book Store is selling a popular book on Supply Chain Management. The book is used as the textbook in a supply
+chain course during the fall semester, and is sold by the store at $160 per book. Once the semester is half-way through,
+sales tend to drop. At this point, since the book store needs to use its retail space for other books, the store clears any
+remaining inventory of the supply chain book by selling it at $60.
+The supply chain course has approximately 500 students every fall semester. During previous semesters, the book has
+sold 200 copies on average (at full price).
+The book store purchases the books from a distributor at $100 per book. There is a significant lead time from the
+distributor, so orders for the book need to be placed well before the semester. Also, due to the lead time, there is no time
+to replenish the books once the semester starts. Consequently, the book store needs to make a single decision about
+how many books to order before the start of the semester.
+Looking at previous semesters' sales, a manager at the book store sees that they have never sold more than 250 copies
+of the book (at full price). The data also shows that they have sold as few as 100 books in some semesters (at full price).
+Based on this, she believes that ordering the average sales in previous semesters, that is, 200 books, is a good policy for
+the upcoming semester.
+Part 1
+Suppose demand is symmetric around the mean. Without using formal analysis, would you agree that using the average
+sales in previous semesters (200 units) as the order quantity is the best policy?
+Part 2
+Suppose the demand during a semester is actually normally distributed with mean 220 and standard deviation 30. What
+is the optimal order quantity?
+Answer: 227.6
+No, she should order less than 200
+No, she should order more than 200
+
+Yes, ordering 200 maximizes expected profit
+We need more information to answer the question
+None of the above
+Explanation
+For all parts of this practice problem, see the Recitation Session for detailed solutions.
+
+Explanation
+Part 3
+Suppose demand is instead uniformly distributed with min 0 and max 300. What is the optimal order quantity?
+Answer: 180
+Part 4
+Suppose demand is still uniformly distributed with min 0 and max 300. If the manager wants the probability of having
+excess inventory that needs to be cleared at the lower price to be less than 20%, how many books should then be
+ordered?
+Enter the maximum number of books that fulfill the criterion.
+Answer: 60
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Explanation
+For all parts of this practice problem, see the Recitation Session for detailed solutions.
+
+Explanation
+For all parts of this practice problem, see the Recitation Session for detailed solutions.
+
+Explanation
+For all parts of this practice problem, see the Recitation Session for detailed solutions.
+
+
+================================================================
+Practice Problem 8: The COOP notebooks
+
+The COOP is the Co-operative Retail store that is owned and operated by MIT and Harvard.   Interestingly, it is
+pronounced as "ko͞op" rhyming with "hoop" and not "co-op".  The Kendall Square COOP location sells special notebooks
+with the year embossed on them.  They cost the COOP $6.00 and they sell them for $12.00 each.   Data from previous
+years suggest that demand is well described by a normal distribution with mean value 60 and standard deviation 10.  You
+can only order these once a year, unfortunately, and any notebooks that remain unsold after December are returned to
+the publisher for a $2.00 "salvage" credit.  There is only one opportunity to order the notebooks each year.
+Part 1
+How many COOP notebooks should the store order this year? Round to the closest integer value.
+Answer: 63
+Part 2
+Suppose the supplier is willing to decrease the unit cost they charge the COOP in order for the COOP to increase its order
+quantity by 20%. What is the cost per notebook that the supplier would have to charge in order to incentivize the COOP
+to order 20% more each year? Your answer should be in dollars with 3 significant figures.
+Answer: 2.55
+Explanation
+Since each notebook costs $6 to buy and the salvage cost is $2, the excess holding cost per unit is given by:
+= 6 - 2 = 4
+The shortage cost is the lost profit:
+= 12 - 6 = 6
+Given these values of ce and cs, the critical ratio is:
+We know the average or mean of the demand =60 with a standard deviation of σ=10. We can find the size of Q using
+this instruction in Excel or LibreOffice:
+=NORMINV(0.6,60,10)
+This way we find that Q = 62.53. Rounded to the nearest integer, it is 63 notebooks.
+Alternatively, we can use the Unit Normal Tables where the probability of not stocking out (or the Cycle Service Level) is
+equal to the Critical Ratio, 0.60. This gives us a k value of 0.25. With this k, I can then solve for Q
+62.5 ~ 63 notebooks. Note that the Normal tables will not provide as much accuracy as
+the spreadsheet formulas.
+
+Explanation
+First, we need to find out what the new order size would be. The new Q = 1.2*63 = 75.6 = 76 units
+Now we want to find out what Critical Ratio would incent the COOP to order that many notebooks. P(CR < Q) = P(CR) < 76)
+= P(Z < (76 -60)/10) = P(Z < 1.60) . Look for P(Z < 1.60) in a Standard Normal table or use NORMSDIST(1.6) in Excel. The
+result is 0.9452 for the Critical Ratio.
+Now we want to find the cost per item that would give us this Critical Ratio: P(CR < Q) = 0.9452 = (12 - c)/(12 - 2)
+Solving for c gives us a new reduced cost per notebook c=$2.55
+So, essentially, increasing the COOP's profit margin (p-c) from 6 $/notebook to 9.45 $/notebook will incentivize them to
+order a larger quantity since the cost of stocking out (lost profit) has gotten bigger.
+Part 3
+The supplier has decided to NOT offer a discount, so the cost to the COOP remains at 6 $/notebook. The COOP's owner is
+still concerned that there might not be enough notebooks. He is convinced that for every person that doesn't get to buy a
+notebook, the store loses around $5 worth of additional profit from sales in pens and pencils these people would have
+bought. Using $5 as an additional penalty per lost sale, how many notebooks should the COOP order now? Round your
+answer to the closest integer.
+Answer: 66
+Part 4
+Just a final easy question for the fun. What picture represents the MIT COOP?
+
+Explanation
+We have that:
+= 6 - 2 = 4
+= 12 - 6 + 5 = 11
+Given these values of ce and cs, the critical ratio is:
+. So, we want to cover 73.3% of the demand distribution.
+We know that demand has a mean of
+and standard deviation of σ=10. We can find the size of Q using this
+formula in Excel or LibreOffice: =NORMINV(0.733,60,10) = 66.219
+Rounding this to the nearest integer gives us Q = 66 notebooks. So, this increase in the shortage or stockout costs will
+lead to an increase in the number of notebooks ordered each year by just 3. The idea of having an item (sometimes called
+a loss-leader) priced very low in order to bringing additional revenue from other sales is a common practice for retailers.
+
+Picture on the Left
+Picture in the Middle
+
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Picture on the Right
+Explanation
+The right answer is picture 2 which represents the MIT COOP at Kendall Square. The first picture is the iconic MIT dome
+and picture 3 represents Tim the beaver, the MIT mascot standing in front of the student center.
+
+
+================================================================
+Practice Problem 9: Kendall Square Water
+
+Summer is high season for tourism in Boston: tens of thousands of tourists visit the city's historical landmarks. Many
+visitors take guided tours around Boston and Cambridge in trolleys, double-deck buses and even amphibian boat-buses.
+Many of these guided tours make a stop at MIT, in a place called Kendall Square. The thousands of tourists that stop in
+Kendall every summer, usually thirsty, are a great market for cold bottled water.
+A local store based in Kendall takes advantage of this opportunity by placing dozens of water bottles in huge blue buckets
+with iced in the shade, within sight of the tourists. The colder the water bottles are, the better they sell. It takes usually
+several hours to chill the bottles, so the decision of how many bottles to prepare for sale is taken the previous day.
+Part 1
+You have been asked by a local Kendall store to help them calculate the number of water bottles they should chill and
+stock in the ice buckets, ready to sell to tourists each day.
+Based on historical data, you have determined the daily demand for bottled water in Kendall during the summer is – on
+average – normally distributed with a mean of 400 bottles, with a standard deviation of 100 bottles. The store buys the
+water bottles at 55 cents a piece, and spends an additional 10 cents in electricity and ice to chill it and keep it that way. A
+chilled bottle is sold to the tourists at 1 dollar a piece. Since the labels of the bottles deteriorate under water, the bottles
+that do not sell at the end of the day have to be discarded at a loss.
+How many water bottles should the store prepare for sale every day? Round to the closest multiple of 10.
+Answer: 360
+Part 2
+Using the solution from Part 1, what is the expected daily profitability? (Round to the nearest dollar)
+Answer: 103
+Explanation
+Since each bottle costs $0.55 to buy and $0.10 to chill, the excess holding cost per unit is given by:
+= 0.55 + 0.10 = 0.65
+The shortage cost is the lost profit:
+= 1.00 - 0.65 = 0.35
+Given these values of ce and cs, the critical ratio is:
+We know that demand is D=400 with a standard deviation of σ=100. We can find the size of Q using this instruction in
+Excel or LibreOffice:
+=NORMINV(0.35,400,100)
+This way we find that Q = 362. Rounded to the nearest multiple of 10, it is 360 bottles.
+
+Explanation
+Calculating the cost of the new policy requires using the profitability equation discussed in the lesson. Given the demand
+and variability, with Q=360, we have that k = -0.40, G(k) = 0.63 and the expected units short E[US] = 63. Now we resort to
+the profit equation, and plug in all the required values.
+E[P] = (p) (D) – (c) (Q) – (p) E[US]
+E[P] = (1) (400) – (0 65) (360) – (1) (63)
+Part 3
+The store's owner is concerned that your recommendation calls for stocking much less water than he is used to. He is
+convinced that for every person that doesn't get to buy water, the store loses around 50 cents worth of profit from sales
+in snacks and other things these people would have bought.
+Using 50 cents as an additional penalty per lost sale, how many water bottles should the store prepare for sale every day?
+Round to the closest multiple of 10.
+Answer: 420
+Part 4
+The store owner's daughter is not happy with the wasteful policy of throwing away the bottles of water at the end of the
+day due to the damaged labels. "We should buy bottles with plastic labels, so that they can survive being in the water.
+That way we won't have to throw them away." The bottles with plastic labels cost 10 cents more a piece, but can be sold
+the next day (this is the equivalent of having a salvage value of 65 cents.)
+Using this new salvage value (and the penalty cost from part 3), how many water bottles should the store prepare for sale
+every day ? Round to the closest multiple of 10.
+Answer: 520
+E[P]  (1) (400)  (0.65) (360)  (1) (63)
+E[P] = 400 – 234 – 63 = 103
+Thus, the estimated profitability of this policy is $103.
+
+Explanation
+We have that:
+= (0.55 + .10) = 0.65
+= 1.00 - 0.65 + .50 = 0.85
+Given these values of ce and cs, the critical ratio is:
+We know that demand is D=400 with a standard deviation of σ=100. We can find the size of Q using this instruction in
+Excel or LibreOffice:
+=NORMINV(0.57,400,100)
+This way we find that Q = 417. Rounded to the nearest multiple of 10, it is 420 bottles.
+
+Explanation
+We have that:
+= (0.65 + .10) - 0.65 = 0.10
+= 1.00 - 0.75 + .50 = 0.75
+Given these values of ce and cs, the critical ratio is:
+We know that demand is D=400 with a standard deviation of σ=100. We can find the size of Q using this instruction in
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+Excel or LibreOffice:
+=NORMINV(0.88,400,100)
+This way we find that Q = 519. Rounded to the nearest multiple of 10, it is 520 bottles.
+
+
+================================================================
+Practice Problem 10: Lapiwi Logistics Litd.
+
+You have been hired to serve as Logistics Director at Lapiwi Logistics Ltd., a trucking company based in Boston and
+servicing the New England area. One of Lapiwi's largest customers is Titini Foods Co., a family-owned company dedicated
+to the manufacture of frozen foods, such as ice cream and frozen pizza. Business from Titini Foods represents about a
+third of Lapiwi Logistics annual revenue, which makes it a very important client.
+One of your first decisions as Logistics Director of Lapiwi Logistics is to determine the size of the dedicated fleet for
+servicing Titini Foods over next three months. Titini Foods ships products five days a week from its plant in Springfield,
+Massachusetts, to several Distribution Centers in the New England area, all of them located less than half a day’s travel
+away. Due to the proximity of these DCs to the Springfield plant, you can expect all trucks to return the same day.
+Lapiwi Logistics has to commit to buying (or leasing) a number of trucks and to hiring drivers at the start of the three
+month period.   They cannot adjust the size of this fleet during the three month period.  The cost to Lapiwi Logistics of
+having a truck and driver available as part of the fleet is $575 per day. If Titini Foods happens to need a truck that day,
+Lapiwi will charge them $1590 per day per truck. Since these trucks are dedicated, on days when Titini Foods does not
+need them, the trucks just stay in the yard.
+Based on historical data on Titini Food's demand for trucks over the last twelve months, you have concluded that their
+demand for trucks each day is normally distributed with a mean of 15 trucks and a standard deviation of 3 trucks.
+Part 1
+In your role as Logistics Director for Lapiwi Logistics, and with the goal of maximizing expected profit, how many trucks would
+you recommend the company should commit to a dedicated fleet for serving Titini Foods? Enter an integer value.
+Answer: 16
+Part 2
+Using the Solution from Part 1, Determine the probability that - on any particular day - Lapiwi Logistics will not have enough
+trucks in that dedicated fleet to serve the needs of Titini Foods. Enter a number from 0 to 1 to two decimal places.
+Answer: .36
+Explanation
+Given that Titini Foods’ demand for trucks each day is normally distributed with a mean of 15 and a standard deviation of
+3, we can approach this problem as the Newsboy problem. If we can assess the shortage and excess costs, it can help us
+calculate the Critical Ratio which will allow us to assess the percentage of demand distribution to cover.
+Using Spreadsheet,
+µ
+= 16.06 ~16
+OR
+Using Normal Tables we can find  value for the P(u≤k) = 0.638 to be ~ 0.355.
+µ
+=
+If your answer was 17, you just rounded incorrectly - we still gave you credit for the problem. Use Q = 16 trucks for the
+next part of the problem.
+
+Part 3
+Assume, again, a fleet of 16 trucks. On how many days, over the three-month period, do you expect Lapiwi's dedicated fleet
+would run out of trucks to serve Titini Foods? You can assume there are 4 weeks in each month. Recall that Titini Foods only
+ships product 5 days per week. Please round your answer to the nearest integer.
+Answer: 22
+Part 4
+Considering how much it charges Titini Foods for its services, and assuming a fleet of 16 dedicated trucks, what is the expected
+profitability for Lapiwi Logistics per typical work day? Please round the answer to the nearest multiple of $100, e.g., if your
+solution is $459.32, enter 500 and if your solution is $1940.90, enter 1900.
+Answer: 13400
+Explanation
+The probability of not having a truck can be calculated as the probability of a stock out in the Newsboy problem. Using
+the Critical Ratio we found in part 3.1 we can calculate:
+Alternatively, if we set the number of trucks to 16, then we actually have a new k factor that can be found by:
+µ
+so that
+µ
+Looking at the Normal Tables k=0.33 gives you P(u is less than k) =
+0.6293 so that P(SO) = 1 - 0.6293 = 0.3707 or 0.37.
+Either answer is acceptable.
+
+Explanation
+Remember that Titini foods only ships five days per week. Over a three-month period, each month with four weeks, and
+each week with five days, there will be is 3*4*5 = 60 days of delivery. If we stockout 36% of the time, a stockout can be
+expected to occur on about 22 of these 60 days, on average.
+
+Explanation
+We learned to calculate the expected profitability from a Newsboy problem in Lesson 2. If you need a reminder, please
+revisit video lectures 1 and 2 in that lesson. The expected profit can be calculated as
+The mean value is given as 15, therefore
+so that ordering Q=16 trucks would give us a
+.
+Using the Normal tables we can now pick the Loss Function
+for a k value of 0.33
+We can now calculate the expected unit short given by the formula:
+Rounded to the nearest multiple of $100, the answer is $13,400 per day.
+Part 5
+You have presented to the CEO of Lapiwi Logistics a recommendation to buy 16 trucks to serve Titini Foods. "This is very
+interesting," she says, "but it seems to me that your recommendation to get 16 trucks is based on the assumption that,
+whenever we do not have a truck available in that fleet, we can just tell Titini Foods to find another truck on their own.
+But that's not how it works! They are a very important customer, and we provide them not with trucks, but with a trucking
+solution. I want you to revise your numbers to account for the fact that, if we run out of trucks, it is our job to go out to
+the spot market and find a truck and send it to them, on our dime."
+Assume that you will have a dedicated fleet with a given number of truck and driver pairs, at a cost of $575 per truck per
+day. Assume also that, on days when you do not have sufficient truck capacity in your dedicated fleet, you are able to go
+on the spot market and secure a truck and driver at a cost to you of $3600 per day. With this in mind, how big should
+your dedicated fleet be to serve Titini Foods? Enter an integer.
+Answer: 18
+Part 6
+The CEO of Lapiwi Logistics is seriously considering your revised recommendation for the dedicated fleet for Titini Foods. Before
+committing, she wants to know how many days, over the three month period, you would expect to not have enough trucks to
+serve Titini. Assume 4 weeks in each month and use the fleet size from the answer to Part 5. Enter an integer.
+Answer: 10
+
+Explanation
+OK, this was a tricky one. This is still a Newsvendor problem, but now we have some more costs to consider.
+As with all Newsvendor problems, you should always first find the cost of shortage and excess. In this case, if we have too
+small of a fleet, then we will not only lose our margin
+but we will also have to pay an additional amount of $3600 to
+find a truck on the spot market to cover the load, BUT we will also still get paid $1590 by Titini Foods. This is essentially
+what we called B or an additional penalty for not satisfying demand in the lesson (see Video 2 of Lesson 2). The value B =
+$3600 - $1590 = $2010. This is the additional amount beyond the normal margin that I will lose for each truck that I am
+short. This makes the shortage (or underage) cost =
+= 1590 - 575 + 2010 = 3025. The overage cost is still
+just the cost of having the truck and driver in your dedicated fleet that is not used that day, e.g.
+So, this makes the
+This gives us a k value of 0.995 ~ 1.00.
+So, the dedicated fleet size should be
+trucks.
+Use this fleet size of 18 trucks going forward in this problem. Do not be too upset if you did not get this one absolutely
+correct - it was pretty tricky!
+
+Explanation
+Over a three-month period, this is 3 months * 4 weeks/months * 5 days/week = 60 days of delivery. We have a CR = 0.840
+so that P(SO) = 1- 0.840 = 0.16. If we stockout 16% of the time, this will occur 60(0.16) = 9.6 days on average, which we
+round up to 10.
+Part 7
+Thinking about buying the new trucks makes the CEO worry about the profitability of Lapiwi Logistics. It strikes her as
+wasteful to have those new, unused trucks sitting in the yard on days when Titini Foods doesn't need them. In a moment
+of genius, you decide to find a secondary market for the extra trucks.
+On days when Titini Foods does not need the entire fleet, Lapiwi Logistics will be able to lease these unused trucks to the
+local food bank, to distribute food, for a modest rate of $270 per truck per day, which is better than nothing. Considering
+this, how many trucks would you recommend for the Titini Foods dedicated fleet?
+Answer: 19
+Part 8
+Assuming they accept your recommendation from Part 7, how many days will you expect to not have enough trucks in your
+dedicated fleet to serve Titini Foods, over a three-month period? Assume 4 weeks in each month.
+Answer: 5.5
+discussion forum below. Your post will be indexed in the right category and it will be easier for the staff to answer it!
+
+Explanation
+We can consider this extra revenue as a salvage value or g. So, lets think of the shortage and excess costs. The shortage
+costs are still
+= p - c + B = 1590 - 575 + 2010 = 3025. The excess cost now becomes
+= c - g = 575-270 = 305.
+This gives a k value of 1.33 so the fleet size should be = 15 + 1.33 * 3 = 18.99 or 19 trucks.
+Alternatively, we find the solution in a spreadsheet with NORMINV(.908,15,3).
+
+Explanation
+Over a three-month period, this is 3 months * 4 weeks/month * 5 days/week = 60 days of delivery.
+If our CR = 0.908, then we are stocking out 9.2% of the time so that this will occur 60(0.092) = 5.52 days over the three
+month period.
+

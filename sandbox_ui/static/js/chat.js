@@ -1319,7 +1319,7 @@
         createStepLabel.textContent =
           `Step ${createStep + 1} of ${s.length}: ${STEP_LABELS[step]}`;
         createNext.textContent =
-          createStep === s.length - 1 ? "Create & start chat" : "Continue";
+          createStep === s.length - 1 ? "Create & Start Chat" : "Continue";
       }
     }
 
@@ -1330,7 +1330,7 @@
 
     createBack.hidden = createStep === 0;
     createNext.textContent =
-      createStep === steps.length - 1 ? "Create & start chat" : "Continue";
+      createStep === steps.length - 1 ? "Create & Start Chat" : "Continue";
     createNext.disabled = false;
   }
 

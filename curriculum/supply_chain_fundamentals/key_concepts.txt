@@ -1,0 +1,2554 @@
+Key Concepts Document (KCD) — SC1x Supply Chain Fundamentals
+
+2.1
+Core Supply Chain Concepts
+2.1.1
+Summary
+Virtually all supply chains are a combination of push and pull systems. A push system is where execution
+is performed ahead of an actual order so that the forecasted demand, rather than actual demand, has to be
+used in planning. A pull system is where execution is performed in response to an order so that the actual
+demand is known with certainty. The point in the process where a supply chain shifts from being push
+to pull is sometimes called the push/pull boundary or push/pull point. In manufacturing, the push/pull
+point is also known as the decoupling point (DP) or customer order decoupling point (CODP). The CODP
+coincides with an important stock point, where the customer order arrives (switching inventory based on
+a forecast to actual demand), and also allows to diﬀerentiate basic production systems: make-to-stock,
+assemble-to-order, make-to-order, or engineer-to-order.
+Postponement is a common strategy to combine the beneﬁts of push (product ready for demand) and
+pull (fast customized service) systems. Postponement is where the undiﬀerentiated raw or components
+are “pushed” through a forecast, and the ﬁnal ﬁnished and customized products are then “pulled”.
+Segmentation is a method of dividing a supply chain into two or more groupings where the supply
+chains operate diﬀerently and more eﬃciently and/or eﬀectively. While there are no absolute rules for
+segmentation, there are some rules of thumb, such as: items should be homogeneous within the segment
+and heterogeneous across segments; there should be critical mass within each segment; and the segments
+need to be useful and communicable. A segment only makes sense if it does something diﬀerent (planning,
+inventory, transportation etc.) from the other segments. The most common segmentation is for products
+using an ABC classiﬁcation.
+In an ABC segmentation, the products driving the most revenue (or proﬁt or sales) are Class A items
+(the important few). Products driving very little revenue (or proﬁt or sales) are Class C items (the trivial
+many), and the products in the middle are Class B. A common breakdown is the top 20% of items (Class
+A) generate 80% of the revenue, Class B is 30% of the products generating 15% of the revenue, and the
+Class C items generate less than 5% of the revenue while constituting 50% of the items.
+Supply chains operate in uncertainty. Demand is never known exactly, for example. In order to handle
+and be able to analyze systems with uncertainty, we need to capture the distribution of the variable in
+question. When we are describing a random situation, say, the expected demand for pizzas on a Thursday
+night, it is helpful to describe the potential outcomes in terms of the central tendency (mean or median) as
+well as the dispersion (standard deviation, range). We will often characterize the distribution of potential
+outcomes as following a well-known function such as Normal and Poisson.
+2.1.2
+Key Concepts
+Pull vs. Push Process
+• Push — work performed in anticipation of an order (forecasted demand)
+• Pull — execution performed in response to an order (demand known with certainty)
+• Hybrid or Mixed — push raw products, pull ﬁnished product (postponement or delayed diﬀerentiation)
+• Push/pull boundary point — point in the process where a supply chain shifts from being push to pull
+• In manufacturing, also known as “decoupling point” (DP) or “customer order decoupling point”
+(CODP) — the point in the material ﬂow where the product is linked to a speciﬁc customer
+• Mass customization / Postponement — to delay the ﬁnal assembly, customization, or diﬀerentiation of
+a product until as late as possible
+Segmentation
+• Diﬀerentiate products in order to match the right supply chain to the right product
+Supply Chain Fundamentals
+• Products typically segmented on
+– Physical characteristics (value, size, density, etc.)
+– Demand characteristics (sales volume, volatility, sales duration, etc.)
+– Supply characteristics (availability, location, reliability, etc.)
+• Rules of thumb for number of segments
+– Homogeneous—products within a segment should be similar
+– Heterogeneous—products across segments should be very diﬀerent
+– Critical Mass—segment should be big enough to be worthwhile
+– Pragmatic—segmentation should be useful and communicable
+• Demand follows a power law distribution, meaning a large volume of sales is concentrated in few
+products
+Power Law
+The distribution of percent sales volume to percent of SKUs (Stock Keeping Units) tends to follow a
+Power Law distribution (y = axk) where y is percent of demand (units or sales or proﬁt), x is percent
+of SKUs, and a and k are parameters. The value for k should obviously be less than 1 since if k=1 the
+relationship is linear. In addition to segmenting according to products, many ﬁrms segment by customer,
+geographic region, or supplier. Segmentation is typically done using revenue as the key driver, but many
+ﬁrms also include variability of demand, proﬁtability, and other factors, to include:
+• Revenue = Average sales * Unit sales price
+• Proﬁt = Average sales * Margin
+• Margin = Unit sales price – Unit cost
+Handling Uncertainty
+Uncertainty of an outcome (demand, transit time, manufacturing yield, etc.) is modeled through a prob-
+ability distribution. We discussed two in the lesson: Poisson and Normal.
+Normal Distribution ∼N(µ, σ)
+This is the Bell Shaped distribution that is widely used by both practitioners and academics. While not
+perfect, it is a good place to start for most random variables that you will encounter in practice such as
+transit time and demand. The distribution is both continuous (it can take any number, not just integers
+or positive numbers) and is symmetric around its mean or average. Being symmetric additionally means
+the mean is also the median and the mode. The common notation that we will use to indicate that some
+value follows a Normal Distribution is ∼N(µ, σ) where mu, µ , is the mean and sigma, σ, is the standard
+deviation. Some books use the notation ∼N(µ, σ) showing the variance, σ2, instead of the standard
+deviation. Just be sure which notation is being followed when you consult other texts.
+The normal distribution is formally deﬁned as:
+fx(x0) = e
+−(x0−µ)2
+2σ2x
+σx
+√
+2π
+We will also make use of the Unit Normal or Standard Normal Distribution. This is ∼N(0,1) where
+the mean is zero and the standard deviation is 1 (as is the variance, obviously). The chart below shows
+FIGURE 2.1: Standard Normal Distribution
+the standard or unit normal distribution. We will be making use of the transformation from any Normal
+Distribution to the Unit Normal (See Figure 1).
+We will make extensive use of spreadsheets (whether Excel or LibreOﬃce) to calculate probabilities
+under the Normal Distribution. The following functions are helpful:
+• In Excel 2007 and above, NORM.DIST(x, µ, σ, true) = the probability that a random variable is less
+than or equal to x under the Normal Distribution ∼N(µ, σ). So, that NORM.DIST(25, 20, 3, 1) =
+0.952 which means that there is a 95.2% probability that a number from this distribution will be less
+than 25. For Excel 2003, use the above function without the period, i.e, NORMDIST(25, 20, 3, 1).
+• In Excel 2007 and above, NORM.INV(probability, µ, σ) = the value of x where the probability that a
+random variable is less than or equal to it is the speciﬁed probability. So, NORM.INV(0.952, 20, 3) =
+25. For Excel 2003, use the above function without the period, i.e NORMINV(0.952, 20, 3).
+To use the Unit Normal Distribution ∼N(0,1) we need to transform the given distribution by cal-
+culating a k value where k=(x - µ)/σ. This is sometimes called a z value in statistics courses, but in
+almost all supply chain and inventory contexts it is referred to as a k value. So, in our example, k = (25
+– 20)/3 = 1.67. Why do we use the Unit Normal? Well, the k value is a helpful and convenient piece of
+information. The k is the number of standard deviations the value x is above (or below if it is negative)
+the mean. We will be looking at a number of speciﬁc values for k that are widely used as thresholds in
+practice, speciﬁcally:
+• Probability (x ≤0.90) where k = 1.28
+• Probability (x ≤0.95) where k = 1.645
+• Probability (x ≤0.99) where k = 2.33
+Because the Normal Distribution is symmetric, there are also some common conﬁdence intervals:
+• µ ± σ 68.3% — meaning that 68.3% of the values fall within 1 standard deviation of the mean,
+• µ ± 2σ 95.5% — 95.5% of the values fall within 2 standard deviations of the mean, and
+• µ ± 3σ 99.7% — 99.7% of the values fall within 3 standard deviations of the mean.
+In a spreadsheets you can use the functions:
+• NORM.S.DIST(k,1)= the probability that a random variable is less than k units above (or below)
+mean. For example, NORM.S.DIST(2.0, 1) = 0.977 meaning the 97.7% of the distribution is less than
+2 standard deviations above the mean. For excel 2003, use the function without period, i.e, NOR-
+MDIST(k).
+Supply Chain Fundamentals
+• NORM.S.INV(probability)=
+the
+value
+corresponding
+to
+the
+given
+probability.
+So
+that
+NORM.S.INV(0.977) = 2.0. If I then wanted to ﬁnd the value that would cover 97.7% of a speciﬁc
+distribution, say where N(279, 46) I would just transform it. Since k=(x - µ)/σ for the transformation,
+I can simply solve for x and get: x = µ + kσ = 279 + (2.0)(46) = 371. This means that the random
+variable ∼N(279, 46) will be equal or less than 371 for 97.7% of the time. For older versions of Excel,
+use NORMSINV(probability).
+Poisson distribution ∼Poisson (λ)
+We will also use the Poisson (pronounced pwa-SOHN) distribution for modeling things like demand, stock
+outs, and other less frequent events. The Poisson, unlike the Normal, is discrete (it can only be integers
+≥0), always positive, and non-symmetric. It is skewed right – that is, it has a long right tail. It is very
+commonly used for low value distributions or slow moving items. While the Normal Distribution has two
+parameters (mu and sigma), the Poisson only has one, lambda, λ.
+Formally, the Poisson Distribution is deﬁned as shown below:
+p[x0] = Prob[x = x0] = e−λλx0
+x0!
+for
+x0 = 0, 1, 2, ...
+F[x0] = Prob[x ≤x0] =
+x0
+X
+x=0
+e−λλx
+x!
+The chart below (Figure 2) shows the Poisson Distribution for λ =3. The Poisson parameter λ is both
+the mean and the variance for the distribution! Note that λ does not have to be an integer.
+FIGURE 2.2: Poisson Distribution
+In spreadsheets, the following functions are helpful:
+• POISSON(x0, λ, false) =⇒P(x = x0) = the probability that a random variable is equal to x0 under
+the Poisson Distribution ∼P(λ). So, that POISSON(2, 1.56, 0) = 0.256 which means that there is a
+25.6% probability that a number from this distribution will be equal to 2.
+• POISSON(x0, λ, true) =⇒P(x ≤x0) = the probability that a random variable is less than or equal
+to x0 under the Poisson Distribution ∼P(λ). So, that POISSON(2, 1.56, 1) = 0.793 which means that
+there is a 79.3% probability that a number from this distribution will be less than or equal to 2. This
+is simply just the cumulative distribution function.
+Uniform distribution ∼U (a,b)
+We will sometimes use the Uniform distribution, which has two parameters: a minimum value a and
+a maximum value b. Each point within this range is equally likely to occur. To ﬁnd the cumulative
+probability for some value C, the probability that x ≤c = (c −a)/(b −a), that is, the area from a to c
+minus the total area from a to b. The expected value or the mean is simply (a + b)/2 while the standard
+deviation is = (b −a)/
+√
+12.
+Learning Objectives
+• Identify and understand diﬀerences between push and pull systems.
+• Understand why and how to segment supply chains by products, customers, etc.
+• Ability to model uncertainty in supply chains, primarily, but not exclusively, in demand uncertainty.
+References
+Push/Pull Processes: Chopra & Meindl Chpt 1; Nahmias Chpt 7; Segmentation: Nahmias Chpt 5; Silver,
+Pyke, & Peterson Chpt 3; Ballou Chpt 3 Probability Distributions: Chopra & Meindl Chpt 12; Nahmias
+Chpt 5; Silver, Pyke, & Peterson App B
+• Fisher, M. (1997) “What Is the Right Supply Chain for Your Product?,” Harvard Business Review.
+• Olavson, T., Lee, H. & DeNyse, G. (2010) “A Portfolio Approach to Supply Chain Design,” Supply
+Chain Management Review.
+2.2
+Demand Forecasting
+2.2.1
+Summary
+Forecasting is one of three components of an organization’s Demand Planning, Forecasting, and Manage-
+ment process. Demand Planning answers the question “What should we do to shape and create demand
+for our product?” and concerns things like promotions, pricing, packaging, etc. Demand Forecasting then
+answers “What should we expect demand for our product to be given the demand plan in place?” The ﬁ-
+nal component, Demand Management, answers the question, “How do we prepare for and act on demand
+when it materializes?” This concerns things like Sales& Operations Planning (S&OP) and balancing
+supply and demand.
+Within the Demand Forecasting component, you can think of three levels, each with its own time
+horizon and purpose. Strategic forecasts (years) are used for capacity planning, investment strategies,
+etc. Tactical forecasts (weeks to months to quarters) are used for sales plans, short-term budgets, inven-
+tory planning, labor planning, etc. Finally, operations forecasts (hours to days) are used for production,
+transportation, and inventory replenishment decisions. The time frame of the action dictates the time
+horizon of the forecast.
+Forecasting methods can be divided into being subjective (most often used by marketing and sales)
+or objective (most often used by production and inventory planners). Subjective methods can be further
+divided into being either Judgemental (someone somewhere knows the truth), such as sales force surveys,
+Delphi sessions, or expert opinions, or Experimental (sampling local and then extrapolating), such as
+customer surveys, focus groups, or test marketing. Objective methods are either Causal (there is an
+underlying relationship or reason) such as leading indicators, etc. or Time Series (there are patterns in
+the demand) such as exponential smoothing, moving average, etc. All methods have their place and their
+role. We will spend a lot of time on the objective methods but will also discuss the subjective ones as
+well.
+Regardless of the forecasting method used, you will want to measure the quality of the forecast. The
+two major dimensions of quality are bias (a persistent tendency to over- or under-predict) and accuracy
+Supply Chain Fundamentals
+(closeness to the actual observations). No single metric does a good job capturing both dimensions, so it
+is worth having multiple.
+2.2.2
+Key Concepts
+Forecasting Truisms
+1.
+Forecasts are always wrong – Yes, point forecasts will never be completely perfect. The solution
+is to not rely totally on point forecasts. Incorporate ranges into your forecasts. Also you should
+try to capture and track the forecast errors so that you can sense and measure any drift or
+changes.
+2.
+Aggregated forecasts are more accurate than dis-aggregated forecasts
+– The idea is that com-
+bining diﬀerent items leads to a pooling eﬀect that will in turn lessen the variability. The
+peaks balance out the valleys. The coeﬃcient of variation (CV) is commonly used to measure
+variability and is deﬁned as the standard deviation over the mean (CV=σ/µ). Forecasts are
+generally aggregated by SKU (a family of products versus an individual one), time (demand
+over a month versus over a single day), or location (demand for a region versus a single store).
+3.
+Shorter horizon forecasts are more accurate than longer horizon forecasts – Essentially this
+means that forecasting tomorrow’s temperature (or demand) is easier and probably more ac-
+curate than forecasting for a year from tomorrow. This is not the same as aggregating. It is
+all about the time between making the forecast and the event happening. Shorter is always
+better. This is where postponement and modularization helps. If we can somehow shorten the
+forecasting time for an end item, we will generally be more accurate.
+Forecasting Metrics
+There is a cost trade-oﬀbetween cost of errors in forecasting and cost of quality forecasts that must be
+balanced. Forecast metric systems should capture bias and accuracy.
+Notation:
+At: Actual value for observation t
+Ft: Forecasted value for observation t
+et: Error for observation t, et = At −Ft
+n: number of observations
+µ: mean
+σ: standard deviation
+CV: Coeﬃcient of Variation – a measure of volatility – CV= σ
+µ
+Formulas:
+Mean Deviation: MD=
+Pn
+t=1 et
+n
+Mean Absolute Deviation: MAD=
+Pn
+t=1 |et|
+n
+Mean Squared Error: MSE=
+Pn
+t=1 et
+n
+Root Mean Squared Error: RMSE=
+q Pn
+t=1 et2
+n
+Mean Percent Error: MPE=
+Pn
+t=1
+et
+At
+n
+Mean Absolute Percent Error: MAPE=
+Pn
+t=1
+|et|
+At
+n
+Statistical Aggregation: σ2
+agg = σ2
+1 + σ2
+2 + σ2
+3 + ... + σ2
+n
+σagg =
+p
+σ2
+1 + σ2
+2 + σ2
+3 + ... + σ2n
+µagg = µ1 + µ2 + µ3 + ... + µn
+Statistical Aggregation of n Distributions of Equal Mean and Variance:
+σagg =
+p
+σ2
+1 + σ2
+2 + σ2
+3 + ... + σ2n = σind
+√n
+µagg = µ1 + µ2 + µ3 + ... + µn = nµind
+CVagg = σ√n
+µn =
+σ
+µ√n = CVind
+√n
+2.2.3
+Time Series Analysis
+Time Series is an extremely widely used forecasting technique for mid-range forecasts for items that have
+a long history or record of demand. Time series is essentially pattern matching of data that are distributed
+over time. For this reason, you tend to need a lot of data to be able to capture the components or patterns.
+Business cycles are more suited to longer range, strategic forecasting time horizons. Three important time
+series models:
+• Cumulative – where everything matters and all data are included. This results in a very calm forecast
+that changes very slowly over time – thus it is more stable than responsive.
+• Na¨ıve – where only the latest data point matters. This results in very nervous or volatile forecast that
+can change quickly and dramatically – thus it is more responsive than stable.
+• Moving Average – where we can select how much data to use (the last M periods). This is essentially
+the generalized form for both the Cumulative (M = ∞) and Na¨ıve (M=1) models.
+All three of these models are similar in that they assume stationary demand. Any trend in the
+underlying data will lead to severe lagging. These models also apply equal weighting to each piece of
+information that is included. Interestingly, while the M-Period Moving Average model requires M data
+elements for each SKU being forecast, the Na¨ıve and Cumulative models only require 1 data element
+each.
+Components of time series
+• Level (a)
+– Value where demand hovers (mean)
+– Captures scale of the time series
+– With no other pattern present, it is a constant value
+• Trend (b)
+– Rate of growth or decline
+– Persistent movement in one direction
+Supply Chain Fundamentals
+FIGURE 2.3: Level (a)
+FIGURE 2.4: Trend (b)
+– Typically linear but can be exponential, quadratic, etc.
+• Season Variations (F)
+– Repeated cycle around a known and ﬁxed period
+– Hourly, daily, weekly, monthly, quarterly, etc. direction
+– Can be caused by natural or man-made forces
+FIGURE 2.5: Season Variations (F)
+• Random Fluctuation (e or ε)
+– Remainder of variability after other components
+– Irregular and unpredictable variations, noise
+Notation:
+xt: Actual demand in period t
+ˆxt,t+1 : Forecast for time t+1 made during time t
+a: Level component
+b: Linear trend component
+Ft: Season index appropriate for period t
+et: Error for observation t, et = At −Ft
+t: Time period (0, 1, 2,. . . n)
+Level Model: xt = a + et
+Trend Model: xt = a + bt + et
+Mix Level-Seasonality Model: xt = aFt + et
+Mix Level-Trend-Seasonality Model: xt = (a + bt)Ft + et
+Formulas:
+Time Series Models (Stationary Demand only):
+Cumulative Model: ˆxt,t+1 =
+Pt
+i xi
+t
+Na¨ıve Model: ˆxt,t+1 = xt
+M-Period Moving Average Forecast Model: ˆxt,t+1 =
+Pt
+i=t+1−M xi
+M
+• If M=t, we have the cumulative model where all data is included
+• If M=1, we have the na¨ıve model, where the last data point is used to predict the next data point
+2.2.4
+Exponential Smoothing
+Exponential smoothing, as opposed to Cumulative, Na¨ıve, and Moving Average, treats data diﬀerently
+depending on its age. The idea is that the value of data degrades over time so that newer observations of
+demand are weighted more heavily than older observations. The weights decrease exponentially as they
+age. Exponential models simply blend the value of new and old information.
+The alpha factor (ranging between 0 and 1) determines the weighting for the newest information versus
+the older information. The “α” value indicates the value of “new” information versus “old” information:
+• As α →1 , the forecast becomes more nervous, volatile, and na¨ıve
+• As α →0 , the forecast
+• t becomes more calm, staid, and cumulative
+• α can range from 0 ≤α ≤1, but in practice, we typically see 0 ≤α ≤0.3
+The most basic exponential model, or Simple Exponential model, assumes stationary demand. Holt’s
+Model is a modiﬁed version of exponential smoothing that also accounts for trend in addition to level. A
+new smoothing parameter, β, is introduced. It operates in the same way as the α.
+We can also use exponential smoothing to dampen trend models to account for the fact that trends
+usually do not remain unchanged indeﬁnitely as well as for creating a more stable estimate of the forecast
+errors.
+Supply Chain Fundamentals
+Notation:
+xt : Actual demand in period t
+xt,t+1 : Forecast for time t+1 made during time t
+α : Exponential smoothing factor for level (0 ≤α ≤1)
+β : Exponential smoothing factor for trend (0 ≤β ≤1)
+φ : Exponential smoothing factor for dampening (0 ≤φ ≤1)
+ω : Mean Square Error trending factor (0.01 ≤ω ≤0.1)
+Formulas:
+Simple Exponential Smoothing Model (Level Only) – This model is used for stationary demand.
+The “new” information is simply the latest observation. The “old” information is the most recent forecast
+since it encapsulates the older information.
+ˆxt,t+1 = αxt + (1 −α)ˆxt−1,t
+Exponential Smoothing for Level & Trend – also known as Holt’s Method, assumes a linear
+trend. The forecast for time t+τ made at time t is shown below. It is a combination of the latest estimates
+of the level and trend. For the level, the new information is the latest observation and the old information
+is the most recent forecast for that period – that is, the last period’s estimate of level plus the last period’s
+estimate of trend. For the trend, the new information is the diﬀerence between the most recent estimate
+of the level minus the second most recent estimate of the level. The old information is simply the last
+period’s estimate of the trend.
+ˆxt,t+τ = ˆat + τˆbt
+ˆat = αxt + (1 −α)(ˆat−1 + ˆbt−1)
+ˆbt = β(ˆat −ˆat−1) + (1 −β)ˆbt−1
+Damped Trend Model with Level and Trend – We can use exponential smoothing to dampen
+a linear trend to better reﬂect the tapering eﬀect of trends in practice.
+ˆxt,t+τ = ˆat +
+τ
+X
+i
+ϕiˆbt
+ˆat = αxt + (1 −α)(ˆat−1 + ϕˆbt−1)
+ˆbt = β(ˆat −ˆat−1) + (1 −β)ϕˆbt−1
+Mean Square Error Estimate – We can also use exponential smoothing to provide a more robust
+or stable value for the mean square error of the forecast.
+MSEt = ω(xt −ˆxt−1,t)2 + (1 −ω)MSEt−1
+2.2.5
+Exponential Smoothing with Holt-Winter
+Seasonality
+• For multiplicative seasonality, think of the Fi as “percent of average demand” for a period i
+• The sum of the Fi for all periods within a season must equal P
+• Seasonality factors must be kept current or they will drift dramatically. This requires a lot more book-
+keeping, which is tricky to maintain in a spreadsheet, but it is important to understand
+Forecasting Model Parameter Initialization Methods
+• While there is no single best method, there are many good ones
+• Simple Exponential Smoothing
+– Estimate level parameter a0 by averaging demand for ﬁrst several periods
+• Holt Model (trend and level)—must estimate both a0 and b0
+– Find a best ﬁt linear equation from initial data
+– Use least squares regression of demand for several periods variations, noise
+∗Dependent variable = demand in each time period = xt
+∗Independent variable = slope = β1
+∗Regression equation: xt = β0 + β1t
+• Seasonality Models
+– Much more complicated, you need at least two season of data but preferably four or more
+– First determine the level for each common season period and then the demand for all periods
+– Set initial seasonality indices to ratio of each season to all periods
+Notation:
+xt : Actual demand in period t
+xt,t+1 : Forecast for time t+1 made during time t
+α : Exponential smoothing factor (0 ≤α ≤1)
+β : Exponential smoothing trend factor (0 ≤β ≤1)
+γ : Seasonality smoothing factor (0 ≤γ ≤1)
+Ft : Multiplicative seasonal index appropriate for period t
+P : Number of time periods within the seasonality (note: PP
+i=1 ˆFi = P )
+Forecasting Models
+Holt-Winter Exponential Smoothing Model (Level, Trend, and Seasonality) – This model
+assumes a linear trend with a multiplicative seasonality eﬀect over both level and trend. For the level
+estimate, the new information is again the “de-seasoned” value of the latest observation, while the old
+information is the old estimate of the level and trend. The estimate for the trend is the same as for the
+Holt model. The Seasonality estimate is the same as the Double Exponential smoothing model.
+ˆxt,t+τ = ( ˆat + τˆbt) ˆFt+τ−P
+ˆat = α( xt
+ˆFt−P
+) + (1 −α)(ˆat−1 + ˆbt−1)
+ˆbt = β(ˆat −ˆat−1) + (1 −β)ˆbt−1
+ˆFt = γ(xt
+ˆat
+) + (1 −γ) ˆFt−P
+Double Exponential Smoothing (Seasonality and Level) – This is a multiplicative model in
+that the seasonality for each period is the product of the level and that period’s seasonality factor. The
+new information for the estimate of the level is the “de-seasoned” value of the latest observation; that
+is, you are trying to remove the seasonality factor. The old information is simply the previous most
+recent estimate for level. For the seasonality estimate, the new information is the “de-leveled” value of
+Supply Chain Fundamentals
+the latest observation; that is, you try to remove the level factor to understand any new seasonality. The
+old information is simply the previous most recent estimate for that period’s seasonality.
+ˆxt,t+τ = ˆat ˆFt+τ−P
+ˆat = α( xt
+ˆFt−P
+) + (1 −α)(ˆat−1)
+ˆFt = γ(xt
+ˆat
+) + (1 −γ) ˆFt−P
+Normalizing Seasonality Indices – This should be done after each forecast to ensure the season-
+ality does not get out of synch. If the indices are not updated, they will drift dramatically. Most software
+packages will take care of this – but it is worth checking.
+ˆF NEW
+t
+= ˆF OLD
+t
+
+P
+Pt
+i=t+1−P ˆF OLD
+i
+
+2.2.6
+Special Cases
+There are diﬀerent types of new products and the forecasting techniques diﬀer according to their type.
+The fundamental idea is that if you do not have any history to rely on, you can look for history of similar
+products and build one.
+When the demand is very sparse, such as for spare parts, we cannot use traditional methods since the
+estimates tend to ﬂuctuate dramatically. Croston’s method can smooth out the estimate for the demand.
+New Product Types
+• Not all new products are the same. We can roughly classify them into the following six categories (listed
+from easiest to forecast to hardest):
+– Cost Reductions: Reduced price version of the product for the existing market
+– Product Repositioning: Taking existing products/services to new markets or applying them to a
+new purpose (aspirin from pain killer to reducing eﬀects of a heart attack)
+– Line Extensions: Incremental innovations added to complement existing product lines (Vanilla
+Coke, Coke Zero) or Product Improvements: New, improved versions of existing oﬀering targeted
+to the current market—replaces existing products (next generation of product)
+– New-to-Company: New market/category for the company but not to the market (Apple iPhone or
+iPod)
+– New-to-World: First of their kind, creates new market, radically diﬀerent (Sony Walkman, Post-it
+notes, etc.)
+• While they are a pain to forecast and to launch, ﬁrms introduce new products all the time – this is
+because they are the primary way to increase revenue and proﬁts (See Figure 6)
+New Product Development Process
+All ﬁrms use some version of the process shown below to introduce new products. This is sometimes
+called the stage-gate or funnel process. The concept is that lots of ideas come in on the left and very few
+ﬁnal products come out on the right. Each stage or hurdle in the process winnows out the winners from
+the losers and is used to focus attention on the right products. The scope and scale of forecasting changes
+along the process as noted in Figure 7.
+FIGURE 2.6: New product introductions
+Source: Adapted from Cooper, Robert (2001) Winning at New Products, Kahn, Kenneth (2006) New
+Product forecasting, and PDMA (2004) New Product Development Report.)
+FIGURE 2.7: New product development process
+Forecasting Models Discussed
+New Product – “Looks-Like” or Analogous Forecasting
+• Perform by looking at comparable product launches and create a week-by-week or month-by-month
+sales record.
+• Then use the percent of total sales in each time increment as a trajectory guide.
+• Each launch should be characterized by product type, season of introduction, price, target market
+demographics, and physical characteristics.
+Intermittent or Sparse Demand – Croston’s Method
+• Used for products that are infrequently ordered in large quantities, irregularly ordered, or ordered in
+diﬀerent sizes.
+• Croston’s Method separates out the demand and model—unbiased and has lower variance than simple
+smoothing.
+Supply Chain Fundamentals
+• Cautions: infrequent ordering (and updating of model) induces a lag to responding to magnitude
+changes.
+Notation:
+xt : Demand in period t
+yt : 1 if transaction occurs in period t, =0 otherwise
+zt : Size (magnitude) of transaction in time t
+nt : Number of periods since last transaction
+α : Smoothing parameter for magnitude
+β : Smoothing parameter for transaction frequency
+Formulas
+Croston’s Method
+We can use Croston’s method when demand is intermittent. It allows us to use the traditional expo-
+nential smoothing methods. We assume the Demand Process is xt = ytzt and that demand is independent
+between time periods, so that the probability that a transaction occurs in the current time period is 1/n:
+Prob(yt = 1) = 1
+n
+and
+Prob(yt = 0) = 1 −1
+n
+Updating Procedure for ˆzt and ˆnt:
+If xt = 0 (no transaction occurs), then
+ˆzt = ˆzt−1
+and
+ˆnt = ˆnt−1
+If xt > 0 (transaction occurs), then
+ˆzt = αxt + (1 −α)ˆzt−1
+ˆnt = βnt + (1 −β)ˆnt−1
+Updating Procedure for nt:
+nt=
+
+if
+xt−1 > 0
+nt−1 + 1
+if
+xt−1 = 0
+Forecast:
+ˆxt,t+1 = ˆzt
+ˆnt
+Learning Objectives
+• Forecasting is part of the entire Demand Planning and Management process.
+• Range forecasts are better than point forecasts, aggregated forecasts are better than dis-aggregated,
+and shorter time horizons are better than longer.
+• Forecasting metrics need to capture bias and accuracy.
+• Understand how to initialize a forecast.
+• Understand that Time Series is a useful technique when we believe demand follows certain repeating
+patterns.
+• Recognize that all time series models make a trade-oﬀbetween being na¨ıve (using only the last most
+recent data) or cumulative (using all of the available data).
+• Understand how exponential smoothing treats old and new information diﬀerently.
+• Understand how changing the alpha or beta smoothing factors inﬂuences the forecasts.
+• Understand how seasonality can be handled within exponential smoothing.
+• Understand why demand for new products need to be forecasted with diﬀerent techniques.
+• Learn how to use basic Diﬀusion Models for new product demand and how to forecast intermittent
+demand using Croston’s Method.
+• Understand how the typical new product pipeline process (stage-.-gate) works and how forecasting ﬁts
+in.
+References
+General Demand Forecasting
+• Makridakis, Spyros, Steven C. Wheelwright, and Rob J. Hyndman. Forecasting: Methods and Applica-
+tions. New York, NY: Wiley, 1998. ISBN 9780471532330.
+• Hyndman, Rob J. and George Athanasopoulos. Forecasting: Principles and Practice. OTexts, 2014.
+ISBN 0987507109.
+• Gilliland, Michael. The Business Forecasting Deal: Exposing Bad Practices and Providing Practical
+Solutions. Hoboken, NJ: Wiley, 2010. ISBN 0470574437.
+Within the texts mentioned earlier: Silver, Pyke, and Peterson Chapter 4.1; Chopra & Meindl Chapter
+7.1-7.4; Nahmias Chapter 2.1-2.6.
+Also, I recommend checking out the Institute of Business Forecasting & Planning (https://ibf.org/) and
+their Journal of Business Forecasting.
+For Time Series Analysis
+Within the texts mentioned earlier: Silver, Pyke, and Peterson Chapter 4.2-5.5.1 & 4.6; Chopra & Meindl
+Chapter 7.5-7.6; Nahmias Chapter 2.7.
+Also, I recommend checking out the Institute of Business Forecasting & Planning (https://ibf.org/) and
+their Journal of Business Forecasting.
+• Makridakis, Spyros, Steven C. Wheelwright, and Rob J. Hyndman.Forecasting: Methods and Applica-
+tions. New York, NY: Wiley, 1998. ISBN 9780471532330.
+• Hyndman, Rob J. and George Athanasopoulos. Forecasting: Principles and Practice. OTexts, 2014.
+ISBN 0987507109.
+For Exponential Smoothing
+• Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production Planning and Scheduling.
+ISBN: 978-0471119470. Chapter 4.
+• Chopra, Sunil, and Peter Meindl. Supply Chain Management: Strategy, Planning, and Operation. 5th
+edition, Pearson Prentice Hall, 2013. Chapter 7.
+• Nahmias, S. Production and Operations Analysis. McGraw-Hill International Edition. ISBN: 0-07-
+2231265-3. Chapter 2.
+For Special Cases
+• Cooper, Robert G. Winning at New Products: Accelerating the Process from Idea to Launch. Cam-
+bridge, MA: Perseus Pub., 2001. Print.
+• Kahn, Kenneth B. New Product Forecasting: An Applied Approach. Armonk, NY: M.E. Sharpe, 2006.
+• Adams, Marjorie. PDMA Foundation NPD Best Practices Study: The PDMA Foundation’s 2004 Com-
+parative Performance Assessment Study (CPAS). Oak Ridge
+Supply Chain Fundamentals
+2.3
+Inventory Management
+2.3.1
+Summary
+Inventory management is at the core of all supply chain and logistics management. There are many
+reasons for holding inventory including minimizing the cost of controlling a system, buﬀering against
+uncertainties in demand, supply, delivery and manufacturing, as well as covering the time required for
+any process. Having inventory allows for a smoother operation in most cases since it alleviates the need
+to create product from scratch for each individual demand. Inventory is the result of a push system where
+the forecast determines how much inventory of each item is required.
+There is, however, a problem with having too much inventory. Excess inventory can lead to spoilage,
+obsolescence, and damage. Also, spending too much on inventory limits the resources available for other
+activities and investments. Inventory analysis is essentially the determination of the right amount of
+inventory of the right product in the right location in the right form. Strategic decisions cover the inventory
+implications of product and network design. Tactical decisions cover deployment and determine what
+items to carry, in what form (raw materials, work-in-process, ﬁnished goods, etc.), and where. Finally,
+operational decisions determine the replenishment policies (when and how much) of these inventories.
+We seek the Order Replenishment Policy that minimizes these total costs and speciﬁcally the Total
+Relevant Costs (TRC). A cost component is considered relevant if it impacts the decision at hand and we
+can control it by some action. A Replenishment Policy essentially states two things: the quantity to be
+ordered, and when it should be ordered. As we will see, the exact form of the Total Cost Equation used
+depends on the assumptions we make in terms of the situation. There are many diﬀerent assumptions
+inherent in any of the models we will use, but the primary assumptions are made concerning the form of
+the demand for the product (whether it is constant or variable, random or deterministic, continuous or
+discrete, etc.).
+2.3.2
+Key Concepts
+Reasons to Hold Inventory
+• Cover process time
+• Allow for uncoupling of processes
+• Anticipation/Speculationelayed diﬀerentiation)
+• Minimize control costs
+• Buﬀer against uncertainties such as demand, supply, delivery, and manufacturing
+Inventory Decisions
+• Strategic supply chain decisions are long term and include decisions related to the supply chain such
+as potential alternatives to holding inventory and product design.
+• Tactical are made within a month, a quarter or a year and are known as deployment decisions such as
+what items to carry as inventory, in what form to carry items and how much of each item to hold and
+where.
+• Operational level decisions are made on daily, weekly or monthly basis and replenishment decisions
+such as how often to review inventory status, how often to make replenishment decisions and how large
+replenishment should be. The replenishment decisions are critical to determine how the supply chain is
+set up.
+Inventory Classiﬁcation
+• Financial/Accounting Categories: Raw Materials, Work in Progress (WIP), Components/Semi-Finished
+Goods and Finished Goods. This category does not help in tracking opportunity costs and how one
+may wish to manage inventory.
+• Functional (See Figure 8):
+– Cycle Stock – Amount of inventory between deliveries or replenishments
+– Safety Stock – Inventory to cover or buﬀer against uncertainties
+– Pipeline Inventory – Inventory when order is placed but has not yet arrived
+FIGURE 2.8: Inventory chart: Depiction of functional inventory classiﬁcations
+Relevant Costs
+The Total Cost (TC) equation is typically used to make the decisions of how much inventory to hold and
+how to replenish. It is the sum of the Purchasing, Ordering, Holding, and Shortage costs. The Purchasing
+costs are usually variable or per-item costs and cover the total landed cost for acquiring that product –
+whether from internal manufacturing or purchasing it from outside.
+Total cost = Purchase (Unit Value) Cost + Order (Set Up) Cost + Holding (Carrying) Cost +
+Shortage (stock-out) Cost
+• Purchase: Cost per item or total landed cost for acquiring product.
+• Ordering: It is a ﬁxed cost and contains cost to place, receive and process a batch of good including
+processing invoicing, auditing, labor, etc. In manufacturing this is the set up cost for a run.
+• Holding: Costs required to hold inventory such as storage cost (warehouse space), service costs (in-
+surance, taxes), risk costs (lost, stolen, damaged, obsolete), and capital costs (opportunity cost of
+alternative investment).
+• Shortage: Costs of not having an item in stock (on-hand inventory) to satisfy a demand when it occurs,
+including backorder, lost sales, lost customers, and disruption costs. Also known as the penalty cost.
+A cost is relevant if it is controllable and it applies to the speciﬁc decision being made.
+Supply Chain Fundamentals
+Notation:
+c : Purchase cost ($/unit)
+ct : Ordering Costs ($/order)
+h : Holding rate – usually expressed as a percentage ($/$ value/time)
+ce : Excess holding Costs ($/unit-time); also equal to ch
+cs : Shortage costs ($/unit)
+TRC : Total Relevant Costs – the sum of the relevant cost components
+TC : Total Costs – the sum of all four cost elements
+2.3.3
+Economic Order Quantity (EOQ)
+The Economic Order Quantity or EOQ is the most inﬂuential and widely used (and sometimes misused!)
+inventory model in existence. While very simple, it provides deep and useful insights. Essentially, the
+EOQ is a trade-oﬀbetween ﬁxed (ordering) and variable (holding) costs. It is often called Lot-Sizing as
+well. The minimum of the Total Cost equation (when assuming demand is uniform and deterministic) is
+the EOQ or Q∗. The Inventory Replenishment Policy becomes “Order Q∗every T ∗time periods” which
+under our assumptions is the same as “Order Q∗when Inventory Position (IP)=0”.
+Like Wikipedia, the EOQ is a GREAT place to start, but not necessarily a great place to ﬁnish. It is a
+good ﬁrst estimate because it is exceptionally robust. For example, a 50% increase in Q over the optimal
+quantity (Q∗) only increases the TRC by ∼8%!
+While very insightful, the EOQ model should be used with caution as it has restrictive assumptions
+(uniform and deterministic demand). It can be safely used for items with relatively stable demand and
+is a good ﬁrst-cut “back of the envelope” calculation in most situations. It is helpful to develop insights
+in understanding the trade-oﬀs involved with taking certain managerial actions, such as lowering the
+ordering costs, lowering the purchase price, changing the holding costs, etc.
+EOQ Model
+• Assumptions
+– Demand is uniform and deterministic.
+– Lead time is instantaneous (0) – although this is not restrictive at all since the lead time, L, does
+not inﬂuence the Order Size, Q.
+– Total amount ordered is received.
+• Inventory Replenishment Policy
+– Order Q∗units every T ∗time periods.
+– Order Q∗units when inventory on hand (IOH) is zero.
+• Essentially, the Q∗is the Cycle Stock for each replenishment cycle. It is the expected demand for that
+amount of time between order deliveries.
+Notation:
+c : Purchase cost ($/unit)
+ct : Ordering Costs ($/order)
+ce : Excess holding Costs ($/unit/time); equal to ch
+cs : Shortage costs ($/unit)
+D : Demand (units/time)
+DA : Actual Demand (units/time)
+DF : Forecasted Demand (units/time)
+h : Carrying or holding cost ($/inventory $/time)
+Q : Replenishment Order Quantity (units/order)
+Q∗: Optimal Order Quantity under EOQ (units/order)
+Q∗
+A : Optimal Order Quantity with Actual Demand (units/order)
+Q∗
+F : Optimal Order Quantity with Forecasted Demand (units/order)
+T : Order Cycle Time (time/order)
+T ∗: Optimal Time between Replenishments (time/order)
+N : Orders per Time or 1/T (order/time)
+TRC(Q) : Total Relevant Cost ($/time)
+TC(Q) : Total Cost ($/time)
+Formulas
+Total Costs: TC = Purchase + Order + Holding + Shortage
+This is the generic total cost equation. The speciﬁc form of the diﬀerent elements depends on the
+assumptions made concerning the demand, the shortage types, etc.
+TC(Q) = cD + ct
+D
+Q + ce
+Q
+2 + csE[UnitsShort]
+Total Relevant Costs: TRC = Order + Holding
+The purchasing cost and the shortage costs are not relevant for the EOQ because the purchase price
+does not change the optimal order quantity (Q*) and since we have deterministic demand, we will not
+stock out.
+TRC(Q) = ct
+D
+Q + ce
+Q
+Optimal Order Quantity (Q∗)
+Recall that this is the First Order condition of the TRC equation – where it is a global minimum.
+Q∗=
+r
+2ctD
+ce
+Optimal Time between Replenishments
+Recall that T ∗= Q∗/D. That is, the time between orders is the optimal order size divided by the
+annual demand. Similarly, the number of replenishments per year is simply N ∗= 1/T ∗= D/Q∗. Plugging
+in the actual Q∗gives you the formula below.
+T ∗=
+r
+2ct
+Dce
+Note: Be sure to put T ∗into units that make sense (days, weeks, months, etc.). Don’t leave it in years!
+Optimal Total Costs
+Adding the purchase cost to the TRC(Q∗) costs gives you the TC(Q∗). We still assume no stock out
+costs.
+TC(Q∗) = cD +
+p
+2ctceD
+Optimal Total Relevant Costs
+Plugging the Q∗back into the TRC equation and simplifying gives you the formula below.
+Supply Chain Fundamentals
+TRC(Q∗) =
+p
+2ctceD
+Sensitivity Analysis
+The EOQ is very robust. The following formulas provide simple ways of calculating the impact of
+using a non-optimal Q, an incorrect annual Demand D, or a non-optimal time interval, T.
+EOQ Sensitivity with Respect to Order Quantity
+The equation below calculates the percent diﬀerence in total relevant costs to optimal when using a
+non-optimal order quantity (Q):
+TRC(Q)
+TRC(Q∗) =
+1
+ Q∗
+Q + Q
+Q∗
+
+Note: If optimal quantity does not make sense, it is always better to order little more rather ordering
+little less.
+EOQ Sensitivity with Respect to Demand
+The equation below calculates the percent diﬀerence in total relevant costs to optimal when assuming an
+incorrect annual demand (DF ) when in fact the actual annual demand is DA:
+TRC(Q∗
+F )
+TRC(Q∗
+A) =
+1
+ r
+DA
+DF
++
+r
+DF
+DA
+!
+EOQ Sensitivity with Respect to Time Interval between Orders
+The equation below calculates the percent diﬀerence in total relevant costs to optimal when using a
+non-optimal replenishment time interval (T). This will become very important when ﬁnding realistic
+replenishment intervals. The Power of Two Policy shows that ordering in increments of 2k time periods,
+we will stay within 6% of the optimal solution. For example, if the base time period is one week, then
+the Power of Two Policy would suggest ordering every week (20) or every two weeks (21) or every four
+weeks (22) or every eight weeks (23) etc. Select the interval closest to one of these increments.
+TRC(T)
+TRC(T ∗) =
+1
+  T
+T ∗+ T ∗
+T
+
+2.3.4
+Economic Order Quantity (EOQ) Extensions
+The Economic Order Quantity can be extended to cover many diﬀerent situations, three extensions
+include: lead-time, volume discounts, and ﬁnite replenishment or EPQ.
+We developed the EOQ previously assuming the rather restrictive (and ridiculous) assumption that
+lead-time was zero. That is, instantaneous replenishment like on Star Trek. However, including a non-zero
+lead time while increasing the total cost due to having pipeline inventory will NOT change the calculation
+of the optimal order quantity, Q∗. In other words, lead-time is not relevant to the determination of the
+needed cycle stock.
+Volume discounts are more complicated. Including them makes the purchasing costs relevant since
+they now impact the order size. We discussed three types of discounts: All-Units (where the discount
+applies to all items purchased if the total amount exceeds the break point quantity), Incremental (where
+the discount only applies to the quantity purchased that exceeds the breakpoint quantity), and One-Time
+(where a one-time-only discount is oﬀered and you need to determine the optimal quantity to procure as
+an advance buy). Discounts are exceptionally common in practice as they are used to incentivize buyers
+to purchase more or to order in convenient quantities (full pallet, full truckload, etc.).
+A price break point is the minimum quantity required to get a price discount.
+Finite Replenishment is very similar to the EOQ model, except that the product is available at a
+certain production rate rather than all at once. In the lesson we show that this tends to reduce the
+average inventory on hand (since some of each order is manufactured once the order is received) and
+therefore increases the optimal order quantity.
+• Lead time is greater than 0 (order not received instantaneously)
+– Inventory Policy:
+∗Order Q∗units when IP=DL
+∗Order Q∗units every T ∗time periods
+• Discounts
+– All Units Discount—Discount applies to all units purchased if total amount exceeds the break
+point quantity
+– Incremental Discount—Discount applies only to the quantity purchased that exceeds the break
+point quantity
+– One-Time-Only Discount—A one-time-only discount applies to all units you order right now (no
+quantity minimum or limit)
+• Finite Replenishment
+– Inventory becomes available at a rate of P units/time rather than all at one time
+– If Production rate approach inﬁnity, model converges to EOQ
+Notation:
+c : Purchase cost ($/unit)
+ce : Excess holding Costs ($/unit/time); Equal to ch
+cs : Shortage costs ($/unit)
+cg : One Time Good Deal Purchase Price ($/unit)
+Fi : Fixed Costs Associated with Units Ordered below Incremental Discount Breakpoint i
+D : Demand (units/time)
+DA : Actual Demand (units/time)
+DF : Forecasted Demand (untis/time)
+h : Carrying or holding cost ($/inventory $/time)
+L : Order Lead time
+Q : Replenishment Order Quantity (units/order)
+Q∗: Optimal Order Quantity under EOQ (units/order)
+Qi : Breakpoint for quantity discount for discount i (units per order)
+Qg : One Time Good Deal Order Quantity
+P : Production (units/time)
+T : Order Cycle Time (time/order)
+T ∗: Optimal Time between Replenishments (time/order)
+N : Orders per Time or 1/T (order/time)
+TRC(Q) : Total Relevant Cost ($/time)
+TC(Q) : Total Cost ($/time)
+Formulas
+Inventory Position
+Inventory Position (IP) = Inventory on Hand (IOH) + Inventory on Order (IOO) – Back Orders (BO) –
+Committed Orders (CO)
+Supply Chain Fundamentals
+Inventory on Order (IOO) is the inventory that has been ordered, but not yet received. This is
+inventory in transit and also knows as Pipeline Inventory (PI).
+Average Pipeline Inventory
+Average Pipeline Inventory (API), on average, is the annual demand times the lead time. Essentially,
+every item spends L time periods in transit. Both D and L should have consistent time units.
+API = DL
+Total Cost including Pipeline Inventory
+The TC equation changes slightly if we assume a non-zero lead time and include the pipeline inventory.
+TC(Q) = cD + ct
+D
+Q
+
++ ce
+Q
+2 + DL
+
++ csE[UnitsShort]
+Note that as before, though, the purchase cost, shortage costs, and now pipeline inventory is not
+relevant to determining the optimal order quantity, Q∗:
+Q∗=
+r
+2ctD
+ce
+Discounts
+If we include volume discounts, then the purchasing cost becomes relevant to our decision of order
+quantity.
+All Units Discounts
+Discount applies to all units purchased if total amount exceeds the break point quantity. The procedure
+for a single range All Units quantity discount (where new price is c1 if ordering at least Q1 units) is as
+follows:
+1.
+Calculate Q∗
+C0, the EOQ using the base (non-discounted) price, and Q∗
+C1, the EOQ using the
+ﬁrst discounted price
+2.
+If Q∗
+C1 ≥Q1, the breakpoint for the ﬁrst all units discount, then order Q∗
+C1 since it satisﬁes
+the condition of the discount. Otherwise, go to step 3.
+3.
+Compare the TRC(Q∗
+C0), the total relevant cost with the base (non-discounted) price, with
+TRC(Q1), the total relevant cost using the discounted price (c1) at the breakpoint for the
+discount. If TRC(Q∗
+C0) < TRC(Q1), select Q∗
+C0, otherwise order Q1.
+Note that if there are more discount levels, you need to check this for each one.
+c = c0
+for
+0 ≤Q ≤Q1
+and
+c = c1
+for
+Q1 ≤Q
+TRC = Dc0 + ct
+D
+Q
+
++ c0
+hQ
+
+for
+0 ≤Q ≤Q1
+TRC = Dc1 + ct
+D
+Q
+
++ c1
+hQ
+
+for
+Q1 ≤Q
+Note: All units discount tend to raise cycle stock in the supply chain by encouraging retailers to
+increase the size of each order. This makes economic sense for the manufacturer, especially when he
+incurs a very high ﬁxed cost per order.
+Incremental Discounts
+Discount applies only to the quantity purchased that exceeds the break point quantity. The procedure
+for a multi-range Incremental quantity discount (where if ordering at least Q1 units, the new price for
+the Q −Q1 units is c1) is as follows:
+1.
+Calculate the Fixed cost per breakpoint, Fi,
+2.
+Calculate the Q∗
+i for each discount range i (to include the Fi)
+3.
+Calculate the TRC for all discount ranges where the Qi−1 < Q∗
+i < Qi+1 , that is, if it is in
+range.
+4.
+Select the discount that provides the lowest TRC
+The eﬀective cost, ce
+i, can be used for the TRC calculations.
+F0 = 0; Fi = Fi−1 + (ci−1 −ci)Qi
+Q∗=
+s
+2D(ct + Fi)
+hci
+ce
+i = ci + Fi
+Q∗
+i
+x
+One Time Discount
+This is a less common discount – but it does happen. A one time only discount applies to all units you
+order right now (no minimum quantity or limit). Simply calculate the Q∗
+g and that is your order quantity.
+If Q∗
+g = Q∗then the discount does not make sense. If you ﬁnd that Q∗
+g < Q∗, you made a mathematical
+mistake – check your work!
+TC = (CycleTime)(TC∗+ PurchaseCost) =
+Qg
+D
+ p
+2cthcD +
+Qg
+D
+
+cD
+Savings = TC −TCSP
+Savings =
+ Qg
+D
+ p
+2cthcD +
+Qg
+D
+
+cD
+
+−
+
+cgQg + hcg
+Qg
+ Qg
+D
+
++ ct
+
+Q∗
+g = Q∗ch + D(c −cg)
+hcg
+Finite Replenishment or Economic Production Quantity
+One can think of the EPQ equations as generalized forms where the EOQ is a special case where
+P=inﬁnity. As the production rate decreases, the optimal quantity to be ordered increases. However,
+note that if P < D, this means the rate of production is slower than the rate of demand and that you
+will never have enough inventory to satisfy demand.
+TRC[Q] = ctD
+Q + Q
+ 1 −D
+P
+
+hc
+EPQ =
+s
+2ctD
+hc(1 −D
+P ) =
+EOQ
+q 1 −D
+P
+
+Supply Chain Fundamentals
+EOQ with Planned Back Orders
+A planned backorder is where we stock out on purpose knowing that customers will wait, although we
+do incur a penalty cost, cs, for stocking out. Why do we accept to stock out? Because, sometimes it is
+very costly to have enough inventory on hand to always satisfy demand, and customers are willing to
+wait. From this, we develop the idea of the critical ratio (CR), which is the ratio of the cs (the cost of
+shortage or having too little product) to the ratio of the sum of cs and ce (the cost of having too much
+or an excess of product). The critical ratio, by deﬁnition, ranges between 0 and 1 and is a good metric
+of level of service. A high CR indicates a desire to stock out less frequently. If cs is inﬁnity, it means we
+do not allow for shortage and the model becomes the conventional EOQ. As cs gets smaller, the Q∗
+P BO
+gets larger and a larger percentage is allowed to be backordered – since the penalty for stocking out gets
+reduced.
+Formulas
+EOQ with Planned Backorders
+This is an extension of the standard EOQ with the ability to allow for backorders at a penalty of cs.
+TRC(Q, b) = ct
+D
+Q
+
++ ce
+(Q −b)2
+2Q
+
++ cs
+ b2
+2Q
+
+Q∗
+P BO =
+r
+2ctD
+ce
+rcs + ce
+cs
+= Q∗
+s
+(cs + ce)
+cs
+= Q∗
+r
+CR
+b∗= ceQ∗
+P BO
+(cs + ce) =
+
+1 −
+cs
+(cs + ce)
+
+Q∗
+P BO
+T ∗
+P BO = Q∗PBO
+D
+Order Q∗
+P BO when IOH = -b∗; Order Q∗
+P BO every T ∗
+P BO time periods.
+Where:
+Q∗
+P BO is the Optimal Order Quantity with Planned backorders
+2.3.5
+Introduction to Stochastic Demand
+Deterministic versus Probabilistic Demand: Diﬀerences and Implications
+Empirical Distribution
+µ =
+n
+X
+i
+pixi
+σ =
+v
+u
+u
+t
+n
+X
+i
+pi(xi −µ)2 =
+p
+E[X2] −E[X]2
+FIGURE 2.9: Inventory Under Deterministic vs Stochastic Demand
+Theoretical Probability Distributions
+Rules of Thumb for Selecting Demand Distributions
+1.
+If Demand is all positive integers of low value (e.g., 1, 2, 3, 4 etc.) then use Poisson.
+2.
+If Demand is larger numbers (says > 20), integrality is not critical and CV is small (∼<= 0.3)
+then use Normal.
+3.
+Looks relatively even over a speciﬁed range then use Uniform.
+4.
+Has no reliable data or there is only anecdotal memories, then use Triangle.
+2.3.6
+Single Period Inventory Models
+The single period inventory model is second only to the economic order quantity in its widespread use and
+inﬂuence. Also referred to as the Newsvendor (Newsboy) model, the single period model diﬀers from the
+EOQ in three main ways. First, while the EOQ assumes uniform and deterministic demand, the single-
+period model allows demand to be variable and stochastic (random). Second, while the EOQ assumes a
+steady state condition (stable demand with essentially an inﬁnite time horizon), the single-period model
+assumes a single period of time. All inventories must be ordered prior to the start of the time period and
+they cannot be replenished during the time period. Any inventory left over at the end of the time period
+is scrapped and cannot be used at a later time. If there is extra demand that is not satisﬁed during the
+period, it too is lost. Third, for EOQ we are minimizing the expected costs, while for the single period
+model we are actually maximizing the expected proﬁtability.
+The critical ratio applies directly to the single period model as well. We show that the optimal order
+quantity, Q∗, occurs when the probability that the demand is less than Q∗= the Critical Ratio. In other
+words, the Critical Ratio tells me how much of the demand probability that should be covered in order
+to maximize the expected proﬁts.
+Supply Chain Fundamentals
+FIGURE 2.10: Density Functions for Discrete Uniform Distribution, Poisson Distribution, Continuous
+Uniform Distribution, Normal Distribution, and Triangle Distribution
+Marginal Analysis: Single Period Model
+Two costs are associated with single period problems
+• Excess cost (ce) when D < Q ($/unit) i.e. too much product
+• Shortage cost (cs) when D > Q ($/unit) i.e. too little product
+If we assume continuous distribution of demand
+FIGURE 2.11: Expected Units Short and Expected Units Sold for Continuous Uniform Distribution,
+Normal Distribution and Triangle Distribution
+• ceP[X ≤Q] = expected excess cost of the Qth unit ordered
+• cs(1 −P[X ≤Q]) = expected shortage cost of the Qth unit ordered
+This implies that if E[Excess Cost] < E[Shortage Cost] then increase Q and that we are at Q∗when
+E[Shortage Cost] = E[Excess Cost].
+Solving this gives us: P[x ≤Q] =
+cs
+(ce+cs)
+In words, this means that the percentage of the demand distribution covered by Q should be equal to
+the Critical Ratio in order to maximize expected proﬁts.
+Notation:
+p : Selling price ($/unit)
+c : Purchase cost ($/unit)
+ct : Ordering Costs ($/order)
+ce : Excess holding Costs ($/unit/time); Equal to ch
+cs : Shortage Costs ($/unit)
+D : Average Demand (units/time)
+B : Penalty for not satisfying demand beyond lost proﬁt ($/unit)
+b : Backorder Demand (units)
+b∗: Optimal units on backorder when placing an order (unit)
+g : Salvage value for excess inventory ($/unit)
+h : Carrying or holding cost ($/inventory $/time)
+L : Replenishment Lead Time (time)
+Q : Replenishment Order Quantity (units/order)
+Q∗
+P BO : Optimal Order Quantity with Planned backorders
+T : Order Cycle Time (time/order)
+TRC(Q) : Total Relevant Cost ($/time)
+TC(Q) : Total Cost ($/time)
+Single Period (Newsvendor) Model
+To maximize expected proﬁtability, we need to order suﬃcient inventory, Q, such that the probability
+that the demand is less than or equal to this amount is equal to the Critical Ratio. Thus, the probability
+of stocking out is equal to 1 – CR.
+Supply Chain Fundamentals
+P[x ≤Q] =
+cs
+(ce + cs)
+For the simplest case where there is neither salvage value nor extra penalty of stocking out, these
+become:
+cs = p–c, that is the lost margin of missing a potential sale and,
+ce = c, that is, the cost of purchasing one unit. The Critical Ratio becomes:
+CR =
+cs
+(cs + ce) =
+(p −c)
+(p −c + c) = p −c
+p
+which is simply the margin divided by the price!
+When we consider also salvage value (g) and shortage penalty (B), these become: cs = p – c + B,
+that is the lost margin of missing a potential sale plus a penalty per item short and ce = c – g, that is,
+the cost of purchasing one unit minus the salvage value I can gain back. Now the critical ratio becomes
+CR =
+cs
+(cs + ce) =
+(p −c + B)
+(p −c + B + c −g) = p −c + B
+p + B −g
+2.3.7
+Single Period Inventory Models-Expected Proﬁtability
+We expand our analysis of the single period model to be able to calculate the expected proﬁtability of a
+given solution. In the previous lesson, we learned how to determine the optimal order quantity, Q∗, such
+that the probability of the demand distribution covered by Q∗is equal to the Critical Ratio, which is the
+ratio of the shortage costs divided by the sum of the shortage and excess costs.
+In order to determine the proﬁtability for a solution, we need to calculate the expected units sold, the
+expected cost of buying Q units, and the expected units short, E[US]. Calculating the E[US] is tricky,
+but we show how to use the Normal Tables as well as spreadsheets to determine this value.
+Notation:
+p : Selling price ($/unit)
+c : Purchase cost ($/unit)
+ct : Ordering Costs ($/order)
+ce : Excess holding Costs ($/unit); For single period problems this is not necessarily equal to ch, since
+that assumes that you can keep the inventory for later use.
+cs : Shortage Costs ($/unit)
+D : Average Demand (units/time)
+B : Penalty for not satisfying demand beyond lost proﬁt ($/unit)
+g : Salvage value for excess inventory ($/unit)
+k : Safety Factor
+x : Units Demanded
+E[x] : Expected units demanded
+E[US] : Expected Units Short (units)
+Q : Replenishment Order Quantity (units/order)
+TRC(Q) : Total Relevant Cost ($/period)
+TC(Q) : Total Cost ($/period)
+Formulas:
+Proﬁt Maximization
+In words, the expected proﬁt for ordering Q units is equal to the sales price, p, times the expected number
+of units demanded, E[x]), minus the cost of purchasing Q units, cQ, minus the expected number of units
+I would be short times the sales price. The diﬃcult part of this equation is the expected units short, or
+the E[US].
+E[Profit(Q)] = pE[x] −cQ −pE[UnitsShort]
+Expected Proﬁts with Salvage and Penalty
+If we include a salvage value, g, and a shortage penalty, B, then this becomes:
+P(Q)=
+ -cQ+px+g(Q-x)
+if
+x ≤Q
+-cQ+pQ-B(x-Q)
+if
+x ≥Q)
+E[P(Q)] = (p −g)E[x] −(c −g)Q −(p −g + B)E[US]
+Rearranging this becomes:
+E[P(Q)] = p(E[x] −E[US]) −cQ + g(Q −(E[x] −E[US])) −B(E[US])
+In words, the expected proﬁt for ordering Q units is equal to four terms. The ﬁrst term is the sales
+price, p, times the expected number of units demanded, E[x]), minus the expected units short. The second
+term is simply the cost of purchasing Q units, cQ. The third term is the expected number of items that
+I would have left over for salvage, times the salvage value, g. The fourth and ﬁnal term is the expected
+number of units short times the shortage penalty, B.
+Expected Values
+E[Units Demanded]
+Continuous:
+R ∞
+x=0 xfx(x)dx = ˆx
+Discrete: P∞
+x=0 xP[x] = ˆx
+E[Units Sold]
+Continuous:
+R Q
+x=0 xfx(x)dx + Q
+R ∞
+x=Q fx(x)dx
+Discrete: PQ
+x=0 xP[x] + Q P∞
+x=Q+1 P[x]
+E[Units Short]
+Continuous:
+R ∞
+x=Q(x −Q)fx(x)dx
+Discrete: P∞
+x=Q+1(x −Q)P[x]
+E[Excess]
+E[Excess] and E[US]/E[Units Short] are diﬀerent things but they are related to each other.
+E[UnitsShort] = σ ∗G(k)
+Supply Chain Fundamentals
+E[Excess] = σ ∗(k + G(k))
+E[Excess] is a distance from Q. So, on average, how much of Q we have left after we have sold all the
+units to be sold. E[Units Short] is a distance from the Demand. So, on average, how many units short of
+the Demand were we once we’ve sold all the units that were sold that period.
+You don’t have to use E[Excess]. Every problem can be solved using either one, and you can use either
+to calculate proﬁts. If you want to see how we get from one to the other, here are some steps:
+Q = E[UnitsSold] + E[Excess]
+E[Excess] = Q −E[UnitsSold]
+E[Excess] = Q −(E[x] −E[UnitsShort])
+E[Excess] = Q −E[x] + E[UnitsShort]
+Q −E[x] = σ ∗k (you can see this if you plot this in the distribution)
+Expected Units Short E[US]
+This is a tricky concept to get your head around at ﬁrst. Think of the E[US] as the average (mean or
+expected value) of the demand ABOVE some amount that we specify or have on hand. As my Q gets
+larger, then we expect the E[US] to get smaller, since I will probably not stock out as much.
+Luckily for us, we have a nice way of calculating the E[US] for the Normal Distribution. The Expected
+Unit Normal Loss Function is noted as G(k). To ﬁnd the actual units short, we simply multiply this G(k)
+times the standard deviation of the probability distribution.
+E[US] =
+Z ∞
+x=Q
+(x −Q)fx(x)dx = σG((Q −µ)
+σ
+) = σG(k)
+You can use the Normal tables to ﬁnd the G(k) for a given k value or you can use spreadsheets with
+the equation below:
+New Excel Version: G(k) = NORM.S.DIST(k, 0) −k ∗(1 −NORM.S.DIST(k, 1))
+Old Excel Version: G(k) = NORMDIST(k, 0, 1, 0) −k ∗(1 −NORMSDIST(k))
+2.3.8
+Multi Period Inventory Models
+We develop inventory replenishment models when we have uncertain or stochastic demand. We built oﬀ
+of both the EOQ and the single period models to introduce three general inventory policies: the Base
+Stock Policy, the (s,Q) continuous review policy and the (R,S) periodic review policy (the R,S model will
+be explained in the next lesson). These are the most commonly used inventory policies in practice. They
+are imbedded within a company’s ERP and inventory management systems.
+To put them in context, here is the summary of the ﬁve inventory models covered so far:
+• Economic Order Quantity — Deterministic Demand with inﬁnite horizon
+– Order Q∗every T ∗periods
+– Order Q∗when IP = µDL
+• Single Period/ Newsvendor — Probabilistic Demand with ﬁnite (single period) horizon
+– Order Q∗at start of period where P[x ≤Q]=CR
+• Base Stock Policy — Probabilistic Demand with inﬁnite horizon
+– Essentially a one-for-one replenishment
+– Order what was demanded when it was demanded in the quantity it was demanded
+• Continuous Review Policy (s,Q) — Probabilistic Demand with inﬁnite horizon
+– This is event-based – we order when, and if, inventory passes a certain threshold
+– Order Q∗when IP ≤s
+• Periodic Review Policy (R,S) — Probabilistic Demand with inﬁnite horizon
+– This is a time-based policy in that we order on a set cycle
+– Order up to S units every R time periods
+All of the models make trade-oﬀs: EOQ between ﬁxed and variable costs, Newsvendor between excess
+and shortage inventory, and the latter three between cost and level of service. The concept of level of
+service, LOS, is often murky and speciﬁc deﬁnitions and preferences vary between ﬁrms. However, for
+our purposes, we can break them into two categories: targets and costs. We can establish a target value
+for some performance metric and then design the minimum cost inventory policy to achieve the level of
+service. The two metrics covered are Cycle Service Level (CSL) and Item Fill Rate (IFR). The second
+approach is to place a dollar amount on a speciﬁc type of stock out occurring and then minimize the
+total cost function. The two cost metrics we covered were Cost of Stock Out Event (CSOE) and Cost of
+Item Short (CIS). They are related to each other.
+Regardless of the metrics used, the end result is a safety factor, k, and a safety stock. The safety stock
+is simply kσDL. The term σDL is deﬁned as the standard deviation of demand over lead time, but it is
+more technically the root mean square error (RMSE) of the forecast over the lead time. Most companies
+do not track their forecast error to the granular level that you require for setting inventory levels, so
+defaulting to the standard deviation of demand is not too bad of an estimate. It is essentially assuming
+that the forecast is the mean.
+Base Stock Policy
+The Base Stock policy is a one-for-one policy. If I sell four items, I order four items to replenish the
+inventory. The policy determines what the stocking level, or the base stock, is for each item. The base
+stock, S∗, is the sum of the expected demand over the lead time plus the RMSE of the forecast error over
+lead time multiplied by some safety factor k. The LOS for this policy is simply the Critical Ratio. Note
+that the excess inventory cost, ce, in this case (and all models here) assumes you can use it later and is
+the product of the cost and the holding rate, ch.
+• Optimal Base Stock, S∗: S∗= µDL + kLOSσDL
+• Level of Service (LOS): LOS = P[µDL ≤S∗] = CR =
+cs
+(cs+ce)
+Continuous Review Policies (s,Q)
+This is also known as the Order-Point, Order-Quantity policy and is essentially a two-bin system. The
+policy is “Order Q∗units when Inventory Position is less than the re-order point s”. The re-order point
+is the sum of the expected demand over the lead-time plus the RMSE of the forecast error over lead-time
+multiplied by some safety factor k.
+• Reorder Point: s = µDL + kσDL
+• Order Quantity (Q): Q is typically found through the EOQ formula
+Notation:
+B1 : Cost associated with a stock out event ($/event)
+Supply Chain Fundamentals
+c : Purchase cost ($/unit)
+ct : Ordering Costs ($/order)
+ce : Excess holding Costs ($/unit/time); Equal to ch
+cs : Shortage costs ($/unit)
+D : Average Demand (units/time)
+DS: Demand over short time period (e.g. week)
+DL: Demand over long time period (e.g. month)
+h: Carrying or holding cost ($/inventory $/time)
+L : Replenishment Lead Time (time)
+Q : Replenishment Order Quantity (units/order)
+T : Order Cycle Time (time/order)
+µDL: Expected Demand over Lead Time (units/time)
+σDL : Standard Deviation of Demand over Lead Time (units/time)
+k : Safety Factor
+s : Reorder Point (units)
+S: Order up to Point (units)
+R: Review Period (time)
+N: Orders per Time or 1/T (order/time)
+IP: Inventory Position = Inventory on Hand + Inventory on Order – Backorders
+IOH: Inventory on Hand (units)
+IOO: Inventory on Order (units)
+IFR: Item Fill Rate (%)
+CSL: Cycle Service Level (%)
+CSOE: Cost of Stock Out Event ($ / event)
+CIS: Cost per Item Short; Equal to cs
+E[US]: Expected Units Short (units)
+G(k): Unit Normal Loss Function
+A Tip on Converting Times
+You will typically need to convert annual forecasts to weekly demand or vice versa or something in
+between. This is generally very easy – but some students get confused at times:
+Converting long to short (n is number of short periods within long):
+E[DS] = E[DL]/n
+V AR[DS] = V AR[DL]/n
+σs = σL/√n
+Converting from short to long:
+E[DL] = nE[DS]
+V AR[DL] = nV AR[DS]
+σL = √nσs
+Level of Service Metrics
+Here are four methods for determining the appropriate safety factor, k, for use in any of the inventory
+models. They are Cycle Service Level, Cost per Stock Out Event, Item Fill Rate, and Cost per Item
+Short.
+Cycle Service Level (CSL)
+The CSL is the probability that there will not be a stock out within a replenishment cycle. This is
+frequently used as a performance metric where the inventory policy is designed to minimize cost to
+achieve an expected CSL of, say, 95%. Thus, it is one minus the probability of a stock out occurring. If
+I know the target CSL and the distribution (we will use Normal most of the time) then we can ﬁnd the
+s that satisﬁes it using tables or a spreadsheet where s = NORM.INV (CSL, Mean, StandardDeviation)
+and k=NORM.S.INV(CSL).
+CSL = 1 −P[Stockout] = 1 −P[X > s] = P[X ≤s]
+Note that as k increases, it gets diﬃcult to improve CSL and it will require enormous amount of
+inventory to cover the extreme limits.
+Cost Per Stock out Event (CSOE) or B1 Cost
+The CSOE is related to the CSL, but instead of designing to a target CSL value, a penalty is charged
+when a stock out occurs within a replenishment cycle. The inventory policy is designed to minimize the
+total costs – so this balances cost of holding inventory explicitly with the cost of stocking out. Minimizing
+the total costs for k, we ﬁnd that as long as
+B1D
+ceσDLQ
+√
+2π > 1, then we should set:
+k =
+s
+2ln
+B1D
+ceσDLQ
+√
+2π
+If
+B1D
+ceσDLQ
+√
+2π < 1 we should set k as low as management allows.
+Item Fill Rate (IFR)
+The IFR is the fraction of demand that is met with the inventory on hand out of cycle stock. This is
+frequently used as a performance metric where the inventory policy is designed to minimize cost to achieve
+an expected IFR of, say, 90%. If I know the target IFR and the distribution (we will use Normal most of
+the time) then we can ﬁnd the appropriate k value by using the Unit Normal Loss Function, G(k).
+IFR = 1 −E[US]
+Q
+= 1 −σDLG[k]
+Q
+G(k) =
+Q
+σDL
+(1 −IFR)
+G(k) is the Unit Normal Loss Function, which can be calculated in Spreadsheets as:
+New Excel Version: G(k) = NORM.S.DIST(k, 0) −k ∗(1 −NORM.S.DIST(k, 1)) Old Excel Version:
+G(k) = NORMDIST(k, 0, 1, 0) −k ∗(1 −NORMSDIST(k))
+Once we ﬁnd the k using unit normal tables, we can plug the values in s = µDL + kσDL to frame the
+policy.
+Cost per Item Short (CIS)
+CIS represents the cost of shortage cs, where there is a cost associated for each unit short within a
+replenishment cycle. The inventory policy related to CIS is designed to minimize the total costs – so it
+balances the cost of holding inventory with the cost of stocking out.
+As long as Qce
+Dcs ≤1 , then the optimal k for the minimum Total Relevant Cost of this policy is obtained
+when:
+P[StockOut] = P[x ≥k] = Qce
+Dcs
+In a spreadsheet, this becomes k=NORM.S.INV(1 -
+Qce
+Dcs ) or (k = NORMSINV(1 -
+Qce
+Dcs ) for older
+Supply Chain Fundamentals
+versions).
+If Qce
+Dcs > 1, we should set k as low as management allows.
+FIGURE 2.12: Summary of Level of Service Metrics
+There are trade-oﬀs between the diﬀerent performance metrics (both cost- and service-based). We
+demonstrate that once one of the metrics is determined (or explicitly set) then the other three are
+implicitly set. Because they all lead to the establishment of a safety factor, k, they are dependent on each
+other. This means that once you have set the safety stock, regardless of the method, you can calculate
+the expected performance implied by the remaining three metrics.
+Safety Stock Logic – relationship between Level of Service Metrics
+Safety stock is determined by the safety factor, k. So that: s = µDL + kσDL and the expected cost of
+safety stock = cekσDL. Two ways to calculate k: Service based or Cost based metrics:
+• Service Based Metrics—set k to meet expected level of service:
+– Cycle Service Level: CSL = P[x ≤k]
+– Item Fill Rate: IFR = 1 −( σDLG[k]
+Q
+)
+Note: IFR is always higher than CSL for the same safety stock level.
+• Cost Based Metrics—ﬁnd k that minimizes total costs over a period of time:
+– Total Cost of Stock out Events (over a period of time): E[CSOE] = (B1)P[x ≥k]( D
+Q)
+– Total Cost of Items Short (over a period of time): E[CIS] = csE[US]( D
+Q) = csσDLG(k)( D
+Q)
+The relationship between the four metrics (2 cost and 2 service based) is shown in the ﬂowchart below
+(Figure 13). Once one metric (CSL, IFR, CSOE, or CIS) is explicitly set, then the other three metrics
+are implicitly determined.
+FIGURE 2.13: Relationships between Level of Service Metrics
+Periodic Review Policies
+Periodic Review policies are very popular because they ﬁt the regular pattern of work where ordering
+might occur only once a week or once every two weeks. The lead-time and the review period are related
+and can be traded-oﬀto achieve certain goals.
+Notation:
+B1 : Cost associated with a stock out event
+c : Purchase cost ($/unit)
+ct : Ordering Costs ($/order)
+ce : Excess holding Costs ($/unit/time); Equal to ch
+cs : Shortage costs ($/unit)
+cg : One Time Good Deal Purchase Price ($/unit)
+D : Average Demand (units/time)
+h : Carrying or holding cost ($/inventory $/time)
+L : Replenishment Lead Time (time)
+Q : Replenishment Order Quantity (units/order)
+T : Order Cycle Time (time/order)
+µDL+R : Expected Demand over Lead Time plus Review Period (units/time)
+σDL+R : Standard Deviation of Demand over Lead Time plus Review Period (units/time)
+k : Safety Factor
+s : Reorder Point (units)
+S : Order up to Point (units)
+R : Review Period (time)
+N : Orders per Time or 1/T (order/time)
+Supply Chain Fundamentals
+IP : Inventory Position = Inventory on Hand + Inventory on Order – Backorders
+IOH : Inventory on Hand (units)
+IOO : Inventory on Order (units)
+IFR : Item Fill Rate (%)
+CSL : Cycle Service Level (%)
+CSOE : Cost of Stock Out Event ($/ event)
+CIS : Cost per Item Short; Equal to cs
+E[US] : Expected Units Short (units)
+G(k) : Unit Normal Loss Function
+This is also known as the Order Up To policy and is essentially a two-bin system. The policy is
+“Order Up To S∗units every R time periods”. The order up to point, S∗, is the sum of the expected
+demand over the lead-time and the replenishment time plus the RMSE of the forecast error over lead
+plus replenishment time multiplied by some safety factor k.
+• Order Up To Point: S = µDL+R + kσDL+R
+Since the inventory position IP will not be the same every time the inventory is checked, this means
+the order quantity will not be constant in each replenishment cycle and will be equal to S∗−IP. However,
+on average, the order quantity for an (R,S) system equals the expected demand D over a replenishment
+cycle R, so Q = D ∗R.
+Periodic (R,S) versus Continuous (s, Q) Review
+There is a convenient transformation of (s, Q) to (R, S)...
+• (s,Q) = Continuous, order Q when IP ≤s
+• (R, S) = Periodic, order up to S every R time periods
+...that allows for the use of all previous (s, Q) decision rules.
+• Reorder point, s, for continuous becomes Order Up To point, S, for periodic system
+• Q for continuous becomes D*R for periodic
+• L for a continuous becomes R+L for periodic
+Potential approach:
+• Make transformations
+• Solve for (s, Q) using transformations
+• Determine the ﬁnal policy such that S = XDL+R + kσDL+R
+• Calculate all level of service metrics (CSL, IFR, CSOE, CIS) using Q=D*R, µDL+R and σDL+R
+Relationship Between L & R
+The lead time, L, and the review period, R, both inﬂuence the total costs. Note that the average
+inventory costs for a (R,S) system is = ce[ DR
+2 + kσDL+R + LD]. This implies that increasing Lead Time,
+L, will increase Safety Stock non-linearly and Pipeline Inventory linearly while increasing the Review
+Period, R will increase the Safety Stock non-linearly and the Cycle Stock linearly.
+2.3.9
+Inventory Models for Multiple Items & Locations
+There are several problems with managing items independently, including:
+• Lack of coordination—constantly ordering items
+• Ignoring of common constraints such as ﬁnancial budgets or space
+• Missed opportunities for consolidation and synergies
+• Waste of management time
+Managing Multiple Items
+There are two issues to solve in order to manage multiple items:
+1.
+Can we aggregate SKUs to use similar operating policies?
+(a) Group using common cost characteristics or break points
+(b) Group using Power of Two Policies
+2.
+How do we manage inventory under common constraints?
+(a) Exchange curves for cycle stock
+(b) Exchange curves for safety stock
+Aggregation Methods
+When we have multiple SKUs to manage, we want to aggregate those SKUs where we can use the same
+policies.
+Grouping Like Items—Break Points
+• Basic Idea: Replenish higher value items faster
+• Used for situations with multiple items that have
+– Relatively stable demand
+– Common ordering costs, ct, and holding charges, h
+– Diﬀerent annual demands, Di, and purchase cost ci
+• Approach
+– Pick a base time period, w0, (typically a week)
+– Create a set of candidate ordering periods (w1, w2, etc.)
+– Find Dici values where TRC(wj)=TRC(wj+1)
+– Group SKUs that fall in common value (Dici) buckets
+Supply Chain Fundamentals
+Grouping Like Items Example
+Selected w0 = 1 week Number of weeks of supply (WOS) to order for item i ordering at time period j =
+Qij = Di(wj/52) Selecting between options w1 & w2 (where w1 < w2 < w3 etc.) becomes:
+ctDi/Qi1 + (cihQi1)/2 = ctDi/Qi2 + (cihQi2)/2
+52ctDi/Diw1 + cihDiw1/104 = 52ctDi/Diw2 + cihDiw2/104
+(cihDi/104)(w1 −w2) = (52ct)(1/w2–1/w1)
+Dici = [(104)(52ct)/(h(w1 −w2))](1/w2–1/w1)
+Dici = 5408ct/(hw1w2)
+Rule
+If Dici ≥5408ct/(hw1w2) then select w1
+Else: if Dici ≥5408ct/(hw2w3) then select w2
+Else: if Dici ≥5408ct/(hw3w4) then select w3
+Else: . . . . . .
+Grouping Like Items Example
+Suppose you need to set up replenishment schedules for several hundred parts that have relatively stable
+(yet not necessarily the same) demand. They all have similar order costs (ct = $5) and holding charge
+(h = 0.20).You have the following potential ordering periods (in weeks): w1 = 1, w2 = 2, w3 = 4, w4 =
+13, w5 = 26, w6 = 52.
+What break-even ordering points should you establish?
+Break-point for selecting between 1 week or 2 weeks is:
+Dici = 5408ct/(hw1w2) = 5408(5) / (.2)(1)(2) = $67,600
+If Dici ≥$67,600 then order 1 week’s worth each week
+Break-point for selecting between 2 weeks or 4 weeks is:
+Dici = 5408ct/(hw2w3) = 5408(5) / (.2)(2)(4) = $16,900
+If $67,600 > Dici ≥$16,900 then order 2 week’s worth every 2 weeks
+Final Ordering Break Points:
+Order every 1 week if Dici ≥$67,600
+Order every 2 weeks if Dici ≥$16,900
+Order every 4 weeks if Dici ≥$2,600
+Order every 13 weeks if Dici ≥$400
+Order every 26 weeks if Dici ≥$100
+Order every 52 weeks otherwise
+Power of Two Formula
+• Order in time intervals of powers of two
+• Select a realistic base period, Tbase (day, week, month)
+• Guarantees that TRC will be within 6% of optimal!
+Managing Under Common Constraints
+There is typically a budget or space constraint that limits the amount of inventory that you can actually
+keep on hand. Managing each inventory item separately could lead to violating this constraint. Exchange
+curves are a good way to use the managerial levers of holding charge, ordering cost, and safety factor to
+set inventory policies to meet a common constraint.
+Exchange Curves: Cycle Stock
+• Helps determine the best allocation of inventory budget across multiple SKUs
+• Relevant Cost parameters
+– Holding Charge (h)
+∗There is no single correct value
+∗Cost allocations for time and systems diﬀer between ﬁrms
+∗Reﬂection of management’s investment and risk proﬁle
+– Order Cost (ct)
+∗Not know with precision
+∗Cost allocations for time and systems diﬀer between ﬁrms
+• Exchange Curve
+– Depicts trade-oﬀbetween total annual cycle stock (TACS) and number of replenishments (N)
+– Determines the ct/h value that meets budget constraints
+Exchange Curves: Safety Stock
+• Need to trade-oﬀcost of safety stock and level of service
+• Key parameter is safety factor (k) – usually set by management
+• Estimate the aggregate service level for diﬀerent budgets
+• The process is as follows:
+1. Select an inventory metric to target
+2. Starting with a high metric value calculate:
+(a) The required ki to meet that target for each SKU
+(b) The resulting safety stock cost for each SKU and the total safety stock (TSS)
+(c) The other resulting inventory metrics of interest for each SKU and total
+3. Lower the metric value, go to step 2
+4. Chart resulting TSS versus Inventory Metrics
+Managing Multiple Locations
+Managing the same item in multiple locations will lead to a higher inventory level than managing them
+in a single location. Consolidating inventory locations to a single common location is known as inventory
+pooling. Pooling reduces the cycle stock needed by reducing the number of deliveries required and reduces
+the safety stock by risk pooling that reduces the CV of the demand. This is also called the square root
+“law” – which is insightful and powerful, but also makes some restrictive assumptions, such as uniformly
+distributed demand, use of EOQ ordering principles, and independence of demand in diﬀerent locations.
+Supply Chain Fundamentals
+Notation:
+ci : Purchase cost for item i ($/unit)
+ct : Ordering Costs ($/order)
+ce : Excess holding Costs ($/unit/time); Equal to ch
+cs : Shortage costs ($/unit)
+Di : Average Demand for item i (units/time)
+h : Carrying or holding cost ($/inventory $/time)
+Q : Replenishment Order Quantity (units/order)
+T : Order Cycle Time (time/order)
+TP ractical: Practical Order Cycle Time (time/order)
+k : Safety Factor
+w0 : Base Time Period (time)
+s : Reorder Point (units)
+R : Review Period (time)
+N : Number of Inventory Replenishment Cycles
+TACS: Total Annual Cycle Stock
+TSS: Total Value of Safety Stock
+TVIS: Total Value of Items Short
+G(k): Unit Normal Loss Function
+Formulas:
+Power of Two Policy
+The process is as follows:
+1.
+Create table of SKUs
+2.
+Calculate T ∗for each SKU
+3.
+Calculate Tpractical for each SKU
+T ∗= Q∗
+D =
+s
+2ctD
+ce
+D
+=
+r
+2ct
+Dce
+In a spreadsheet this is: Tpractical = 2 ˆ (ROUNDUP(LN(Toptimal / SQRT(2)) /LN(2),0))
+Exchange Curves: Cycle Stock
+TACS =
+n
+X
+i=1
+Qici
+=
+rct
+h
+√
+n
+X
+i=1
+p
+Dici
+N =
+n
+X
+i=1
+Di
+Qi
+=
+r
+h
+ct
+√
+n
+X
+i=1
+p
+Dici
+Process
+• Create a table of SKUs with “Annual Value” (Dici) and √Dici
+• Find the sum of √Dici term for SKUs being analyzed
+• Calculate TACS and N for range of (ct/h) values
+• Chart N vs TACS
+Exchange Curves: Safety Stock
+TSS =
+n
+X
+i=1
+kiσDLici
+TV IS =
+n
+X
+i=1
+(Di
+Qi
+ciσDLiG(ki))
+Process:
+1.
+Select an inventory metric to target
+2.
+Starting with a high metric value calculate:
+•The required ki to meet that target for each SKU
+•The resulting safety stock cost for each SKU and the total safety stock (TSS)
+•The other resulting inventory metrics of interest for each SKU and total
+3.
+Lower the metric value, go to step 2
+4.
+Chart resulting TSS versus Inventory Metrics
+Pooled Inventories
+Note that the safety stock formula for independent inventory in the ﬁgure should read: SSindependent =
+Pn
+i=1kσdi = kσD
+√n
+Supply Chain Fundamentals
+FIGURE 2.14: Comparison between independent and pooled inventories.
+FIGURE 2.15: Inventory Management by Segment
+FIGURE 2.16: Inventory Policies (Rules of Thumb)
+2.3.10
+Inventory Models for Class A & C Items
+Inventory Management by Segment
+Inventory Policies (Rules of Thumb)
+Managing Class A Items
+There are two general ways that items can be considered Class A:
+• Fast Moving but Cheap (Large D, Small c →Q > 1)
+• Slow Moving but Expensive (Large c, Small D →Q = 1)
+This dictates which Probability Distribution to use for modeling the demand
+• Fast Movers
+– Normal or Lognormal Distribution
+– Good enough for B items
+– OK for A items if µDL or µDL+R ≥10
+• Slow Movers
+– Poisson Distribution
+– More complicated to handle
+– OK for A items if µDL or µDL or µDL+R < 10
+Managing Class C Items
+Class C items have low cD values but comprise the lion-share of the SKUs. When managing them we need
+to consider the implicit & explicit costs. The objective is to minimize management attention. Regardless
+of policy, savings will most likely not be signiﬁcant, so try to design simple rules to follow and explore
+opportunities for disposing of inventory. Alternatively, try to set common reorder quantities. This can be
+done by assuming common ct and h values and then ﬁnding Dici values for ordering frequencies.
+Disposing of Excess Inventory
+• Why does excess inventory occur?
+– SKU portfolios tend to grow
+– Poor forecasts - Shorter lifecycles
+• Which items to dispose?
+– Look at DOS (days of supply) for each item = IOH/D
+– Consider getting rid of items that have DOS > x years
+• What actions to take?
+– Convert to other uses
+– Ship to more desired location
+– Mark down price
+– Auction
+Supply Chain Fundamentals
+Real World Inventory Challenges
+While models are important, it is also important to understand where there are challenges implementing
+models in real life.
+• Models are not used exactly as in textbooks
+• Data is not always available or correct
+• Technology matters
+• Business processes matter even more
+• Inventory policies try to answer three questions:
+– How often should I check my inventory?
+– How do I know if I should order more?
+– How much to order?
+• All inventory models use two key numbers
+– Inventory Position
+– Order Point
+Notation:
+B1 : Cost Associated with a Stock out Event
+c : Purchase Cost ($/unit)
+ct : Ordering Costs ($/order)
+ce : Excess Holding Costs ($/unit/time); Equal to ch
+cs : Shortage Costs ($/unit)
+cg : One Time Good Deal Purchase Price ($/unit)
+D : Average Demand (units/time)
+h : Carrying or Holding Cost ($/inventory $/time)
+L[Xi] : Discrete Unit Loss Function
+Q : Replenishment Order Quantity (units/order)
+T : Order Cycle Time (time/order)
+µDL : Expected Demand over Lead Time (units/time)
+σDL : Standard Deviation of Demand over Lead Time (units/time)
+µDL+R : Expected Demand over Lead Time plus Review Period (units/time)
+σDL+R : Standard Deviation of Demand over Lead Time plus Review Period (units/time)
+k : Safety Factor
+s : Reorder Point (units)
+S : Order Up to Point (units)
+R : Review Period (time)
+N : Orders per Time or 1/T (order/time)
+IP : Inventory Position = Inventory on Hand + Inventory on Order (IOO) – Backorders
+IOH : Inventory on Hand (units)
+IOO : Inventory on Order (units)
+IFR : Item Fill Rate (%)
+CSL : Cycle Service Level (%)
+E[US] : Expected Units Short (units)
+G(k) : Unit Normal Loss Function
+Formulas
+Fast Moving A Items
+TRC = ct(D
+Q ) + ce(Q
+2 + kσDL) + B1(D
+Q )P[x > k]
+Q∗= EOQ
+s
+(1 + B1P[x > k]
+ct
+k∗=
+s
+2ln
+DB1
+√
+2πQceσDL
+• Iteratively solve the two equations
+• Stop when Q∗and k∗converge within acceptable range
+Slow Moving A Items
+Use a Poisson distribution to model sales
+• Probability of x events occurring within a time period
+• Mean = Variance = λ
+p[x0] = Prob[x = x0] = e−λλx0
+x0!
+for
+x0
+F[x0] = Prob[x ≤x0] =
+x0
+X
+x=0
+e−λλx
+x!
+for
+x0
+For a discrete function, the loss function L[Xi] can be calculated as follows (Cachon & Terwiesch)
+L[Xi] = L[Xi−1] −(Xi −Xi−1)(1 −F[Xi−1])
+Learning Objectives
+• Understand the reasons for holding inventory and the diﬀerent types of inventory.
+• Understand the concepts of total cost and total relevant costs.
+• Identify and quantify the four major cost components of total costs: Purchasing, Ordering, Holding,
+and Shortage.
+• Able to estimate the Economic Order Quantity (EOQ) and to determine when it is appropriate to use.
+• Able to estimate sensitivity of EOQ to underlying changes in the input data and understanding of its
+underlying robustness.
+• Understand how to determine the EOQ with diﬀerent volume discounting schemes.
+• Understand how to determine the Economic Production Quantity (EPQ) when the inventory becomes
+available at a certain rate of time instead of all at once.
+• Ability to use the Critical Ratio to determine the optimal order quantity to maximize expected proﬁts.
+• Ability to established inventory policies for EOQ with planned backorders as well as single period
+models.
+• Ability to determine proﬁtability, expected units short, expected units sold of a single period model.
+Supply Chain Fundamentals
+• Understanding of safety stock and its role in protecting for excess demand over lead time.
+• Ability to develop base stock and order-point, order-quantity continuous review policies.
+• Ability to determine proper safety factor, k, given the desired CSL or IFR or the appropriate cost
+penalty for CSOE or CIS.
+• Able to establish a periodic review, Order Up To (S,R) Replenishment Policy using any of the four
+performance metrics.
+• Understand relationships between the performance metrics (CSL, IFR, CSOE, and CIS) and be able
+to calculate the implicit values.
+• Able to use the inventory models to make trade-oﬀs and estimate impacts of policy changes.
+• Understand how to use diﬀerent methods to aggregate SKUs for common inventory policies.
+• Understand how to use Exchange Curves.
+• Understand how inventory pooling impacts both cycle stock and safety stock.
+• Understand how to use diﬀerent inventory models for Class A and C items.
+References
+For General Inventory Management
+There are more books that cover the basics of inventory management than there are grains of sand
+on the beach! Inventory management is also usually covered in Operations Management and Industrial
+Engineering texts as well. A word of warning, though. Every textbook uses diﬀerent notation for the
+same concepts. Get used to it. Always be sure to understand what the nomenclature means so that you
+do not get confused.
+• Nahmias, S. Production and Operations Analysis. McGraw-Hill International Edition. ISBN: 0-07-
+2231265-3. Chapter 4.
+• Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production Planning and Scheduling.
+ISBN: 978-0471119470. Chapter 1
+• Ballou, R.H. Business Logistics Management. ISBN: 978-0130661845. Chapter 9.
+For EOQ
+• Schwarz, Leroy B., “The Economic Order-Quantity (EOQ) Model” in Building intuition : insights from
+basic operations management models and principles, edited by Dilip Chhajed, Timothy Lowe, 2007,
+Springer, New York, (pp 135-154).
+• Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production Planning and Scheduling.
+ISBN: 978-0471119470. Chapter 5
+• Ballou, R.H. Business Logistics Management. ISBN: 978-0130661845. Chapter 9.
+For EOQ Extensions
+• Nahmias, S. Production and Operations Analysis. McGraw-Hill International Edition. ISBN: 0-07-
+2231265-3. Chapter 4.
+• Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production Planning and Scheduling.
+ISBN: 978-0471119470. Chapter 5.
+• Ballou, R.H. Business Logistics Management. ISBN: 978-0130661845. Chapter 9.
+• Schwarz, Leroy B., “The Economic Order-Quantity (EOQ) Model” in Building intuition : insights from
+basic operations management models and principles, edited by Dilip Chhajed, Timothy Lowe, 2007,
+Springer, New York, (pp 135-154).
+• Muckstadt, John and Amar Sapra ”Models and Solutions in Inventory Management”., 2006, Springer
+New York, New York, NY. Chapter 2 & 3.
+For Single Period Inventory Models
+• Nahmias, S. Production and Operations Analysis. McGraw-Hill International Edition. ISBN: 0-07-
+2231265-3. Chapter 5.
+• Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production Planning and Scheduling.
+ISBN: 978-0471119470. Chapter 10.
+• Porteus, Evan L., “The Newsvendor Problem” in Building intuition: insights from basic operations
+management models and principles, edited by Dilip Chhajed, Timothy Lowe, 2007, Springer, New
+York, (pp 115-134).
+• Muckstadt, John and Amar Sapra ”Models and Solutions in Inventory Management”., 2006, Springer
+New York, New York, NY. Chapter 5.
+• Ballou, R.H. Business Logistics Management. ISBN: 978-0130661845. Chapter 9.
+For Probabilistic Inventory Models
+• Nahmias, S. Production and Operations Analysis. McGraw-Hill International Edition. ISBN: 0-07-
+2231265-3. Chapter 5. Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production
+Planning and Scheduling. ISBN: 978-0471119470. Chapter 7.
+• Ballou, R.H. Business Logistics Management. ISBN: 978-0130661845. Chapter 9.
+• Muckstadt, John and Amar Sapra ”Models and Solutions in Inventory Management”., 2006, Springer
+New York, New York, NY. Chapter 9, 10
+For Inventory Models with Multiple Items and Locations
+• Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production Planning and Scheduling.
+ISBN: 978-0471119470. Chapter 7 & 8.
+For Inventory Models for Class A & Class C Items
+• Cachon, Gerard, and Christian Terwiesch. Matching Supply with Demand: An Introduction to Opera-
+tions Management. Boston, MA: McGraw-Hill/Irwin, 2005.
+• Silver, E.A., Pyke, D.F., Peterson, R. Inventory Management and Production Planning and Scheduling.
+ISBN: 978-0471119470. Chapter 8 & 9.
+2.4
+Fundamentals of Transportation Management
+2.4.1
+Summary
+This section provides an overview of transportation networks, explains how to analyze the trade-oﬀs
+between cost and level of service to select the best mode of transportation, and provides guidance on how
+to address speciﬁc transportation problems.
+Transportation networks can be broken down into three diﬀerent layers: the physical network, the
+operational network, and the strategic or service network. The physical network represents how the
+Supply Chain Fundamentals
+product physically moves, the actual path that the shipment could take from origin to destination. The
+physical network is the basis for all the cost and distance calculations. The operational network represents
+the route the shipment takes in terms of decision points. Each node is a decision point, and each arc
+is a speciﬁc mode with an associated cost, distance, etc. The strategic or service network represents a
+series of paths through the network, from origin to destination. Each path represents a complete option
+that includes end-to-end cost, distance, and service characteristics. Decisions that tie into the inventory
+policies are made at the strategic or service network level.
+Freight transportation analysis introduces the concept of the transportation product and eco-
+nomic transportation modes. The transportation product contains four fundamental operations: load-
+ing/unloading, vehicle routing, linehaul moves and facility sorting. There are three main transportation
+problems based on the number of origin points and the number of destination points: one to one, one
+to many, and many to many. Freight transportation is also broken down into economic modes, namely
+consolidated operations and direct operations. Each mode type has diﬀerent economic characteristics, in
+terms of scale, scope and density.
+2.4.2
+Key Concepts
+Packaging
+An important component of freight transportation is packaging. Packaging can be classiﬁed in three
+categories. The Primary packaging, has direct contact with the product and is usually the smallest unit
+of distribution (e.g. a bottle of wine, a can, etc.). The Secondary packaging contains product and also
+a middle layer of packaging that is outside the primary packaging, mainly to group primary packages
+together (e.g. a box with 12 bottle of wines, cases, cartons, etc.). The Tertiary packaging is designed
+thinking more on transport shipping, warehouse storage and bulk handling (e.g. pallets, containers, etc.).
+• Level of packaging mirrors handling needs.
+• Pallets—standard size of 48 x 40 in in the USA (120 x 80 cm in Europe).
+• Shipping Containers:
+– TEU (20 ft) 33 m3 volume with 24.8 kkg total payload
+– FEU (40 ft) 67 m3 volume with 28.8 kkg total payload
+– 53 ft long (Domestic US) 111 m3 volume with 20.5 kkg total payload
+Transportation Networks
+Transportation networks can be analyzed in three layers:
+• Physical Network: The actual path that the product takes from origin to destination including guide
+ways, terminals and controls. Basis for all costs and distance calculations – typically only found once.
+• Operational Network: The route the shipment takes in terms of decision points. Each arc is a spe-
+ciﬁc mode with costs, distance, etc. Each node is a decision point. The four primary components are
+loading/unloading, local-routing, line-haul, and sorting.
+• Strategic Network: A series of paths through the network from origin to destination. Each represents a
+complete option and has end-to-end cost, distance, and service characteristics.
+The transportation product:
+The transportation product consists of four fundamental operations and two types of economic modes.
+The fundamental transportation operations are: loading & unloading, vehicle routing, linehaul moves,
+facility sorting. The way each of these operations is performed will determine the cost of the transportation
+product, as well as the service level.
+There are two types of economic modes: direct, consolidated. Direct mode is when cargo moves directly
+from one origin to one destination (1:1). The direct mode brings strong economies of scope (balance).
+The consolidated mode tries to consolidate shipments (1:∞, ∞:1, ∞:∞). The consolidated mode brings
+strong economies of scale and density.
+2.4.3
+Mode Selection
+Transportation modes have speciﬁc niches and perform better than other modes in certain situations.
+Also, in many cases, there are only one or two feasible options between modes.
+Criteria for Feasibility
+• Geography
+– Global: Air versus Ocean (trucks cannot cross oceans!)
+– Surface: Trucking (TL, LTL, parcel) vs. Rail vs. Intermodal vs. Barge
+• Required speed
+– > 500 miles in 1 day—Air
+– < 500 miles in 1 day—Trucking
+• Shipment size (weight/density/cube, etc.)
+– High weight, cube items cannot be moved by air.
+– Large oversized shipments might be restricted to rail or barge.
+• Other restrictions
+– Nuclear or hazardous materials (HazMat)
+– Product characteristics
+Trade-oﬀs within the set of feasible choices
+Once all feasible modes (or separate carrier ﬁrms) have been identiﬁed, the selection within this feasible
+set is made as a trade-oﬀbetween costs and service level. It is important to translate the “non-cost”
+elements into costs via the total cost equation. The typical non-cost elements are:
+• Time (mean transit time, variability of transit time, frequency)
+• Capacity
+• Loss and Damage
+Transportation Cost Functions
+Transportation costs can take many diﬀerent forms, to include:
+• Pure variable cost / unit
+• Pure ﬁxed cost / shipment
+• Mixed variable & ﬁxed cost
+• Variable cost / unit with a minimum quantity
+• Incremental discounts
+Impact of Transportation on Inventory Cost
+Transportation aﬀects total inventory cost via:
+• Cost of transportation (ﬁxed, variable, or some combination)
+• Lead time (expected value as well as variability)
+• Capacity restrictions (as they limit optimal order size)
+• Miscellaneous factors (such as material restrictions or perishability)
+Supply Chain Fundamentals
+2.4.4
+Lead Time Variability
+Variability in lead time impacts the total cost equation for inventory. There are important linkages be-
+tween lead time reliability, forecast accuracy, and inventory levels. Therefore, mode selection is heavily
+inﬂuenced not only by the value of the product being transported, but also the expected lead time and
+its variability.
+Lead Time Reliability
+There are two diﬀerent dimensions of reliability that do not always match:
+• Credibility (reserve slots are agreed, stop at all ports, load all containers, etc.)
+• Schedule consistency (actual vs. quoted performance)
+Contract reliability in procurement and operations do not always match as they are typically per-
+formed by diﬀerent parts of an organization. Contract reliability diﬀers dramatically across diﬀerent route
+segments (origin port dwell time vs. port-to-port transit time vs. destination port dwell time for instance).
+For most shippers, the greatest transit variability occurs in the origin inland transportation legs and at
+the ports.
+Demand Over Lead Time with Lead Time Variability
+In order to account for lead time variability in the inventory cost equation, you should use the following
+formula to calculate the demand over lead time:
+µDL = µLµD
+σDL =
+q
+µLσ2
+D + (µD)2σ2
+L
+This formula derives from a more general statistical formula that is applied to calculate random sums
+of random variables:
+E[S] = E[
+N
+X
+i=1
+Xi] = E[N]E[X]
+V ar[S] = V ar[
+N
+X
+i=1
+Xi] = E[N]V ar[X] + (E[X])2V ar[N]
+2.4.5
+Transportation Product: Main Operations
+The transportation products consist of up to four fundamental operations: loading/unloading, linehaul
+moves, vehicle routing, and facility sorting. The cost and time associated with each one operation depends
+on a series of variables.
+Loading/Unloading
+• Cost is function of time and labor.
+• Time is a function of quantity, ease and stowability.
+• Fixed and variable costs with respect to quantity.
+Linehaul moves
+• Cost is function of time, distance and balance.
+• Time is a function of distance.
+• Fixed and variable costs with respect to distance and time.
+Vehicle routing
+• Cost is function of distance, number of stops and time.
+• Time is a function of density of stops.
+• Fixed and variable costs with respect to number of stops and distance.
+• Diﬀerent types of routing:
+– One-to-Many – single origin w/multiple stops
+– Many-to-One – multiple origins w/single stop
+– Interleavened – multiple pickups and deliveries enroute
+Facility sorting
+• Cost is function of quantity, ease and stowability.
+• Fixed and variable costs with respect to quantity.
+2.4.6
+Transportation Product: Economic Modes
+There are a series of underlying economic drivers that should be considered when making decisions about
+the transportation product. There economic drivers are: economies of scale, economies of scope, and
+economies of density.
+The economies of scale refer to the decrease of unitary cost as the volume (scale) increases. This
+economies are present when there is a ﬁxed cost of operation. They are found in loading/unloading,
+linehaul moves (in vehicle) and facility sorting.
+The economies of scope refer to how a ﬁrm’s average unitary cost decreases if another product is
+also produced or transported during the same operation. They are related to subadditivity and cost
+complementarity. They are found in linehaul moves.
+Finally, the economies of density refer to how a ﬁrm’s unitary cost is reduced as the density of
+customers or production in a region is increased. They are related to both shipment and location density.
+They are found in vehicle routing.
+These underlying economic drivers are useful to analyze the economic modes and their options.
+There are two types of economic modes in transportation: direct and consolidated. Direct modes re-
+fer to linehaul moves that transport goods from one location to another directly, without any stops or
+processing. Consolidated modes involve more complex transportation systems in which several linehaul
+moves, routing for deliveries or pick-ups, and sorting of goods at hubs or sorting centers take place.
+Direct Mode
+Consolidated Mode
+Economies of Scale
+weak, lane based
+very strong
+Economies of Scope
+very strong
+weak
+Economies of Density
+moderate
+strong
+Number of Vendors
+many (perfectly competitive)
+fewer (big barriers)
+Size of Carrier Base
+dozens to hundred
+few to one
+Design
+focus on linehauls and corridors
+focus on aggregating low volume lanes
+Procure
+auction/bid
+ad-hoc negotiation
+Manage
+tiered management by exception
+deeper relations with few
+Supply Chain Fundamentals
+2.4.7
+Transportation Problems Examples
+We can conclude that, according to the number of points of origin and destination, the transportation
+problems can be classiﬁed in four types: one to one, one to many, many to one, many to many.
+The one to one (1:1) problem reﬂects the need to transport a certain cargo from a single origin point
+to a single destination point directly.
+The one to many (1:∞) problem requires to transport certain products from a certain point A to
+several diﬀerent destiny points.
+The many to one (∞:1) problem represents the challenge of collecting items at several points of origin
+and delivering all of them at a certain speciﬁc destination point.
+The many to many (∞:∞) problem represents the collection of products at several origin points to
+be delivered at several destination points.
+Each of these transportation problems will include several basic operations, as illustrated in the table
+below:
+(1:1)
+(1:∞)
+(∞:∞)
+Loading/unloading
+X
+X
+X
+Linehaul
+X
+X
+X
+Routing
+X
+X
+Sorting
+X
+There are methods and techniques that can help us to solve each of these problem types in the most
+cost-eﬀective way. In this section, a few of these techniques are explained to calculate linehaul cost, vehicle
+routing and cost of sorting, however this is not a comprehensive list of all the methods that can be used
+to solve transportation problems.
+Costs for transportation:
+• Loading: cLF + cLV u(Q)
+• Unloading: cUF + cUV u(Q)
+• Direct Linehaul: cDF + cDV d(distance) + cDV u(Q)
+Total cost per shipment : (cLF + cDF + cUF ) + (cLV u + cDV u + cUV u)(Q) + cDV d(distance)
+Total cost per year : (cLV u + cDV u + cUV u)(Q)(S/Q) + [(cLF + cDF + cUF ) + cDV d(distance)][S/Q]
++ (h)(Q/2)
+Q∗=
+p
+(2S[FixedShipCosts]/h)
+where cLF , cUF = ﬁxed cost for (un)loading
+cLV u, cUV u = variable cost for (un)loading by units
+cDF = ﬁxed cost for direct linehaul
+cDV d = var cost for direct linehaul by distance
+cDV u = var cost for direct linehaul by units
+Q = Quantity shipped (units/load)
+S = Annual product supply (units/yr)
+T = frequency of shipment (yr/lds)
+h = holding/penalty cost ($ per year)
+distance = length of haul of shipment
+Linehaul cost
+The objective is to minimize the cost of point to point transportation. This cost will depend on the
+point to point distance. There are diﬀerent ways to calculate the point to point distance, which depend
+on the topography of the underlying region.
+• If Euclidean space, use Euclidean distance: dist((x, y), (a, b)) =
+p
+(x −a)2 + (y −b)2
+• If grid, use Manhattan distance: dist((x, y), (a, b)) =|x-a|+|y-b|
+• If random network, use: DA−B =kcf × dA−B, where kcf is the circuity factor or k factor. For short
+distances, dA−B can be considered to be the Euclidean distance. The k factor ranges from 1 to 2, or
+rarely a higher number, depending on the density or sparsity of the network.
+Vehicle Routing
+The objective is to ﬁnd minimum cost tours from single origin to multiple destinations using multiple
+vehicles. There are many approaches available to solve this problem, and there is usually a trade-oﬀ
+between speed and solution quality.
+Simple heuristics provide a solution fast, but quality of the solution can vary from problem to problem
+(e.g. Sweep Method). Optimization models ﬁnd the optimal solution, but can take a long time to run
+(e.g. mixed integer linear programming). Advance heuristics are not as fast as simple heuristics, but they
+usually deliver a better quality solution (e.g. Clark-Wright Savings Algorithm).
+• Sweep Method:
+This is a simple heuristic method. Please, be aware that diﬀerent starting points and directions can
+yield diﬀerent solutions.
+1. Draw a line from the starting node and select an angle and direction (clockwise or counter-
+clockwise).
+2. Select a new vehicle, j, that is empty, wj = 0, and has capacity, cj.
+3. Rotate the line in the selected direction until it hits a new node, i. (When the line reaches
+the starting point, go to step 5).
+4. If the demand at i (Di) plus the current load already in the vehicle (wj) is less than the
+vehicle capacity, add the new load to the vehicle, wj = Di + wj and go to step 3. Otherwise,
+close this vehicle, and go to step 2 to start a new tour.
+5. Solve the TSP for each independent vehicle tour.
+• Optimization:
+Potential routes are inputs to the model and diﬀerent types of cost can be included (not just distance-
+related). Mixed integer linear programming is used to select routes
+Min
+P
+j CjYj
+Such
+that:
+PJ
+j=1
+ajiYj ≥Di
+∀i
+PJ
+j=1
+Yj ≤V
+P
+i
+Yij = 1
+∀j = t Yj = 0, 1
+∀j
+– Indices ::: Demand nodes i :::Vehicle routes j
+– Input Data : Cj = Total cost of route j ($) ::: Vehicle routes j ::: V = Maximum vehicles ::: aij =1
+if node i is in route j; = 0 otherwise
+– Decision Variables: Yj =1 if route j is used, =0 otherwise
+Supply Chain Fundamentals
+• Clark-Wright Savings Algorithm:
+The Clarke and Wright savings algorithm is one of the best known heuristic for Vehicle Routing prob-
+lems. It applies to problems for which the number of vehicles is not ﬁxed (it is a decision variable).
+1. Start with a complete solution (out and back).
+2. Identify nodes to link to form a common tour by calculating savings
+3. Savings from connecting node i and j:
+si,j = co,i + co,j–ci,j
+4. Calculate savings for every pair of nodes (all i and j).
+5. Sort savings si,j by highest savings ﬁrst.
+6. Obtain solution as long as vehicle capacity is not violated and interior tour nodes are not
+added.
+Example:
+– Current tour cost: 2c01 + 2c02
+– Joined tour cost: c01 + c12 + c20
+– So if 2c01 + 2c02 > c01 + c12 + c20, then go for the joined tour. This will generate savings of:
+c01 + c20 −c12
+FIGURE 2.17: Savings algorithm
+Sorting The impact on using sorting facilities can be evaluated via network design problems (opti-
+mization models). Below, we list some of the advantages and disadvantages of using sorting facilites or
+hubs.
+• Advantages:
+– Lower costs through fewer conveyances needed with greater utilization
+– Higher LOS with similar or even fewer resources
+– Extended reach into smaller and more locations
+• Disadvantages:
+– Costs of operating the hub
+– Higher level on circuity
+– Impact on service levels
+– Productivity/utilization loss
+• Economic Factors:
+– Relative O-D versus Hub distances
+– Conveyance and shipment sizes
+– Demand patterns
+– Location of freight versus pax hubs
+Learning Objectives
+• Understand the common terminology and key concepts of global freight transportation.
+• Understand the physical, operational, and strategic networks of a transportation system.
+• Acquire the ability to select transportation mode by considering the trade-oﬀs between Level of Service
+(LOS) and cost.
+• Understand the impact of transportation on inventory costs.
+• Understand the diﬀerent transportation products and their characteristics.
+• Understand the main operations in transportation problems, and know some of the approaches that
+can be used to ﬁnd a cost-eﬀective solution.
+References
+• Ballou, Ronald H., Business Logistics: Supply Chain Management, 3rd edition, Pearson Prentice Hall,
+2003. Chapter 6.
+• Chopra, Sunil and Peter Meindl, Supply Chain Management, Strategy, Planning, and Operation, 5th
+edition, Pearson Prentice Hall, 2013. Chapter 14.
+Supply Chain Fundamentals
+2.4.8
+Appendix A & B Unit Normal Distribution, Poisson Distribution Tables
+FIGURE 2.18: Poisson Distribution
+FIGURE 2.19: Normal Distribution
+Supply Chain Fundamentals
+FIGURE 2.20: Normal Distribution
+2.5
+Warehousing
+2.5.1
+Summary
+We now move into an important, yet often under-explored component of the supply chain, warehouses.
+Warehouses as are often overlooked because they generally do not add value to a product, but are
+intermediary stations in the supply chain. Warehouses store, handle and/or ﬂow product. Their primary
+operation functions are to receive; put-away; store; pick, pack and ship product. In some cases they play
+a role Value-Add Services such as labeling, tagging, special packaging, minor assembling, kitting, re-
+pricing, etc. In addition, sometime they play a role in returns. The main approach to assessing warehouse
+performance is to proﬁle its activity and benchmark. With continuous assessment and feedback, eﬃciencies
+at a warehouse can be improved.
+Businesses typically have warehouses to better match supply and demand. Supply is not always in
+sync with what is demanded at the store. Having warehouses serves as a buﬀer for unexpected shortages
+and demands. In this lesson we will cover warehouse basics of the diﬀerent types of warehouses, their core
+operational functions, and common ﬂow patterns. We then review each of the major functions, what is
+entailed, and how best to optimize practices. We conclude with diﬀerent ways of assessing performance
+for best performance of warehouses.
+2.5.2
+Warehousing Basics
+Based on needs, companies select diﬀerent warehouses. The warehouses can simply be a place to store
+additional product or can go all the way to serving a partial assembly and ﬁnishing stage. Within the
+warehouse there are two competing priorities: space and time. This means that they want to maximize
+their utilization of space and optimize throughput. These are the types of warehouses and their function:
+• Raw Material Storage – close to a source or manufacturing points
+• WIP Warehouses – partially completed assemblies and components
+• Finished Goods warehouses – buﬀers located near point of manufacture
+• Local Warehouses – in the ﬁeld near customer locations to provide rapid response to customers
+• Fulﬁllment Centers – holds product and ships small orders to individual consumers (cases or eaches)
+– predominately for e-commerce
+• Distribution Centers – accumulate and consolidate products from multiple sources for common
+shipment to common destination/customer
+• Mixing Centers – receives material from multiple sources for cross-docking and shipment of mixed
+materials (pallets to pallets)
+Package Size
+Because warehouses are constantly concerned about saving space, this means that the package size is
+of great concern. There are several principles in package sizing. The general Handling Rule is: The
+smaller the handling unit, the greater the handling cost. As well as that in general, the unit of storage for
+a product gets smaller as it moves downstream from container to pallet to case to eaches. Size impacts
+design and operations with an inbound and outbound ﬂow from pallets to pallets, pallets to cases and
+pallets to eaches.
+Supply Chain Fundamentals
+FIGURE 2.21: Core Operational Functions
+2.5.3
+Core Operational Functions
+There are several core operational functions in warehouses beyond storage. These include receiving;
+putaway; pick; check, pack; ship; as well as additional but not always included steps such as value-added
+services and returns. See ﬁgure 5.14.
+Receiving
+The receiving function of the warehouse is one of the most important because it sets up the interaction at
+the warehouse as well as next steps. There are some generally agreed upon best practices which include:
+• Use ASNs (advanced shipping notice)
+• Integrate yard and dock scheduling
+• Prepare for shipment at receiving
+• The best option is to minimize receiving activity
+• Pursue drop shipping whenever possible
+• IF drop ship is not possible, explore cross-docking
+Putaway
+The putaway function is essentially order picking in reverse. The Warehouse Management System (WMS)
+plays a signiﬁcant role in this step by determining storage location for received items (slotting). It also
+directs staﬀwhere to place product and records inventory level. Required data for WMS include: size,
+weight, cube, height, segmentation status, current orders, current status of pick face as well as identiﬁ-
+cation of products and locations.
+FIGURE 2.22: Common Flow Patterns
+There are diﬀerent approaches to the putaway function, which can be directed (speciﬁc location ahead
+of time). It can be batched & sequenced which means there is a pre-sort at staging for commonly located
+items. Or it can be chaotic, where the user picks any location and records item-location.
+Order Picking
+Order Picking is the most labor-intensive task 50-60%. Picking strategies change based on the size of the
+object being picked. For instance, full pallet retrieval is the easiest and fastest. Case picking being the
+next in ease and small item picking being the most expensive and time consuming. The break down of
+order picking eﬀort is:
+• Traveling 55%
+• Searching 15%
+• Extracting 10%
+• Other tasks 20%
+Layout When selecting a placement for items, the warehouse is typically set up with a ﬂow between
+receiving and shipping. The Flow-Through Design places the most convenient items directly in line with
+receiving and shipping. A convenient location is one that minimizes total labor time (distance) to putaway
+and retrieve.
+Min
+c
+X
+i
+(dini)
+where:
+c = labor cost per distance
+di = distance for pallet location i from receiving to location to shipping
+Supply Chain Fundamentals
+ni = average number of times location i is visited per year
+∼= # pallets sold / # pallets in order
+Simple Heuristic:
+1.
+Rank all positions from low to high di
+2.
+Rank all SKUs from high to low nj
+3.
+Assign next highest SKU (nj) to next lowest location (di)
+Aisle Layout
+In terms of aisle layout, it is typically best to have aisles parallel to the ﬂow to avoid inconveniences in
+ﬂow. Cross aisles in a warehouse can shorten distances, but they take up signiﬁcantly more space and
+also increase the amount of aisle crossing. Angled or ﬁshbone aisle can increase eﬃciency especially when
+there is a central dispatch point. In addition, fast moving items should be put in convenience locations.
+Picking Strategies
+Single Picker – Single Order: good for low number of lines/order; suitable for short pick paths; no
+need to marry the orders afterwards; travel time can be high
+Single Picker – Multiple Orders: expected travel time (distance) per item is reduced; requires
+sorting and “marrying” items; can sort “on-cart” or after tour; works for both picker-to-stock and stock-
+to-picker.
+Multiple Picker - Multiple Orders: well suited for orders with high line count; expected travel
+time per item is reduced; minimizes congestion & socializing in pick aisles; pickers can become “experts”
+in a zone but lose order completion accountability; requires sorting and consolidation of items; allows for
+simultaneous ﬁlling of orders; diﬃcult to balance workload across zones.
+Check, Pack & Ship
+The ﬁnal function of standard warehouse functions is check, pack & ship. Checking includes creating and
+verifying shipping labels and conﬁrming weight and cube. Packing consists of ensure damage protection
+and unitize pallets. Shipping is the ﬁnal step; it is essentially the reverse of receiving. Shipping activities
+include dock door and yard management; minimizing staging requirements; and container/trailer loading
+optimization.
+2.5.4
+Proﬁling & Assessing Performance
+Warehouse Activity Proﬁle
+When organizations are either designing a new warehouse/DC or revamping an existing one, there needs
+to be some advance critical thinking. For instance, a few data points that are worth looking into include:
+• Number of SKUs in the warehouse
+• Number of pick-lines per day & number of units per pick-line
+• Number & size of customer orders shipped and shipments received per day
+• Rate of new SKU introductions and respective lifecycle
+When evaluating these data points, we need to make sure to look at the distribution not just the
+averages to understand peaks and dips over time. The data sources are typically in the Master SKU data,
+order history, and warehouse location.
+Segmentation Analysis
+We were ﬁrst introduced to segmentation analysis for demand planning, however, it can be applied to
+warehousing as well. Segmentation can provide some important insights for warehouse design. Diﬀerent
+segmentation views give diﬀerent insights:
+Frequency of SKUs sold: Top selling SKUs inﬂuence retail operations – not necessarily warehouse
+operations.
+Frequency of pallets/cases/cartons by SKU: Will not necessarily follow SKU frequency; pro-
+vides insights into receiving, putaway, and restocking.
+Frequency of picks by SKU: Order picking drives most labor costs; determines slotting and for-
+ward pick locations.
+It is also important to note that there is common variability of demand that is aﬀected by seasonality
+- such as by year, quarter, day or week, time of day. There is also correlation to other products (aﬃnity
+between items and families). These can all have an inﬂuence on how a warehouse/DC should be designed.
+Measuring and Benchmarking
+To best understand the eﬀective operation of a warehouse, there are a few ways to measure and bench-
+mark activity. First, it is important to understand where the major cost drivers are: labor, space, and
+equipment. Regular assessment of these can provide feedback on surges and dips of spend. Next there
+are key performance measures that provide information about the activity in the warehouse and can be
+used to make operational decisions.
+Major Warehousing Cost Drivers
+Labor = (person-hours/year) x (labor rate)
+Space = (area occupied) x (cost of space)
+Equipment = (money invested) x (amortization rate)
+Performance Measures
+Productivity/Eﬃciency: Ratio of output to the inputs required; e.g., labor = (units, cases, or pallets) /
+(labor hours expended).
+Utilization: Percentage of an asset being actively used; e.g., storage density = (storage capacity in
+WH) / (total area of WH)
+Quality / Eﬀectiveness: Accuracy in putaway, inventory, picking, shipping, etc.
+Cycle Time: Dock-to-Stock time – time from receipt to being ready to be picked; Order Cycle Time
+– time from when order is dropped until it is ready to ship.
+Learning Objectives
+• Review types of warehouse and recognize their primary use.
+• Understand the core functions of the warehouse.
+• Become familiar with common ﬂow patterns of a warehouse.
+• Review the activities within each of the functions and how to optimize them.
+• Recognize how to assess and benchmark warehouse activity.
+Supply Chain Fundamentals
+References
+• Bartholdi, J. and S. Hackman (2016). Warhouse & Distribution Science (Release 0.97)
+• Frazelle, E. (2011). World Class Warehousing and Material Handling.

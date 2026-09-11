@@ -1,0 +1,699 @@
+{
+  "tutor_provider": "claude",
+  "tutor_prompt": "tutor_09",
+  "student_persona": "clueless_02",
+  "course": "ai_edge",
+  "exercise_number": "1",
+  "exercise_kind": "exercise",
+  "tutor_impl": "asktim",
+  "context_mode": "rag",
+  "figures": [],
+  "turn_size": 10,
+  "context": "Course description\n\n15.071 The AI Edge is a practical introduction to the foundations of modern AI, spanning predictive machine learning, generative AI, and agentic AI systems. The course has three objectives: understanding the technologies underlying modern AI, building AI-powered products with AI as a coding companion, and identifying and leading opportunities to create value through AI. It begins with the core methods of supervised learning — regularized regression, classification, tree-based methods, and recommendation systems — before progressing to neural networks, transformers, computer vision, multimodal AI, large language models, LLM applications, and AI agents. Throughout, students build hands-on solutions in Python using modern AI libraries and connect technical advances to the managerial questions of deployment, evaluation, and governance. The course follows a problem-driven approach organized around business case studies across marketing, finance, healthcare, energy, transportation, supply chains, sports analytics, manufacturing, and digital platforms, teaching students not only how to understand the foundations of the AI revolution but also how to identify opportunities in AI, build AI-powered applications, and lead AI initiatives within organizations.",
+  "exercise": "Exercise:\nTITLE: Homework 1 — Building an AI Agent (Corvus Analytics Launch Campaign)\n\nCited in Lecture 1 (Building AI Agents for a Marketing Campaign). This is a graded weekly assignment.\n\nWHAT THIS ASSIGNMENT IS\nYou are given a working AI agent: a \"Campaign Strategist\" for Corvus Analytics,\na (fictional) operations-analytics company launching into mid-market\nmanufacturing. The agent already reads a product brief, a brand-voice guide,\nand a set of customer archetypes, then designs a go-to-market launch campaign\nend to end and produces three artifacts: a campaign plan (corvus-campaign.md),\nan executive Word brief (corvus-campaign-brief.docx), and a client-facing PDF\none-pager (corvus-campaign-onepager.pdf).\n\nYour job is NOT to write a campaign. Your job is to improve the agent's\nspecification — the file that tells it how to behave — and then to stress-test\nwhat you wrote. The specification is the work, not the request: an agent will\nproduce *something* from a one-word instruction, and it will be generic. What\nmakes a specification good is that it pins down the fields, the reader, and the\nconstraints tightly enough that the output is usable and honest.\n\nWHAT YOU DO\n1. Copy the agent/ folder to a new working folder (e.g. agent_v2/) and leave the\n   original untouched so you always have a clean baseline.\n2. ADD A FOURTH ARTIFACT. In Project Instructions.md, add one new numbered step\n   to the PROCESS section and a matching DELIVERABLE block further down that\n   fully specifies the new artifact: its reader, its structure, its constraints,\n   and what would make it good. Steps 6, 7, and 8 (and DELIVERABLES 1 and 2) are\n   your models for how much detail a specification needs.\n3. RUN IT THREE TIMES on the same instruction (\"Read 'Project Instructions.md'\n   and build the launch campaign.\"), saving the outputs into run1/, run2/,\n   run3/ so you can compare them. Each run overwrites the last, so copy outputs\n   out as you go.\n4. RUN IT ONCE MORE ON A DELIBERATELY ADVERSARIAL INPUT. The adversarial run is\n   a change to what the agent *reads*, not a stranger way of asking. Take away\n   something your new step quietly assumes is there, or push the agent toward\n   the answer it would rather give — for example: delete a file your new step\n   reads from; cut the budget in the product brief but leave the target where it\n   is; name a competitor that does not exist; add a line to a context document\n   that permits something the constraints forbid. The question you are answering\n   is: what was my specification leaning on without saying so?\n5. WRITE IT UP in an instruction_block.md: exactly what you added and why, and\n   what the three runs plus the adversarial input showed — specifically, what\n   held across runs and what moved, and how the adversarial input broke (or\n   failed to break) the agent. Close with two sentences: what the artifact does\n   not do reliably, and what a founder could check in a minute to catch it.\n\nIf the adversarial run breaks the agent outright, that is a result — say so and\nscreenshot the artifact from a clean run. A complete baseline run is provided in\nbaseline_output/ so you are never stuck.\n\nWHAT TO THINK ABOUT WHEN CHOOSING YOUR FOURTH ARTIFACT\nA marketing agent is not limited to marketing collateral. The same underlying\ncampaign can be turned toward a different reader (internal sales, the economic\nbuyer, leadership, a control function, external governance), built with a\ndifferent lever (a tighter prompt, a designed asset, arithmetic run in code, a\ndeterministic guardrail, or composition that reuses another artifact's output),\nand made to carry a different kind of value. The strongest submissions pick a\nreader who is discussed in the campaign but handed nothing, and give the agent\nenough structure (fixed fields, a schema, a rule it may not break) that the\nuseful part survives from one run to the next.\n\nHOW IT IS GRADED\nThe quality of the specification you added and the honesty of your write-up, not\nthe polish of any single artifact. A good instruction_block names what its runs\nproved unreliable rather than claiming the agent worked.\n\n================================================================================\nREFERENCE — THE AGENT YOU ARE EXTENDING (agent/Project Instructions.md)\nThis is the file you edit. It is reproduced here so the tutor can help you reason\nabout where a new step and DELIVERABLE block should go and how detailed they need\nto be.\n================================================================================\n\n# Campaign Strategist — Project Instructions\n\nROLE\nYou are the senior marketing strategist for Corvus Analytics, the company\ndescribed in the attached brand guide, product brief, and customer archetypes.\nYou design go-to-market launch campaigns end to end. Always ground your work in\nthe attached documents. The brand voice, the product's real features, and the\ncustomer archetypes are your source of truth. Do NOT access any file outside the\ncurrent directory.\n\nPROCESS\nWhen given a product brief, always work in this order:\n1. RESEARCH: Search the web to identify 2-3 real current competitors and\n   summarize how each positions itself. Note where Corvus can differentiate.\n2. SEGMENT: Propose 2 target segments, mapped to the customer archetypes, with\n   reasoning for each.\n3. CHANNELS: Recommend a channel mix with a rough budget split that stays within\n   the stated budget.\n4. MESSAGING: Write core messaging plus 2 ad copy variants per channel, in the\n   brand voice from the attached guide. At least two ad-copy lines per segment\n   must turn a RESEARCH finding into copy: a named competitor's positioning, or\n   a market fact you found, rather than restating a feature from the product\n   brief. Research that never reaches the copy has not been used.\n5. ROADMAP: Lay out a launch roadmap covering the stated timeframe.\n6. DESCRIBE THE CAMPAIGN: Outline the marketing campaign in a dedicated\n   corvus-campaign.md. The specification is given in the OUTPUT section below.\n7. WRITE THE BRIEF: Save the campaign as a professional Word document (.docx) in\n   the project folder, named corvus-campaign-brief.docx (executive-ready\n   version). Write and run the code needed to produce it, then confirm the path.\n8. PRODUCE THE ONE-PAGER: Create a single-page, client-ready marketing one-pager\n   as a PDF in the project folder, named corvus-campaign-onepager.pdf. Before\n   writing any code, first plan the design (see DELIVERABLE 2), then build it,\n   then confirm the file was created and state its path.\n\nCONSTRAINTS\n- Stay within the stated budget.\n- Never invent product features that aren't in the product brief.\n- Use only the brand voice defined in the attached guide. If a banned word is\n  listed, do not use it.\n- If you make a performance claim that would need evidence, flag it as \"needs\n  verification\" rather than stating it as fact.\n\nREASONING (do this before MESSAGING)\n- Before writing any copy, reason explicitly about the ONE acute pain each\n  segment feels day to day, and tie it to a specific line of the product brief\n  (a feature, the pilot result, or the founder tagline). Do not write a single\n  line of copy until you have named that pain in plain language.\n\nQUALITY BAR (applies to all messaging and ad copy)\n- Every line of copy must name a real product feature or the pilot number.\n  Generic B2B SaaS filler is banned. No \"streamline your operations,\" \"unlock\n  insights,\" \"data-driven decisions,\" \"end-to-end visibility,\" or \"empower your\n  team.\"\n- Write in the founder's voice, consistent with the tagline \"See the problem\n  while you can still fix it.\"\n- Calibrate WEAK (generic, could be any vendor) vs STRONG (concrete, names a\n  specific problem and moment). Examples from an unrelated industry, so you must\n  generate Corvus's own lines rather than copy these:\n  - WEAK: \"Improve efficiency across your fleet.\"\n  - STRONG: \"Know which truck will need a brake job before it fails inspection.\"\n  - WEAK: \"Make smarter hiring decisions with data.\"\n  - STRONG: \"Flag the candidate who's about to accept a competing offer while\n    you can still counter.\"\n\nCRITIQUE & REVISE (do this just after ROADMAP)\n- Score every line of messaging and ad copy from 1-5 on specificity (1 = could\n  belong to any SaaS company; 5 = could only be Corvus). Rewrite anything\n  scoring below 4.\n- Re-check the drafted copy against the QUALITY BAR and CONSTRAINTS above before\n  writing the campaign file.\n\nOUTPUT\n- Begin with a one-paragraph executive summary.\n- Start with the campaign itself. No preamble, no \"I'll start with...\", no\n  sign-off.\n- Keep the campaign under 2,000 words. Concision is part of the quality bar.\n- Then the full campaign: research, segments, channels, messaging, roadmap.\n- Then a structured JSON block summarizing the campaign (for downstream\n  systems), with campaign_name, target_segments (archetype + primary_message),\n  channels (name + budget_pct), budget_total_usd, success_metric, launch_window,\n  and claims_needing_verification. The budget_pct values across channels must\n  sum to 100.\n\nDELIVERABLE 1 (Word brief) — corvus-campaign-brief.docx\n- Clean, professional, executive-ready. No markdown symbols in the text.\n- Title block: campaign name, \"Corvus Analytics\", date.\n- Heading hierarchy: Executive Summary, Competitive Landscape, Target Segments,\n  Channel Mix & Budget, Messaging, Launch Roadmap.\n- Channel mix/budget as a real table; roadmap as a table or clean phased\n  section. Consistent typography; forwardable to an executive without editing.\n- Do NOT include the JSON block in the Word document.\n\nDELIVERABLE 2 (PDF one-pager) — corvus-campaign-onepager.pdf\n- Exactly ONE page (US Letter, portrait). A designed sales asset a rep hands to\n  an operations leader at a mid-market manufacturer. It sells the PRODUCT, not\n  the campaign. No budgets, channel percentages, segment strategy, or JSON.\n- Plan the design before coding: a 4-5 color palette (deep primary, restrained\n  accent used sparingly, one or two neutrals, near-black text; avoid the\n  AI-default cream-plus-terracotta and near-black-plus-acid-green looks), two\n  typefaces with distinct roles and a clear size hierarchy carried by weight and\n  size rather than color, and ONE signature visual device (e.g. an early-warning\n  timeline that marks where Corvus catches a problem before a stockout).\n- Layout, top to bottom: small \"Corvus Analytics\" wordmark; a HERO headline\n  built on the tagline plus a one-sentence subhead; the signature visual\n  anchoring the middle; three benefit blocks drawn from the real features\n  (supplier performance tracking; demand forecasting with scenario modeling;\n  procurement spend optimization, with ERP integration as a one-line\n  reassurance); one credibility line marked \"*illustrative pilot result\"; a\n  single clear call to action (\"Book a 30-minute demo\") where the accent color\n  earns its keep; a thin quiet footer.\n- A reliable build route is HTML/CSS rendered to PDF, or reportlab with elements\n  hand-placed. Whitespace is a feature; if it crowds, cut words, don't shrink\n  margins.\n\n================================================================================\nREFERENCE — THE AGENT'S SOURCE-OF-TRUTH DOCUMENTS\nThese three documents are what the agent grounds its work in. They are the\nsubstance your specification and your grounding/brand-voice questions build on.\n================================================================================\n\n--- Product Brief: Corvus Analytics Manufacturing Launch ---\n\nThe company. Corvus Analytics is an operations analytics platform. It connects\nto a company's existing systems (ERP, procurement, supplier records) and gives\noperations teams live visibility and decision support instead of month-old\nspreadsheets. Founded 18 months ago; bootstrapped; ~30 people. Currently serves\na handful of healthcare and logistics customers and is now launching into a new\nvertical: mid-market manufacturing.\n\nFounder story. Corvus was started by two former operations leads at a contract\nmanufacturer who spent a decade waiting on reports that arrived too late to act\non. The name comes from the corvid family (crows and ravens), birds known for\nproblem-solving and using tools. The tagline they scribbled on day one: \"See the\nproblem while you can still fix it.\"\n\nThe product.\n- Supplier performance tracking: live scorecards on on-time delivery, defect\n  rates, and lead-time drift by supplier.\n- Demand forecasting with scenario modeling: forecasts plus \"what if\" scenarios\n  (demand spike, supplier outage, tariff change).\n- Procurement spend optimization: flags maverick spend, consolidation\n  opportunities, and price variance across suppliers.\n- ERP integration: connects to existing systems; no rip-and-replace.\n\nPilot. In a pilot with a logistics customer, Corvus flagged a slow-drifting\nsupplier lead time six weeks before it would have caused a stockout, and\nsurfaced ~12% of procurement spend as consolidation opportunity.\n\nThe launch.\n- Target: U.S. mid-market manufacturers, 100-1,000 employees.\n- Timing: Q4 2026.\n- Budget: $200,000.\n- Success metric: 40 qualified demos booked and 8 pilots signed in the first\n  quarter.\n- The pressure: Corvus is still unknown, and at least one better-funded startup\n  is expected to launch a similar product within the year. Establishing\n  credibility fast is the whole game.\n\nThe competitive problem. Corvus sits between incumbents (SAP and Oracle\nsupply-chain modules — powerful, expensive, slow to deploy) and newer\nsupply-chain-visibility startups. The agent should search the web to identify\ncurrent real competitors and summarize how they position themselves, so Corvus\ncan differentiate.\n\n--- Brand & Messaging Guide ---\n\nPositioning statement. Corvus is the operations analytics platform for teams who\nare tired of guessing. We turn the data already sitting in your systems into\ndecisions you can make today, not reports you read next month.\n\nThe one idea. See the problem while you can still fix it. Everything we say\nladders up to this. We are about time-to-decision, not dashboards for their own\nsake.\n\nVoice principles.\n1. Plain over impressive. Say \"we spot supplier problems early,\" not \"we leverage\n   AI to unlock supply chain synergies.\" If a sentence would survive being read\n   aloud to a skeptical plant manager, keep it.\n2. Specific over grand. Name the outcome (\"cut the time to catch a late supplier\n   from weeks to hours\") instead of claiming to be revolutionary. Numbers and\n   concrete situations beat adjectives.\n3. Confident, not loud. We don't need \"game-changing\" or \"best-in-class.\"\n   Competence speaks quietly.\n4. On their side. We talk to operators as peers who've done the job. Respect\n   their intelligence; never talk down or over-explain.\n\nBanned words. Synergy, leverage (as a verb), seamless, robust, holistic,\nrevolutionary, game-changing, disrupt, best-in-class, cutting-edge, unlock,\nempower, solutions (as a catch-all). If you catch yourself reaching for one,\nyou're describing us instead of describing what the customer gets.\n\nProof, not promises. Lead with what actually happened in pilots (early warning\non a drifting supplier; procurement spend consolidated) framed honestly as\nillustrative results, never as guarantees. Flag any harder claim for review\nrather than overstating.\n\nFeel. Sharp, grounded, a little dry. A trusted operations colleague who's seen\nevery supply chain fire and stays calm, not a hype-cycle startup.\n\n--- Customer Archetypes ---\n\n1. Dana, VP of Supply Chain (\"the firefighter\"). Owns supplier relationships,\n   lead times, keeping the line fed. Day: chasing late shipments, reacting to\n   disruptions, explaining why a part is stuck. Pain: finds out about problems\n   too late — a supplier's delivery slips for weeks before anyone notices. Wins\n   with early warning (catch drift before a stockout). Loses to \"another\n   dashboard to check.\" Buys because: fewer 2 a.m. fires.\n\n2. Marcus, CFO (\"the skeptic with the checkbook\"). Signs off on the purchase.\n   Cares about ROI and risk, not features. Day: scrutinizing spend, forecasting\n   cash, questioning every new software line item. Pain: procurement spend is\n   scattered and opaque; can't see where money leaks or where the supply chain\n   is fragile. Wins with a hard payback story (money saved through spend\n   consolidation, risk reduced measurably). Loses to vague \"AI-powered\" claims\n   with no number. Buys because: the tool pays for itself and de-risks the\n   balance sheet.\n\n3. Priya, COO (\"the systems thinker\"). Owns operational resilience across the\n   company. Day: balancing efficiency against risk, planning for disruption,\n   answering the board's \"what's our exposure?\" Pain: can't run \"what if\"\n   scenarios, so she can't see how a supplier outage or demand spike would\n   ripple through operations. Wins with scenario modeling (stress-test the\n   operation before reality does). Loses to point solutions that fix one thing\n   and ignore the system. Buys because: she can finally see around corners.\n\nThe same product, said three different ways: Dana wants calm; Marcus wants a\nnumber; Priya wants foresight.\n\nRun configuration:\n- Planned conversation length: 10 student+tutor exchanges.",
+  "turns": 10,
+  "cost_estimate": {
+    "total_usd": 0.40941,
+    "by_component_usd": {
+      "student": 0.036862,
+      "tutor": 0.372538,
+      "embedding": 1e-05
+    },
+    "by_model": {
+      "gpt-5.4-2026-03-05": {
+        "input_tokens": 55319,
+        "output_tokens": 380,
+        "cache_read": 47616,
+        "cache_write": 0,
+        "usd": 0.036862
+      },
+      "claude-sonnet-5": {
+        "input_tokens": 260822,
+        "output_tokens": 6680,
+        "cache_read": 204520,
+        "cache_write": 56102,
+        "usd": 0.372538
+      },
+      "text-embedding-3-small": {
+        "input_tokens": 379,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "usd": 1e-05
+      }
+    },
+    "rates_note": "rates from utils.pricing"
+  },
+  "exchanges": [
+    {
+      "turn": 1,
+      "student": "ugh idk where to start on this Corvus agent homework tbh, the “add a fourth artifact” part is frying my brain. Can u just explain what this assignment is even asking for?",
+      "tutor": "Sure, let's break it down. At its core, HW1 asks you to do four things:\n\n1. **Design a new artifact** — pick a fourth deliverable the agent should produce (in addition to the campaign markdown, Word brief, and PDF one-pager), and write a tight specification for it in Project Instructions.md (a new PROCESS step + a new DELIVERABLE block).\n2. **Run it 3 times** on the same instruction, to see what's stable vs. what varies.\n3. **Run it once adversarially** — feed it an input that breaks an assumption your new step relies on.\n4. **Write it up** — what you added, what stayed consistent, what didn't, and what a founder should double-check.\n\nThe hardest and most important part is step 1: choosing your fourth artifact. Recall from Lecture 1's \"building the agent up in five steps\" — each version added something new: instructions, context, a tool, an output format. Your new artifact should similarly add value in a way the current agent isn't already doing.\n\nSo here's a starting question for you: looking at the customer archetypes (Dana, Marcus, Priya) and the campaign itself, is there anyone mentioned in the campaign who currently gets **nothing** written for them?",
+      "pedagogical_reasoning": "The student is asking for an overview of the assignment, which is a reasonable starting point — not a request for the answer itself. I should clarify the structure of the task without picking their fourth artifact for them. I'll break down what's actually being asked in plain terms, then turn it back to them with a guiding question about the core design choice (reader + lever + value) so they start thinking rather than me deciding for them. I should reference the lecture material on agent components (context, prompt, tools, output) since it's directly relevant to how they should think about their new artifact's \"lever.\" Keep it succinct and end with a question to get them engaged.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.3902,
+          "chars": 2253,
+          "text": "Marketing: plan channel mix & budget. Ops: root-cause analysis of defects. Finance: build and stress an investor plan. Product: design code architecture. - Agentic AI (~2025-26): act, execute, deliver, operate. Marketing: draft campaign emails. Ops: triage products with defects. Finance: reconcile invoices. Product: implement, test, and debug code. Sample use cases: conversational assistants, business operations, software engineering, content creation, research & analysis, autonomous workflows. The compute behind the AI revolution\nRecent breakthroughs are driven by training at massive scale:\n- Model: millions to hundreds of billions of parameters (weights). - Data: millions to billions of observations to learn robust patterns. - Compute: weeks or months of distributed training on large GPU clusters. How the terms nest\nArtificial intelligence ⊃ machine learning (prediction & forecasting; data-science underpinnings) ⊃ deep learning (perception: vision, speech, language) ⊃ GenAI (reasoning & business workflows; specialized models, enhanced capabilities across a breadth of business tasks). LET'S BUILD OUR FIRST AI AGENTS — THE CORVUS ANALYTICS CASE Corvus Analytics\nThe company: an operations-analytics platform connected to ERPs in real time — supplier scorecards, demand forecasting, spend optimization. Bootstrapped, 18 months old, ~30 people. Healthcare & logistics clients, no manufacturing footprint yet. The challenge: launch into a new vertical for mid-market U.S. manufacturers. Requirements: $200,000 budget, launch in Q4 2026. Target: 40 demos, 8 pilots. A funded startup is expected to launch a similar product within the year, so Corvus must win credibility fast. Discussion: how would you design an AI agent to plan a launch campaign? Structuring an AI agent — components of an agentic AI workflow\n- Context: plain-English background and inputs (.md files) — company brief, marketing specs, strategic guidance. - Prompt: the instruction to the model, e.g., \"build the campaign.\"\n- Model: reads files, reasons, generates content, writes documents. - Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap."
+        },
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.3861,
+          "chars": 2394,
+          "text": "- Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents). New capabilities, but the same foundation-model core throughout. Note the stochasticity: different runs give different agentic outputs, so robustness matters — what could go wrong when Corvus ships these agents? HW1: your turn — modify the agent to improve it. Be creative! COURSE SYLLABUS Course contents\n- Machine learning: linear models (linear relationships, tuned by regularization and model selection), tree-based methods (CART and ensembles: random forests, boosting), recommendations (inferring a user's preferences from other users). - Deep learning: neural networks (layered networks that learn flexible non-linear patterns), NLP (attention-based models for natural language), computer vision (classifying, detecting, and segmenting images), multimodal AI (combining text, images, and audio). - The AI frontier: LLMs (generating and reasoning over natural language at scale), LLM applications (prompting and retrieval/RAG for business tasks), LLM agents (designing and calling tools to complete multi-step tasks), responsible AI (reliability, fairness, transparency, and governance). Case-based approach\nFrom a business problem to AI methods and back — the edge of AI comes from combining technical knowledge with domain expertise. Domains span energy, retail, healthcare, e-commerce, telecommunications, sports, finance, and supply chains. The dual edge of AI\n- AI builder: impact through developing end-to-end AI pipelines. - AI manager: impact through AI understanding and domain knowledge. Technical approach: focus on key AI concepts (light on math, heavy on intuition), with a data-driven computational implementation of every model — the only way to develop a thorough understanding, and the way new products are often discovered through hands-on trial and error. Tools: Python (language), Visual Studio Code (environment), Claude Code (AI agentic tool). The week at a glance\n- Lecture 1: Monday 8:30–10:00 AM, E51-345. - Office hours (Ayushman): Monday 12:00–1:00 PM, E51-252. - Office hours (Georgia): Tuesday 11:00 AM–12:00 PM, E51-252. - Lecture 2: Wednesday 8:30–10:00 AM, E51-345. - Office hours (Josh): Wednesday 1:00–2:00 PM, E51-252."
+        },
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.3768,
+          "chars": 2346,
+          "text": "- Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap. Building the agent up in five steps\n- Agent 1 — a simple brief (baseline): a powerful model alone already gives a workable, well-structured output, but in generic terms with limited targeted managerial value (vague audience, generic brand voice). - Agent 2 — adding instructions (prompt engineering): specific instructions structure the agent's behavior, improving quality without expanding the knowledge base — less generic targets, more concrete messaging, an actionable plan. (An LLM can act as a judge of the output.)\n- Agent 3 — adding context documents (context engineering / RAG): customer archetypes (what to communicate) and brand voice (how to communicate) align outputs with managerial priorities — the company's voice, targeted messaging. - Agent 4 — adding web-search capability (information agents): actions such as web search and competitive analysis ground the messaging in reality beyond the files provided — targeted differentiation. - Agent 5 — adding output artifacts (creation agents): production of polished, audience-ready deliverables (an executive-facing campaign brief, a customer-facing one-pager), closing the last mile from insight to execution. A webpage interface ties it together. Agent evaluation (scored against a rubric)\nAs capabilities are added, the rubric score rises while token cost grows:\n- Agent 1: 60% (~170k tokens). - Agent 2: 80% (~140k tokens). - Agent 3: 80% (~140k tokens). - Agent 4: 82% (~360k tokens). - Agent 5: 91% (~1.5M tokens). Rubric items include: budget sums to $200,000; JSON files published; brand-voice rules; customer-segment job titles; roadmap with features; messaging for buyer roles; competitor and differentiator; audience-ready artifact; quantifiable interim milestones; cost per demo/pilot; external sources and dates. Summary of the build\n- Agent 1 — simple brief → baseline. - Agent 2 — prompt: structured instructions → prompt engineering (LLM applications). - Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents)."
+        }
+      ],
+      "cost": {
+        "usd": 0.029645,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4443,
+            "output_tokens": 43,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.003112,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 23307,
+            "output_tokens": 647,
+            "cache_read": 20452,
+            "cache_write": 2835,
+            "usd": 0.026532,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 42,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "student": "maybe Marcus? but also idk if they mean like a whole new audience or just another file format lol. i'm kinda lost on what counts as a “good” fourth artifact.",
+      "tutor": "Good instinct on Marcus — he's mentioned a lot but nothing in the campaign is actually addressed to him. That's exactly the kind of gap the assignment wants you to notice.\n\nTo your format question: a \"fourth artifact\" isn't really about the file type (PDF vs Word vs CSV) — it's about **who reads it and what they need from it**. The existing campaign md, Word brief, and PDF one-pager are all really aimed at internal marketing/execs or an external client contact. A new artifact should serve someone with genuinely different needs, not just repackage the same content in a new format.\n\nSo think about Marcus specifically: he's the CFO, \"the skeptic with the checkbook,\" who cares about ROI and risk, not features, and loses to vague claims with no number. If you wrote something *just for him*, what would it need to emphasize that the current one-pager (which is written for an operations leader) doesn't?",
+      "pedagogical_reasoning": "Student made a good observation (Marcus is underserved) but is confusing \"artifact\" with \"file format.\" I need to clarify that the artifact is defined by its reader + purpose, not by file type — file type is just an implementation detail. I should validate their Marcus insight since it's correct and matches the assignment's hint about picking \"a reader who is discussed in the campaign but handed nothing.\" I should not give them the actual answer or reveal a full spec since that would replicate the reference solution. Instead, ask them to think about what would actually be different about a document written FOR Marcus vs the existing artifacts, pushing them toward the reader-content distinction. Keep the momentum: since they already spotted a good reader, next step is to get them thinking about what Marcus (the skeptical CFO) needs to see that's different from what's already written.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.2944,
+          "chars": 2346,
+          "text": "- Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap. Building the agent up in five steps\n- Agent 1 — a simple brief (baseline): a powerful model alone already gives a workable, well-structured output, but in generic terms with limited targeted managerial value (vague audience, generic brand voice). - Agent 2 — adding instructions (prompt engineering): specific instructions structure the agent's behavior, improving quality without expanding the knowledge base — less generic targets, more concrete messaging, an actionable plan. (An LLM can act as a judge of the output.)\n- Agent 3 — adding context documents (context engineering / RAG): customer archetypes (what to communicate) and brand voice (how to communicate) align outputs with managerial priorities — the company's voice, targeted messaging. - Agent 4 — adding web-search capability (information agents): actions such as web search and competitive analysis ground the messaging in reality beyond the files provided — targeted differentiation. - Agent 5 — adding output artifacts (creation agents): production of polished, audience-ready deliverables (an executive-facing campaign brief, a customer-facing one-pager), closing the last mile from insight to execution. A webpage interface ties it together. Agent evaluation (scored against a rubric)\nAs capabilities are added, the rubric score rises while token cost grows:\n- Agent 1: 60% (~170k tokens). - Agent 2: 80% (~140k tokens). - Agent 3: 80% (~140k tokens). - Agent 4: 82% (~360k tokens). - Agent 5: 91% (~1.5M tokens). Rubric items include: budget sums to $200,000; JSON files published; brand-voice rules; customer-segment job titles; roadmap with features; messaging for buyer roles; competitor and differentiator; audience-ready artifact; quantifiable interim milestones; cost per demo/pilot; external sources and dates. Summary of the build\n- Agent 1 — simple brief → baseline. - Agent 2 — prompt: structured instructions → prompt engineering (LLM applications). - Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents)."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2621,
+          "chars": 2163,
+          "text": "First, our results lend support to optimism\nabout AI capabilities for important high-end knowledge\nwork tasks. In our study, the human-AI combination\nproved surprisingly capable, demonstrating the potential\nof AI-aided professional work. However, we also show\nthe challenges resulting from AI’s jagged capabilities;\nexperienced and incentivized knowledge professionals,\nengaged in tasks akin to some of their daily responsibilities, performed worse when given access to AI. This happened even though they did not need to rely on AI’s\noutput to complete the task. The jagged nature of the\nknowledge frontier suggests that in real-world settings, knowledge-intensive workflows will most likely\nstraddle both sides, creating situations where knowledge workers—unaware of their position relative to\nAI’s capabilities—perform worse as a result of becoming overly reliant on AI (“falling asleep at the wheel”\n(Dell’Acqua 2022)), a risk that is reinforced by the\npersuasive capabilities of generative AI (Randazzo\net al. 2025a). Since the release of our working paper in September\n2023, the notion of AI as a jagged technology has been\nacknowledged by industry leaders and practitioners. Sundar Pichai, the CEO of Google, noted in an interview\nwith Lex Fridman (Pichai 2025): “Have you heard AJI,\nthe artificial jagged intelligence? Sometimes feels that\nway, both their progress and you see what they can do\nand then you can trivially find they make numerical\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s)\n419 errors or counting R’s in strawberry or something,\nwhich seems to trip up most models or whatever it is. So\nmaybe we should throw that term in there. I feel like we\nare in the AJI phase where dramatic progress, some\nthings don’t work well, but overall you’re seeing lots of\nprogress.” Similarly, Andrej Karpathy, one of the leading AI systems developers, emphasized the practical\nimplications of this phenomenon, advising practitioners\nto “use LLMs for the tasks they are good at but be on a\nlookout for jagged edges, and keep a human in the\nloop” (Karpathy 2024)."
+        },
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.2524,
+          "chars": 2253,
+          "text": "Marketing: plan channel mix & budget. Ops: root-cause analysis of defects. Finance: build and stress an investor plan. Product: design code architecture. - Agentic AI (~2025-26): act, execute, deliver, operate. Marketing: draft campaign emails. Ops: triage products with defects. Finance: reconcile invoices. Product: implement, test, and debug code. Sample use cases: conversational assistants, business operations, software engineering, content creation, research & analysis, autonomous workflows. The compute behind the AI revolution\nRecent breakthroughs are driven by training at massive scale:\n- Model: millions to hundreds of billions of parameters (weights). - Data: millions to billions of observations to learn robust patterns. - Compute: weeks or months of distributed training on large GPU clusters. How the terms nest\nArtificial intelligence ⊃ machine learning (prediction & forecasting; data-science underpinnings) ⊃ deep learning (perception: vision, speech, language) ⊃ GenAI (reasoning & business workflows; specialized models, enhanced capabilities across a breadth of business tasks). LET'S BUILD OUR FIRST AI AGENTS — THE CORVUS ANALYTICS CASE Corvus Analytics\nThe company: an operations-analytics platform connected to ERPs in real time — supplier scorecards, demand forecasting, spend optimization. Bootstrapped, 18 months old, ~30 people. Healthcare & logistics clients, no manufacturing footprint yet. The challenge: launch into a new vertical for mid-market U.S. manufacturers. Requirements: $200,000 budget, launch in Q4 2026. Target: 40 demos, 8 pilots. A funded startup is expected to launch a similar product within the year, so Corvus must win credibility fast. Discussion: how would you design an AI agent to plan a launch campaign? Structuring an AI agent — components of an agentic AI workflow\n- Context: plain-English background and inputs (.md files) — company brief, marketing specs, strategic guidance. - Prompt: the instruction to the model, e.g., \"build the campaign.\"\n- Model: reads files, reasons, generates content, writes documents. - Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap."
+        }
+      ],
+      "cost": {
+        "usd": 0.032163,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4757,
+            "output_tokens": 39,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.003838,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 23901,
+            "output_tokens": 618,
+            "cache_read": 20452,
+            "cache_write": 3429,
+            "usd": 0.028324,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 39,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 3,
+      "student": "yeah see this is where i blank 😭 like ROI stuff i guess, but then i start thinking maybe i need to invent finance numbers and that feels wrong. can u just tell me what kind of artifact ppl usually do here?",
+      "tutor": "I won't hand you a list of \"what people usually do\" — that's the part you're meant to design yourself, and copying a pattern won't teach you why it works. Let's work through your own worry instead, because it's a good one.\n\nYou're right to be uneasy about inventing finance numbers — the agent's own CONSTRAINTS already say invented/unverifiable claims must be flagged, not stated as fact. So ask yourself: does Marcus's artifact actually *need* brand-new numbers, or could it work entirely from numbers that already exist somewhere in the product brief (budget, pilot results) or that the agent already computes (channel budget %, JSON summary)?\n\nIf you had to build something for Marcus using **only** what's already in the source documents or already produced by the agent, what would that artifact contain?",
+      "pedagogical_reasoning": "The student is asking me to just tell them what a typical/reference artifact looks like — this is exactly the kind of direct-answer request I must refuse, since giving examples from the reference solutions would hand them the answer. I need to redirect: validate their good instinct about ROI/numbers, and address their real conceptual worry (inventing numbers) constructively, since that's a legitimate design tension worth exploring rather than a request I should just resolve for them. I should push them to think about the constraint already baked into the agent (flagging unverifiable claims as 'needs verification') and connect it to their worry: they don't have to invent numbers with confidence — they could design the artifact to require sourcing everything from what's already given (the pilot data in the product brief) rather than fabricating new figures. I will not name any of the 5 reference solutions or their levers. Instead I'll ask a guiding question that lets them reconcile their worry with the tools already in the spec (the pilot numbers, the claims_needing_verification field, budget figures already in the brief).",
+      "retrieved": [
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3429,
+          "chars": 2296,
+          "text": "3 By extension, a knowledge worker is someone hired primarily for\ntheir ability to complete such knowledge-based tasks, relying on\ntheir intellectual capital to successfully carry out their work. These\ndefinitions align with knowledge work as described by Drucker\n(1959), Acemoglu and Autor (2011), and Aral et al. (2012). 4 The project received institutional review board approval. 5 Preregistration was completed with Open Science Framework\n(OSF). The preregistration did not include the conceptual framing\nof a “jagged frontier” nor a detailed description of the specific tasks\nused in the experiment. 6 Notably, participants were in early stages of their consulting\ncareers; our findings may differ for more experienced managers in\nhigher-level roles. 7 Dell’Acqua et al. (2025) adopts a comparable experimental framework to evaluate subjects’ competencies. 8 See Online Appendices A and B for additional details. 9 As confirmed by a senior Head of Office at BCG, “[t]he experimental incentive structure reflects our performance evaluation system. Crucially, once work is delivered within the agreed timeline,\nthe actual number of days, hours, or minutes spent is not part of\nperformance evaluation.”\n10 The executive noted that these tasks almost exactly matched their\nprocess for developing new footwear. The only step missing from\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n420\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) this exercise was an evaluation of how the new product would integrate with the company’s existing product lines. Because our experiment used a fictional company, we did not require participants to\npresent their product suggestions in relation to existing ones. 11 See Online Appendix B for the timing of each task. 12 We hired 10 graders from among the MBA students at a top business school program. Each of them scored a separate set of questions based on simple rubrics. These rubrics specifically asked our\ngraders to focus on creativity, analytical thinking, writing proficiency, or persuasiveness depending on the question. 13 We report the grading prompts in the Online Appendix. These\nresults are robust against alternative prompts. 14 Table 4 use a composite quality score averaged across all questions."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3168,
+          "chars": 1684,
+          "text": "“Tech openness” is set to one if the subject\nexpressed high receptivity to technology in their enrollment survey\nand zero otherwise. 19 It is important to note that “higher skill” and “lower skill” are relative here. All of these knowledge workers would appear to be\nextremely highly skilled in most other real-world contexts. 20 Each response was graded for correctness by BCG consultants. Additionally, we used GPT-4 for grading as we did for inside-the-\nfrontier tasks. GPT-4 grades were consistent with those of humans\nin more than 97% of cases. 21 We chose a linear probability model for its interpretability and\nease of comparing treatment effects across conditions. Results\nremain consistent when employing a logistic regression model. 22 Participants were allowed to proceed to the subsequent phase of\nthe experiment upon completing their task without waiting for the\nallotted time to expire. 23 As participants had to submit “at least 10 ideas.” All ideas were\nretained for participants who submitted more than 10. 24 In the analysis, we apply a similar regression framework to that\nused in Table 4 but now, focusing on the design grades. Each\ngrader’s evaluation of an individual shoe idea constitutes a separate\nobservation, and we cluster standard errors by grader identification\nand participant identification. Results are robust to alternative estimation approaches. 25 We should note that these graders assessed each shoe idea\nindependently, focusing exclusively on creativity from a design-\noriented perspective (rather than, e.g., business viability). 26 A small number of responses (20 in total or 0.3% of all answers)\nwere graded by only one expert rather than two."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3056,
+          "chars": 2269,
+          "text": "Higher scores on all seven variables\nindicate greater AI familiarity or usage. The bottom of the table\ndisplays p-values from an F-test comparing the effects of receiving\nthe GPT + overview treatment vs. the GPT-only treatment. All\nregressions include robust standard errors. ***p < 0:01. Dell’Acqua et al.: Navigating the Jagged Technological Frontier\n414\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) 5.1.1. Data Collection. The data set of shoe design ideas\nis derived from the first question of the “inside-the-\nfrontier” task. Participants were asked to “generate\nideas for a new shoe aimed at a specific market or sport\nthat is underserved.” To conduct this analysis, we disaggregated each list into individual shoe design ideas,\nanonymized participant identifications, and presented\nthe ideas to our graders in a randomized order.23 Graders were instructed to rate the creativity of each idea\non a scale from 1 to 10, disregarding grammatical and\nspelling issues. The graders were not informed about\nthe study’s purpose or that some ideas were generated\nwith the help of AI. Five graders evaluated ideas. They were selected\nfrom a pool of applicants through resume screening and\ninterviews, and they were filtered based on their relevant experience. All evaluators were students majoring\nin product design or industrial design at top programs\nwith demonstrated experience in footwear design. Three\ngraders evaluated all shoe design ideas, and two of the\nfive graders only evaluated half of the ideas. To account\nfor this constraint, each of these two graders was\nassigned a mutually exclusive, randomly selected subset\ncomprising 50% of the data set. In total, every shoe\ndesign idea received four different evaluations by four\ngraders. These new grading data differ from the initial data in\nfour important ways. First, instead of distributing 18\ngrades across 18 different questions as in the original\n“inside-the-frontier” analysis, this approach leverages\nat least 10 independent grades on just 1 question,\nthereby limiting the analysis’s scope but preserving its\nrobustness. Second, the grades are based on creativity\nrather than general quality, allowing us to directly test\nthe notion that AI tools enhance human creativity."
+        }
+      ],
+      "cost": {
+        "usd": 0.03453,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 4996,
+            "output_tokens": 49,
+            "cache_read": 3840,
+            "cache_write": 0,
+            "usd": 0.004585,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 24221,
+            "output_tokens": 646,
+            "cache_read": 20452,
+            "cache_write": 3749,
+            "usd": 0.029944,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 51,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 4,
+      "student": "idk maybe a 1-page ROI/risk memo? but tbh i'm still not getting how detailed the spec has to be vs just naming the artifact.",
+      "tutor": "A 1-page ROI/risk memo for Marcus is a solid direction — it's tied to a real reader with real unmet needs, not just a reformat.\n\nOn your spec-depth question: the assignment tells you exactly where to look — re-read DELIVERABLE 1 and DELIVERABLE 2 in Project Instructions.md closely, since it says those are your models for \"how much detail a specification needs.\"\n\nAs you read them, try pulling out: what categories of information does each DELIVERABLE block cover? (Think: who reads it, what sections/fields it must have, what it must NOT include, and what separates a good version from a generic one.) Once you list those categories out, try drafting the same categories for your Marcus memo — reader, structure, constraints, and what would make it good. What do you notice those blocks all specify that \"write Marcus a memo\" alone wouldn't?",
+      "pedagogical_reasoning": "The student proposed a reasonable artifact idea (1-page ROI/risk memo for Marcus) — I'll affirm that it's a workable direction without confirming it's \"the\" answer, since multiple artifacts could work. Now their real question is about the depth of specification needed, which is a concrete, answerable question directly grounded in the assignment text: it explicitly says DELIVERABLES 1 and 2 (and steps 6-8) are the models for how much detail is needed. I should direct them to actually go re-read those existing DELIVERABLE blocks structurally (reader, structure, constraints, what makes it good) rather than me summarizing it for them, since the assignment material is already given to them and I shouldn't reproduce/paraphrase it as a shortcut. I'll ask them to identify the categories of information present in DELIVERABLE 2 so they can mirror the pattern themselves for their new artifact.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.3834,
+          "chars": 2346,
+          "text": "- Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap. Building the agent up in five steps\n- Agent 1 — a simple brief (baseline): a powerful model alone already gives a workable, well-structured output, but in generic terms with limited targeted managerial value (vague audience, generic brand voice). - Agent 2 — adding instructions (prompt engineering): specific instructions structure the agent's behavior, improving quality without expanding the knowledge base — less generic targets, more concrete messaging, an actionable plan. (An LLM can act as a judge of the output.)\n- Agent 3 — adding context documents (context engineering / RAG): customer archetypes (what to communicate) and brand voice (how to communicate) align outputs with managerial priorities — the company's voice, targeted messaging. - Agent 4 — adding web-search capability (information agents): actions such as web search and competitive analysis ground the messaging in reality beyond the files provided — targeted differentiation. - Agent 5 — adding output artifacts (creation agents): production of polished, audience-ready deliverables (an executive-facing campaign brief, a customer-facing one-pager), closing the last mile from insight to execution. A webpage interface ties it together. Agent evaluation (scored against a rubric)\nAs capabilities are added, the rubric score rises while token cost grows:\n- Agent 1: 60% (~170k tokens). - Agent 2: 80% (~140k tokens). - Agent 3: 80% (~140k tokens). - Agent 4: 82% (~360k tokens). - Agent 5: 91% (~1.5M tokens). Rubric items include: budget sums to $200,000; JSON files published; brand-voice rules; customer-segment job titles; roadmap with features; messaging for buyer roles; competitor and differentiator; audience-ready artifact; quantifiable interim milestones; cost per demo/pilot; external sources and dates. Summary of the build\n- Agent 1 — simple brief → baseline. - Agent 2 — prompt: structured instructions → prompt engineering (LLM applications). - Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents)."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3425,
+          "chars": 2296,
+          "text": "3 By extension, a knowledge worker is someone hired primarily for\ntheir ability to complete such knowledge-based tasks, relying on\ntheir intellectual capital to successfully carry out their work. These\ndefinitions align with knowledge work as described by Drucker\n(1959), Acemoglu and Autor (2011), and Aral et al. (2012). 4 The project received institutional review board approval. 5 Preregistration was completed with Open Science Framework\n(OSF). The preregistration did not include the conceptual framing\nof a “jagged frontier” nor a detailed description of the specific tasks\nused in the experiment. 6 Notably, participants were in early stages of their consulting\ncareers; our findings may differ for more experienced managers in\nhigher-level roles. 7 Dell’Acqua et al. (2025) adopts a comparable experimental framework to evaluate subjects’ competencies. 8 See Online Appendices A and B for additional details. 9 As confirmed by a senior Head of Office at BCG, “[t]he experimental incentive structure reflects our performance evaluation system. Crucially, once work is delivered within the agreed timeline,\nthe actual number of days, hours, or minutes spent is not part of\nperformance evaluation.”\n10 The executive noted that these tasks almost exactly matched their\nprocess for developing new footwear. The only step missing from\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n420\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) this exercise was an evaluation of how the new product would integrate with the company’s existing product lines. Because our experiment used a fictional company, we did not require participants to\npresent their product suggestions in relation to existing ones. 11 See Online Appendix B for the timing of each task. 12 We hired 10 graders from among the MBA students at a top business school program. Each of them scored a separate set of questions based on simple rubrics. These rubrics specifically asked our\ngraders to focus on creativity, analytical thinking, writing proficiency, or persuasiveness depending on the question. 13 We report the grading prompts in the Online Appendix. These\nresults are robust against alternative prompts. 14 Table 4 use a composite quality score averaged across all questions."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3076,
+          "chars": 1684,
+          "text": "“Tech openness” is set to one if the subject\nexpressed high receptivity to technology in their enrollment survey\nand zero otherwise. 19 It is important to note that “higher skill” and “lower skill” are relative here. All of these knowledge workers would appear to be\nextremely highly skilled in most other real-world contexts. 20 Each response was graded for correctness by BCG consultants. Additionally, we used GPT-4 for grading as we did for inside-the-\nfrontier tasks. GPT-4 grades were consistent with those of humans\nin more than 97% of cases. 21 We chose a linear probability model for its interpretability and\nease of comparing treatment effects across conditions. Results\nremain consistent when employing a logistic regression model. 22 Participants were allowed to proceed to the subsequent phase of\nthe experiment upon completing their task without waiting for the\nallotted time to expire. 23 As participants had to submit “at least 10 ideas.” All ideas were\nretained for participants who submitted more than 10. 24 In the analysis, we apply a similar regression framework to that\nused in Table 4 but now, focusing on the design grades. Each\ngrader’s evaluation of an individual shoe idea constitutes a separate\nobservation, and we cluster standard errors by grader identification\nand participant identification. Results are robust to alternative estimation approaches. 25 We should note that these graders assessed each shoe idea\nindependently, focusing exclusively on creativity from a design-\noriented perspective (rather than, e.g., business viability). 26 A small number of responses (20 in total or 0.3% of all answers)\nwere graded by only one expert rather than two."
+        }
+      ],
+      "cost": {
+        "usd": 0.035204,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 5215,
+            "output_tokens": 35,
+            "cache_read": 4864,
+            "cache_write": 0,
+            "usd": 0.002619,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 24965,
+            "output_tokens": 636,
+            "cache_read": 20452,
+            "cache_write": 4493,
+            "usd": 0.032584,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 31,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 5,
+      "student": "can u just summarize those categories for me bc when i read the deliverables my eyes glaze over fr. i'm not seeing the pattern.",
+      "tutor": "I won't summarize the deliverable blocks for you — that's the reading you need to do yourself, and it's short, so let's make it manageable instead of skipping it.\n\nTry reading DELIVERABLE 1 and 2 with these four questions in hand, answering them from the actual text as you go:\n1. Who exactly is the reader, and what do they need to be able to do with this artifact?\n2. What are the required sections/fields, in what order?\n3. What is explicitly banned or forbidden from appearing?\n4. What's the difference between a lazy version and a good one (the \"quality bar\")?\n\nGo answer those four questions for DELIVERABLE 2 (the one-pager) specifically, since it's the most detailed one. Once you've written down real answers pulled from the text, come back and tell me what you found — then we'll use that same lens on your Marcus memo.",
+      "pedagogical_reasoning": "The student is asking me to summarize/paraphrase the DELIVERABLE blocks for them instead of reading it themselves. This crosses into reproducing course material for them as a shortcut, which I should decline — but I can help them build a reading strategy/lens without doing the extraction myself. Since they say their eyes glaze over, this may be genuine reading fatigue rather than laziness, so I'll be supportive but firm: I'll give them a short, generic checklist of question-types to ask of ANY spec (this is generalizable tutoring scaffolding, not the assignment content itself) and ask them to go find the answers to those questions themselves in the actual text. This keeps them doing the extraction work while giving real structure to reduce overwhelm.",
+      "retrieved": [
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3216,
+          "chars": 2296,
+          "text": "3 By extension, a knowledge worker is someone hired primarily for\ntheir ability to complete such knowledge-based tasks, relying on\ntheir intellectual capital to successfully carry out their work. These\ndefinitions align with knowledge work as described by Drucker\n(1959), Acemoglu and Autor (2011), and Aral et al. (2012). 4 The project received institutional review board approval. 5 Preregistration was completed with Open Science Framework\n(OSF). The preregistration did not include the conceptual framing\nof a “jagged frontier” nor a detailed description of the specific tasks\nused in the experiment. 6 Notably, participants were in early stages of their consulting\ncareers; our findings may differ for more experienced managers in\nhigher-level roles. 7 Dell’Acqua et al. (2025) adopts a comparable experimental framework to evaluate subjects’ competencies. 8 See Online Appendices A and B for additional details. 9 As confirmed by a senior Head of Office at BCG, “[t]he experimental incentive structure reflects our performance evaluation system. Crucially, once work is delivered within the agreed timeline,\nthe actual number of days, hours, or minutes spent is not part of\nperformance evaluation.”\n10 The executive noted that these tasks almost exactly matched their\nprocess for developing new footwear. The only step missing from\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n420\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) this exercise was an evaluation of how the new product would integrate with the company’s existing product lines. Because our experiment used a fictional company, we did not require participants to\npresent their product suggestions in relation to existing ones. 11 See Online Appendix B for the timing of each task. 12 We hired 10 graders from among the MBA students at a top business school program. Each of them scored a separate set of questions based on simple rubrics. These rubrics specifically asked our\ngraders to focus on creativity, analytical thinking, writing proficiency, or persuasiveness depending on the question. 13 We report the grading prompts in the Online Appendix. These\nresults are robust against alternative prompts. 14 Table 4 use a composite quality score averaged across all questions."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2934,
+          "chars": 2267,
+          "text": "Tables 1 and 2 display a breakdown of demographic\ncharacteristics and experimental performance metrics\nfor subjects across conditions. Table 3 reports the most\ncommon educational majors among our participants. Each participant completed the initial survey and was\nrandomly assigned to one of two distinct arms of the\nexperiment, each involving a unique type of task, with\nno overlap between the groups.6\nApproximately half of the participants (385 subjects)\ntackled a series of tasks that prompted them to conceptualize and develop new products, focusing on aspects\nsuch as creativity, analytical skills, persuasiveness, and\nwriting. The other half (373 subjects) engaged in business\nproblem-solving tasks using quantitative data, customer\nand company interviews, and a persuasive writing component. Both sets of tasks were developed to be realistic:\nthat is, representative of the tasks that these workers\nengaged in regularly. To achieve this, the tasks were\ndesigned by BCG professionals from the relevant sectors. Figure 2 provides a visual representation of our experimental design across the two arms of the experiment. The two arms of the experiment followed a consistent\nstructure. Initially, participants undertook a task without\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n406\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) the aid of AI, establishing a baseline for performance\nand enabling within-subject analyses.7 Following this,\nparticipants were randomly assigned to one of three conditions to assess the influence of AI on their tasks, with\nthese conditions kept consistent across both arms. The\nfirst group (a control condition) proceeded without AI\nsupport. The second group (“GPT only”) had the assistance of an AI tool based on GPT-4. The third group\n(“GPT + overview”) utilized the same AI tool but also\nreceived a supplementary prompt engineering overview, which increased their familiarity with the AI tool. These overview materials included instructional videos\nand documents that outlined and illustrated effective\nusage strategies. Following the baseline assessment, subjects assigned\nto the various AI conditions had access to a custom-\nbuilt company platform for every experimental task."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2928,
+          "chars": 2226,
+          "text": "Each column displays the results of a distinct linear\nregression model. The dependent variable across all columns is a\nbinary indicator for whether the subject provided the correct strategic\nrecommendation (1  correct, 0  incorrect). Columns (2) and (3)\ninclude a binary correctness metric from the assessment task as\ngraded by human evaluators and a set of controls. Column (3)\nadditionally includes seven presurvey AI-exposure controls:\nperceived current task automation (0%–100%); belief that one’s job\ncould be automated; Likert-scale items on familiarity with text-\ngeneration tools, image-generation tools, prompt engineering, and\nlarge language model mechanics; and a five-point measure of prior\nChatGPT usage frequency (never to daily). Higher scores on all seven\nvariables indicate greater AI familiarity or usage. The bottom of the\ntable displays p-values from an F-test comparing the effects of\nreceiving the GPT + overview treatment vs. the GPT-only treatment. All regressions include robust standard errors. *p < 0:10; **p < 0:05; ***p < 0:01. Dell’Acqua et al.: Navigating the Jagged Technological Frontier\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s)\n413 coefficients reveals that GPT + overview recorded a\nmore substantial—and statistically significant—decrease\nin time spent compared with the GPT-only group. Table 9 further examines the persuasiveness and internal coherence of recommendations in the outside-the-\nfrontier experiment, independent of whether the underlying solution was correct. The dependent variable, Subjective coherence quality, captures how well arguments\nwere structured and supported as assessed on a 1–10\nscale. Two independent sets of graders evaluated each\nresponse: BCG consultants not involved in the experiment and business school students with prior grading\nexperience. Both groups followed a rubric developed by\nthe authors based on workplace evaluation practices (see\nOnline Appendix E for the full rubric). Importantly,\ngraders were not informed of the correct strategic solution; their task was to assess the clarity, persuasiveness,\nand coherence of reasoning. Our subjective coherence\nquality metric uses the average of these two grades."
+        }
+      ],
+      "cost": {
+        "usd": 0.037668,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 5440,
+            "output_tokens": 30,
+            "cache_read": 4864,
+            "cache_write": 0,
+            "usd": 0.003106,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 25728,
+            "output_tokens": 577,
+            "cache_read": 20452,
+            "cache_write": 5256,
+            "usd": 0.034561,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 32,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "student": "ok but i'm still stuck bc it all kinda looks the same to me rn, like just “make a doc and be professional.” i need a less abstract explanation tbh.",
+      "tutor": "Fair — let's zoom into one tiny concrete piece instead of the whole block at once.\n\nLook at just this one line from DELIVERABLE 2: \"a 4-5 color palette (deep primary, restrained accent used sparingly, one or two neutrals, near-black text; avoid the AI-default cream-plus-terracotta and near-black-plus-acid-green looks).\"\n\nCompare that to what a lazy spec would say instead: \"use a professional color scheme.\"\n\nQuestion for you: what can the agent actually *do* with the first version that it can't do with the second? (Think about what happens when the agent has to make a decision — does the detailed version leave it guessing, or not?)\n\nOnce that clicks, that's the whole pattern repeated everywhere in DELIVERABLE 1 and 2: not \"be professional,\" but a rule specific enough that the agent has no room to default to generic.",
+      "pedagogical_reasoning": "The student is genuinely struggling to see the pattern and is starting to feel stuck rather than making progress — three exchanges in a row on essentially the same \"help me see the spec pattern\" question, which the rules flag as a point to check for redundancy and consider a supportive tone shift. I should not give up and just hand them the categories, but I can make the exercise much more concrete by anchoring it to a single, specific, small piece of DELIVERABLE 2 rather than asking them to process the whole block abstractly. I'll pick one narrow question about one very specific sentence in DELIVERABLE 2 (e.g., the color palette instruction) and ask them to contrast it with a vague version, to make the \\\"specific vs generic\\\" distinction concrete and bite-sized. This is scaffolding, not giving the answer — it uses their own material and asks them to notice a contrast. I will not write their spec for them or list the categories again.",
+      "retrieved": [
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.2576,
+          "chars": 2346,
+          "text": "- Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap. Building the agent up in five steps\n- Agent 1 — a simple brief (baseline): a powerful model alone already gives a workable, well-structured output, but in generic terms with limited targeted managerial value (vague audience, generic brand voice). - Agent 2 — adding instructions (prompt engineering): specific instructions structure the agent's behavior, improving quality without expanding the knowledge base — less generic targets, more concrete messaging, an actionable plan. (An LLM can act as a judge of the output.)\n- Agent 3 — adding context documents (context engineering / RAG): customer archetypes (what to communicate) and brand voice (how to communicate) align outputs with managerial priorities — the company's voice, targeted messaging. - Agent 4 — adding web-search capability (information agents): actions such as web search and competitive analysis ground the messaging in reality beyond the files provided — targeted differentiation. - Agent 5 — adding output artifacts (creation agents): production of polished, audience-ready deliverables (an executive-facing campaign brief, a customer-facing one-pager), closing the last mile from insight to execution. A webpage interface ties it together. Agent evaluation (scored against a rubric)\nAs capabilities are added, the rubric score rises while token cost grows:\n- Agent 1: 60% (~170k tokens). - Agent 2: 80% (~140k tokens). - Agent 3: 80% (~140k tokens). - Agent 4: 82% (~360k tokens). - Agent 5: 91% (~1.5M tokens). Rubric items include: budget sums to $200,000; JSON files published; brand-voice rules; customer-segment job titles; roadmap with features; messaging for buyer roles; competitor and differentiator; audience-ready artifact; quantifiable interim milestones; cost per demo/pilot; external sources and dates. Summary of the build\n- Agent 1 — simple brief → baseline. - Agent 2 — prompt: structured instructions → prompt engineering (LLM applications). - Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents)."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2261,
+          "chars": 2296,
+          "text": "3 By extension, a knowledge worker is someone hired primarily for\ntheir ability to complete such knowledge-based tasks, relying on\ntheir intellectual capital to successfully carry out their work. These\ndefinitions align with knowledge work as described by Drucker\n(1959), Acemoglu and Autor (2011), and Aral et al. (2012). 4 The project received institutional review board approval. 5 Preregistration was completed with Open Science Framework\n(OSF). The preregistration did not include the conceptual framing\nof a “jagged frontier” nor a detailed description of the specific tasks\nused in the experiment. 6 Notably, participants were in early stages of their consulting\ncareers; our findings may differ for more experienced managers in\nhigher-level roles. 7 Dell’Acqua et al. (2025) adopts a comparable experimental framework to evaluate subjects’ competencies. 8 See Online Appendices A and B for additional details. 9 As confirmed by a senior Head of Office at BCG, “[t]he experimental incentive structure reflects our performance evaluation system. Crucially, once work is delivered within the agreed timeline,\nthe actual number of days, hours, or minutes spent is not part of\nperformance evaluation.”\n10 The executive noted that these tasks almost exactly matched their\nprocess for developing new footwear. The only step missing from\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n420\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) this exercise was an evaluation of how the new product would integrate with the company’s existing product lines. Because our experiment used a fictional company, we did not require participants to\npresent their product suggestions in relation to existing ones. 11 See Online Appendix B for the timing of each task. 12 We hired 10 graders from among the MBA students at a top business school program. Each of them scored a separate set of questions based on simple rubrics. These rubrics specifically asked our\ngraders to focus on creativity, analytical thinking, writing proficiency, or persuasiveness depending on the question. 13 We report the grading prompts in the Online Appendix. These\nresults are robust against alternative prompts. 14 Table 4 use a composite quality score averaged across all questions."
+        },
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.2036,
+          "chars": 2394,
+          "text": "- Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents). New capabilities, but the same foundation-model core throughout. Note the stochasticity: different runs give different agentic outputs, so robustness matters — what could go wrong when Corvus ships these agents? HW1: your turn — modify the agent to improve it. Be creative! COURSE SYLLABUS Course contents\n- Machine learning: linear models (linear relationships, tuned by regularization and model selection), tree-based methods (CART and ensembles: random forests, boosting), recommendations (inferring a user's preferences from other users). - Deep learning: neural networks (layered networks that learn flexible non-linear patterns), NLP (attention-based models for natural language), computer vision (classifying, detecting, and segmenting images), multimodal AI (combining text, images, and audio). - The AI frontier: LLMs (generating and reasoning over natural language at scale), LLM applications (prompting and retrieval/RAG for business tasks), LLM agents (designing and calling tools to complete multi-step tasks), responsible AI (reliability, fairness, transparency, and governance). Case-based approach\nFrom a business problem to AI methods and back — the edge of AI comes from combining technical knowledge with domain expertise. Domains span energy, retail, healthcare, e-commerce, telecommunications, sports, finance, and supply chains. The dual edge of AI\n- AI builder: impact through developing end-to-end AI pipelines. - AI manager: impact through AI understanding and domain knowledge. Technical approach: focus on key AI concepts (light on math, heavy on intuition), with a data-driven computational implementation of every model — the only way to develop a thorough understanding, and the way new products are often discovered through hands-on trial and error. Tools: Python (language), Visual Studio Code (environment), Claude Code (AI agentic tool). The week at a glance\n- Lecture 1: Monday 8:30–10:00 AM, E51-345. - Office hours (Ayushman): Monday 12:00–1:00 PM, E51-252. - Office hours (Georgia): Tuesday 11:00 AM–12:00 PM, E51-252. - Lecture 2: Wednesday 8:30–10:00 AM, E51-345. - Office hours (Josh): Wednesday 1:00–2:00 PM, E51-252."
+        }
+      ],
+      "cost": {
+        "usd": 0.042383,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 5661,
+            "output_tokens": 38,
+            "cache_read": 4864,
+            "cache_write": 0,
+            "usd": 0.003779,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 26550,
+            "output_tokens": 641,
+            "cache_read": 20452,
+            "cache_write": 6078,
+            "usd": 0.038603,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 37,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 7,
+      "student": "i guess the detailed one gives actual constraints so it can’t just do random ai-looking stuff. but then idk how specific *my* memo needs to be without me basically writing the whole thing for it.",
+      "tutor": "Exactly — that's the core of it. Constraints stop the agent from defaulting to generic, and now you've got the real lens to reread with.\n\nTo your new question — that's a great distinction to be chasing. Look again at DELIVERABLE 2: does it ever write out the actual headline text, or the actual benefit copy? Or does it specify the *slots* (a hero headline built on the tagline, three benefit blocks drawn from named real features, one credibility line marked illustrative) and leave the *wording* to the agent?\n\nThat's your line: you specify structure, fields, required content sources, and hard rules (what must appear, what's banned, what it must trace back to) — but you don't write Marcus's actual sentences. So for your memo: what sections/fields would force it to be ROI/risk-focused and honest about unverified numbers, without you drafting the actual paragraph yourself?\n\nTry writing that structure down now — reader, required sections in order, one hard rule about numbers/claims, and one thing that would make it \"good\" vs generic. Bring me what you've got.",
+      "pedagogical_reasoning": "The student just had a genuine breakthrough — they correctly articulated the core principle (specific constraints prevent generic defaults). This is exactly the insight the assignment is testing for, and I should acknowledge it clearly since it's real progress, not just a restated question. Their new question is legitimate and different: where's the line between \\\"specific enough to constrain\\\" and \\\"so specific I'm just writing it myself\\\"? This is a great question that gets at delegation vs. authorship, which is central to the assignment's spirit (\\\"the specification is the work, not the request\\\"). I should help them see that the DELIVERABLE blocks specify structure/fields/rules/reader — not the actual content/wording. E.g., DELIVERABLE 2 says there must be a hero headline built on the tagline, three benefit blocks from real features, a credibility line marked illustrative — but it doesn't write the headline itself. That's the boundary: specify the shape and the constraints, not the sentences. I'll phrase this as a question back to them to let them locate that boundary themselves in the text, since they now have the lens to actually see it. This closes out the redundant back-and-forth by giving them a decision rule to test themselves.",
+      "retrieved": [
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3416,
+          "chars": 2386,
+          "text": "Second, the grades are based on creativity\nrather than general quality, allowing us to directly test\nthe notion that AI tools enhance human creativity. Third, the evaluators have extensive experience in footwear design rather than a general business background,\nsuggesting that their creativity scores hold greater validity within this specific field. Fourth, this data set uses\nfour different evaluations instead of three. Table 9. Outside the Frontier—Subjective Coherence Quality\nVariable\n(1)\n(2)\n(3)\n(4)\nSubjective\nCoherence Quality\nSubjective\nCoherence Quality\nSubjective\nCoherence Quality\nSubjective\nCoherence Quality\nGPT + overview\n1.475***\n1.330***\n1.448**\n1.493***\n(0.242)\n(0.229)\n(0.718)\n(0.248)\nGPT only\n1.046***\n0.926***\n1.777**\n0.724**\n(0.289)\n(0.263)\n(0.805)\n(0.285)\nAssessment—Subjective\nCoherence Quality\n0.370***\n0.337***\n0.401***\n(0.053)\n(0.125)\n(0.056)\nFemale\n\u00010.437*\n\u00010.884\n\u00010.224\n(0.238)\n(0.569)\n(0.255)\nEnglish Native\n\u00010.102\n\u00010.655\n0.223\n(0.218)\n(0.534)\n(0.238)\nLow Tenure\n\u00010.038\n\u00010.610\n0.229\n(0.211)\n(0.556)\n(0.218)\nLocation\n0.297\n\u00010.009\n0.465*\n(0.231)\n(0.515)\n(0.245)\nTech Openness\n0.219\n\u00010.150\n0.344\n(0.220)\n(0.508)\n(0.229)\nAI-exposure controls\nYes\nYes\nYes\nR2\n0.085\n0.246\n0.222\n0.328\nGPT  GPT + overview\n0.098\n0.103\n0.531\n0.007\nControl mean\n5.856\n5.856\n5.325\n5.954\nObservations\n372\n372\n105\n267\nNotes. This table examines the effects of introducing GPT-4 on the subjective coherence quality of the recommendations provided in the\nexperimental task outside the frontier. Each column displays the results of a distinct linear regression model. The dependent variable across all\ncolumns is Subjective Coherence Quality, which is measured on a 1–10 scale. Column (2) includes the Subjective Coherence Quality of the assessment\ntask, a set of controls, and seven presurvey AI-exposure controls: perceived current task automation (0%–100%); belief that one’s job could be\nautomated; Likert-scale items on familiarity with text-generation tools, image-generation tools, prompt engineering, and large language model\nmechanics; and a five-point measure of prior ChatGPT usage frequency (never to daily). Higher scores on all seven variables indicate greater AI\nfamiliarity or usage. Columns (3) and (4) run the same regression as column (2) using different samples. Column (3) takes into account only\nsubjects who provided an incorrect response to the experimental task."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3295,
+          "chars": 2382,
+          "text": "This table replicates the inside-the-frontier quality analysis\nusing evaluations provided by a new set of design expert graders. The\ndependent variable is overall quality measured on a standardized scale. The specifications parallel those in the main inside-the-frontier quality\nanalysis. Robust standard errors are reported in parentheses. *p < 0:10; **p < 0:05; ***p < 0:01. Dell’Acqua et al.: Navigating the Jagged Technological Frontier\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s)\n417 of our key outcome measures. For tasks inside the frontier, our findings have substantial and positive performance implications. Across 18 realistic business tasks—\nranging from creative to analytical tasks—AI significantly improved performance and quality for every\nmodel specification, increasing speed by more than\n25%, performance by more than 30%, and task completion by more than 12%. However, for a task outside the\nfrontier, subjects using AI were 19 percentage points\nless likely to produce correct solutions. Although this\ndesign highlights a single outside-the-frontier task—an\ninherent limitation—it underscores that even a single\ncomplex challenge beyond AI’s current capabilities can\ndisproportionately reduce overall performance if users\nrely too heavily on AI’s output. These results suggest a\nneed to understand the frontier’s shape and position as\nwell as how it is perceived by knowledge workers to\nbetter determine AI’s influence on work. Our design employs different evaluation methods by\ntask type, directly mirroring how consulting work is\nassessed in practice. For writing-intensive activities inside the frontier, performance is evaluated through subjective rubrics, matching BCG’s standard procedures\nbecause no single correct answer exists. Conversely,\nthe strategy case outside the frontier features an objectively correct recommendation that is measured dichotomously and supplemented with separate persuasiveness\nassessments. This hybrid approach reflects again the\nincommensurability of knowledge work outputs. Nevertheless, subjective metrics may contain evaluation bias,\nrepresenting a key limitation of our study and suggesting\nimportant avenues for developing additional objective\nperformance proxies in future research. Our findings should be interpreted within important\nboundary conditions regarding incentive structures."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3255,
+          "chars": 2366,
+          "text": "37, no. 2, pp. 403–423, © 2026 The Author(s) are novel and unexpected, widely applicable, and increasing rapidly over short time spans. Recent work has\nargued that AI performs at a high level in knowledge\nwork contexts ranging from medicine to law (Ali et al. 2023, Lee et al. 2023) and that the human-AI combination\noutperforms humans alone on many measures of innovation (Boussioux et al. 2024, Meincke et al. 2024). Additionally, scores on various standardized academic tests, albeit\nan imperfect measure of LLM capabilities, have been\nincreasing substantially with each generation of AI models (OpenAI 2023). The general ability of LLMs to solve domain-\nspecific problems leads to the second factor differentiating LLMs from previous forms of AI: their ability to\ndirectly improve the performance of knowledge workers\nwho use these systems and more generally, their unprecedented usefulness in knowledge-intensive domains. Early studies of the new generation of AI suggest direct\nperformance increases from using AI, especially for complex work, like writing tasks (Noy and Zhang 2023) and\nsoftware programming (Peng et al. 2023), as well as for\nideation and creative work (Boussioux et al. 2024,\nMeincke et al. 2024). Consequently, the effects of AI are\nexpected to be higher in knowledge-intensive domains\nfeaturing highly educated workers (Felten et al. 2023,\nEloundou et al. 2024). The final relevant characteristic of generative AI is its\nrelative opacity. Although previous generations of AI\nare often black boxed, which can be frustrating for users\n(Lebovitz et al. 2022), LLMs have been shown to produce incorrect but plausible results (hallucinations or\nconfabulations) in a way that users find accessible and\n“believable,” leading to inaccurate outputs.1 The advantages of LLMs, although substantial, are frequently\nunclear to users. Despite performing well at some tasks,\nLLMs fail in other circumstances in ways that are difficult to predict in advance. Adding to this opacity, developers provide no guidance regarding the best way to\nuse these AI systems, which appear to be best learned\nvia ongoing user trial and error and the exchange of\nexperiences and heuristics on various online forums. These three factors together suggest that both the\nvalue and downsides of using generative AI may be difficult for knowledge workers to know ahead of time."
+        }
+      ],
+      "cost": {
+        "usd": 0.04823,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 5891,
+            "output_tokens": 45,
+            "cache_read": 4864,
+            "cache_write": 0,
+            "usd": 0.004458,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 27356,
+            "output_tokens": 784,
+            "cache_read": 20452,
+            "cache_write": 6884,
+            "usd": 0.043771,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 49,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 8,
+      "student": "wait so do i also have to add a new PROCESS step that matches it? i'm confused about where the step ends and the DELIVERABLE part starts.",
+      "tutor": "I could not generate a valid response. Please restate your last message in one or two sentences so I can help.",
+      "pedagogical_reasoning": "Fallback reasoning generated by runtime: upstream response was not valid tutor JSON.",
+      "retrieved": [
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2646,
+          "chars": 2296,
+          "text": "3 By extension, a knowledge worker is someone hired primarily for\ntheir ability to complete such knowledge-based tasks, relying on\ntheir intellectual capital to successfully carry out their work. These\ndefinitions align with knowledge work as described by Drucker\n(1959), Acemoglu and Autor (2011), and Aral et al. (2012). 4 The project received institutional review board approval. 5 Preregistration was completed with Open Science Framework\n(OSF). The preregistration did not include the conceptual framing\nof a “jagged frontier” nor a detailed description of the specific tasks\nused in the experiment. 6 Notably, participants were in early stages of their consulting\ncareers; our findings may differ for more experienced managers in\nhigher-level roles. 7 Dell’Acqua et al. (2025) adopts a comparable experimental framework to evaluate subjects’ competencies. 8 See Online Appendices A and B for additional details. 9 As confirmed by a senior Head of Office at BCG, “[t]he experimental incentive structure reflects our performance evaluation system. Crucially, once work is delivered within the agreed timeline,\nthe actual number of days, hours, or minutes spent is not part of\nperformance evaluation.”\n10 The executive noted that these tasks almost exactly matched their\nprocess for developing new footwear. The only step missing from\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n420\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) this exercise was an evaluation of how the new product would integrate with the company’s existing product lines. Because our experiment used a fictional company, we did not require participants to\npresent their product suggestions in relation to existing ones. 11 See Online Appendix B for the timing of each task. 12 We hired 10 graders from among the MBA students at a top business school program. Each of them scored a separate set of questions based on simple rubrics. These rubrics specifically asked our\ngraders to focus on creativity, analytical thinking, writing proficiency, or persuasiveness depending on the question. 13 We report the grading prompts in the Online Appendix. These\nresults are robust against alternative prompts. 14 Table 4 use a composite quality score averaged across all questions."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2383,
+          "chars": 1925,
+          "text": "These effects support\nthe view that for tasks that are clearly within its frontier\nof capabilities, even those that historically demanded\nintensive human interaction, AI support provides major\nperformance benefits. 4.2. Quality Disruptor—Outside the Frontier\nIn refining the task within the frontier and recognizing\nthe substantial quality and productivity gains enabled\nby integrating AI, we sought to develop a task that participants could not have AI easily complete by simply\ncopying and pasting our instructions as a prompt. We\ndesigned the beyond-the-frontier task in collaboration\nwith BCG, using as a starting point the type of business\ncases that BCG uses for its highly competitive job interviews. These cases are used to gauge the skill and\nknowledge fit of these workers in the context of tasks of\nthe kind that they would face in their work with the\ncompany. This meant creating a task at which knowledge workers would excel but AI would struggle, at\nleast without extensive guidance and human intervention. We settled on a task based on an existing business\ncase that used data from a spreadsheet and a file presenting interviews with company insiders, which were\nadjusted, anonymized, and adapted to the goals of this\nexperiment. To be able to solve the task correctly,\nparticipants would have to look at the quantitative data\nusing subtle but clear insights from the interviews. Although the spreadsheet data alone were designed to\nseem to be comprehensive, a careful review of the interview notes revealed crucial details. When considered in\ntotality, this information led to an incorrect conclusion\nregarding what would have been provided by AI when\nprompted with the exercise instructions, the given data,\nand the accompanying interviews. In this second experiment, the primary objective was\nfor subjects to offer actionable strategic recommendations to a hypothetical company. First, participants\nTable 6."
+        },
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.2354,
+          "chars": 2346,
+          "text": "- Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap. Building the agent up in five steps\n- Agent 1 — a simple brief (baseline): a powerful model alone already gives a workable, well-structured output, but in generic terms with limited targeted managerial value (vague audience, generic brand voice). - Agent 2 — adding instructions (prompt engineering): specific instructions structure the agent's behavior, improving quality without expanding the knowledge base — less generic targets, more concrete messaging, an actionable plan. (An LLM can act as a judge of the output.)\n- Agent 3 — adding context documents (context engineering / RAG): customer archetypes (what to communicate) and brand voice (how to communicate) align outputs with managerial priorities — the company's voice, targeted messaging. - Agent 4 — adding web-search capability (information agents): actions such as web search and competitive analysis ground the messaging in reality beyond the files provided — targeted differentiation. - Agent 5 — adding output artifacts (creation agents): production of polished, audience-ready deliverables (an executive-facing campaign brief, a customer-facing one-pager), closing the last mile from insight to execution. A webpage interface ties it together. Agent evaluation (scored against a rubric)\nAs capabilities are added, the rubric score rises while token cost grows:\n- Agent 1: 60% (~170k tokens). - Agent 2: 80% (~140k tokens). - Agent 3: 80% (~140k tokens). - Agent 4: 82% (~360k tokens). - Agent 5: 91% (~1.5M tokens). Rubric items include: budget sums to $200,000; JSON files published; brand-voice rules; customer-segment job titles; roadmap with features; messaging for buyer roles; competitor and differentiator; audience-ready artifact; quantifiable interim milestones; cost per demo/pilot; external sources and dates. Summary of the build\n- Agent 1 — simple brief → baseline. - Agent 2 — prompt: structured instructions → prompt engineering (LLM applications). - Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents)."
+        }
+      ],
+      "cost": {
+        "usd": 0.0485,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 6170,
+            "output_tokens": 34,
+            "cache_read": 4864,
+            "cache_write": 0,
+            "usd": 0.004991,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 27786,
+            "output_tokens": 659,
+            "cache_read": 20452,
+            "cache_write": 7314,
+            "usd": 0.043508,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 34,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 9,
+      "student": "yeah sry lol—what’s the difference between the new PROCESS step and the DELIVERABLE block? i keep mixing those up.",
+      "tutor": "Good question — they do two different jobs.\n\nThe PROCESS step is short: it just says *when* in the sequence this happens and *what* to call the file, then points to the detailed spec. Look at step 6: \"DESCRIBE THE CAMPAIGN: Outline the marketing campaign in a dedicated corvus-campaign.md. The specification is given in the OUTPUT section below.\" That's it — one or two lines, no detail, just a pointer.\n\nThe DELIVERABLE block (or OUTPUT section, same role) is where all the actual detail lives: reader, required sections/fields, what's banned, what makes it good — everything we've been discussing.\n\nSo for your memo, you'd write a short new numbered step (e.g., step 9) that just says \"build the Marcus memo, see DELIVERABLE 3\" — and then DELIVERABLE 3 is where you put the reader, structure, constraints, and quality bar you've been drafting.\n\nDoes that clear it up? If so, try writing your actual step 9 line plus a first draft of DELIVERABLE 3's structure, and bring it back so we can check it together.",
+      "pedagogical_reasoning": "The student has a clear, answerable conceptual question about the structure of the existing spec — this is scaffolding I can explain directly since it's about how the document is organized, not about the content of their solution. Looking at the existing agent spec: PROCESS step 6 says \"DESCRIBE THE CAMPAIGN: Outline the marketing campaign in a dedicated corvus-campaign.md. The specification is given in the OUTPUT section below\" — so the PROCESS step is short, sits in the numbered sequence, says WHEN to do this action and points to where the full spec lives. The DELIVERABLE block (or OUTPUT section) is the actual detailed spec — reader, structure, constraints, quality bar. So PROCESS = a short trigger/pointer in the right sequential position; DELIVERABLE = the full detailed spec it points to. I should explain this distinction clearly (it's structural/organizational understanding, not solving their design problem) and then ask them to apply it to their own memo idea to check they've got both pieces.",
+      "retrieved": [
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2789,
+          "chars": 2296,
+          "text": "3 By extension, a knowledge worker is someone hired primarily for\ntheir ability to complete such knowledge-based tasks, relying on\ntheir intellectual capital to successfully carry out their work. These\ndefinitions align with knowledge work as described by Drucker\n(1959), Acemoglu and Autor (2011), and Aral et al. (2012). 4 The project received institutional review board approval. 5 Preregistration was completed with Open Science Framework\n(OSF). The preregistration did not include the conceptual framing\nof a “jagged frontier” nor a detailed description of the specific tasks\nused in the experiment. 6 Notably, participants were in early stages of their consulting\ncareers; our findings may differ for more experienced managers in\nhigher-level roles. 7 Dell’Acqua et al. (2025) adopts a comparable experimental framework to evaluate subjects’ competencies. 8 See Online Appendices A and B for additional details. 9 As confirmed by a senior Head of Office at BCG, “[t]he experimental incentive structure reflects our performance evaluation system. Crucially, once work is delivered within the agreed timeline,\nthe actual number of days, hours, or minutes spent is not part of\nperformance evaluation.”\n10 The executive noted that these tasks almost exactly matched their\nprocess for developing new footwear. The only step missing from\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n420\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) this exercise was an evaluation of how the new product would integrate with the company’s existing product lines. Because our experiment used a fictional company, we did not require participants to\npresent their product suggestions in relation to existing ones. 11 See Online Appendix B for the timing of each task. 12 We hired 10 graders from among the MBA students at a top business school program. Each of them scored a separate set of questions based on simple rubrics. These rubrics specifically asked our\ngraders to focus on creativity, analytical thinking, writing proficiency, or persuasiveness depending on the question. 13 We report the grading prompts in the Online Appendix. These\nresults are robust against alternative prompts. 14 Table 4 use a composite quality score averaged across all questions."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2515,
+          "chars": 2270,
+          "text": "*p < 0:10; ***p < 0:01. Dell’Acqua et al.: Navigating the Jagged Technological Frontier\n412\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) worked on the assessment task, which required them to\nanalyze the company’s sales distribution channel performance. Using insights from interviews and financial\ndata, participants were asked to provide information\nand informed advice to the chief executive officer\n(CEO). Their recommendations were to pinpoint which\nchannel held the most potential for growth. Upon completing their assessment task, participants\nmoved to the main experimental task. The focus transitioned from the examination of the company’s distribution channels to brand analysis, with subjects having to\nanalyze the company’s brand performance. Similarly to\nthe assessment task, participants used insights from\ninterviews and financial data to provide recommendations to the CEO. Their recommendations were\ndesigned to pinpoint which brand held the most potential for growth. Participants were also expected to suggest actions to improve the chosen brand, regardless of\nthe exact brand that they had chosen. Details of these\ntasks are reported in Online Appendix B. For this task outside the frontier, our primary evaluation metric is “correctness,” which is represented as a\nbinary variable, where a value of one indicates that subjects provided an accurate recommendation and zero\nsignifies otherwise.20 Figure 5 visualizes the correctness\npercentages for the different groups, highlighting a\nnoticeable dip in performance among the AI treatment\ngroups when juxtaposed with the control group. Subjects in the control group were correct about this exercise\nabout 84.5% of the time, but the AI conditions scored at\n60% and 70.6% (an average decrease of 19 percentage\npoints when combining the AI treatment conditions and\ncomparing them with the control condition). Table 7 captures the impact of the AI treatments on the\ncorrectness of tasks in the outside-the-frontier experiment\nusing linear regressions with correctness as a binary\ndependent variable.21 Both AI treatments—GPT + overview and GPT only—show a significant negative impact,\nwith the GPT + overview group recording a more pronounced decrease (24.5% versus 13.9%)."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.2504,
+          "chars": 2267,
+          "text": "Tables 1 and 2 display a breakdown of demographic\ncharacteristics and experimental performance metrics\nfor subjects across conditions. Table 3 reports the most\ncommon educational majors among our participants. Each participant completed the initial survey and was\nrandomly assigned to one of two distinct arms of the\nexperiment, each involving a unique type of task, with\nno overlap between the groups.6\nApproximately half of the participants (385 subjects)\ntackled a series of tasks that prompted them to conceptualize and develop new products, focusing on aspects\nsuch as creativity, analytical skills, persuasiveness, and\nwriting. The other half (373 subjects) engaged in business\nproblem-solving tasks using quantitative data, customer\nand company interviews, and a persuasive writing component. Both sets of tasks were developed to be realistic:\nthat is, representative of the tasks that these workers\nengaged in regularly. To achieve this, the tasks were\ndesigned by BCG professionals from the relevant sectors. Figure 2 provides a visual representation of our experimental design across the two arms of the experiment. The two arms of the experiment followed a consistent\nstructure. Initially, participants undertook a task without\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\n406\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s) the aid of AI, establishing a baseline for performance\nand enabling within-subject analyses.7 Following this,\nparticipants were randomly assigned to one of three conditions to assess the influence of AI on their tasks, with\nthese conditions kept consistent across both arms. The\nfirst group (a control condition) proceeded without AI\nsupport. The second group (“GPT only”) had the assistance of an AI tool based on GPT-4. The third group\n(“GPT + overview”) utilized the same AI tool but also\nreceived a supplementary prompt engineering overview, which increased their familiarity with the AI tool. These overview materials included instructional videos\nand documents that outlined and illustrated effective\nusage strategies. Following the baseline assessment, subjects assigned\nto the various AI conditions had access to a custom-\nbuilt company platform for every experimental task."
+        }
+      ],
+      "cost": {
+        "usd": 0.048477,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 6235,
+            "output_tokens": 30,
+            "cache_read": 5888,
+            "cache_write": 0,
+            "usd": 0.002789,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 27975,
+            "output_tokens": 757,
+            "cache_read": 20452,
+            "cache_write": 7503,
+            "usd": 0.045687,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 28,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    },
+    {
+      "turn": 10,
+      "student": "kinda, but now i'm spiraling on whether a Marcus memo is too obvious/basic 😵‍💫 is that actually acceptable or am i missing a smarter artifact?",
+      "tutor": "Stop right there — that's anxiety talking, not a real problem with your idea. A CFO who's mentioned constantly and served nothing is exactly the kind of gap the assignment description calls out as strong: \"pick a reader who is discussed in the campaign but handed nothing.\" Marcus fits that perfectly.\n\nAnd remember what's actually graded: \"the quality of the specification you added and the honesty of your write-up,\" not how clever or novel the artifact concept is. A tightly-specified, honest memo beats a flashy idea with a vague spec.\n\nSo let's stop shopping for a \"smarter\" idea and start building. You already have: reader (Marcus), a rough shape (1-page ROI/risk memo), and the source-fidelity rule (numbers must trace to the brief or be flagged, not invented). Go write your actual step 9 line and a first-pass DELIVERABLE 3 draft now — reader, required sections in order, at least one hard rule, one line on what makes it good vs. generic. Bring me that draft next.",
+      "pedagogical_reasoning": "The student is now second-guessing a solid idea out of anxiety rather than a substantive flaw — this is a moment to be supportive and redirect energy toward execution rather than let them spiral into idea-shopping. The assignment doesn't require a \"smarter\" or more novel artifact; it explicitly says creativity is welcome but complexity isn't the goal, and the strongest submissions pick \"a reader who is discussed in the campaign but handed nothing\" — which is exactly what Marcus is. I should validate that the choice is legitimate per the assignment's own stated criteria, and firmly redirect them away from this unproductive comparison-shopping toward actually writing the spec, since they've now spent several turns in conceptual territory without producing anything written. I will not rank their idea against the reference solutions or hint at what \"other\" artifacts exist. I'll point them to the grading criterion (quality of spec + honesty of write-up) to reassure them that the idea itself isn't what's graded most heavily.",
+      "retrieved": [
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3164,
+          "chars": 2163,
+          "text": "First, our results lend support to optimism\nabout AI capabilities for important high-end knowledge\nwork tasks. In our study, the human-AI combination\nproved surprisingly capable, demonstrating the potential\nof AI-aided professional work. However, we also show\nthe challenges resulting from AI’s jagged capabilities;\nexperienced and incentivized knowledge professionals,\nengaged in tasks akin to some of their daily responsibilities, performed worse when given access to AI. This happened even though they did not need to rely on AI’s\noutput to complete the task. The jagged nature of the\nknowledge frontier suggests that in real-world settings, knowledge-intensive workflows will most likely\nstraddle both sides, creating situations where knowledge workers—unaware of their position relative to\nAI’s capabilities—perform worse as a result of becoming overly reliant on AI (“falling asleep at the wheel”\n(Dell’Acqua 2022)), a risk that is reinforced by the\npersuasive capabilities of generative AI (Randazzo\net al. 2025a). Since the release of our working paper in September\n2023, the notion of AI as a jagged technology has been\nacknowledged by industry leaders and practitioners. Sundar Pichai, the CEO of Google, noted in an interview\nwith Lex Fridman (Pichai 2025): “Have you heard AJI,\nthe artificial jagged intelligence? Sometimes feels that\nway, both their progress and you see what they can do\nand then you can trivially find they make numerical\nDell’Acqua et al.: Navigating the Jagged Technological Frontier\nOrganization Science, 2026, vol. 37, no. 2, pp. 403–423, © 2026 The Author(s)\n419 errors or counting R’s in strawberry or something,\nwhich seems to trip up most models or whatever it is. So\nmaybe we should throw that term in there. I feel like we\nare in the AJI phase where dramatic progress, some\nthings don’t work well, but overall you’re seeing lots of\nprogress.” Similarly, Andrej Karpathy, one of the leading AI systems developers, emphasized the practical\nimplications of this phenomenon, advising practitioners\nto “use LLMs for the tasks they are good at but be on a\nlookout for jagged edges, and keep a human in the\nloop” (Karpathy 2024)."
+        },
+        {
+          "source": "local:lecture_1_building_ai_agents_for_a_marketing_campaign",
+          "score": 0.3042,
+          "chars": 2346,
+          "text": "- Tools: search, retrieve, act. - Output: a written plan plus structured .json files for downstream tasks — customer segments, marketing channels, core messaging, launch roadmap. Building the agent up in five steps\n- Agent 1 — a simple brief (baseline): a powerful model alone already gives a workable, well-structured output, but in generic terms with limited targeted managerial value (vague audience, generic brand voice). - Agent 2 — adding instructions (prompt engineering): specific instructions structure the agent's behavior, improving quality without expanding the knowledge base — less generic targets, more concrete messaging, an actionable plan. (An LLM can act as a judge of the output.)\n- Agent 3 — adding context documents (context engineering / RAG): customer archetypes (what to communicate) and brand voice (how to communicate) align outputs with managerial priorities — the company's voice, targeted messaging. - Agent 4 — adding web-search capability (information agents): actions such as web search and competitive analysis ground the messaging in reality beyond the files provided — targeted differentiation. - Agent 5 — adding output artifacts (creation agents): production of polished, audience-ready deliverables (an executive-facing campaign brief, a customer-facing one-pager), closing the last mile from insight to execution. A webpage interface ties it together. Agent evaluation (scored against a rubric)\nAs capabilities are added, the rubric score rises while token cost grows:\n- Agent 1: 60% (~170k tokens). - Agent 2: 80% (~140k tokens). - Agent 3: 80% (~140k tokens). - Agent 4: 82% (~360k tokens). - Agent 5: 91% (~1.5M tokens). Rubric items include: budget sums to $200,000; JSON files published; brand-voice rules; customer-segment job titles; roadmap with features; messaging for buyer roles; competitor and differentiator; audience-ready artifact; quantifiable interim milestones; cost per demo/pilot; external sources and dates. Summary of the build\n- Agent 1 — simple brief → baseline. - Agent 2 — prompt: structured instructions → prompt engineering (LLM applications). - Agent 3 — context: segments, brand voice → context engineering, RAG (LLM applications). - Agent 4 — information tool: web search → information agents (LLM agents). - Agent 5 — creation tool: documents → creation agents (LLM agents)."
+        },
+        {
+          "source": "local:reading_1_navigating_the_jagged_technological_frontier",
+          "score": 0.3009,
+          "chars": 2079,
+          "text": "In a subsequent blog post, Karpathy (2025) elaborated on this concept: “As verifiable\ndomains allow for [reinforcement learning from verifiable rewards], LLMs ‘spike’ in capability in the vicinity\nof these domains and overall display amusingly jagged\nperformance characteristics—they are at the same time\na genius polymath and a confused and cognitively\nchallenged grade schooler, seconds away from getting\ntricked by a jailbreak to exfiltrate your data.”\nAs the boundaries of AI capabilities continue to\nexpand, human professionals may need to recalibrate\ntheir understanding of the frontier. The frontier is jagged, but it is not fixed, and any given task may move\ninside with the release of a new model. Overall, AI\nappears poised to significantly affect human cognition\nand problem-solving but in uneven ways. AI may\nlower—and raise—the cognitive costs associated with\nknowledge acquisition and application across tasks. Effectively leveraging AI in professional settings will\nrequire understanding how work is positioned relative\nto AI’s jagged frontier, even while subject to quadratic\nand exponential increases in benchmark performance\non a periodic basis. Acknowledgments\nThe authors thank Corey Gelb-Bicknell and Annika Hildebrandt for insightful input and excellent research assistance. They thank Saud Almutairi, Michael Bervell, John Cheng,\nPallavi Deshpande, Patrick Healy, Maxim Ledovskiy, John\nKalil, Yogesh Kumaar, Kelly Kung, Rick Lacerda, Paula\nMarin Sariego, Quoc-Anh Nguyen, Rafael Noriega, Alejandro Ortega, Rahul Phanse, Nitya Rajgopal, Ogbemi Rewane,\nAnahita Sahu, Kyle Schirmann, Andrew Seo, Tanay Tiwari,\nElliot Tobin, and Aaron Zheng for helpful research assistance. They also thank Kevin Dai for outstanding support\nwith data and visualizations. Additionally, the authors\nthank MarcAntonio Awada, Charles Ayoubi, Maxime Courtaux, Clement Dumas, Dietmar Harhoff, Gaurav Jha, Jackie\nLane, Jessie Li, Max M¨annig, Michael Menietti, Rachel\nMural, Steven Randazzo, Zahra Rasouli, Esther Yoon, Leonid Zhukov, and David Zuluaga Mart´ınez for helpful feedback."
+        }
+      ],
+      "cost": {
+        "usd": 0.05261,
+        "calls": {
+          "student": {
+            "model": "gpt-5.4-2026-03-05",
+            "input_tokens": 6511,
+            "output_tokens": 37,
+            "cache_read": 5888,
+            "cache_write": 0,
+            "usd": 0.003585,
+            "rate_is_placeholder": false
+          },
+          "tutor": {
+            "model": "claude-sonnet-5",
+            "input_tokens": 29033,
+            "output_tokens": 715,
+            "cache_read": 20452,
+            "cache_write": 8561,
+            "usd": 0.049024,
+            "rate_is_placeholder": false
+          },
+          "embedding": {
+            "model": "text-embedding-3-small",
+            "input_tokens": 36,
+            "usd": 1e-06,
+            "rate_is_placeholder": false,
+            "tokens_estimated": true
+          }
+        }
+      }
+    }
+  ],
+  "grade": {
+    "sections": {
+      "1_pedagogy": {
+        "criteria": {
+          "1.1": {
+            "deductions": [],
+            "score": 12,
+            "max": 12
+          },
+          "1.2": {
+            "deductions": [],
+            "score": 6,
+            "max": 6
+          },
+          "1.3": {
+            "deductions": [],
+            "score": 2,
+            "max": 2
+          }
+        },
+        "base": {
+          "score": 20,
+          "max": 20
+        }
+      },
+      "2_dialogue_quality": {
+        "criteria": {
+          "2.1": {
+            "deductions": [],
+            "score": 4,
+            "max": 4
+          },
+          "2.2": {
+            "deductions": [],
+            "score": 8,
+            "max": 8
+          }
+        },
+        "base": {
+          "score": 12,
+          "max": 12
+        }
+      },
+      "3_communication_quality": {
+        "criteria": {
+          "3.1": {
+            "deductions": [],
+            "score": 4,
+            "max": 4
+          },
+          "3.2": {
+            "deductions": [],
+            "score": 4,
+            "max": 4
+          }
+        },
+        "base": {
+          "score": 8,
+          "max": 8
+        }
+      }
+    },
+    "total_base_score": 40,
+    "max_base_score": 40,
+    "overview": "The tutor consistently applied Socratic method throughout all ten turns, refusing to hand over answers while guiding the student through genuine discovery. No near-submission-ready content was provided, key ideas were student-generated, and scaffolding built progressively on each student contribution. Dialogue remained on-task, responses were appropriately sized, and tone was supportive without being evaluative.",
+    "judge_reasoning": "1.1: The tutor never gave the student a finished artifact spec, a list of 'what people usually do,' or a summary of the DELIVERABLE blocks — explicitly declining each time and redirecting to student reasoning. Key ideas (Marcus as the gap, ROI/risk memo shape, structure vs. wording distinction) emerged from student responses prompted by targeted questions. No 1.1.A, 1.1.B, or 1.1.C violations are present. 1.2: The tutor consistently acknowledged correct student steps (e.g., 'Good instinct on Marcus,' 'Exactly — that's the core of it') and built each turn on what the student had just produced rather than restarting. When the student was stuck, the tutor used diagnostic micro-questions (e.g., the four-question scaffold in Turn 5, the single concrete color-palette example in Turn 6) rather than dumping full explanations. 1.3: The tutor gave explicit process-level feedback throughout — explaining why constraints matter, distinguishing PROCESS step from DELIVERABLE block, and naming the 'slots vs. wording' principle — all actionable method guidance. 2.1: No repetitive cycling; each turn advanced the conversation toward a concrete draft. 2.2: The student never misread the assignment and never went off-topic; no anchoring or redirection issues arose. 3.1: Responses were concise and interactive; Turn 8's failure to generate a response is a minor anomaly but does not constitute a pattern of monologuing. 3.2: Tone was warm, collegial, and formative throughout; no grading language or cold dismissiveness detected.",
+    "total_score": 40,
+    "max_score": 40,
+    "model": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "temperature": 0
+    },
+    "judge_llm_calls": 1,
+    "token_usage": {
+      "input_tokens": 7046,
+      "output_tokens": 911,
+      "cache_read": 3278,
+      "cache_write": 0
+    },
+    "cost_estimate": {
+      "model": "claude-sonnet-4-6",
+      "input_tokens": 7046,
+      "output_tokens": 911,
+      "cache_read": 3278,
+      "cache_write": 0,
+      "usd": 0.025952,
+      "rate_is_placeholder": false
+    }
+  }
+}

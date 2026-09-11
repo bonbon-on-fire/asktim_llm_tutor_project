@@ -28,6 +28,7 @@ from main_ui.routes._validation import (
     DEFAULT_EXERCISE,
     DEFAULT_ROLE,
     DEFAULT_TUTOR,
+    list_assignments,
     load_course_name,
     resolve_embed_selection,
     role_default_prompt,
@@ -46,7 +47,7 @@ def _bad_param(err: dict):
     return jsonify({"error": "invalid_param", **err}), 404
 
 
-def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise", role: str = DEFAULT_ROLE, problem: str | None = None):
+def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str = "exercise", role: str = DEFAULT_ROLE, problem: str | None = None, selection_explicit: bool = False):
     """Render ``embed.html`` for the given course/exercise|practice/tutor/role/problem context."""
     tutor_config = {
         "course": course,
@@ -58,6 +59,13 @@ def _render_embed(*, course: str, exercise: str, tutor: str, exercise_kind: str 
         # renders practices as "Week N Practice Problems"); chat.js formats the
         # entry header from this. Defaults to "Exercise N"/"Practice N".
         "labels": load_ui_labels(course),
+        # When the URL didn't name an exercise/practice/case, the resolved
+        # `exercise` above is just the module default — the student never chose
+        # it. chat.js uses this flag to prompt them to pick an assignment on
+        # "New Chat" (see the picker modal) instead of silently reusing the
+        # default. `assignments` feeds that picker's dropdown.
+        "selection_explicit": selection_explicit,
+        "assignments": list_assignments(course),
     }
     if problem:
         # Focus sub-problem (optional). Omitted when absent so no-focus config
@@ -119,11 +127,18 @@ def embed():
     if err:
         return _bad_param(err)
 
+    raw_exercise = request.args.get("exercise")
+    raw_practice = request.args.get("practice")
+    raw_case = request.args.get("case")
+    # True only when the URL explicitly named an assignment; a bare `?course=`
+    # resolves to the default exercise, which the student never chose.
+    selection_explicit = bool(raw_exercise or raw_practice or raw_case)
+
     number, kind, err = resolve_embed_selection(
         course,
-        request.args.get("exercise"),
-        request.args.get("practice"),
-        request.args.get("case"),
+        raw_exercise,
+        raw_practice,
+        raw_case,
         DEFAULT_EXERCISE,
     )
     if err:
@@ -138,4 +153,4 @@ def embed():
     if err:
         return _bad_param(err)
 
-    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind, role=role, problem=problem)
+    return _render_embed(course=course, exercise=number, tutor=tutor, exercise_kind=kind, role=role, problem=problem, selection_explicit=selection_explicit)

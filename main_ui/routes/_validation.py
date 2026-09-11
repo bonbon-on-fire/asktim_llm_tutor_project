@@ -12,6 +12,8 @@ from pathlib import Path
 
 from tutor.roles import DEFAULT_ROLE, get_role
 from utils.curriculum import case_exists as _case_exists
+from utils.curriculum import discover_cases as _discover_cases
+from utils.curriculum import discover_exercises as _discover_exercises
 from utils.curriculum import discover_practice as _discover_practice
 from utils.curriculum import exercise_exists as _exercise_exists
 from utils.curriculum import practice_exists as _practice_exists
@@ -154,6 +156,29 @@ def list_practice(course) -> list[str]:
     if not course:
         return []
     return _discover_practice(course)
+
+
+def list_assignments(course) -> list[dict]:
+    """Selectable assignments for a course, for the "New Chat" picker.
+
+    Returns ``[{"value": "<kind>:<number>", "label": "Exercise 3"}, ...]`` grouped
+    Exercise, then Case, then Practice (matching the sandbox wizard's ordering),
+    numerically sorted within each group. Empty for a falsy course. The ``value``
+    carries the kind so the frontend can set both ``exercise`` and
+    ``exercise_kind`` from a single dropdown choice.
+    """
+    if not course:
+        return []
+    groups = (
+        ("exercise", "Exercise", _discover_exercises(course)),
+        ("case", "Case", _discover_cases(course)),
+        ("practice", "Practice", _discover_practice(course)),
+    )
+    out: list[dict] = []
+    for kind, label, numbers in groups:
+        for n in numbers:
+            out.append({"value": f"{kind}:{n}", "label": f"{label} {n}"})
+    return out
 
 
 def validate_tutor(tutor) -> dict | None:

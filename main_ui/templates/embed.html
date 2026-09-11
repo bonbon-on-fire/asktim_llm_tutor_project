@@ -1,3 +1,23 @@
 {% extends "base_chat.html" %}
 {% block pre_chat_scripts %}<script src="{{ url_for('static', filename='js/outage_monitor.js', v='1') }}" defer></script>{% endblock %}
-{% block chat_js_src %}{{ url_for('static', filename='js/chat.js', v='14') }}{% endblock %}
+{% block modals_extra %}    <!-- Assignment picker: shown on "New Chat" when the embed URL never named an
+         exercise/practice/case (so the student is on the default one). Lets them
+         choose what to work on before the fresh chat starts. Populated from
+         config.assignments by chat.js. -->
+    <div class="modal-overlay" id="assignment-modal" role="dialog" aria-modal="true"
+         aria-labelledby="assignment-modal-title" hidden>
+        <div class="modal-card">
+            <h2 id="assignment-modal-title" class="modal-title">Choose an assignment</h2>
+            <p class="modal-body">Pick the exercise, practice, or case you want to work on.</p>
+            <form id="assignment-form" class="modal-form" autocomplete="off">
+                <select id="assignment-select" class="email-input" aria-label="Assignment"></select>
+                <div class="modal-error" id="assignment-error" role="alert" hidden></div>
+                <div class="modal-actions">
+                    <button type="button" id="assignment-cancel" class="modal-skip">Cancel</button>
+                    <button type="submit" id="assignment-start" class="modal-submit">Start Chat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+{% block chat_js_src %}{{ url_for('static', filename='js/chat.js', v='15') }}{% endblock %}

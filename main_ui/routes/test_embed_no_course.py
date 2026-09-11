@@ -3,7 +3,8 @@
 A bare host URL (``/``) or an ``/embed`` with no ``course`` param must NOT fall
 back to a default course. Instead the page renders with an empty course context
 (HTTP 200, loads normally) and the first chat send fails course validation
-(HTTP 404), which the frontend surfaces as the generic error banner.
+(HTTP 404, ``error: invalid_param``), which the frontend surfaces as the
+"No course selected" banner (distinct from the generic try-again text).
 
 Run:
     python -m main_ui.routes.test_embed_no_course

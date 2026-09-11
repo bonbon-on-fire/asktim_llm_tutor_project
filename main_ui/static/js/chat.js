@@ -85,6 +85,19 @@
   const detailMeta = document.getElementById("detail-meta");
   const detailMessages = document.getElementById("detail-messages");
 
+  // "New Chat" assignment picker (main_ui only). Shown when the embed URL never
+  // named an exercise/practice/case, so the student is sitting on the default
+  // one and should choose what to work on before a fresh chat starts.
+  const assignmentModal = document.getElementById("assignment-modal");
+  const assignmentForm = document.getElementById("assignment-form");
+  const assignmentSelect = document.getElementById("assignment-select");
+  const assignmentCancel = document.getElementById("assignment-cancel");
+  const assignmentError = document.getElementById("assignment-error");
+  // Assignments the student may pick from, and whether the URL already pinned
+  // one. When it did, "New Chat" just clears the chat (no picker).
+  const assignments = Array.isArray(config.assignments) ? config.assignments : [];
+  const selectionExplicit = !!config.selection_explicit;
+
   let conversationId = null;
   let isSending = false;
   let studentMessageCount = 0;
@@ -1005,6 +1018,60 @@
     composerInput.focus();
   }
 
+  // ---- "New Chat" assignment picker ----------------------------------------
+
+  function handleNewChatClick() {
+    // If the URL pinned an assignment, "New Chat" is a plain reset. Otherwise the
+    // student is on the default assignment they never chose — let them pick one
+    // (unless there's nothing to choose from, e.g. no course set).
+    if (!selectionExplicit && assignments.length > 0 && assignmentModal) {
+      openAssignmentModal();
+    } else {
+      startNewChat();
+    }
+  }
+
+  function openAssignmentModal() {
+    // Preselect whatever's currently active so re-opening keeps the last pick.
+    // config.exercise may be zero-padded ("01"); the option values are not, so
+    // normalize the number before matching.
+    const activeNum = String(parseInt(config.exercise, 10) || config.exercise);
+    const activeValue = (config.exercise_kind || "exercise") + ":" + activeNum;
+    assignmentSelect.innerHTML = "";
+    for (const a of assignments) {
+      const opt = document.createElement("option");
+      opt.value = a.value; // "<kind>:<number>"
+      opt.textContent = a.label;
+      if (a.value === activeValue) opt.selected = true;
+      assignmentSelect.appendChild(opt);
+    }
+    assignmentError.hidden = true;
+    assignmentModal.hidden = false;
+    assignmentSelect.focus();
+  }
+
+  function closeAssignmentModal() {
+    if (assignmentModal) assignmentModal.hidden = true;
+  }
+
+  function confirmAssignment(event) {
+    if (event) event.preventDefault();
+    const raw = assignmentSelect && assignmentSelect.value;
+    if (!raw) {
+      // Nothing selectable — degrade to a plain new chat rather than stall.
+      closeAssignmentModal();
+      startNewChat();
+      return;
+    }
+    const sep = raw.indexOf(":");
+    config.exercise_kind = raw.slice(0, sep);
+    config.exercise = raw.slice(sep + 1);
+    // A freshly chosen assignment carries no focus sub-problem.
+    delete config.problem;
+    closeAssignmentModal();
+    startNewChat();
+  }
+
   // ---- Step 7: email modal --------------------------------------------------
 
   async function submitEmailStage() {
@@ -1568,7 +1635,10 @@
   // History sidebar + detail view wiring (Step 8)
   historyToggle.addEventListener("click", toggleSidebar);
   sidebarClose.addEventListener("click", closeSidebar);
-  newChatButton.addEventListener("click", startNewChat);
+  newChatButton.addEventListener("click", handleNewChatClick);
+  if (assignmentForm) assignmentForm.addEventListener("submit", confirmAssignment);
+  if (assignmentCancel)
+    assignmentCancel.addEventListener("click", closeAssignmentModal);
   addEmailButton.addEventListener("click", () => openEmailModal({ manual: true }));
   detailBack.addEventListener("click", closeDetailView);
 

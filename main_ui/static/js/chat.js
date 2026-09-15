@@ -1665,8 +1665,11 @@
     openSidebar();
   }
 
-  // Auto-focus the composer so an embedded iframe is immediately typable
-  // (works once the iframe has focus; harmless on first paint otherwise).
-  composerInput.focus();
+  // Auto-focus the composer so an embedded iframe is immediately typable.
+  // preventScroll is essential: without it, focusing an element inside the
+  // iframe makes the browser scroll the *host* page (e.g. MIT Learn) down to
+  // bring the iframe into view, so the tab jumps to AskTIM instead of opening
+  // at the top. preventScroll keeps focus without moving the parent page.
+  composerInput.focus({ preventScroll: true });
   updateSendButton();
 })();

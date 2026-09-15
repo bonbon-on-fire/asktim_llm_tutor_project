@@ -68,7 +68,7 @@ from utils.curriculum import (
     subproblem_label,
 )
 from utils.figures import build_multimodal_content, discover_figures
-from utils.lectures import load_lecture_transcripts
+from utils.lectures import load_lecture_transcripts, load_recitation_transcripts
 from utils.pricing import model_from_message, priced, usage_from_message
 
 
@@ -320,11 +320,14 @@ class TutorBridge:
             if pinned:
                 parts.append(pinned)
 
-        # Lecture transcripts (large): full_context only; retrieved in rag.
+        # Lecture and recitation transcripts (large): full_context only; retrieved in rag.
         if mode == "full_context":
             lectures = load_lecture_transcripts(course)
             if lectures:
                 parts.append("Lecture transcripts:\n" + lectures)
+            recitations = load_recitation_transcripts(course)
+            if recitations:
+                parts.append("Recitation transcripts:\n" + recitations)
 
         # Optional focus directive: names the sub-problem the student was assigned
         # (the embed's problem= param). It frames that problem as the task the

@@ -5,6 +5,8 @@ Returns the course-level text that should be *retrievable*, as labeled
 
 - top-level ``key_concepts.txt`` (too large to pin, so reached via retrieval)
 - every ``lectures/*.txt`` (transcripts)
+- every ``recitations/*.txt`` (recitation material, week-scoped like lectures via
+  the ``recitation_<week>_<seq>_<slug>`` filename)
 - every ``readings/*.txt`` (supplementary reading material, week-scoped like
   lectures via the ``reading_<week>_<slug>`` filename)
 - every ``practices/*.txt`` (practice-problem prompts)
@@ -50,11 +52,11 @@ def load_local_docs(course: str, curriculum_root: Path | str | None = None) -> l
             if text:
                 docs.append((f"local:{path.stem}", text))
 
-    # Retrievable per-item folders: lecture transcripts, supplementary readings,
-    # and practice-problem prompts. exercises/ (graded prompts) and *_solutions/
-    # are paired directly into context, not retrieved; figures/ are images;
-    # rag_index/ is the index.
-    for subdir in ("lectures", "readings", "practices"):
+    # Retrievable per-item folders: lecture transcripts, recitation material,
+    # supplementary readings, and practice-problem prompts. exercises/ (graded
+    # prompts) and *_solutions/ are paired directly into context, not retrieved;
+    # figures/ are images; rag_index/ is the index.
+    for subdir in ("lectures", "recitations", "readings", "practices"):
         folder = course_dir / subdir
         if folder.is_dir():
             for path in sorted(folder.glob("*.txt")):

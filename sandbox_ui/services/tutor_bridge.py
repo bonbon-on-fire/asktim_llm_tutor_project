@@ -30,7 +30,7 @@ from utils.curriculum import (
     read_solution,
     subproblem_label,
 )
-from utils.lectures import load_lecture_transcripts
+from utils.lectures import load_lecture_transcripts, load_recitation_transcripts
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -87,11 +87,15 @@ def build_assignment_text(
         if pinned:
             parts.append(pinned)
 
-    # Lectures (large) — full_context only; gated by the include_lectures toggle.
+    # Lectures and recitations (large) — full_context only; gated by the
+    # include_lectures toggle (recitations ride the same switch as lectures).
     if include_lecture_transcripts and include_lectures and course:
         _lectures = load_lecture_transcripts(course)
         if _lectures:
             parts.append("Lecture transcripts:\n" + _lectures)
+        _recitations = load_recitation_transcripts(course)
+        if _recitations:
+            parts.append("Recitation transcripts:\n" + _recitations)
 
     # Problem — read exercise_<NN>.txt / practice_<NN>.txt / case_<NN>.txt.
     _path = problem_path(course, exercise, exercise_kind)

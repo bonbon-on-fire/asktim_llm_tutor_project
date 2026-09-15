@@ -63,6 +63,12 @@ def test_reading_week_parsed():
     assert _source_week("local:reading_10_ai_governance") == 10
 
 
+def test_recitation_week_parsed():
+    # recitations are week-scoped like lectures: recitation_<week>_<seq>_<slug> -> week
+    assert _source_week("local:recitation_2_3_standard_form") == 2
+    assert _source_week("local:recitation_10_1_review") == 10
+
+
 def test_source_label_lecture_number_and_title():
     assert (
         _source_label("local:lecture_1_1_the_transportation_problem")
@@ -70,6 +76,16 @@ def test_source_label_lecture_number_and_title():
     )
     # acronyms stay uppercase, not "Roic"
     assert _source_label("local:lecture_10_7_roic") == "Lecture 10.7 ROIC"
+
+
+def test_source_label_recitation_number_and_title():
+    # recitations cite as "Recitation <week>.<seq> <Title>", mirroring lectures.
+    assert (
+        _source_label("local:recitation_1_2_standard_form")
+        == "Recitation 1.2 Standard Form"
+    )
+    # acronyms stay uppercase
+    assert _source_label("local:recitation_3_1_lp_duality") == "Recitation 3.1 LP Duality"
 
 
 def test_source_label_reading():
@@ -95,6 +111,11 @@ def test_format_context_shows_labels_not_raw_stems():
     out = format_context([_FakeChunk("local:lecture_1_1_the_transportation_problem", "flow text")])
     assert "[Lecture 1.1 The Transportation Problem]" in out
     assert "local:lecture" not in out  # the raw stem is never shown to the tutor
+
+
+def test_recitation_week_agnostic_when_unnumbered():
+    # a recitation source that doesn't follow recitation_<week>_... carries no week
+    assert _source_week("local:recitation_intro") is None
 
 
 def test_week_agnostic_sources_return_none():

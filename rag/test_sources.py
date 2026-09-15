@@ -20,6 +20,16 @@ def test_readings_are_retrievable_alongside_lectures(tmp_path):
     assert "local:practice_2" in sources
 
 
+def test_recitations_are_retrievable_alongside_lectures(tmp_path):
+    course = tmp_path / "demo_course"
+    _write(course / "lectures" / "lecture_1_1_intro.txt", "lecture text")
+    _write(course / "recitations" / "recitation_1_1_standard_form.txt", "recitation text")
+
+    sources = {label for label, _ in load_local_docs("demo_course", tmp_path)}
+    assert "local:recitation_1_1_standard_form" in sources
+    assert "local:lecture_1_1_intro" in sources
+
+
 def test_pinned_and_exercises_stay_out_of_the_index(tmp_path):
     course = tmp_path / "demo_course"
     _write(course / "readings" / "reading_1_paper.txt", "reading text")

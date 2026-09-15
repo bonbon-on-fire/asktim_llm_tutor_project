@@ -20,6 +20,10 @@ def _courses_with_index():
     return sorted(p.parent.name for p in _CURRICULUM.glob("*/lecture_index.json"))
 
 
+def _courses_with_recitation_index():
+    return sorted(p.parent.name for p in _CURRICULUM.glob("*/recitation_index.json"))
+
+
 @pytest.mark.parametrize("course", _courses_with_index())
 def test_every_index_key_resolves_to_a_lecture_file(course):
     index = json.loads((_CURRICULUM / course / "lecture_index.json").read_text(encoding="utf-8"))
@@ -31,6 +35,40 @@ def test_every_index_key_resolves_to_a_lecture_file(course):
         assert (lectures / f"{stem}.txt").is_file(), f"{course}: {key} has no lecture file"
         assert entry.get("week"), f"{course}: {key} missing week"
         assert entry.get("citation"), f"{course}: {key} missing citation"
+
+
+@pytest.mark.parametrize("course", _courses_with_recitation_index())
+def test_every_recitation_index_key_resolves_to_a_recitation_file(course):
+    index = json.loads(
+        (_CURRICULUM / course / "recitation_index.json").read_text(encoding="utf-8")
+    )
+    recitations = _CURRICULUM / course / "recitations"
+    assert index, f"{course}/recitation_index.json is empty"
+    for key, entry in index.items():
+        assert key.startswith("local:recitation_"), f"unexpected index key: {key}"
+        stem = key.split("local:", 1)[1]
+        assert (recitations / f"{stem}.txt").is_file(), f"{course}: {key} has no recitation file"
+        assert entry.get("week"), f"{course}: {key} missing week"
+        assert entry.get("citation"), f"{course}: {key} missing citation"
+
+
+@pytest.mark.parametrize("course", _courses_with_recitation_index())
+def test_every_recitation_file_has_an_index_entry(course):
+    index = json.loads(
+        (_CURRICULUM / course / "recitation_index.json").read_text(encoding="utf-8")
+    )
+    recitations = _CURRICULUM / course / "recitations"
+    for path in recitations.glob("*.txt"):
+        key = f"local:{path.stem}"
+        assert key in index, f"{course}: {path.name} has no recitation_index entry"
+
+
+def test_source_label_recitation_falls_back_without_index():
+    # No course / no index -> stem-derived "Recitation W.S Title" label.
+    assert (
+        _source_label("local:recitation_1_2_standard_form")
+        == "Recitation 1.2 Standard Form"
+    )
 
 
 def test_source_label_uses_index_citation_when_course_given():

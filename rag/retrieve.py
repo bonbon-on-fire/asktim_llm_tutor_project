@@ -19,40 +19,54 @@ from utils.curriculum import course_dir
 _STORE_CACHE: dict[str, NumpyVectorStore | None] = {}
 
 # Per-course map: RAG source label -> {week, lesson, video, video_title, citation}.
-# Built from the live course structure (see curriculum/<course>/lecture_index.json);
-# lets citations use the real "Week 10, Lesson 1 · Video 7: DuPont Analysis" labels a
-# student can actually find, instead of the synthetic "Lecture 10.6" flat index.
+# Built from the live course structure (see curriculum/<course>/lecture_index.json
+# and recitation_index.json); lets citations use the real "Week 10, Lesson 1 ·
+# Video 7: DuPont Analysis" labels a student can actually find, instead of the
+# synthetic "Lecture 10.6" flat index. Lectures and recitations use identical
+# schemas and never collide (their source labels carry different prefixes), so the
+# two indexes are cached separately but consulted together in ``_source_label``.
 _LECTURE_INDEX_CACHE: dict[str, dict[str, dict]] = {}
+_RECITATION_INDEX_CACHE: dict[str, dict[str, dict]] = {}
 
 
-def _lecture_index(course: str) -> dict[str, dict]:
-    """Return the cached lecture index for *course* ({} if the course has none).
+def _load_index(course: str, filename: str, cache: dict[str, dict[str, dict]]) -> dict[str, dict]:
+    """Return the cached ``<filename>`` index for *course* ({} if it has none).
 
     Resolves into ``curriculum/_archive/<course>/`` for an archived course, same
     as every other course-relative path here.
     """
-    if course not in _LECTURE_INDEX_CACHE:
-        path = course_dir(course) / "lecture_index.json"
+    if course not in cache:
+        path = course_dir(course) / filename
         try:
-            _LECTURE_INDEX_CACHE[course] = json.loads(path.read_text(encoding="utf-8"))
+            cache[course] = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            _LECTURE_INDEX_CACHE[course] = {}
-    return _LECTURE_INDEX_CACHE[course]
+            cache[course] = {}
+    return cache[course]
 
-# ``local:lecture_<week>_<seq>_...``, ``local:practice_<week>``, and
-# ``local:reading_<week>_...`` encode the course week (module) as their first
-# number; exercise_<N> shares it too. Used to scope retrieval to weeks the student
-# has reached — see ``max_week`` below.
-_WEEK_RE = re.compile(r"^local:(?:lecture|practice|exercise|reading)_(\d+)")
+
+def _lecture_index(course: str) -> dict[str, dict]:
+    """Return the cached lecture index for *course* ({} if the course has none)."""
+    return _load_index(course, "lecture_index.json", _LECTURE_INDEX_CACHE)
+
+
+def _recitation_index(course: str) -> dict[str, dict]:
+    """Return the cached recitation index for *course* ({} if the course has none)."""
+    return _load_index(course, "recitation_index.json", _RECITATION_INDEX_CACHE)
+
+# ``local:lecture_<week>_<seq>_...``, ``local:recitation_<week>_<seq>_...``,
+# ``local:practice_<week>``, and ``local:reading_<week>_...`` encode the course
+# week (module) as their first number; exercise_<N> shares it too. Used to scope
+# retrieval to weeks the student has reached — see ``max_week`` below.
+_WEEK_RE = re.compile(r"^local:(?:lecture|recitation|practice|exercise|reading)_(\d+)")
 
 
 def _source_week(source: str) -> int | None:
     """Week number encoded in a source label, or None for week-agnostic material.
 
-    ``local:lecture_2_3_...`` -> 2, ``local:practice_4`` -> 4,
-    ``local:reading_1_...`` -> 1. Returns None for course-level docs
-    (``course``/``syllabus``/``key_concepts``) and OCW content, which carry no
-    week and are always in scope.
+    ``local:lecture_2_3_...`` -> 2, ``local:recitation_2_1_...`` -> 2,
+    ``local:practice_4`` -> 4, ``local:reading_1_...`` -> 1. Returns None for
+    course-level docs (``course``/``syllabus``/``key_concepts``) and OCW content,
+    which carry no week and are always in scope.
     """
     m = _WEEK_RE.match(source or "")
     return int(m.group(1)) if m else None
@@ -62,6 +76,10 @@ def _source_week(source: str) -> int | None:
 # -> ``Lecture 1.1 The Transportation Problem`` (week.seq + title-cased topic), so
 # the tutor can cite what it retrieved (see the tutor prompt's citation rule).
 _LECTURE_RE = re.compile(r"^local:lecture_(\d+)_(\d+)_(.+)$")
+# ``local:recitation_1_2_standard_form`` -> ``Recitation 1.2 Standard Form``. Only
+# a fallback: courses that ship a recitation_index.json get the real citation from
+# the entry (checked first in ``_source_label``).
+_RECITATION_RE = re.compile(r"^local:recitation_(\d+)_(\d+)_(.+)$")
 # ``local:reading_<week>_<slug>`` -> ``Reading: <Titleized slug>``. The leading
 # week number scopes retrieval (see _WEEK_RE) but is not shown in the citation.
 _READING_RE = re.compile(r"^local:reading_\d+_(.+)$")
@@ -93,23 +111,29 @@ def _titleize(slug: str) -> str:
 def _source_label(source: str, course: str | None = None) -> str:
     """Render a raw chunk source as a human-readable, citeable label.
 
-    When *course* has a ``lecture_index.json`` entry for this source, its
-    ``citation`` (the real "Week 10, Lesson 1 · Video 7: DuPont Analysis"
-    coordinate) is used. Otherwise falls back to a label derived from the stem:
-    ``local:lecture_1_1_the_transportation_problem`` -> ``Lecture 1.1 The
-    Transportation Problem``; ``local:reading_1_jagged_frontier`` -> ``Reading:
-    Jagged Frontier``; ``local:practice_4`` -> ``Practice 4``;
+    When *course* has a ``lecture_index.json`` or ``recitation_index.json`` entry
+    for this source, its ``citation`` (the real "Week 10, Lesson 1 · Video 7:
+    DuPont Analysis" coordinate) is used. Otherwise falls back to a label derived
+    from the stem: ``local:lecture_1_1_the_transportation_problem`` -> ``Lecture
+    1.1 The Transportation Problem``; ``local:recitation_1_2_standard_form`` ->
+    ``Recitation 1.2 Standard Form``; ``local:reading_1_jagged_frontier`` ->
+    ``Reading: Jagged Frontier``; ``local:practice_4`` -> ``Practice 4``;
     ``local:course``/``syllabus``/``key_concepts`` -> friendly names; OCW and
     anything unrecognized keep their label (minus a ``local:`` prefix).
     """
     s = source or ""
     if course:
-        entry = _lecture_index(course).get(s)
+        # Lecture and recitation labels carry different prefixes, so at most one
+        # index has an entry — check both and prefer the real citation.
+        entry = _lecture_index(course).get(s) or _recitation_index(course).get(s)
         if entry and entry.get("citation"):
             return entry["citation"]
     m = _LECTURE_RE.match(s)
     if m:
         return f"Lecture {m.group(1)}.{m.group(2)} {_titleize(m.group(3))}"
+    m = _RECITATION_RE.match(s)
+    if m:
+        return f"Recitation {m.group(1)}.{m.group(2)} {_titleize(m.group(3))}"
     m = _READING_RE.match(s)
     if m:
         return f"Reading: {_titleize(m.group(1))}"

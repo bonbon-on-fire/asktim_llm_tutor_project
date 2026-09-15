@@ -640,7 +640,8 @@
     }
 
     // Trigger label, mirroring the Download-data multi-select summary:
-    // none -> "None", one -> that course, all -> "All (N)", else "N selected".
+    // none -> "None", one -> that course, all -> "All (N)", else the topmost
+    // selected course's name plus "+K" for the rest (e.g. "Supply Chain +1").
     function summary() {
       const n = checked.size;
       if (n === 0) return "None";
@@ -649,7 +650,10 @@
         return only ? only.name : "1 selected";
       }
       if (n === courses.length) return "All (" + n + ")";
-      return n + " selected";
+      // "courses" is in display order, so the first checked entry is the one
+      // sitting topmost in the open dropdown.
+      const first = courses.find((c) => checked.has(c.key));
+      return first ? first.name + " +" + (n - 1) : n + " selected";
     }
     function paintLabel() { label.textContent = summary(); }
 

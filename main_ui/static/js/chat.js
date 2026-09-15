@@ -97,6 +97,11 @@
   // one. When it did, "New Chat" just clears the chat (no picker).
   const assignments = Array.isArray(config.assignments) ? config.assignments : [];
   const selectionExplicit = !!config.selection_explicit;
+  // When the URL named no assignment, the student must pick one before chatting
+  // — no silent default. The picker opens on load (and every refresh), and the
+  // first send is blocked until a choice is made. Cleared once they pick.
+  let assignmentRequired =
+    !selectionExplicit && assignments.length > 0 && !!assignmentModal;
 
   let conversationId = null;
   let isSending = false;
@@ -1046,6 +1051,9 @@
       assignmentSelect.appendChild(opt);
     }
     assignmentError.hidden = true;
+    // While a choice is still required (nothing chosen yet), there's no way out
+    // but to pick — hide Cancel so the student can't fall back to a default.
+    if (assignmentCancel) assignmentCancel.hidden = assignmentRequired;
     assignmentModal.hidden = false;
     assignmentSelect.focus();
   }
@@ -1059,6 +1067,7 @@
     const raw = assignmentSelect && assignmentSelect.value;
     if (!raw) {
       // Nothing selectable — degrade to a plain new chat rather than stall.
+      assignmentRequired = false;
       closeAssignmentModal();
       startNewChat();
       return;
@@ -1068,6 +1077,8 @@
     config.exercise = raw.slice(sep + 1);
     // A freshly chosen assignment carries no focus sub-problem.
     delete config.problem;
+    // The student has now chosen — the requirement is satisfied.
+    assignmentRequired = false;
     closeAssignmentModal();
     startNewChat();
   }
@@ -1224,6 +1235,12 @@
     // Belt-and-braces: the mandatory modal's overlay already blocks the
     // composer visually, but guard the entry point too.
     if (modalOpen && modalMandatory) return;
+    // No assignment chosen yet (URL named none) — force the picker instead of
+    // sending against a silent default.
+    if (assignmentRequired) {
+      openAssignmentModal();
+      return;
+    }
 
     const text = composerInput.value.trim();
     const outgoingImages = stagedImages.slice();
@@ -1639,6 +1656,10 @@
   if (assignmentForm) assignmentForm.addEventListener("submit", confirmAssignment);
   if (assignmentCancel)
     assignmentCancel.addEventListener("click", closeAssignmentModal);
+  // No assignment in the URL → open the picker immediately so the student picks
+  // before the first message (fires again on every refresh, since the URL still
+  // names none). New Chat re-opens it.
+  if (assignmentRequired) openAssignmentModal();
   addEmailButton.addEventListener("click", () => openEmailModal({ manual: true }));
   detailBack.addEventListener("click", closeDetailView);
 

@@ -1,9 +1,9 @@
 {% extends "base_chat.html" %}
 {% block pre_chat_scripts %}<script src="{{ url_for('static', filename='js/outage_monitor.js', v='1') }}" defer></script>{% endblock %}
-{% block modals_extra %}    <!-- Assignment picker: shown on "New Chat" when the embed URL never named an
-         exercise/practice/case (so the student is on the default one). Lets them
-         choose what to work on before the fresh chat starts. Populated from
-         config.assignments by chat.js. -->
+{% block modals_extra %}    <!-- Assignment picker: shown when the embed URL never named an
+         exercise/practice/case. Opens on load (and every refresh) and on "New
+         Chat", and the first send is blocked until the student picks — no silent
+         default. Populated from config.assignments by chat.js. -->
     <div class="modal-overlay" id="assignment-modal" role="dialog" aria-modal="true"
          aria-labelledby="assignment-modal-title" hidden>
         <div class="modal-card">
@@ -20,4 +20,4 @@
         </div>
     </div>
 {% endblock %}
-{% block chat_js_src %}{{ url_for('static', filename='js/chat.js', v='17') }}{% endblock %}
+{% block chat_js_src %}{{ url_for('static', filename='js/chat.js', v='18') }}{% endblock %}

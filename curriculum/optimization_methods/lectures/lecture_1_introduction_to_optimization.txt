@@ -1,0 +1,125 @@
+Lecture 1 — Introduction to Optimization
+15.C57 Optimization (Saurabh Amin, Swati Gupta)
+
+This first lecture places optimization within data science, defines the vocabulary of an optimization problem, surveys the main classes of problems the course will cover, and introduces linear optimization through three modeling examples.
+
+
+PART 1 — THE SCOPE OF OPTIMIZATION
+
+From data to decisions. Analytics has three layers:
+- Descriptive analytics (data management, visualization) answers "What happened?"
+- Predictive analytics (machine learning, forecasting) answers "What will happen?"
+- Prescriptive analytics (optimization, simulation) answers "What should I do?"
+Optimization is the prescriptive layer. It handles complex decision-making problems that involve many interdependent decisions and several interrelated constraints.
+
+Optimization inside predictive AI (training models). Machine-learning models depend on many parameters — regression coefficients in linear/logistic regression, the tree structure and splits in decision trees and ensembles, the weights in neural networks. These parameters are estimated by minimizing a loss function, which is itself a (usually non-linear) optimization problem. Training a network with weights W on n examples solves
+    min_W (1/n) sum_{i=1}^n L(g(x_i, W), y_i),
+where g(x_i, W) is the model's prediction. The same non-linear optimization machinery shows up in signal processing, robotics, and elsewhere.
+
+Optimization inside prescriptive AI (decision-making). Business, policy, and engineering involve complex decisions — transportation and logistics, workforce management, disaster response, robot path planning. Optimization turns large volumes of data into decisions that improve system performance. Its ingredients: inputs (parameters from data pipelines and predictive models), outputs (the decisions), an objective function (cost, profit, service level, ...), and constraints (requirements and system dynamics). Because the decisions interact, they must be optimized globally.
+
+A tale of two problems. Compare two decisions to see where optimization matters most:
+- Approving loan applications. The hard part is predicting who will repay. Once you have that prediction, the decision is simple: fund the likely repayers, decline the rest. The difficulty lives in the predictive layer.
+- Planning electricity generation. Even with perfect demand predictions, deciding how much each plant should produce is hard, because of spatio-temporal dependencies across the network and over a planning horizon. All the decisions must be jointly optimized. The difficulty lives in the prescriptive (optimization) layer.
+
+A little history. Optimization has deep roots:
+- Fermat, Newton (1600s): min f(x)  =>  df/dx = 0.
+- Euler (1755): min f(x_1,...,x_n)  =>  grad f(x) = 0.
+- Lagrange (1797): min f(x) subject to g_i(x) = 0 for all i  =>  form the Lagrangian L(x) = f(x) + sum_i lambda_i g_i(x).
+
+Complexity and tractability. In theory, "efficient" has been equated with "polynomially solvable." But in practice that equation is too pessimistic: "inefficient" does not mean intractable — NP-hard problems are solved routinely at realistic sizes. The course's goal is practically tractable methods that solve realistic-size problems in appropriate computational times, not worst-case guarantees.
+
+Why now. Optimization technology has improved staggeringly. Integer-optimization software sped up about 29,000x (CPLEX, 1991–2007) and another 53x (Gurobi, 2009–2019), a cumulative ~1,500,000x, and hardware added roughly another 1,500,000x. Problems that once took hours with dozens of variables are now solved in seconds or minutes with millions of variables and constraints. Optimization is used across transportation, energy, supply chain, health care, finance, and sports — modeling and algorithmic tools at the core of data science.
+
+
+PART 2 — OPTIMIZATION TERMINOLOGY
+
+A general optimization problem is written (equivalently) in extended, vector, and compact forms:
+    min  f(x_1,...,x_n)          min  f(x)            min  f(x)
+    s.t. g_1(x_1,...,x_n) <= 0   s.t. g_1(x) <= 0     s.t. g_i(x) <= 0 for all i
+         ...                          ...
+         g_m(x_1,...,x_n) <= 0        g_m(x) <= 0
+The pieces:
+- Objective function: f : R^n -> R, measures solution quality.
+- Constraint functions: g_i : R^n -> R, for i = 1,...,m, encode system requirements.
+- Feasible region: F = { x in R^n : g_i(x) <= 0 for all i = 1,...,m }.
+- Decision variable: x in F, the quantities we choose.
+- Optimal solution: x* in argmin_{x in F} f(x).
+
+
+PART 3 — CLASSES OF OPTIMIZATION PROBLEMS
+
+Linear optimization (LO). Continuous variables, a linear objective, and linear constraints. Very efficient algorithms scale to millions of variables and constraints.
+    min c^T x  s.t.  A x >= b,  x >= 0.
+
+Mixed-integer optimization (MIO). Linear optimization with some discrete variables. Mixed-integer: x in Z^p x R^{n-p}. Integer: x in Z^n. Binary: x in {0,1}^n. Modern MIO algorithms scale to thousands or millions of variables.
+    min c^T x  s.t.  A x >= b,  x in Z^p_+ x R^{n-p}_+.
+
+Optimization under uncertainty. Decisions often must be made without perfect information about current or future conditions. Data uncertainty covers inaccuracy, missing values, and measurement error; core uncertainty means decisions are made before critical information is revealed. Two approaches:
+- Stochastic optimization (SO): describe uncertainty by a set S of scenarios, each scenario s with probability p_s, and minimize expected cost:
+      min  sum_{s in S} p_s (c_s^T x_s)  s.t.  A_s x_s = b_s and x_s >= 0 for all s.
+- Robust optimization (RO): describe uncertainty by an uncertainty set U and minimize the worst-case cost:
+      min c^T x  s.t.  A x = b for all A in U,  x >= 0.
+
+Non-linear optimization (NLO). A non-linear objective and/or constraints:
+    min f(x)  s.t.  g_i(x) <= 0 for all i,  x >= 0,   with f, g_i : R^n -> R.
+Important sub-classes: unconstrained optimization; convex optimization (f and all g_i convex); convex quadratic optimization (g_i(x) = x^T Q_i x + p_i^T x + q_i with Q_i positive semidefinite); non-convex quadratic optimization (Q_i not PSD); and second-order conic optimization.
+
+Where the course sits. C57 is a Common Ground for Computing Education subject — broadly applicable computing classes reflecting multiple disciplines, meant to help MIT students become "bilingual in computing." Optimization Methods is jointly offered by departments 1, 6, 15, and IDSS. Follow-on courses for depth include 6.7210J/15.081J (Mathematical Programming), 15.083 (Integer Optimization), 15.094J/1.142J (Robust Optimization), 6.7220J/15.084J (Nonlinear Optimization), 6.7920 (Reinforcement Learning), 18.453/18.455 (Combinatorial Optimization), 6.7230 (Algebraic Techniques and Semidefinite Optimization), and 15.095 (Machine Learning under a Modern Optimization Lens).
+
+
+PART 4 — LINEAR OPTIMIZATION: THREE MODELING EXAMPLES
+
+The knapsack problem. Packing for a trip: n items j = 1,...,n; item j has unit value c_j and unit volume a_j; total volume capacity b. Decision variable x_j = amount of item j to carry. Maximize value subject to capacity and non-negativity:
+    max  sum_j c_j x_j   s.t.  sum_j a_j x_j <= b,   x_j >= 0 for all j.
+
+The manufacturing (production planning) problem. A facility makes n products from m raw materials. Data: profit pi_j of product j; available units b_i of material i; a_ij units of material i needed per unit of product j. Decision variable x_j = amount of product j manufactured. Maximize total profit subject to material availability:
+    max  sum_j pi_j x_j   s.t.  sum_j a_ij x_j <= b_i for all i,   x_j >= 0 for all j.
+Insight: constraints couple products (they compete for shared materials) and couple materials. Many resource constraints turn out non-binding at the optimum. Against a greedy benchmark (sort products by unit profit and produce each in turn until a resource is depleted), the optimal solution here raises profit by 12%. The edge of optimization comes from thinking globally rather than locally — a high-unit-profit product may be worth producing less of so that shared materials are freed for a more profitable overall mix.
+
+The transportation problem. A logistics provider ships a product from m plants to n warehouses. Data: plant capacity s_i; warehouse demand d_j; unit shipping cost c_ij from plant i to warehouse j. Decision variable x_ij = units shipped from i to j. Minimize total cost subject to meeting demand and respecting capacity:
+    min  sum_i sum_j c_ij x_ij
+    s.t. sum_i x_ij >= d_j for all j    (meet each warehouse's demand),
+         sum_j x_ij <= s_i for all i    (respect each plant's capacity),
+         x_ij >= 0 for all i, j.
+Note the decision variable is a vector in the manufacturing problem but a matrix in the transportation problem — structure your variables as functions of the index sets.
+
+
+PART 5 — STRUCTURE OF LINEAR OPTIMIZATION MODELS
+
+General form and standard form. The general form of an LO allows >=, <=, and = constraints and variables that are >= 0, <= 0, or free:
+    min/max c^T x  s.t.  a_i^T x >= b_i (i in M1),  a_i^T x <= b_i (i in M2),  a_i^T x = b_i (i in M3);  x_j >= 0 (j in N1),  x_j <= 0 (j in N2),  x_j free (j in N3).
+The standard form is
+    min c^T x  s.t.  A x = b,  x >= 0.
+
+Every LO can be written in standard form. The conversions:
+- Maximization to minimization:  max c^T x  =  -min (-c)^T x.
+- Inequality to equality (slack/surplus variables):  a_i^T x <= b_i  becomes  a_i^T x + s_i = b_i with s_i >= 0;  a_i^T x >= b_i  becomes  a_i^T x - s_i = b_i with s_i >= 0.
+- Free variable to non-negative parts:  x free  becomes  x = x^+ - x^- with x^+, x^- >= 0.
+In practice you write a formulation in general form and the solver converts it to standard form internally.
+
+The modeling power of linear optimization. LO can capture more than it first appears. Minimizing a sum of absolute values with non-negative weights,
+    min sum_j c_j |x_j|  s.t.  A x >= b   (with c_j >= 0),
+is linearized by introducing z_j and writing
+    min sum_j c_j z_j  s.t.  A x >= b,  z_j >= x_j,  z_j >= -x_j  for all j.
+More generally, a piecewise-linear convex cost C(x_j) = max_k ( d_kj^T x_j + g_kj ) is modeled with
+    min sum_j z_j  s.t.  A x >= b,  z_j >= d_kj^T x_j + g_kj for all j, k.
+So linear optimization models piecewise-linear convex functions exactly and approximates general convex functions.
+
+A workflow for building formulations:
+- Structure your data consistently. Define the index sets (categories) first, then define every numerical parameter as a function of those sets.
+- Define decision variables clearly and consistently, again as functions of the sets (a vector for manufacturing, a matrix for transportation).
+- Write the linear objective and linear constraints — physical requirements, managerial requirements, system dynamics — capturing interdependencies that force global optimization. A single objective can encode multi-objective trade-offs and blend hard and soft constraints.
+As Laszlo Lovasz put it, if you tallied which mathematical problem uses the most computer time in the world, the answer would probably be linear optimization.
+
+
+PART 6 — CONCLUSION
+
+Common themes across optimization: data availability (defining sets and input parameters from historical data); problem definition (operations, scheduling, planning); benefits of integration (longer horizons, larger scale and scope, at the cost of larger, more complex models); multi-objective optimization (trading off competing objectives, hard vs. soft constraints); the impact of uncertainty (solutions that perform well across many scenarios, even adverse ones); distributed optimization (many decision-makers with their own objectives); and computational time (real-time optimization in seconds vs. strategic planning in minutes or hours).
+
+Takeaways:
+- Optimization is used broadly across industries to turn data into decisions.
+- A model has four components: inputs, decision variables, an objective, and constraints.
+- Optimization modeling is both a science and an art.
+- The main classes are linear optimization, mixed-integer optimization, optimization under uncertainty, and non-linear optimization.
+- Linear optimization is a critical technique for modeling large-scale, important problems that arise in practice.

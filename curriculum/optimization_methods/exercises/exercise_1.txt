@@ -1,0 +1,83 @@
+TITLE: Homework 1 — Linear Optimization
+
+This is graded homework assignment HW1, covering linear optimization. Assigned September 14; due September 28. Total: 100 points. Submit a single PDF on Gradescope (pictures of handwritten equations or diagrams are fine as long as they are readable). 10 points out of 100 are deducted per half-day late. This assignment is done individually: you may discuss conceptual issues and general ideas with others, but you must not copy anyone's work or have anyone write any part of it for you.
+
+Note on data: Question 4 refers to several CSV data files (requirements.csv, availability.csv, demand.csv, profit.csv, holding.csv) distributed in the Homeworks folder on Canvas. Those data files are not reproduced here; use the copies on Canvas for the computational parts.
+
+
+QUESTION 1: TRUE OR FALSE (25 points)
+
+Consider the standard-form polyhedron P = { x in R^n : A x = b, x >= 0 }. Assume A has dimensions m x n and that its rows are linearly independent. Let c in R^n. Consider minimizing c^T x over P. For each statement, state whether it is true (with a short proof) or false (with a counterexample).
+
+(a) (4 points) If n = m + 1, then P has at most two basic feasible solutions.
+
+(b) (4 points) At every optimal solution, no more than m variables can be positive.
+
+(c) (4 points) If there is an optimal solution, there exists an optimal solution with at most m positive variables.
+
+(d) (4 points) If x and y are two distinct basic feasible solutions of P, then lambda x + (1 - lambda) y is not a basic feasible solution for every lambda in (0, 1).
+
+(e) (4 points) Suppose x is an optimal, nondegenerate basic feasible solution. If some nonbasic variable has zero reduced cost, then x is not the unique optimal solution.
+
+(f) (5 points) Let d in R^n. Consider minimizing max{ c^T x, d^T x } over P. If this problem has an optimal solution, it must have an optimal solution that is an extreme point of P.
+
+
+QUESTION 2: GEOMETRY, BASIC FEASIBLE SOLUTIONS, AND SIMPLEX (25 points)
+
+Consider the following linear optimization problem, where lambda in R is a parameter:
+    max_{x1, x2}  x1 + lambda x2
+    s.t.  x1 + x2 <= 5,
+          2 x1 + x2 <= 8,
+          x1 + 3 x2 <= 9,
+          x1, x2 >= 0.
+
+(a) Draw the feasible region and identify all of its extreme points. For each extreme point, identify which of the three inequality constraints are active.
+
+(b) Rewrite the problem in standard form using slack variables s1, s2, s3. For each extreme point, give at least one corresponding basis. Are any of the resulting basic feasible solutions degenerate? Explain your answer both geometrically and algebraically.
+
+(c) Determine the optimal solution as a function of lambda. Identify all values of lambda for which the problem has multiple optimal solutions. For each such lambda, characterize the complete set of optimal solutions.
+
+(d) Set lambda = 1. Starting from the basic feasible solution associated with x1 = x2 = 0, perform simplex iterations until an optimal solution is obtained. At every iteration, report the entering variable, the leaving variable, the step size, and the new basic feasible solution.
+
+(e) In one of the ratio tests in part (d), more than one constraint becomes tight simultaneously. Explain what this means for the resulting basic feasible solution. Does this imply that the simplex method fails to make progress in objective value?
+
+
+QUESTION 3: SIMPLEX METHOD WITH UPPER-BOUND CONSTRAINTS (30 points)
+
+Consider a problem of the form
+    min  c^T x
+    s.t. A x = b,
+         0 <= x <= u,
+where A in R^{m x n} has linearly independent rows and u in R^n with u_j > 0 for all j = 1,...,n. In this problem you extend the classic simplex method to this form.
+
+(a) Let A_{B(1)},...,A_{B(m)} be m linearly independent columns of A (the "basic" columns). Partition the set of all indices i not equal to B(1),...,B(m) into two disjoint subsets L and U. Set x_j = 0 for all j in L, and x_j = u_j for all j in U. Then solve A x = b for the basic variables x_{B(1)},...,x_{B(m)}. Recall that a basic solution is one for which the active constraints span the whole space. Show that the resulting vector x is a basic solution. Also show that it is nondegenerate if and only if x_j is neither 0 nor u_j for every basic variable x_j.
+
+(b) Assume the basic solution constructed in part (a) is feasible. Let c-bar denote the vector of reduced costs. Let x_j be a nonbasic variable with x_j = 0 and reduced cost c-bar_j < 0. We increase x_j by theta and adjust the basic variables from x_B to x_B - theta B^{-1} A_j. What is the largest possible value of theta? How are the new basic columns determined?
+
+(c) Assume again the basic solution from part (a) is feasible. Let c-bar be the reduced costs. Let x_j be a nonbasic variable with x_j = u_j and reduced cost c-bar_j > 0. We decrease x_j by theta and adjust the basic variables from x_B to x_B + theta B^{-1} A_j. What is the largest possible value of theta? How are the new basic columns determined?
+
+(d) The two steps above define a simplex method for this problem. Assuming every basic feasible solution is nondegenerate, show that the cost strictly decreases with each iteration and that the method therefore terminates.
+
+
+QUESTION 4: PRODUCTION OPTIMIZATION (20 points)
+
+You optimize weekly production and inventory planning for a facility over T = 52 weeks. The facility manufactures n = 20 different product types from m = 500 materials that come in limited supply each week (materials must be used in the week they arrive and cannot be carried over). Each product type generates a fixed per-unit profit that is constant over time. You incur a holding cost based on the number of items held in inventory at the end of each week; the unit holding cost varies over time but is identical across all product types. You are given a weekly demand forecast for each product type. You need not meet the full demand each week. You aim to maximize net profitability.
+
+You have access to the following data files (on Canvas):
+- requirements.csv: a 500 x 20 matrix giving the (continuous) amount of each of the 500 materials required to manufacture one unit of each of the 20 product types.
+- availability.csv: a 500 x 52 matrix giving the number of units of each of the 500 materials available for manufacturing in each of the 52 weeks.
+- demand.csv: a 20 x 52 matrix giving the number of units demanded for each of the 20 product types in each of the 52 weeks.
+- profit.csv: a length-20 vector giving the per-unit profit of each product type (in $).
+- holding.csv: a length-52 vector giving the per-unit holding cost in each week (in $).
+
+(a) Formulate a linear optimization model for the problem. Specify your decision variables, your objective function, and your constraints carefully.
+
+(b) Implement your model computationally. Report the sales profit and the holding cost.
+
+(c) Represent graphically (i) the number of units manufactured for each product type in each week; (ii) the number of product types manufactured in some positive quantity each week; and (iii) the number of units stored in inventory for each product type in each week. (The Plots and/or StatsPlots packages are useful.) Interpret and explain your results.
+
+(d) In week 30, how many of the 500 materials were fully utilized? For how many of the 20 product types was demand fully satisfied? Comment briefly on the dynamics at play — notably, which constraints are binding and why.
+
+
+POLICY ON INDIVIDUAL WORK AND AI USE
+All homework is done individually. You may discuss conceptual ideas and general approaches with classmates, but the work you submit must be written in your own words and must be your own. You may use AskTIM and other generative-AI tools to deepen your understanding, to brainstorm, and to debug — but not to produce full or substantial solutions. Do not copy problem prompts into external AI tools to have them solved, and disclose any AI use. AskTIM will help you reason toward an answer with questions and hints, but will not hand you the solution.

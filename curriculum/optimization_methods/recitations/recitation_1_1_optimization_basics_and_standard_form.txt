@@ -1,0 +1,114 @@
+Recitation 1 — Optimization Basics, Recognizing Linear Optimization, and Standard Form
+15.C57 Optimization (Madeleine Pollack)
+
+This first recitation builds the vocabulary of an optimization model, practices recognizing when a problem is a linear optimization (LP), converts general LPs to standard form, works two modeling exercises, and closes with a Julia crash course for implementing and solving a model.
+
+
+PART 1 — THE OPTIMIZATION SKELETON
+
+What is optimization? Mathematical optimization is the selection of a best element (the optimal solution), with regard to some criteria (the objective), from a set of available alternatives (the feasible region defined by the constraints). Common objectives are maximizing profit or efficiency and minimizing risk; common application areas include healthcare, policy-making, and manufacturing; optimization intersects computer science, statistics, data science, economics, finance, and many engineering disciplines.
+
+Terminology. A general optimization problem is
+    min_x  f(x)   s.t.  g_i(x) <= 0,  i = 1,...,m.
+The parts of the "skeleton" you should be able to identify in any problem:
+- Inputs / parameters: quantities known before solving — costs, capacities, demands, processing times, etc.
+- Decision variables: the quantities we choose, collected in x in R^n.
+- Objective function: f : R^n -> R, measuring solution quality.
+- Constraints: g_i : R^n -> R, encoding system requirements.
+- Feasible region: F = { x in R^n : g_i(x) <= 0 for all i = 1,...,m }.
+- Optimal solution: x* in argmin_{x in F} f(x).
+When you meet a new problem, name each of these six pieces before writing anything down.
+
+
+PART 2 — RECOGNIZING LINEAR OPTIMIZATION
+
+A problem is a linear optimization (LP) when the objective and all constraints are linear in the decision variables:
+    min/max  c^T x   s.t.  a_i^T x <= b_i for all i,   x in R^n,
+with a linear objective c^T x and linear equality/inequality constraints. Continuous variables are allowed.
+
+A problem is NOT an LP when it contains, for example:
+- Integer restrictions: x_1 in Z, or x_1 in {0,1}.
+- Bilinear terms: x_1 x_2 = 0.
+- Quadratic terms: x_1^2 + x_2^2 <= 1.
+- Other non-linear constraints: max{x_1, x_2} >= 5, or ||x||_2 <= 1.
+
+Quick check — LP or not?
+- 3 x_1 - 2 x_2 <= 7 : LP (linear inequality).
+- x_1 + x_2 = 4 : LP (linear equality).
+- x_1 in Z_+ : not LP (integrality).
+- x_1 x_2 <= 5 : not LP (bilinear product of variables).
+- x_1^2 + x_2^2 <= 1 : not LP (quadratic).
+- max{x_1, x_2} <= t : LP-representable — max{x_1, x_2} <= t is equivalent to the two linear constraints x_1 <= t and x_2 <= t.
+
+Some non-linear expressions can be linearized:
+- Absolute value: |z| <= t is equivalent to the pair z <= t and -z <= t.
+- Maximum: max{z_1, z_2} <= t is equivalent to z_1 <= t and z_2 <= t.
+A caution about direction. Suppose you want to force t = |z| and instead write only t >= z and t >= -z:
+- If z = 2, those constraints allow any t >= 2 — not only t = 2 — so they do NOT by themselves pin t to |z|.
+- The trick works when the model pushes t down: if you MINIMIZE t (with only these constraints on t), the optimum drives t to |z|. If you MAXIMIZE t, t runs off and the equality is lost.
+- The reverse bound does not linearize the same way: |z| >= t is a lower bound on a convex function and CANNOT be captured by requiring z >= t and -z >= t (those two are jointly infeasible unless t <= -|z|). Bounding an absolute value from below is non-convex.
+The lesson: epigraph-style linearizations of |z| and max{...} are valid for UPPER bounds and when the objective's direction makes them tight; they do not give lower bounds for free.
+
+
+PART 3 — STANDARD FORM
+
+General form of a linear optimization allows mixed constraint and variable types:
+    min/max c^T x
+    s.t. a_i^T x >= b_i  for i in M1,
+         a_i^T x <= b_i  for i in M2,
+         a_i^T x = b_i   for i in M3,
+         x_j >= 0, or x_j <= 0, or x_j free.
+Standard form is the tidy version every solver reduces to:
+    min c^T x   s.t.  A x = b,  x >= 0.
+
+Converting to standard form:
+- Maximization to minimization:  max c^T x  =  -min (-c)^T x.
+- "<=" constraint: add a slack variable.  a^T x <= b  becomes  a^T x + s = b,  s >= 0.
+- ">=" constraint: subtract a surplus variable.  a^T x >= b  becomes  a^T x - s = b,  s >= 0.
+- Non-positive variable: negate it.  x <= 0  becomes  x = -x' with x' >= 0.
+- Free variable: split into positive and negative parts.  x free  becomes  x = x^+ - x^-,  x^+, x^- >= 0.
+
+
+PART 4 — EXERCISES
+
+Exercise 1: production planning. A manufacturer produces two liquid products, A and B.
+- Each unit of A earns $5 profit and uses 2 hours of labor and 1 unit of raw material.
+- Each unit of B earns $4 profit and uses 1 hour of labor and 2 units of raw material.
+- At most 100 labor hours and 80 units of raw material are available.
+- A customer contract requires at least 10 units of product B.
+Tasks: (1) define the inputs and decision variables; (2) formulate an LP that maximizes profit; (3) convert the model to standard form.
+Setup for discussion: let x_A, x_B be the units produced. The natural formulation is
+    max 5 x_A + 4 x_B
+    s.t. 2 x_A + 1 x_B <= 100   (labor),
+         1 x_A + 2 x_B <= 80    (raw material),
+         x_B >= 10              (contract),
+         x_A, x_B >= 0.
+Standard form adds slack/surplus variables (s_1, s_2 for the two "<=" limits, s_3 for the ">=" contract) and negates the objective.
+
+Exercise 2: staffing with an imbalance penalty. A consulting team allocates analyst hours between projects A and B.
+- At least 80 total analyst hours must be assigned, and at most 100 hours are available.
+- Project A requires at least 25 hours; project B requires at least 20 hours.
+- Each hour on A costs $120; each hour on B costs $100.
+- Management adds a penalty of $30 per hour of imbalance between the two projects.
+Let x_A, x_B be the hours assigned. Tasks: (1) write the natural formulation using |x_A - x_B|; (2) reformulate as an LP; (3) convert to standard form.
+Setup for discussion: the natural objective is
+    min 120 x_A + 100 x_B + 30 |x_A - x_B|.
+Because we are minimizing, the absolute value linearizes: introduce t with t >= x_A - x_B and t >= x_B - x_A, replace the penalty term with 30 t, and add the hour constraints (x_A + x_B >= 80, x_A + x_B <= 100, x_A >= 25, x_B >= 20, x_A, x_B >= 0). Standard form then follows by the slack/surplus and objective-sign rules above. This is exactly the linearization from Part 2, made legitimate by the minimization direction.
+
+
+PART 5 — JULIA CRASH COURSE
+
+The last part of recitation implements and solves a basic optimization model in Julia using the JuMP modeling language (with an LP/MIP solver such as HiGHS or Gurobi). The pattern is: create a model, declare variables with their bounds, add the objective, add the constraints, optimize, and read back the solution. In outline:
+
+    using JuMP, HiGHS
+    model = Model(HiGHS.Optimizer)
+    @variable(model, x_A >= 0)
+    @variable(model, x_B >= 0)
+    @objective(model, Max, 5x_A + 4x_B)
+    @constraint(model, labor, 2x_A + x_B <= 100)
+    @constraint(model, material, x_A + 2x_B <= 80)
+    @constraint(model, contract, x_B >= 10)
+    optimize!(model)
+    value(x_A), value(x_B), objective_value(model)
+
+The mapping from the optimization skeleton to JuMP is one-to-one: @variable declares decision variables (with sign/bound restrictions), @objective states f and its sense (Min or Max), @constraint encodes each g_i, optimize! solves, and value(...) / objective_value(...) return x* and f(x*). This is the workflow you will reuse on the homework's computational parts.

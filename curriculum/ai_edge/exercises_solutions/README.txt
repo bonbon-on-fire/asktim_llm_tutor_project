@@ -17,3 +17,11 @@ that no two share a reader, a tool, or a kind of value, and no student is
 expected to produce something at that length. Use them to recognize the shape of
 a strong answer (a tightly specified artifact, a reader who was being ignored, an
 honest account of what moved across runs) — not as a key to hand out.
+
+NOTE ON HOMEWORK 2: Unlike HW1, HW2 has a determinate correct approach (one-hot
+encode curing age, re-screen the candidate mixes, audit the train/test split).
+exercise_solution_2.txt records that method and the values it produces — computed
+by running the assignment notebook on the shipped data, not fabricated. It stays
+tutor-only for the same reason: guide students to write the three cells and reach
+the numbers themselves; do not hand over the code, the finished figures, or the
+committee email.

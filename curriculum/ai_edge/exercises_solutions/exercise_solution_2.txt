@@ -1,0 +1,133 @@
+REFERENCE ANSWERS — Homework 2 (Bidding Low-Carbon Concrete)
+
+TUTOR-ONLY. Do NOT paste these into the student-facing assignment text, and do not
+hand a student the code, the finished numbers, or the committee email. HW2 has a
+determinate correct approach (unlike HW1), so this file records the right method and
+the values it produces, to calibrate guidance and recognize a correct submission —
+not as a key to read out. The numbers below were produced by running the assignment
+notebook on the shipped data; they are reproducible, but a student should reach them
+by writing the three cells themselves. Guide Socratically: ask what treating age as a
+straight line assumes, what a smaller 28-day RMSE does to the 1.65-sigma buffer, and
+what a repeated recipe would do to a row-wise split.
+
+WHAT THE ASSIGNMENT IS TESTING
+- Task 1: one-hot encoding a variable whose effect is non-linear (strength rises
+  steeply to 28 days then flattens), and doing it CONSISTENTLY between train, test, and
+  the candidate mixes (the encode_age helper exists precisely so the 28-day-only
+  candidates do not silently collapse to the dropped baseline age).
+- Task 2: propagating a model improvement through a decision — a smaller error shrinks
+  the safety buffer, which lowers the strength target, which changes which mix wins.
+- Task 3: recognizing that rows are not independent (many cylinders share a recipe), so
+  the split has to be done at the recipe level or the test score is flattered.
+
+================================================================================
+TASK 1 — BUILD MODEL 2 (one-hot encoded curing age)
+================================================================================
+Correct code (about three lines):
+  X_train2 = pd.get_dummies(df_train[core_features + ['age_days']],
+                            columns=['age_days'], drop_first=True, dtype=int)
+  model2, coef2 = print_summary_with_stars(X_train2, y_train)
+
+What a correct answer shows: the seven ingredient coefficients plus seven age-dummy
+coefficients (eight distinct ages, first dropped as baseline). The age dummies rise
+and then plateau — the model now buys the steep 3->28-day climb and the flat tail
+separately instead of forcing one slope through both, which is the whole point.
+
+Model 2 fit (reproducible):
+  Train R2 = 0.823   Test R2 = 0.816   Test MAE = 5.43 MPa   Test RMSE = 6.83 MPa
+Versus Model 1 (age as a number): Test R2 = 0.594. The jump from ~0.59 to ~0.82 is the
+headline — treating age categorically is a large, honest improvement, not a rounding
+gain.
+
+TASK 1b — comparison table + 28-day RMSE
+  Predict train with predict_with(model2, X_train2); predict test with
+  predict_with(model2, encode_age(df_test)). Build "comparison" (one row per model) from
+  evaluate_model plus RMSE-at-28 and mean-error-at-28, then store rmse_28_m2.
+  Model 2 at 28 days: RMSE = 7.54 MPa (down from Model 1's 8.41), mean error = +0.61 MPa
+  (Model 1 ran 3.0 MPa LOW; Model 2 is roughly unbiased at 28 days). rmse_28_m2 = 7.54.
+
+Common mistakes to catch (do not simply correct — ask about them):
+  - Running pd.get_dummies on df_test independently, so its age columns do not line up
+    with X_train2. The fix is encode_age(df_test); that is why the helper exists.
+  - Forgetting drop_first=True (perfect collinearity with the constant) or dtype=int.
+  - Reporting overall test RMSE instead of the 28-DAY RMSE for the buffer.
+
+================================================================================
+TASK 2 — REVISE THE BID AND VALUE IT
+================================================================================
+  screen2 = mixes[['mix_id','mix_name','scm_share','co2_per_m3','cost_per_m3']].copy()
+  screen2['pred_strength'] = predict_with(model2, encode_age(mixes)).round(1)
+  required2 = SPEC_STRENGTH + RELIABILITY_K * rmse_28_m2      # 30 + 1.65*7.54 = 42.4 MPa
+  screen2['can_bid'] = (screen2['pred_strength'] >= required2) & (screen2['co2_per_m3'] <= CARBON_CAP)
+  # cheapest mix with can_bid == True
+
+New target: 30 + 1.65 x 7.54 = 42.4 MPa (down from Priya's 43.9, because the model is
+more accurate at 28 days, so less buffer is needed).
+
+Model 2 predicted 28-day strength and gate results:
+  M1 Standard C30   pred 44.7   carbon 378  -> FAILS carbon cap
+  M2 Blend 31       pred 44.1   carbon 298  -> FAILS carbon cap
+  M3 Ternary 54     pred 43.7   carbon 246  -> CLEARS both   ($148.54/m3)
+  M4 Ternary 48     pred 41.9   carbon 239  -> fails strength (below 42.4)
+  M5 Ternary 43     pred 39.6   carbon 228  -> fails strength
+  M6 Fly Ash 45     pred 36.6   carbon 213  -> fails strength
+  M7 High Slag 58   pred 46.9   carbon 246  -> CLEARS both   ($155.26/m3)
+
+Recommendation: bid M3 (Ternary 54) at $148.54/m3 — the cheapest mix that clears the
+42.4 MPa target and the 250 kg cap. Model 1 had cleared only M7 ($155.26).
+
+What it is worth (versus Priya's M7 pick, and versus today's mix):
+  - vs Priya's M7: M3 saves $6.72/m3 -> about $302,000 over the 45,000 m3 job, for the
+    same carbon (both 246 kg CO2e/m3). The value of the better model is a ~$0.3M cheaper
+    compliant bid, from re-encoding one variable.
+  - vs today's C30 (M1, 378 kg CO2e/m3, $139.71): M3 costs about $8.83/m3 more (~$397,000
+    over the job) but cuts carbon from 378 to 246 kg/m3 — about 132 kg/m3 x 45,000 =
+    ~5,950 tons CO2e avoided, which is what makes the bid compliant at all.
+  (Accept small rounding differences; the direction and rough magnitudes are what matter.)
+
+Note the honest tension for the write-up: M3's predicted 43.7 clears 42.4 by only ~1.3
+MPa, a thin margin — a strong answer names that, not just the point estimate.
+
+================================================================================
+TASK 3 — CHECK THE SPLIT
+================================================================================
+  recipe    = df[core_features].astype(str).agg('|'.join, axis=1)
+  recipe_tr = df_train[core_features].astype(str).agg('|'.join, axis=1)
+  recipe_te = df_test[core_features].astype(str).agg('|'.join, axis=1)
+  n_distinct = recipe.nunique()
+  n_both     = len(set(recipe_tr) & set(recipe_te))
+
+Results: 1,003 rows but only 427 distinct recipes — every recipe is cast once and
+crushed at several ages, so each recipe appears ~2-3 times on average. Recipes appearing
+in BOTH train and test: 0.
+
+So Priya is right: the split was rebuilt at the recipe level and no recipe straddles it.
+Why it matters (qualitatively): with 427 recipes spread over 1,003 rows, a naive row-wise
+split WOULD have put the same recipe on both sides — the model would "learn" a recipe at
+7 days and then be scored on the same recipe at 28, so the test would measure memorization
+of recipes it has effectively seen, not genuine generalization to a mix that "has never
+been in a truck" (Marcus's exact concern). Because the shared count is 0 here, the ~0.82
+test R2 is an honest estimate of performance on unseen recipes, which is what lets us
+stand behind the bid.
+
+================================================================================
+THE DELIVERABLE EMAIL — WHAT A STRONG ONE CONTAINS
+================================================================================
+Not graded on polish but on whether it makes a supported recommendation and answers
+Marcus honestly. A strong committee email:
+  - Recommendation: bid M3 (Ternary 54) at $148.54/m3 (or a clearly reasoned no-bid /
+    M7 if the student sticks with the more conservative model — the reasoning matters more
+    than landing on M3).
+  - Worth: ~$0.3M cheaper than the M7 Priya proposed for the same carbon; ~5,950 tons CO2e
+    below the current mix over the job; states total project cost (~$6.68M at $148.54 x
+    45,000).
+  - Update for Dana/CEO: the recommendation CHANGED from Priya's M7 to M3 because encoding
+    curing age properly made the model more accurate at 28 days, which shrank the safety
+    margin we add and let a cheaper mix clear the bar — in plain terms, "a better model let
+    us stop overpaying for certainty."
+  - Answer to Marcus (risk): acknowledges the model can be wrong (name the 28-day RMSE and
+    that M3's margin over target is thin, ~1.3 MPa); proposes concrete mitigation between
+    winning and first pour — pour trial cylinders of M3 now and confirm 28-day strength
+    before the first structural pour, keep M7 as a validated fallback, phase the ramp, and
+    treat the 5% shortfall design as a floor to verify, not a promise. A weak email claims
+    the model "works"; a strong one says how wrong it can be and what will catch it.

@@ -1,0 +1,197 @@
+TITLE: Homework 2 — Bidding Low-Carbon Concrete (Meridian Port Expansion)
+
+A graded weekly assignment for 15.071 The AI Edge. Assigned September 16, 2026;
+due September 22, 2026. It is a hands-on linear-regression assignment: you improve
+a strength-prediction model, re-run a bid screen with it, audit the train/test
+split, and write a recommendation to a bid committee. The full assignment ships as
+a zip (15.071 HW2.ipynb plus four CSVs); this file is the assignment text and the
+reference the tutor uses to help you reason — it does NOT contain the answers.
+
+THE SITUATION
+You are a recent hire on the commercial team at Ardent Materials, a ready-mix
+concrete producer with 11 plants across the (fictional) Meridian region. Ardent
+supplies about 900,000 m3 of concrete a year to commercial builders and public
+authorities, on margins that have not exceeded 7% in a decade.
+
+Cement is what makes concrete hard, and it is also what makes it expensive and
+dirty: producing a ton of Portland cement releases close to a ton of CO2, and
+cement is roughly 8% of global emissions. Everything else in the mix — water,
+sand, gravel — is cheap and carbon-free. Two industrial by-products can replace
+part of the cement: ground granulated blast-furnace slag (from steelmaking) and
+fly ash (from coal combustion). Both are cheaper and lower-carbon, but they react
+more slowly, so a heavily blended concrete can be disappointing at 7 days and
+adequate at 28. Over the years Ardent has run about a thousand trial batches in a
+lab; that archive is your data.
+
+THE TENDER (from the email thread in the assignment)
+- Dana Okoye (VP Commercial): The Meridian Port Authority tender for the terminal
+  expansion closes tomorrow at 17:00 — 45,000 m3 of structural concrete over
+  eighteen months, the largest job in the pipeline. The Authority adopted a "buy
+  clean" standard, so the tender has two requirements: 30 MPa compressive strength
+  at 28 days, AND embodied carbon at most 250 kg CO2e/m3. Ardent's current C30 mix
+  clears the strength easily but emits 378 kg CO2e/m3. The technical team shortlisted
+  seven designs that swap some cement for slag and fly ash; five are within the
+  carbon cap. Nobody can say whether they will actually make 30 MPa, and there is no
+  time to pour trial cylinders and wait 28 days. Dana needs a recommendation by 17:00
+  tomorrow: which mix to bid and how confident they are — or a clear "do not bid."
+- Priya Raman (Data Science): Built the notebook. Used the 1,003 archived batches
+  with a 75/25 train/test split. Model 0 is the current rule of thumb (cement content
+  only). Model 1 uses all seven ingredients plus curing age; out-of-sample R2 about
+  0.59, RMSE at 28 days about 8.4 MPa. Because the model predicts AVERAGE strength but
+  a real pour is a random draw, she adds a buffer of 1.65 x 8.4 MPa so only ~5% of
+  pours fall short: target = 30 + 1.65 x 8.4 = 43.9 MPa. Screening the seven candidates
+  against that target and the carbon cap leaves only M7, at $155.26/m3 (versus $139.71
+  poured today). She flags that she entered curing age as an ordinary number — the
+  model assumes every extra day adds the same strength — and asks you to try encoding
+  age differently.
+- Marcus Feld (Technical Director): 25 years designing concrete; no objection to slag
+  and fly ash. His objection is bidding a mix that has never been in a truck on the
+  strength of old lab records. If a pour fails at 28 days on a job like this, it means
+  demolition, replacement, and a claim — and the Authority remembers. He wants to know
+  how wrong the model can be, what happens between winning the tender and the first
+  pour, and how confident anyone is that the mix clears the requirement.
+- Priya (follow-up): The archive has 1,003 ROWS but that is not 1,003 RECIPES. The lab
+  casts one batch and crushes cylinders from it at 3, 7, 28 days and so on, so the same
+  mix design appears several times. If the split is done row by row, the same recipe can
+  sit on BOTH sides — the model sees it at 7 days and is then scored on it at 28. She
+  asks you to check that every cylinder of a recipe falls on the same side of the split.
+
+WHAT YOU DO
+Open 15.071 HW2.ipynb. Sections 1-4 are Priya's preliminary analysis (already run for
+you). Section 5 is your work, three tasks:
+- Task 1 (build Model 2): Rebuild the strength model with curing age ONE-HOT ENCODED
+  instead of entered as a number, so each curing age gets its own effect. Also (Task 1b)
+  put Model 2's performance next to Model 1's, and store Model 2's 28-day RMSE, since the
+  bid target is built from it.
+- Task 2 (revise the bid): Re-run Priya's screen with Model 2 — recompute the target as
+  30 + 1.65 x (Model 2's 28-day RMSE), apply the strength target and the 250 kg carbon
+  cap, and recommend the cheapest mix that clears both. Then put a number on the change:
+  dollars per m3, dollars over the 45,000 m3 project, and tons of CO2e versus the mix the
+  plant pours today.
+- Task 3 (check the split): Count how many DISTINCT recipes are in the archive (a recipe
+  is the combination of the seven ingredient columns) against the 1,003 rows, count how
+  many recipes appear in BOTH train and test, and explain why it matters.
+
+THE DELIVERABLE
+Prepare an email (half a page to a page) to the Ardent bid committee — Dana Okoye,
+Marcus Feld, and the CEO — recommending what to do with the Meridian Port tender. It
+should make a clear recommendation and support it, covering:
+- The recommendation: which mix at which price, or no bid.
+- What it is worth: dollars per m3, total project cost, and tons of CO2e.
+- Update: whether your recommendation matches Priya's and, if not, why it changed — in
+  intuitive terms Dana can relay to the CEO.
+- An answer to Marcus: discuss and mitigate the risks he raised.
+Submit the email as a PDF; do NOT submit the notebook.
+
+HOW ASKTIM CAN HELP
+AskTIM helps you understand the modeling choices and reason about the trade-offs —
+why one-hot encoding age can matter when strength rises steeply then flattens, what a
+smaller 28-day RMSE does to the 1.65-sigma buffer and therefore to which mixes clear
+the target, and why a row-wise split can leak a recipe across train and test. It will
+not write your code, hand you the finished numbers, or draft the committee email for
+you. Bring it your reasoning and your partial work.
+
+================================================================================
+REFERENCE — THE DATA AND THE NOTEBOOK
+Reproduced so the tutor can help you reason about the model, the screen, and the
+split. Students receive these as files in the assignment zip.
+================================================================================
+
+THE ARCHIVE (mix_archive.csv, 1,003 rows; split into mix_archive_train.csv = 765
+rows and mix_archive_test.csv = 238 rows). Each row is one cylinder. All ingredient
+quantities are kilograms per cubic metre (kg/m3).
+- batch_id: identifier of the trial batch
+- cement: Portland cement — the binder, and the source of nearly all the carbon
+- slag, fly_ash: cement substitutes, both industrial by-products
+- water: mixing water
+- plasticizer: chemical admixture that keeps a low-water mix workable
+- coarse_agg, fine_agg: gravel and sand
+- age_days: days of curing before the cylinder was tested (only eight distinct
+  values in the whole archive — the lab tests on a fixed schedule)
+- strength_mpa: measured 28-day-style compressive strength in MPa — the TARGET
+
+The seven "ingredient" columns used as core features:
+  core_features = [cement, slag, fly_ash, water, plasticizer, coarse_agg, fine_agg]
+
+EXPLORATORY FINDINGS (Section 1). Historic mixes span the full range, from pure
+cement to mixes where more than two-thirds of the binder is a by-product. Strength
+rises steeply between 3 and 28 days and then flattens — the gain from 3 to 28 days is
+far larger than from 90 to 365. That flattening is the reason treating age as a
+straight-line continuous variable is suspect and Task 1 exists.
+
+THE MODELS (Sections 2-3), all ordinary least squares via statsmodels, reported with
+a helper (print_summary_with_stars) that prints coefficients, significance stars, R2,
+and adjusted R2:
+- Model 0 (historical baseline): strength ~ cement only. Train R2 about 0.25 — more
+  cement means more strength, but it cannot tell a good blend from a bad one.
+- Model 1 (the new approach): strength ~ seven ingredients + age_days (age as a plain
+  number). Out-of-sample R2 about 0.59. Slag and fly ash both carry positive,
+  significant coefficients; water is negative. On the test set: Test R2 ~ 0.59,
+  Test MAE ~ 8.1, Test RMSE ~ 10.1 MPa.
+- Accuracy AT 28 DAYS is what matters, because the tender is decided on 28-day
+  strength. Isolating the 107 test batches cured to 28 days, Model 1's RMSE at 28 days
+  is about 8.41 MPa and it predicts LOW by about 3.0 MPa on average. That 8.41 is
+  stored as rmse_28_m1 and drives the bid buffer.
+
+FROM PREDICTIONS TO A BID (Section 4). Tender constants encoded in the notebook:
+  PROJECT_VOLUME = 45,000 m3;  SPEC_STRENGTH = 30 MPa (required at 28 days);
+  CARBON_CAP = 250 kg CO2e/m3;  RELIABILITY_K = 1.65 (aim 1.65 SD high -> ~5% risk
+  of falling short);  BATCHING_COST = 48.0 $/m3.
+  CO2 factors (kg CO2e per kg): cement 0.900, slag 0.080, fly_ash 0.015, water 0.0003,
+  plasticizer 1.900, coarse_agg 0.007, fine_agg 0.007.
+  Prices ($ per kg): cement 0.135, slag 0.115, fly_ash 0.065, water 0.0015,
+  plasticizer 1.200, coarse_agg 0.017, fine_agg 0.021.
+Carbon per m3 and cost per m3 are each the sum over ingredients of quantity x factor
+(cost also adds the $48/m3 batching cost). The buffer logic: the model predicts the
+AVERAGE strength of a mix, so a mix designed for exactly 30 MPa would fail on roughly
+half of pours; to hold the shortfall risk near 5%, aim 1.65 RMSE above spec, i.e.
+  target strength = 30 + 1.65 x (28-day RMSE).
+With Model 1's 8.41 MPa that is 43.9 MPa.
+
+THE SEVEN CANDIDATE MIXES (candidate_mixes.csv), all to be tested at age_days = 28:
+  M1 Ardent Standard C30 (current) — 0% SCM, 378 kg CO2e/m3, $139.71/m3 (fails carbon cap)
+  M2 Blend 31 — 31% SCM, 298 kg CO2e/m3, $143.73/m3 (fails carbon cap)
+  M3 Ternary 54 — 54% SCM, 246 kg CO2e/m3, $148.54/m3
+  M4 Ternary 48 — 48% SCM, 239 kg CO2e/m3, $141.33/m3
+  M5 Ternary 43 — 43% SCM, 228 kg CO2e/m3, $135.16/m3
+  M6 Fly Ash 45 — 45% SCM, 213 kg CO2e/m3, $129.96/m3
+  M7 High Slag 58 — 58% SCM, 246 kg CO2e/m3, $155.26/m3
+(SCM = supplementary cementitious material = slag + fly ash as a share of binder.)
+Priya's Model 1 screen (target 43.9 MPa + 250 cap) clears only M7, so her preliminary
+recommendation is to bid M7 at $155.26/m3 — the most expensive option.
+
+THE THREE TASKS IN DETAIL (Section 5 of the notebook)
+- Task 1 — build Model 2. Build X_train2 from df_train: the seven core_features PLUS
+  one-hot encoded curing age. Fit with print_summary_with_stars, storing model2 and
+  coef2. Hint from the notebook: pd.get_dummies(..., columns=['age_days'],
+  drop_first=True, dtype=int). A provided helper encode_age(frame) one-hot encodes any
+  table against the FULL set of ages seen in the archive (AGE_LEVELS) and reindexes the
+  columns to line up with X_train2 — every later Model 2 prediction goes through it,
+  because the candidate mixes are all at 28 days and calling get_dummies on them alone
+  would produce no age columns (silently treating them as the dropped baseline age).
+- Task 1b — how much better is Model 2. Predict on train and test with
+  predict_with(model2, ...) (test set via encode_age(df_test)); build a table
+  "comparison" with one row per model holding evaluate_model's metrics plus RMSE at 28
+  days and mean error at 28 days; store Model 2's 28-day RMSE as rmse_28_m2 (the bid
+  target is rebuilt from it).
+- Task 2 — revise the bid and value it. Build screen2 from mixes with a Model 2
+  pred_strength (candidate mixes through encode_age(mixes), NOT raw get_dummies);
+  recompute the target as SPEC_STRENGTH + RELIABILITY_K * rmse_28_m2; apply both gates;
+  recommend the cheapest mix that clears both; quantify the change versus today's mix in
+  $/m3, $ over 45,000 m3, and tons CO2e.
+- Task 3 — check the split. Label each row by its recipe:
+  df[core_features].astype(str).agg('|'.join, axis=1). Count distinct recipes in df
+  against the 1,003 rows; count recipes that appear in BOTH df_train and df_test;
+  explain qualitatively why a recipe straddling the split leaks information and
+  flatters the test score — which is exactly the "never been in a truck" concern Marcus
+  raised.
+
+HELPER FUNCTIONS PROVIDED IN THE NOTEBOOK (so you do not rebuild them)
+- print_summary_with_stars(X_train, y_train): fits sm.OLS with an added constant and
+  prints the coefficient table with significance stars; returns (model, coef_table).
+- predict_with(model, X): predicts after adding the constant column.
+- evaluate_model(name, y_tr, y_tr_pred, y_te, y_te_pred): returns Train_R2, Test_R2,
+  Test_MAE, Test_RMSE.
+- rmse_at_28(preds) and mean_error_at_28(preds): error on the 28-day test batches only.
+- encode_age(frame): one-hot encodes curing age against AGE_LEVELS and lines the columns
+  up with X_train2.

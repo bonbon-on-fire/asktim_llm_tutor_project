@@ -647,6 +647,87 @@
     if (m.role === "tutor") appendRating(li, m.rating);
   }
 
+  // Flag banner: if the judge flagged this conversation in a weekly report,
+  // pin a crimson strip atop the transcript so the reviewer sees WHY without
+  // opening the report. Collapsed by default (just the one-liner); clicking it
+  // expands the full issue list. `flag` is null for unflagged conversations.
+  function renderFlagBanner(flag) {
+    if (!flag) return;
+    const li = document.createElement("li");
+    li.className = "review-flag-banner";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "review-flag-summary";
+    btn.setAttribute("aria-expanded", "false");
+
+    const mark = document.createElement("span");
+    mark.className = "review-flag-mark";
+    mark.textContent = "⚠";
+    mark.setAttribute("aria-hidden", "true");
+
+    const oneLine = document.createElement("span");
+    oneLine.className = "review-flag-oneline";
+    oneLine.textContent = flag.one_line || "Flagged in a weekly report";
+
+    const caret = document.createElement("span");
+    caret.className = "review-flag-caret";
+    caret.setAttribute("aria-hidden", "true");
+    caret.textContent = "›";   // › — rotates to point down when open
+
+    btn.append(mark, oneLine, caret);
+
+    const details = document.createElement("div");
+    details.className = "review-flag-details";
+    details.hidden = true;
+
+    // Which week (and score, if graded) this flag came from.
+    if (flag.week_start) {
+      const meta = document.createElement("div");
+      meta.className = "review-flag-meta";
+      let text = "Flagged in the week of " + flag.week_start + " report";
+      const g = flag.grade;
+      if (g && typeof g.total_score === "number") {
+        text += " · score " + g.total_score + (g.max_score ? "/" + g.max_score : "");
+      }
+      meta.textContent = text;
+      details.appendChild(meta);
+    }
+
+    const issues = Array.isArray(flag.issues) ? flag.issues : [];
+    if (issues.length) {
+      const ul = document.createElement("ul");
+      ul.className = "review-flag-issues";
+      for (const it of issues) {
+        const item = document.createElement("li");
+        const head = document.createElement("span");
+        head.className = "review-flag-issue-head";
+        head.textContent = [it.severity, it.type,
+          typeof it.points === "number" ? it.points + " pts" : null]
+          .filter(Boolean).join(" · ");
+        item.appendChild(head);
+        if (it.quote) {
+          const body = document.createElement("span");
+          body.className = "review-flag-issue-body";
+          body.textContent = it.quote;
+          item.appendChild(body);
+        }
+        ul.appendChild(item);
+      }
+      details.appendChild(ul);
+    }
+
+    btn.addEventListener("click", () => {
+      const open = details.hidden;   // hidden now -> we're about to open
+      details.hidden = !open;
+      li.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
+    li.append(btn, details);
+    messageList.appendChild(li);
+  }
+
   async function loadConversation(id) {
     if (id === activeConversationId) return;
     activeConversationId = id;
@@ -662,6 +743,7 @@
         return;
       }
       const convo = await r.json();
+      renderFlagBanner(convo.flag);
       for (const m of convo.messages) renderMessage(m);
       messageList.scrollTop = 0;
     } catch (e) {

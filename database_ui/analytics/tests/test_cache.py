@@ -1,4 +1,5 @@
 # database_ui/analytics/tests/test_cache.py
+import json
 from datetime import datetime, timezone
 
 from database_ui.analytics import cache as c
@@ -64,3 +65,29 @@ def test_write_then_read_roundtrip(tmp_path, monkeypatch):
     assert blob["week_start"] == "2026-08-09" and blob["judged_count"] == 1
     assert blob["ai_review_by_course"] == {"c1": "Students worked on t."}
     assert "2026-08-09" in c.available_weeks()
+
+
+def test_flag_detail_returns_judge_reason(tmp_path, monkeypatch):
+    monkeypatch.setattr(c, "CACHE_DIR", tmp_path)
+    (tmp_path / "2026-08-09.json").write_text(json.dumps(_blob()), encoding="utf-8")
+    detail = c.flag_detail("u1")
+    assert detail["one_line"] == "gave answer"
+    assert detail["week_start"] == "2026-08-09"
+    assert detail["issues"][0]["severity"] == "high"
+    # A conversation that worked well, and an unknown id, are not flagged.
+    assert c.flag_detail("u2") is None
+    assert c.flag_detail("nope") is None
+
+
+def test_flag_detail_prefers_newest_flagged_week(tmp_path, monkeypatch):
+    monkeypatch.setattr(c, "CACHE_DIR", tmp_path)
+    old = _blob()
+    old["week_start"] = "2026-08-02"
+    old["conversations"]["u1"]["one_line"] = "old reason"
+    new = _blob()
+    new["week_start"] = "2026-08-09"
+    new["conversations"]["u1"]["one_line"] = "new reason"
+    (tmp_path / "2026-08-02.json").write_text(json.dumps(old), encoding="utf-8")
+    (tmp_path / "2026-08-09.json").write_text(json.dumps(new), encoding="utf-8")
+    detail = c.flag_detail("u1")
+    assert detail["week_start"] == "2026-08-09" and detail["one_line"] == "new reason"

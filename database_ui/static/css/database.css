@@ -84,6 +84,85 @@
 /* --- Transcript pane ----------------------------------------------------- */
 .review-chat { position: relative; }
 
+/* Flag banner: sits atop a flagged conversation's transcript so a reviewer
+   sees WHY the judge flagged it (a one-liner, expandable to the full issue
+   list) without opening the weekly report. Crimson to match the sidebar/report
+   ⚠. Collapsed by default; the summary button toggles the .is-open state. */
+.review-flag-banner {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  border: 1px solid #e6b3ac;
+  border-left: 3px solid #c0392b;
+  border-radius: 8px;
+  background: #fbe9e7;
+  overflow: hidden;
+}
+.review-flag-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: #8f2418;
+  cursor: pointer;
+}
+.review-flag-mark {
+  flex: none;
+  color: #c0392b;
+  font-size: 16px;   /* same ⚠ size as the sidebar/report markers */
+  line-height: 1;
+}
+.review-flag-oneline {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.review-flag-caret {
+  flex: none;
+  color: #b06a61;
+  transition: transform 0.12s ease;
+}
+.review-flag-banner.is-open .review-flag-caret {
+  transform: rotate(90deg);   /* › tips down to point at the open details */
+}
+.review-flag-details {
+  padding: 0 0.75rem 0.7rem;
+  border-top: 1px solid #f0cfc9;
+}
+.review-flag-meta {
+  margin: 0.5rem 0;
+  font-size: 0.72rem;
+  color: var(--muted, #8a6f6b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.review-flag-issues {
+  margin: 0;
+  padding-left: 1rem;
+}
+.review-flag-issues > li {
+  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+}
+.review-flag-issue-head {
+  display: block;
+  margin-bottom: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #8f2418;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.review-flag-issue-body {
+  display: block;
+  color: var(--text, #444);
+  white-space: pre-wrap;
+}
+
 /* Flagged-conversation marker, pinned to a sidebar entry's top-right. A crimson
    flag in the same colour and 16px box as the outage marker on the activity
    chart (.chart-mark). currentColor drives the SVG fill from `color`.

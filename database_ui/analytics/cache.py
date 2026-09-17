@@ -130,3 +130,29 @@ def flagged_conversation_ids() -> set[str]:
             if not meta.get("worked_well"):
                 flagged.add(cid)
     return flagged
+
+
+def flag_detail(conversation_id: str) -> dict | None:
+    """The judge's flag reason for one conversation, newest flagged week first.
+
+    Scans the committed caches (newest first) and returns the judge output from
+    the most recent week in which ``conversation_id`` was marked ``worked_well``
+    false: its ``one_line`` summary, the ``issues`` list, the ``grade``, and the
+    ``week_start`` it came from. Returns ``None`` when the conversation was never
+    flagged. Powers the transcript's flag banner, so a reviewer sees *why* a
+    conversation was flagged without opening the weekly report. "Flagged" here
+    matches :func:`flagged_conversation_ids` — a missing ``worked_well`` counts.
+    """
+    for key in available_weeks():          # newest first
+        blob = read_cache(key)
+        if not blob:
+            continue
+        meta = blob.get("conversations", {}).get(conversation_id)
+        if meta and not meta.get("worked_well"):
+            return {
+                "week_start": blob.get("week_start", key),
+                "one_line": meta.get("one_line"),
+                "grade": meta.get("grade"),
+                "issues": meta.get("issues") or [],
+            }
+    return None

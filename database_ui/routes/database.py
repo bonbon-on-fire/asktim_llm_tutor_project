@@ -267,6 +267,11 @@ def api_conversation(conversation_id: str):
     courses = allowed_courses()
     if courses is not None and convo.course not in courses:
         return jsonify({"error": "not_found"}), 404
+    # If the judge flagged this conversation in a weekly report, attach the
+    # reason (one-liner + issues) so the transcript can show a flag banner —
+    # the reviewer sees *why* without opening the weekly report. `None` when
+    # unflagged. The conversation already passed the course-scope gate above,
+    # so its cached flag detail is in-scope by construction.
     return jsonify(
         {
             "id": str(convo.id),
@@ -281,6 +286,7 @@ def api_conversation(conversation_id: str):
                 convo.last_active_at.isoformat() if convo.last_active_at else None
             ),
             "messages": svc.get_messages_for_conversation(g.db, convo),
+            "flag": cache_mod.flag_detail(str(convo.id)),
         }
     )
 

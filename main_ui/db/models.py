@@ -123,3 +123,27 @@ class ServiceHealth(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
     )
+
+
+class ProviderOutage(Base):
+    """Append-only log of tutor degraded episodes, one row per outage.
+
+    Written by ``main_ui/services/service_health.py`` when the shared
+    ``service_health`` degraded flag opens and closes; read by the database_ui
+    weekly report to mark affected days. At most one row is open
+    (``ended_at IS NULL``) at a time, since there is a single degraded flag.
+    """
+
+    __tablename__ = "provider_outage"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    ended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )

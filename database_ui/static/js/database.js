@@ -199,6 +199,9 @@
       });
       sidebarList.appendChild(li);
     }
+    // If a conversation is already active when the list (re)builds — e.g. a
+    // /?c=<id> deep link from the standalone weekly report — reveal it.
+    scrollActiveIntoView();
   }
 
   function highlightActive() {
@@ -208,6 +211,20 @@
         el.dataset.conversationId === activeConversationId,
       );
     }
+    scrollActiveIntoView();
+  }
+
+  // Bring the active conversation's sidebar entry into view. Matters most when a
+  // conversation is opened from the weekly report's flagged list: it becomes the
+  // selected (highlighted) entry, but may sit far down the list — this scrolls it
+  // into the sidebar so the selection is actually visible. block:"nearest" scrolls
+  // the sidebar minimally and never moves the page.
+  function scrollActiveIntoView() {
+    if (!activeConversationId) return;
+    const el = sidebarList.querySelector(
+      `.sidebar-entry[data-conversation-id="${CSS.escape(activeConversationId)}"]`,
+    );
+    if (el) el.scrollIntoView({ block: "nearest" });
   }
 
   async function refreshSidebar() {

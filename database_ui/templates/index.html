@@ -6,7 +6,7 @@
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/chat.css', v='7') }}">
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/katex.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css', v='14') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css', v='17') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css', v='29') }}">
     <style>:root { --accent: {{ accent }}; }</style>
 </head>
@@ -44,6 +44,34 @@
         </svg>
     </button>
 
+{% if not show_login %}    <!-- Rework notice: a centered modal (blue frosted backdrop, per the
+         sandbox/database = blue convention) shown once per session to signed-in
+         reviewers. Flags that the dashboard is under active development, so odd
+         behavior reads as expected. Session-scoped dismissal; only rendered
+         when authed, so it never stacks on the sign-in gate. -->
+    <div class="modal-overlay review-notice-overlay" id="rework-notice" role="dialog"
+         aria-modal="true" aria-labelledby="rework-notice-title" hidden>
+        <div class="modal-card">
+            <button type="button" id="rework-notice-close" class="review-notice-close" aria-label="Dismiss">&times;</button>
+            <h2 id="rework-notice-title" class="modal-title">Reworking AskTIM Database</h2>
+            <p class="modal-body">We're reworking how conversations get flagged and adding filter and sort tools to the sidebar. If something looks off or buggy right now, that's expected — it's still under active development. Thanks for your patience!</p>
+        </div>
+    </div>
+    <script>
+      (function () {
+        var m = document.getElementById("rework-notice");
+        if (!m) return;
+        var dismissed = false;
+        try { dismissed = sessionStorage.getItem("reworkNoticeDismissed") === "1"; } catch (e) {}
+        if (!dismissed) m.hidden = false;
+        var x = document.getElementById("rework-notice-close");
+        if (x) x.addEventListener("click", function () {
+          m.hidden = true;
+          try { sessionStorage.setItem("reworkNoticeDismissed", "1"); } catch (e) {}
+        });
+      })();
+    </script>
+{% endif %}
     <div class="layout">
     <aside class="sidebar" id="sidebar" aria-label="Conversations">
         <div class="sidebar-inner">

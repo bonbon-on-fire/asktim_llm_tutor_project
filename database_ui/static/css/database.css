@@ -116,7 +116,7 @@
 .review-flag-mark svg { width: 16px; height: 16px; display: block; }
 .review-flag-oneline {
   flex: 1;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 0.85rem;
 }
 .review-flag-caret {
@@ -129,6 +129,7 @@
 }
 .review-flag-details {
   padding: 0 0.75rem 0.7rem;
+  border-top: 1px solid #e0b3ab;   /* divider between the summary and the list */
 }
 /* Issues stack as plain lines (no bullets), sized and styled like the
    transcript text. A gap up top separates them from the summary above. */
@@ -144,11 +145,11 @@
 .review-flag-issues > li:last-child { margin-bottom: 0; }
 .review-flag-issue-head {
   display: block;   /* criterion + points on their own line */
-  color: var(--text, #444);
+  color: #8f2418;
 }
 .review-flag-issue-body {
   display: block;
-  color: var(--text, #444);
+  color: #8f2418;
   white-space: pre-wrap;
 }
 
@@ -186,8 +187,12 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.35rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1rem 0.25rem;
 }
+/* The shared sidebar adds 0.75rem above the list; the toolbar already gives
+   enough breathing room, so drop it here to close the big gap. */
+.review-toolbar ~ .sidebar-list:not(:empty),
+.review-toolbar ~ .sidebar-empty:not([hidden]) { margin-top: 0; }
 .rt-control { position: relative; }
 /* Borderless icon buttons — no boxed outline at rest; a soft rounded
    background gives hover/open feedback instead. */
@@ -496,4 +501,36 @@ a.sidebar-cta {
   background: rgba(14, 30, 58, 0.55);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
+}
+
+/* Rework notice: the once-per-session "under development" modal. Reuses the
+   shared modal shell (.modal-overlay/.modal-card/.modal-*) but swaps the black
+   chat.css backdrop for the same blue frost as the sign-in gate, per the
+   sandbox/database = blue overlay convention. */
+.review-notice-overlay {
+  background: rgba(14, 30, 58, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Corner dismiss "×" inside the notice card (the card is positioned so this
+   anchors to its top-right). Mirrors sandbox_ui's tester-notice close button. */
+.review-notice-overlay .modal-card { position: relative; }
+
+.review-notice-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.7rem;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+  padding: 0 2px;
+}
+
+.review-notice-close:hover {
+  opacity: 1;
 }

@@ -72,6 +72,7 @@ from utils.attachments import (
     AttachmentValidationError,
     EmptyExtractionError,
 )
+from utils.curriculum import normalize_item_number
 from utils.tokens import estimate_message_tokens
 from utils.uploads import UploadValidationError, enforce_combined_cap, images_to_tuples
 
@@ -205,7 +206,11 @@ def chat():
         return _login_required("attachment")
 
     course = src.get("course")
-    exercise = src.get("exercise")
+    # Normalize the assignment number as it enters the system ('01' -> '1'), so
+    # a padded link can't record a second, duplicate assignment for the same
+    # exercise. File resolution already normalizes; this makes the stored value
+    # (and everything keyed on it — the export picker, analytics) agree too.
+    exercise = normalize_item_number(src.get("exercise"))
     _kind = str(src.get("exercise_kind")).strip().lower()
     exercise_kind = _kind if _kind in ("practice", "case") else "exercise"
     # The role selects the prompt family; each role is locked to its default

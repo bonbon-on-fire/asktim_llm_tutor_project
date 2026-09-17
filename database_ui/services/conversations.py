@@ -19,6 +19,7 @@ from database_ui.anonymize import display_identity
 from database_ui.courses import course_display_name
 from database_ui.db.models import Conversation, Message, UploadedFile, UploadedImage
 from ui_core.usage import model_from_usage_json, records_from_retrieved_context
+from utils.curriculum import normalize_item_number
 
 
 def list_all_conversations(
@@ -374,10 +375,19 @@ def list_export_filters(db: Session, courses: list[str] | None = None) -> list[d
     ).distinct()
     if courses is not None:
         stmt = stmt.where(Conversation.course.in_(courses))
+    # Key each assignment by its normalized number so a padded stored variant
+    # ('01') and its bare form ('1') collapse into ONE picker option instead of
+    # showing up as two "Exercise 1" / "Exercise 01" entries. The write path now
+    # normalizes on the way in, so new records can't split; this keeps the picker
+    # correct for records written before that fix (and for the export filter,
+    # iter_export_rows re-expands to every raw variant, so nothing is missed).
     kinds_by_course: dict[str, dict[str, str]] = {}
     for course, exercise_number, exercise_kind in db.execute(stmt).all():
         by_ex = kinds_by_course.setdefault(course, {})
-        by_ex[exercise_number] = exercise_kind or "exercise"
+        norm = normalize_item_number(exercise_number)
+        # First non-empty kind wins; don't let a later blank overwrite it.
+        if norm not in by_ex or by_ex[norm] == "exercise":
+            by_ex[norm] = exercise_kind or "exercise"
 
     result: list[dict] = []
     for course in sorted(kinds_by_course, key=lambda k: course_display_name(k).lower()):
@@ -477,9 +487,26 @@ def iter_export_rows(
         pairs = {(course, ex) for course, ex in pairs if course in allowed}
         if not pairs:
             return
+    # The picker now hands us normalized numbers ('1'), but conversations written
+    # before the normalization fix may be stored padded ('01'). Expand each
+    # requested (course, number) to every raw stored variant that normalizes to
+    # it, so a normalized request still pulls the padded rows. We keep exact
+    # equality on the raw column (index-friendly, dialect-agnostic) rather than
+    # normalizing inside SQL.
+    wanted = {(course, normalize_item_number(ex)) for course, ex in pairs}
+    variant_stmt = select(Conversation.course, Conversation.exercise_number).distinct()
+    variant_stmt = variant_stmt.where(
+        Conversation.course.in_({course for course, _ in wanted})
+    )
+    expanded: set[tuple[str, str]] = set()
+    for course, raw in db.execute(variant_stmt).all():
+        if (course, normalize_item_number(raw)) in wanted:
+            expanded.add((course, raw))
+    if not expanded:
+        return
     conditions = [
         and_(Conversation.course == course, Conversation.exercise_number == exercise)
-        for course, exercise in pairs
+        for course, exercise in expanded
     ]
     stmt = (
         select(Message, Conversation)

@@ -31,10 +31,23 @@ _CASE_NAME_RE = re.compile(r"^case_(\d+)\.txt$")
 ARCHIVE_DIRNAME = "_archive"
 
 
-def _norm_num(num: str) -> str:
-    """Normalize an item number to its non-padded form ('01' -> '1'); pass through non-numeric."""
+def normalize_item_number(num):
+    """Normalize an item number to its non-padded form ('01' -> '1').
+
+    Numeric strings collapse to their canonical integer form; ``None`` and
+    non-numeric values pass through unchanged. This is the single definition of
+    what makes two selections "the same assignment", so the write path (what
+    main_ui stores on a conversation), the export picker, and on-disk file
+    resolution all agree that ``'1'`` and ``'01'`` are one exercise.
+    """
+    if num is None:
+        return num
     s = str(num).strip()
     return str(int(s)) if s.isdigit() else s
+
+
+# Private alias kept for the path resolvers below, which always pass a string.
+_norm_num = normalize_item_number
 
 
 def _root(curriculum_root: Path | str | None) -> Path:

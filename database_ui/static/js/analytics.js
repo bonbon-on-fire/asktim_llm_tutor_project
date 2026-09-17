@@ -29,6 +29,35 @@
     });
   }
 
+  // Map outages to the ET day-strings they touch, with a per-day tooltip.
+  // Returns { "YYYY-MM-DD": "Provider outage · 14:05–16:15 (2h10m) · reason" }.
+  // o.start / o.end are ET-offset ISO strings (e.g. "2026-08-12T14:05:00-04:00").
+  // Read the wall-clock and calendar day straight off the STRING — never via
+  // Date.toISOString(), which converts to UTC and can shift a late-evening
+  // outage onto the next ET day. Duration uses the real instants (DST-safe).
+  function outageDays(outages) {
+    const out = {};
+    (outages || []).forEach((o) => {
+      if (!o.start) return;
+      const hhmm = (iso) => iso.slice(11, 16);            // ET wall-clock, verbatim
+      const dur = o.end ? Math.round((new Date(o.end) - new Date(o.start)) / 60000) : null;
+      const span = o.end
+        ? `${hhmm(o.start)}–${hhmm(o.end)} (${Math.floor(dur / 60)}h${String(dur % 60).padStart(2, "0")}m)`
+        : `${hhmm(o.start)}–ongoing`;
+      const tip = `Provider outage · ${span}${o.reason ? " · " + o.reason : ""}`;
+      // Walk ET calendar days by date-string, start..end inclusive. Parse the
+      // date-only slice as UTC midnight and compare via the same UTC accessor,
+      // so the walk is internally consistent and no boundary day can shift.
+      const endDay = (o.end || o.start).slice(0, 10);
+      const key = (dt) => dt.toISOString().slice(0, 10);
+      for (let d = new Date(o.start.slice(0, 10) + "T00:00:00Z"); key(d) <= endDay; d.setUTCDate(d.getUTCDate() + 1)) {
+        const k = key(d);
+        out[k] = out[k] ? out[k] + "; " + tip : tip;
+      }
+    });
+    return out;
+  }
+
   // A "nice" round axis ceiling that clears the data max with one empty step of
   // headroom above the tallest bar (e.g. max 8 → ceiling 10, step 2).
   function niceScale(m) {
@@ -79,6 +108,12 @@
       svg.appendChild(bar);
       svg.appendChild(el("text", { _svg: true, x: x + bw / 2, y: y - 4, "text-anchor": "middle", class: "chart-val" }, [String(d.value)]));
       svg.appendChild(el("text", { _svg: true, x: x + bw / 2, y: h - 8, "text-anchor": "middle", class: "chart-lbl" }, [d.label]));
+      if (opts.marks && opts.marks[i]) {
+        const mk = el("text", { _svg: true, x: x + bw / 2, y: y - 16,
+          "text-anchor": "middle", class: "chart-mark" }, ["⚠"]); // ⚠
+        mk.appendChild(el("title", { _svg: true }, [opts.marks[i]]));
+        svg.appendChild(mk);
+      }
     });
     return svg;
   }
@@ -345,7 +380,17 @@
     ])));
 
     const byDay = weekSeries(u.messages_by_day || {}, payload.week.key, "messages");
-    root.appendChild(card("Daily activity", barChart(byDay, { label: "Daily message activity, Sunday through Saturday" })));
+    const days = outageDays((payload.live && payload.live.outages) || []);
+    // byDay entries are Sun..Sat in order; recover each cell's ET date key.
+    const [wy, wm, wd] = payload.week.key.split("-").map(Number);
+    const wkBase = Date.UTC(wy, wm - 1, wd);
+    const marks = {};
+    byDay.forEach((_, i) => {
+      const iso = new Date(wkBase + i * 86400000).toISOString().slice(0, 10);
+      if (days[iso]) marks[i] = days[iso];
+    });
+    root.appendChild(card("Daily activity", barChart(byDay, {
+      label: "Daily message activity, Sunday through Saturday", marks })));
 
     // AI review sits under Daily activity: the week's narrative overview,
     // scoped on read so a course login sees only its own. Each course is split

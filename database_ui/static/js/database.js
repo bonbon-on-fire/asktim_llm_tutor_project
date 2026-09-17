@@ -188,12 +188,17 @@
       li.appendChild(snippet);
 
       // Flagged conversations (judge marked "didn't work well" in a weekly
-      // report) get a ⚠ pinned to the entry's top-right. Same glyph, colour,
-      // and size as the outage marker; decorative, so no hover.
+      // report) get a crimson flag pinned to the entry's top-right. Same colour
+      // and 16px box as the outage marker; decorative, so no hover. The SVG is a
+      // static literal (no user data), so innerHTML doesn't break the no-raw-HTML
+      // XSS guarantee that governs message content.
       if (c.flagged) {
         const flag = document.createElement("span");
         flag.className = "sidebar-entry-flag";
-        flag.textContent = "⚠";
+        flag.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+          '<path d="M6 2a1 1 0 0 1 1 1v1.2l1.9-.5a7 7 0 0 1 4.6.4 5 5 0 0 0 3.9.1l1.2-.5A1 1 0 0 1 20 4.6V13a1 1 0 0 1-.62.92l-1.2.5a7 7 0 0 1-5.46-.14 5 5 0 0 0-3.3-.29L7 14.3V21a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1z"/>' +
+          '</svg>';
         flag.setAttribute("aria-hidden", "true");
         li.appendChild(flag);
       }

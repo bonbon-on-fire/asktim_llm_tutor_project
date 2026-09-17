@@ -19,7 +19,6 @@ from database_ui.anonymize import display_identity
 from database_ui.courses import course_display_name
 from database_ui.db.models import Conversation, Message, UploadedFile, UploadedImage
 from ui_core.usage import model_from_usage_json, records_from_retrieved_context
-from utils.curriculum import normalize_item_number
 
 
 def list_all_conversations(
@@ -349,6 +348,21 @@ EXPORT_COLUMNS = [
     "rating", "model", "cost_usd", "usage_json", "retrieved_context",
     "image_count", "file_count", "created_at",
 ]
+
+
+def normalize_item_number(num):
+    """Non-padded canonical form of an assignment number ('01' -> '1').
+
+    Mirrors utils.curriculum.normalize_item_number, inlined here because the
+    database_ui image is deliberately lean and does NOT ship the ``utils``
+    package (see Dockerfile_database) — importing it would crash the app at
+    startup. Numeric strings collapse to their integer form; None and
+    non-numeric values pass through unchanged.
+    """
+    if num is None:
+        return num
+    s = str(num).strip()
+    return str(int(s)) if s.isdigit() else s
 
 
 def _assignment_sort_key(exercise_number: str):

@@ -15,7 +15,23 @@
   const weeklyOpen = document.getElementById("weekly-report-open");
   const analyticsPanel = document.getElementById("analytics-panel");
 
+  // Filter & sort bar (client-side over the loaded list; see applyView).
+  const reviewToolbar = document.getElementById("review-toolbar");
+  const sortTrigger = document.getElementById("sort-trigger");
+  const sortPop = document.getElementById("sort-pop");
+  const courseTrigger = document.getElementById("course-trigger");
+  const coursePop = document.getElementById("course-pop");
+  const flagToggle = document.getElementById("flag-toggle");
+
   let activeConversationId = null;
+  // Every conversation from /api/conversations, kept so the toolbar can filter
+  // and re-sort without re-fetching.
+  let allConversations = [];
+  // Distinct course codes present in the loaded list (set by buildCourseOptions).
+  let allCourseKeys = [];
+  // view.courses is a Set of selected course codes; null until first built, then
+  // defaults to "all selected" (matching the weekly report's course picker).
+  const view = { sort: "recent", courses: null, flaggedOnly: false };
 
   // Sidebar open/close toggle (mirrors the student app's behavior).
   function setSidebar(open) {
@@ -246,7 +262,7 @@
   async function refreshSidebar() {
     showSidebarEmpty("Loading…");
     try {
-      const r = await fetch("/api/conversations?sort=date");
+      const r = await fetch("/api/conversations");
       if (!r.ok) {
         // Surface a stale-schema error specifically; fall back to the generic
         // message for anything else (or an unparseable body).
@@ -255,14 +271,181 @@
           const body = await r.json();
           if (body && body.error === "schema_outdated" && body.message) msg = body.message;
         } catch (_) {}
+        reviewToolbar.hidden = true;
         return showSidebarEmpty(msg);
       }
       const data = await r.json();
-      renderSidebar(data.conversations);
+      allConversations = Array.isArray(data.conversations) ? data.conversations : [];
+      buildCourseOptions();
+      reviewToolbar.hidden = allConversations.length === 0;
+      applyView();
     } catch (e) {
+      reviewToolbar.hidden = true;
       showSidebarEmpty("Could not load conversations");
     }
   }
+
+  // --- Filter & sort bar -----------------------------------------------------
+  // Populate the course popover from the distinct courses present, keyed by the
+  // stable course code and labeled by display name (sorted). Multi-select: every
+  // course starts selected, and toggling one re-filters live — mirroring the
+  // weekly report's course picker.
+  function buildCourseOptions() {
+    const seen = new Map(); // code -> display name
+    for (const c of allConversations) {
+      if (c.course && !seen.has(c.course)) seen.set(c.course, c.course_name || c.course);
+    }
+    allCourseKeys = [...seen.keys()];
+
+    // Initialise to "all selected"; on a refresh, keep the user's selection but
+    // drop courses that vanished, and fall back to "all" if nothing's left.
+    if (view.courses === null) {
+      view.courses = new Set(allCourseKeys);
+    } else {
+      for (const k of [...view.courses]) if (!seen.has(k)) view.courses.delete(k);
+      if (view.courses.size === 0) view.courses = new Set(allCourseKeys);
+    }
+
+    const opts = [...seen.entries()].map(([code, name]) => ({ code, name }));
+    opts.sort((a, b) => a.name.localeCompare(b.name));
+
+    coursePop.innerHTML = "";
+    for (const o of opts) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "rt-opt";
+      btn.setAttribute("role", "option");
+      btn.textContent = o.name;
+      btn.dataset.course = o.code;
+      const isSel = view.courses.has(o.code);
+      btn.classList.toggle("is-selected", isSel);
+      btn.setAttribute("aria-selected", isSel ? "true" : "false");
+      // Toggle this course and keep the popover open so several can be picked in
+      // one go (the popover lives inside .rt-control, so the outside-click
+      // handler leaves it open). The list re-filters live.
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (view.courses.has(o.code)) view.courses.delete(o.code);
+        else view.courses.add(o.code);
+        const on = view.courses.has(o.code);
+        btn.classList.toggle("is-selected", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+        updateCourseActive();
+        applyView();
+      });
+      coursePop.appendChild(btn);
+    }
+    updateCourseActive();
+  }
+
+  // Mark the course chip active when a strict subset of courses is selected.
+  function updateCourseActive() {
+    const subset = view.courses && view.courses.size < allCourseKeys.length;
+    courseTrigger.classList.toggle("rt-active", !!subset);
+  }
+
+  // Apply the current sort + filters to allConversations and render.
+  function applyView() {
+    let list = allConversations.slice();
+    // Filter by course only when it's a strict subset (all selected = show all).
+    if (view.courses && view.courses.size < allCourseKeys.length) {
+      list = list.filter((c) => view.courses.has(c.course));
+    }
+    if (view.flaggedOnly) list = list.filter((c) => c.flagged);
+
+    list.sort((a, b) => {
+      const ta = a.last_active_at ? Date.parse(a.last_active_at) : 0;
+      const tb = b.last_active_at ? Date.parse(b.last_active_at) : 0;
+      return view.sort === "oldest" ? ta - tb : tb - ta;
+    });
+
+    if (list.length === 0 && allConversations.length > 0) {
+      // Nothing matched the active filters (the list itself isn't empty).
+      showSidebarEmpty("No conversations match these filters");
+      return;
+    }
+    renderSidebar(list);
+  }
+
+  // Mark one option selected within a popover, clearing its siblings.
+  function markSelected(pop, chosen) {
+    for (const opt of pop.querySelectorAll(".rt-opt")) {
+      const on = opt === chosen;
+      opt.classList.toggle("is-selected", on);
+      opt.setAttribute("aria-selected", on ? "true" : "false");
+    }
+  }
+
+  // Position a fixed popover directly under its trigger, nudged left if it would
+  // spill past the right edge (the sidebar's overflow:hidden would clip a
+  // normally-positioned dropdown, so the pops live at the top layer instead).
+  function placePop(trigger, pop) {
+    const r = trigger.getBoundingClientRect();
+    pop.hidden = false; // must be visible to measure
+    const w = pop.offsetWidth;
+    let left = r.left;
+    const overflow = left + w - (window.innerWidth - 8);
+    if (overflow > 0) left = Math.max(8, left - overflow);
+    pop.style.left = `${left}px`;
+    pop.style.top = `${r.bottom + 6}px`;
+  }
+
+  function openPop(trigger, pop) {
+    closePops();
+    trigger.setAttribute("aria-expanded", "true");
+    placePop(trigger, pop);
+  }
+
+  function closePops() {
+    for (const t of [sortTrigger, courseTrigger]) t.setAttribute("aria-expanded", "false");
+    sortPop.hidden = true;
+    coursePop.hidden = true;
+  }
+
+  function togglePop(trigger, pop) {
+    if (pop.hidden) openPop(trigger, pop);
+    else closePops();
+  }
+
+  if (sortTrigger) {
+    sortTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePop(sortTrigger, sortPop);
+    });
+    for (const opt of sortPop.querySelectorAll(".rt-opt")) {
+      opt.addEventListener("click", () => {
+        view.sort = opt.dataset.sort;
+        markSelected(sortPop, opt);
+        closePops();
+        applyView();
+      });
+    }
+  }
+  if (courseTrigger) {
+    courseTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePop(courseTrigger, coursePop);
+    });
+  }
+  if (flagToggle) {
+    flagToggle.addEventListener("click", () => {
+      view.flaggedOnly = !view.flaggedOnly;
+      flagToggle.setAttribute("aria-pressed", view.flaggedOnly ? "true" : "false");
+      applyView();
+    });
+  }
+  // Dismiss the popovers on an outside click, on Escape, and on any scroll/resize
+  // (a fixed pop would otherwise float away from its detached trigger).
+  document.addEventListener("click", (e) => {
+    if (sortPop.hidden && coursePop.hidden) return;
+    if (e.target.closest(".rt-control")) return;
+    closePops();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closePops();
+  });
+  window.addEventListener("resize", closePops);
+  if (sidebarList) sidebarList.addEventListener("scroll", closePops);
 
   function setMessageContent(el, role, content) {
     // Tutor replies are markdown + LaTeX math; render + sanitize via the shared

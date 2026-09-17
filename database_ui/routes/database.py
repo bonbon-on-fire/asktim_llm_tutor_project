@@ -45,6 +45,7 @@ from database_ui.auth import (
     mark_authed,
     resolve_scope,
 )
+from database_ui.analytics import cache as cache_mod
 from database_ui.courses import course_display_name
 from database_ui.services import conversations as svc
 from ui_core.web.blueprints.history import content_disposition_attachment
@@ -274,6 +275,9 @@ def api_conversation(conversation_id: str):
             "last_active_at": (
                 convo.last_active_at.isoformat() if convo.last_active_at else None
             ),
+            # True when the judge marked this conversation "didn't work well" in
+            # any weekly report; the transcript view pins a ⚠ marker for these.
+            "flagged": str(convo.id) in cache_mod.flagged_conversation_ids(),
             "messages": svc.get_messages_for_conversation(g.db, convo),
         }
     )

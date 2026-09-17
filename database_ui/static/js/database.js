@@ -14,8 +14,14 @@
   const sidebarClose = document.getElementById("sidebar-close");
   const weeklyOpen = document.getElementById("weekly-report-open");
   const analyticsPanel = document.getElementById("analytics-panel");
+  const flaggedMark = document.getElementById("flagged-mark");
 
   let activeConversationId = null;
+
+  // Show/hide the flagged (⚠) marker pinned to the chat's top-right.
+  function setFlagged(on) {
+    if (flaggedMark) flaggedMark.hidden = !on;
+  }
 
   // Sidebar open/close toggle (mirrors the student app's behavior).
   function setSidebar(open) {
@@ -32,6 +38,7 @@
     const report = view === "report";
     if (analyticsPanel) analyticsPanel.hidden = !report;
     if (messageList) messageList.style.display = report ? "none" : "";
+    if (report) setFlagged(false);   // never over the report pane
   }
   function showReport() {
     activeConversationId = null;
@@ -456,6 +463,7 @@
     hideError();
     if (placeholder) placeholder.hidden = true;
     messageList.innerHTML = "";
+    setFlagged(false);   // clear stale marker until this one's status is known
     try {
       const r = await fetch(`/api/conversation/${id}`);
       if (!r.ok) {
@@ -464,6 +472,7 @@
       }
       const convo = await r.json();
       for (const m of convo.messages) renderMessage(m);
+      setFlagged(!!convo.flagged);
       messageList.scrollTop = 0;
     } catch (e) {
       showError("Could not load that conversation");

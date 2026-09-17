@@ -108,3 +108,25 @@ def available_weeks() -> list[str]:
         return []
     keys = [p.stem for p in CACHE_DIR.glob("*.json")]
     return sorted(keys, reverse=True)
+
+
+def flagged_conversation_ids() -> set[str]:
+    """Conversation ids marked ``worked_well`` false in ANY judged week.
+
+    Scans every committed weekly cache and unions the flagged ids, so the
+    conversation list's "Flagged only" filter works regardless of which week a
+    conversation fell in. Ids are the caches' own string keys (conversation
+    UUIDs as text). A missing ``worked_well`` counts as flagged, matching
+    :func:`database_ui.services.analytics.flagged_conversation_meta`. Course
+    scoping is the caller's job: the returned set is intersected with an
+    already course-scoped conversation list, so out-of-scope ids never surface.
+    """
+    flagged: set[str] = set()
+    for key in available_weeks():
+        blob = read_cache(key)
+        if not blob:
+            continue
+        for cid, meta in blob.get("conversations", {}).items():
+            if not meta.get("worked_well"):
+                flagged.add(cid)
+    return flagged

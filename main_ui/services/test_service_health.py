@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from main_ui.db.models import Base, ServiceHealth
+from main_ui.db.models import Base, ProviderOutage, ServiceHealth
 from main_ui.services import service_health as svc
 
 
@@ -28,6 +28,86 @@ def _fixed_now():
     """A concrete tz-aware instant (Date.now/new Date are unavailable in scripts,
     but this is plain Python — still, use a literal so results are reproducible)."""
     return datetime(2026, 8, 25, 12, 0, 0, tzinfo=timezone.utc)
+
+
+def _open_outages(s):
+    return s.query(ProviderOutage).filter(ProviderOutage.ended_at.is_(None)).all()
+
+
+def _all_outages(s):
+    return s.query(ProviderOutage).order_by(ProviderOutage.started_at).all()
+
+
+def _test_outage_log() -> bool:
+    ok = True
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = _fixed_now()
+
+    # crossing threshold opens exactly one outage row at started_at=now
+    with Session(engine) as s:
+        for i in range(5):
+            svc.record_chat_outcome(s, ok=False, threshold=5, now=now + timedelta(seconds=i))
+        s.commit()
+        rows = _all_outages(s)
+        trip = now + timedelta(seconds=4)
+        ok &= _check("threshold opens one open outage",
+                     len(rows) == 1 and rows[0].ended_at is None
+                     and svc._as_aware(rows[0].started_at) == trip,
+                     f"rows={[(r.started_at, r.ended_at) for r in rows]}")
+
+        # staying degraded (another failure) does NOT open a second row
+        svc.record_chat_outcome(s, ok=False, threshold=5, now=now + timedelta(seconds=5))
+        s.commit()
+        ok &= _check("staying degraded opens no second row", len(_all_outages(s)) == 1)
+
+        # a success while degraded closes the open row at ended_at=success time
+        close_at = now + timedelta(seconds=6)
+        svc.record_chat_outcome(s, ok=True, threshold=5, now=close_at)
+        s.commit()
+        rows = _all_outages(s)
+        ok &= _check("success closes open outage at success time",
+                     len(rows) == 1 and svc._as_aware(rows[0].ended_at) == close_at,
+                     f"ended_at={rows[0].ended_at}")
+
+    # a success while healthy opens/closes nothing
+    with Session(engine) as s2:
+        Base.metadata.drop_all(engine); Base.metadata.create_all(engine)
+        svc.record_chat_outcome(s2, ok=True, threshold=5, now=now)
+        s2.commit()
+        ok &= _check("healthy success logs no outage", len(_all_outages(s2)) == 0)
+
+    # lazy expiry closes the open row at ended_at=last_failure_at
+    with Session(engine) as s3:
+        Base.metadata.drop_all(engine); Base.metadata.create_all(engine)
+        for i in range(5):
+            svc.record_chat_outcome(s3, ok=False, threshold=5, now=now + timedelta(seconds=i))
+        s3.commit()
+        last_fail = now + timedelta(seconds=4)
+        # far enough past last_failure_at that lazy expiry fires (cooldown default 90s)
+        svc.current_degraded(s3, cooldown_seconds=90, now=now + timedelta(seconds=200))
+        s3.commit()
+        rows = _all_outages(s3)
+        ok &= _check("lazy expiry closes outage at last_failure_at",
+                     len(rows) == 1 and svc._as_aware(rows[0].ended_at) == last_fail,
+                     f"ended_at={rows[0].ended_at} last_fail={last_fail}")
+
+    # capture is best-effort: a broken outage write does not break record_chat_outcome
+    with Session(engine) as s4:
+        Base.metadata.drop_all(engine); Base.metadata.create_all(engine)
+        orig = svc._open_outage
+        svc._open_outage = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom"))
+        try:
+            for i in range(5):
+                svc.record_chat_outcome(s4, ok=False, threshold=5, now=now + timedelta(seconds=i))
+            s4.commit()
+            row = s4.get(ServiceHealth, 1)
+            ok &= _check("outage-write failure is swallowed", row.degraded is True)
+        except Exception as exc:  # noqa: BLE001
+            ok &= _check("outage-write failure is swallowed", False, f"raised {exc!r}")
+        finally:
+            svc._open_outage = orig
+    return ok
 
 
 def main() -> int:
@@ -167,6 +247,7 @@ def main() -> int:
         count = s5.query(ServiceHealth).count()
         ok &= _check("get_or_create idempotent singleton", count == 1, count)
 
+    ok &= _test_outage_log()
     return 0 if ok else 1
 
 

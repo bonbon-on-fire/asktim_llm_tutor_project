@@ -57,9 +57,45 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from main_ui.config import load_config
-from main_ui.db.models import ServiceHealth
+from main_ui.db.models import ServiceHealth, ProviderOutage
 
 _SINGLETON_ID = 1
+
+
+def _open_outage(session: Session, now: datetime) -> None:
+    """Record the start of a degraded episode (best-effort).
+
+    No-op if an episode is already open, so a second trip can't double-log.
+    """
+    exists = (
+        session.query(ProviderOutage)
+        .filter(ProviderOutage.ended_at.is_(None))
+        .first()
+    )
+    if exists is None:
+        session.add(ProviderOutage(started_at=now, ended_at=None, reason=None))
+
+
+def _close_open_outage(session: Session, ended_at: datetime) -> None:
+    """Close the open degraded episode, if any (best-effort)."""
+    row = (
+        session.query(ProviderOutage)
+        .filter(ProviderOutage.ended_at.is_(None))
+        .order_by(ProviderOutage.started_at.desc())
+        .first()
+    )
+    if row is not None:
+        row.ended_at = ended_at
+        row.updated_at = ended_at
+
+
+def _safe(fn, *args) -> None:
+    """Run a capture helper without ever propagating — a logging failure must
+    not break the chat turn that triggered it."""
+    try:
+        fn(*args)
+    except Exception:  # noqa: BLE001 - capture is best-effort telemetry
+        pass
 
 # Per-worker cache of the resolved degraded flag, so a burst of page loads costs
 # at most one DB read per ``outage_health_cache_seconds`` per gunicorn worker.
@@ -122,17 +158,21 @@ def record_chat_outcome(
     if row is None:
         row = get_or_create(session)
 
+    was_degraded = bool(row.degraded)
     if ok:
         row.consecutive_failures = 0
         row.last_success_at = now
         row.degraded = False
         row.degraded_since = None
+        if was_degraded:
+            _safe(_close_open_outage, session, now)
     else:
         row.consecutive_failures = (row.consecutive_failures or 0) + 1
         row.last_failure_at = now
         if row.consecutive_failures >= threshold and not row.degraded:
             row.degraded = True
             row.degraded_since = now
+            _safe(_open_outage, session, now)
     row.updated_at = now
     return row
 
@@ -161,6 +201,7 @@ def current_degraded(
         return False
     reference = _as_aware(row.last_failure_at) or _as_aware(row.degraded_since)
     if reference is not None and (now - reference) > timedelta(seconds=cooldown_seconds):
+        _safe(_close_open_outage, session, _as_aware(row.last_failure_at) or now)
         row.degraded = False
         row.degraded_since = None
         row.consecutive_failures = 0

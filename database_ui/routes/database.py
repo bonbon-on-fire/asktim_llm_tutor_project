@@ -181,6 +181,11 @@ def api_conversations():
             )
         current_app.logger.exception("conversations query failed")
         return jsonify({"error": "query_failed", "message": "Could not load conversations"}), 500
+    # Tag each entry the judge flagged ("didn't work well" in any weekly report)
+    # so the sidebar can pin a ⚠ to its top-right. One cache scan per request.
+    flagged_ids = cache_mod.flagged_conversation_ids()
+    for c in conversations:
+        c["flagged"] = c["id"] in flagged_ids
     return jsonify({"sort": sort, "conversations": conversations})
 
 
@@ -275,9 +280,6 @@ def api_conversation(conversation_id: str):
             "last_active_at": (
                 convo.last_active_at.isoformat() if convo.last_active_at else None
             ),
-            # True when the judge marked this conversation "didn't work well" in
-            # any weekly report; the transcript view pins a ⚠ marker for these.
-            "flagged": str(convo.id) in cache_mod.flagged_conversation_ids(),
             "messages": svc.get_messages_for_conversation(g.db, convo),
         }
     )

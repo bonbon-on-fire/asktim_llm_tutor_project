@@ -6,7 +6,7 @@
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/chat.css', v='7') }}">
     <link rel="stylesheet" href="{{ url_for('ui_core.static', filename='css/katex.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css', v='12') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/database.css', v='14') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css', v='29') }}">
     <style>:root { --accent: {{ accent }}; }</style>
 </head>
@@ -87,6 +87,15 @@
                  course picker. All client-side over the loaded list (see
                  database.js) — no re-fetch. -->
             <div class="review-toolbar" id="review-toolbar" hidden>
+                <div class="rt-control" id="course-control">
+                    <button type="button" class="rt-chip rt-iconbtn" id="course-trigger"
+                            aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by course" title="Filter">
+                        <svg class="rt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 5h18"/><path d="M6 12h12"/><path d="M10 19h4"/>
+                        </svg>
+                    </button>
+                    <div class="rt-pop" id="course-pop" role="listbox" aria-multiselectable="true" aria-label="Course" hidden></div>
+                </div>
                 <div class="rt-control" id="sort-control">
                     <button type="button" class="rt-chip rt-iconbtn" id="sort-trigger"
                             aria-haspopup="listbox" aria-expanded="false" aria-label="Sort conversations" title="Sort">
@@ -98,15 +107,6 @@
                         <button type="button" class="rt-opt" role="option" aria-selected="false" data-sort="oldest">Old &rarr; New</button>
                         <button type="button" class="rt-opt is-selected" role="option" aria-selected="true" data-sort="recent">New &rarr; Old</button>
                     </div>
-                </div>
-                <div class="rt-control" id="course-control">
-                    <button type="button" class="rt-chip rt-iconbtn" id="course-trigger"
-                            aria-haspopup="listbox" aria-expanded="false" aria-label="Filter by course" title="Filter">
-                        <svg class="rt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M3 5h18"/><path d="M6 12h12"/><path d="M10 19h4"/>
-                        </svg>
-                    </button>
-                    <div class="rt-pop" id="course-pop" role="listbox" aria-multiselectable="true" aria-label="Course" hidden></div>
                 </div>
                 <button type="button" class="rt-chip rt-iconbtn rt-toggle" id="flag-toggle" aria-pressed="false" aria-label="Show flagged only" title="View flagged">
                     <svg class="rt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -174,7 +174,7 @@
     <script src="{{ url_for('static', filename='js/marked.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/dompurify.min.js') }}" defer></script>
     <script src="{{ url_for('static', filename='js/analytics.js', v='45') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/database.js', v='17') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/database.js', v='18') }}" defer></script>
     <script src="{{ url_for('static', filename='js/download.js', v='3') }}" defer></script>
 </body>
 </html>

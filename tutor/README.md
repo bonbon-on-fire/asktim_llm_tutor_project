@@ -152,19 +152,23 @@ underscore) but documented here for maintainers.
 ### Graph & tutor turn
 
 - **`TutorState`** — the LangGraph state: a `TypedDict` with `messages` accumulated
-  via `operator.add`, plus an optional `retrieved_context` string carried through
-  the graph path so per-turn RAG material can be folded into the system message.
+  via `operator.add`, an optional `retrieved_context` string carried through the
+  graph path so per-turn RAG material can be folded into the system message, and
+  `turn_figures` — figures discovered for *this* turn's retrieved sources (merged
+  with the graph-bound `figures` in `tutor_node`).
 - **`create_tutor_graph(system_prompt, *, provider="gpt", figures=None)`** — build
   and compile the single-node graph. Its `tutor_node` sanitizes messages, runs the
-  non-student-like guard, optionally attaches `figures` to the latest student turn,
-  caches the conversation prefix (Anthropic only), invokes the model, and
-  normalizes the reply. `figures` is bound at build time
-  (constant per conversation), so each turn re-sends exactly one copy.
-- **`get_tutor_reply(messages, assignment_override=None, *, graph=None, prompt_name="tutor_01", figures=None, retrieved_context="")`**
+  non-student-like guard, attaches figures to the latest student turn (the
+  build-time `figures` merged with per-turn `turn_figures`), caches the
+  conversation prefix (Anthropic only), invokes the model, and normalizes the
+  reply. `figures` is bound at build time (constant per conversation); `turn_figures`
+  varies per turn.
+- **`get_tutor_reply(messages, assignment_override=None, *, graph=None, prompt_name="tutor_01", figures=None, turn_figures=None, retrieved_context="")`**
   — main non-streaming entry point. Builds its own graph when none is passed;
   returns `(updated_messages, student_facing_answer_text)`. `figures` applies only
-  when it builds its own graph. `retrieved_context`, when given, is appended to the
-  system message after the cacheable prompt (RAG mode).
+  when it builds its own graph; `turn_figures` is passed into the per-turn state.
+  `retrieved_context`, when given, is appended to the system message after the
+  cacheable prompt (RAG mode).
 - **`_looks_non_student_like(text)`** — heuristic that flags empty input or
   tutor/system artifacts (e.g. `pedagogical-reasoning`, `<assignment>`, ` ```json `)
   — i.e. prompt-injection or malformed input.

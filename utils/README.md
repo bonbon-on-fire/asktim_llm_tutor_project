@@ -66,6 +66,14 @@ resolvers normalize any input to that form.
 - `list_courses()` — sorted ACTIVE course folder names (excludes `_archive/` and
   its contents)
 - `list_archived_courses()` — sorted course folder names under `_archive/`
+- Pinned context: `pinned_dir`, `read_pinned_context` (all `pinned/*.txt` folded
+  into context), `read_course_description` (single-doc `pinned/course.txt`)
+- Per-course tutor rules: `tutor_rules_path`, `read_course_tutor_rules`,
+  `append_course_tutor_rules` (appended to the base prompt for courses that ship
+  a `tutor_rules.txt`)
+- Display strings: `load_course_name` (archive-aware banner name),
+  `load_ui_labels` (per-course sidebar/history labels from `ui_labels.json`),
+  `load_about_asktim` (curriculum-root `about_asktim.txt` blurb)
 
 ### `figures.py`
 
@@ -75,6 +83,10 @@ to OpenAI/Anthropic vision models. Naming convention:
 
 - `discover_figures(course, exercise_number)` — matching figure paths, sorted;
   `[]` when absent
+- `discover_figures_for_sources(course, sources)` — figures for a turn's
+  retrieved lecture/practice sources (per-turn figure discovery; feeds the
+  tutor's `turn_figures`). Also supports the source-driven `<stem>__<slug>.<ext>`
+  naming convention alongside `exercise_<N>_<slug>`
 - `image_to_data_url(source, *, mime_type=None)` — base64 `data:` URL from a
   path or raw bytes
 - `build_multimodal_content(text, figures=None)` — plain `text` when no figures,

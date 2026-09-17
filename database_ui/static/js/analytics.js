@@ -389,7 +389,7 @@
       const iso = new Date(wkBase + i * 86400000).toISOString().slice(0, 10);
       if (days[iso]) marks[i] = days[iso];
     });
-    root.appendChild(card("Daily activity", barChart(byDay, {
+    root.appendChild(card("Daily Activity", barChart(byDay, {
       label: "Daily message activity, Sunday through Saturday", marks })));
 
     // AI review sits under Daily activity: the week's narrative overview,
@@ -428,7 +428,7 @@
           rBody.appendChild(el("p", { class: "a-review" }, [val]));
         }
       });
-      root.appendChild(card("AI review", rBody));
+      root.appendChild(card("AI Review", rBody));
     }
 
     // Flags: judged conversations that didn't work well — shown to every login.

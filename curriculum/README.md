@@ -39,6 +39,10 @@ curriculum/
     readings/                        # optional — supplementary reading texts (retrievable via RAG)
       reading_1_<slug>.txt
       ...
+    recitations/                     # optional — recitation transcripts (retrievable via RAG)
+      recitation_1_<slug>.txt
+      ...
+    ui_labels.json                   # optional — per-course sidebar/history labels (e.g. "Week N Practice Problems")
     figures/
       exercise_4_power_actors_map.png    # naming: exercise_<N>_<slug>.png
       ...
@@ -46,7 +50,9 @@ curriculum/
       lecture_1_0_intro.txt          # plain text; all included in tutor context
       ...
     lecture_index.json               # optional — maps each lecture stem to its real Week/Lesson/Video citation
+    recitation_index.json            # optional — recitation counterpart to lecture_index.json
     rag_index/                       # optional — built RAG index (vectors.npy + chunks.jsonl + manifest.json)
+  about_asktim.txt                   # curriculum-root blurb about AskTIM (loaded by utils.curriculum.load_about_asktim)
   _archive/                          # archived courses — hidden from the apps, still readable by tooling
     <course_name>/                   # same layout as an active course
 ```
@@ -64,6 +70,8 @@ curriculum/
 - `exercises_solutions/` and `practices_solutions/` (optional) hold **reference solutions**, one file per exercise/practice named `exercise_solution_<N>.txt` / `practice_solution_<N>.txt` (same non-padded numbering as the problem it mirrors — the `_solution_` infix keeps solution files from colliding with problem filenames). They are **paired directly into the tutor's context** for the current problem (a tutor-only correct-answer input) and are deliberately **excluded from the RAG index** so a solution is never surfaced by similarity. Resolved via `read_solution()` in [`utils/curriculum.py`](../utils/curriculum.py).
 - `cases/case_X.txt` (optional) holds **case-study problems** — a third graded content kind alongside exercises and practices, with its own `cases_solutions/case_solution_<N>.txt` reference solutions. Same non-padded numbering; resolved via `cases_dir()` / `read_case()` / `discover_cases()` in [`utils/curriculum.py`](../utils/curriculum.py). Multi-part case files use `Case Question N:` sub-problem headers (see `list_subproblems(..., kind="case")`), mirroring the `Graded Assignment N:` / `Practice Problem N:` headers of the other kinds.
 - `readings/reading_X_<slug>.txt` (optional) holds **supplementary reading texts** for a course. Like `lectures/` and `practices/`, they are **retrievable via RAG** (chunked + embedded, week-scoped — see [`rag/sources.py`](../rag/sources.py)), not pinned into every turn.
+- `recitations/*.txt` (optional) holds **recitation transcripts** — another RAG-only content kind (like `lectures/` and `readings/`): every file is chunked, embedded, and week-scoped for retrieval ([`rag/sources.py`](../rag/sources.py)), never pinned. There is no per-problem resolver in [`utils/curriculum.py`](../utils/curriculum.py) — recitations are retrieved, not selected as an assignment.
+- `recitation_index.json` (optional) is the recitation counterpart to `lecture_index.json` — maps each `recitations/*.txt` stem to real course coordinates so a retrieved recitation can be cited by a location a student can find. Consumed by `_source_label()` in [`rag/retrieve.py`](../rag/retrieve.py).
 - `lecture_index.json` (optional) maps each `lectures/*.txt` stem to its **true course coordinates** — `week`, `lesson`, `video`, `video_title`, and a ready-to-render `citation` string (e.g. `"Week 10, Lesson 1 · Video 7: DuPont Analysis"`). Built by scraping the live course structure (edX blocks API), it lets the tutor cite a lecture by a location a student can actually find, instead of the synthetic `lecture_<week>_<seq>` file stem. Consumed by `_source_label()` in [`rag/retrieve.py`](../rag/README.md); a validation test asserts every entry resolves to a real lecture file.
 - `rag_index/` (optional) holds the **built RAG index** for the course (`vectors.npy` + `chunks.jsonl` + `manifest.json`), produced by `python -m rag.ingest` and committed so deploys don't re-embed. See [`rag/README.md`](../rag/README.md).
 
@@ -81,6 +89,8 @@ Returned by `list_courses()` / accepted by `validate_course()`.
 | `urban_transportation/` | Urban Transportation, Land Use, and the Environment (MIT 11.943J) | 4 — issue papers + a Mexico City / Santiago case-study consulting exercise; also ships 10 `lectures/` transcripts and a `lecture_index.json` of Lecture citations |
 | `ai_edge/` | The AI Edge (MIT 15.071) — STEM/analytics test context | 1 exercise (with `exercises_solutions/`); also ships a `readings/` text, a `lectures/` transcript, and a `lecture_index.json`; RAG-indexed |
 | `machine_learning_optimization/` | Machine Learning under a Modern Optimization Lens (MIT 15.095) — STEM test context | 1 exercise (with `exercises_solutions/`); also ships a `lectures/` transcript and a `lecture_index.json`; RAG-indexed |
+| `optimization_methods/` | Optimization Methods (MIT 15.C57) | 1 exercise (with `exercises_solutions/`); also ships `lectures/` + `lecture_index.json`, `recitations/` + `recitation_index.json`, and `pinned/`; RAG-indexed |
+| `supply_chain_fundamentals/` | Supply Chain Fundamentals (MIT CTL.SC1x) | No `exercises/` — ships 7 ungraded `practices/` and a `cases/` case study (with `cases_solutions/`); also 19 `recitations/` + `recitation_index.json`, `lectures/` + `lecture_index.json`, `key_concepts.txt`, `tutor_rules.txt`, `ui_labels.json`, and `online_link.txt`; RAG-indexed |
 
 ### Archived (`_archive/`)
 

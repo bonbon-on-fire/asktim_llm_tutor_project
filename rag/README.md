@@ -10,7 +10,8 @@ handful of chunks relevant to the current student turn.
 ## What is and isn't ingested
 
 - **Ingested (retrievable):** key concepts (`key_concepts.txt`), lectures
-  (`lectures/*.txt`), practice-problem prompts (`practices/*.txt`), and OCW
+  (`lectures/*.txt`), recitations (`recitations/*.txt`), readings
+  (`readings/*.txt`), practice-problem prompts (`practices/*.txt`), and OCW
   content — both HTML pages **and linked PDFs** (lecture notes, problem sets,
   where OCW keeps the substantive material) — pulled from the local files, the
   course's OCW site (`online_link.txt`), or both.
@@ -79,18 +80,19 @@ Each retrieved chunk is labeled in the injected block so the tutor can cite it.
 `_source_label`: if the course ships `curriculum/<course>/lecture_index.json`
 and the source is in it, the label is the chunk's **real Week / Lesson / Video
 coordinate** (e.g. `[Week 10, Lesson 1 · Video 7: DuPont Analysis]`) — a location
-a student can actually find on the course site. Without an index (or for
-non-lecture sources), it falls back to a stem-derived label (`Lecture 10.6 …`,
-`Practice 4`, `Syllabus`). The index is built by scraping the live course
+a student can actually find on the course site. Recitations resolve the same way
+against a `recitation_index.json`, if the course ships one. Without an index (or
+for non-lecture/recitation sources), it falls back to a stem-derived label
+(`Lecture 10.6 …`, `Practice 4`, `Reading: <slug>`, `Syllabus`). The index is built by scraping the live course
 structure; see the `curriculum/` README. Passing `course` is what activates the
 real labels — omit it (older callers) and you get the fallback.
 
 ### Week-scoped retrieval (`max_week`)
 
-Lecture and practice sources encode the course **week** as their first number
-(`lecture_2_3_...` → week 2, `practice_4` → week 4). Passing `max_week=N` drops
-any lecture/practice material from a **later** week than `N` before the top-k is
-taken, so the tutor never surfaces content the student hasn't reached. The tutor
+Lecture, recitation, practice, exercise, and reading sources encode the course
+**week** as their first number (`lecture_2_3_...` → week 2, `practice_4` → week
+4). Passing `max_week=N` drops any such material from a **later** week than `N`
+before the top-k is taken, so the tutor never surfaces content the student hasn't reached. The tutor
 bridge passes the current problem's number as `max_week` (exercise/practice
 numbers share the lecture week number). Week-agnostic docs — key concepts and
 OCW content — carry no week and are always in scope (the `pinned/*.txt` docs —
@@ -104,10 +106,10 @@ context, see above). Omit `max_week` (the default) to retrieve across all weeks.
 | `chunking.py` | sentence-aware splitter → `Chunk(text, source, course, index)` |
 | `embeddings.py` | OpenAI `text-embedding-3-small` batch embedder |
 | `store.py` | numpy cosine store (`vectors.npy` + `chunks.jsonl` + `manifest.json`) |
-| `sources.py` | local reader: `key_concepts.txt` / `lectures/*.txt` / `practices/*.txt` (excludes `pinned/*.txt` — course description + syllabus, pinned into context, not retrieved — plus `exercises/*.txt` and `*_solutions/`) |
+| `sources.py` | local reader: `key_concepts.txt` / `lectures/*.txt` / `recitations/*.txt` / `readings/*.txt` / `practices/*.txt` (excludes `pinned/*.txt` — course description + syllabus, pinned into context, not retrieved — plus `exercises/*.txt` and `*_solutions/`) |
 | `ocw.py` | OCW crawler (reads `online_link.txt`; HTML via `beautifulsoup4`, linked PDFs via `pypdf`) |
 | `ingest.py` | CLI: gather → chunk → embed → save |
-| `retrieve.py` | query-time `retrieve()` / `retrieve_scored()` / `to_records()` + `format_context()`; `_source_label()` renders citeable labels from `lecture_index.json` |
+| `retrieve.py` | query-time `retrieve()` / `retrieve_scored()` / `to_records()` + `format_context()`; `_source_label()` renders citeable labels from `lecture_index.json` / `recitation_index.json` |
 
 ## Config (env)
 

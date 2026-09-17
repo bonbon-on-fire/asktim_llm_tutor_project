@@ -681,19 +681,6 @@
     details.className = "review-flag-details";
     details.hidden = true;
 
-    // Which week (and score, if graded) this flag came from.
-    if (flag.week_start) {
-      const meta = document.createElement("div");
-      meta.className = "review-flag-meta";
-      let text = "Flagged in the week of " + flag.week_start + " report";
-      const g = flag.grade;
-      if (g && typeof g.total_score === "number") {
-        text += " · score " + g.total_score + (g.max_score ? "/" + g.max_score : "");
-      }
-      meta.textContent = text;
-      details.appendChild(meta);
-    }
-
     const issues = Array.isArray(flag.issues) ? flag.issues : [];
     if (issues.length) {
       const ul = document.createElement("ul");
@@ -702,7 +689,7 @@
         const item = document.createElement("li");
         const head = document.createElement("span");
         head.className = "review-flag-issue-head";
-        head.textContent = [it.severity, it.type,
+        head.textContent = [it.type,
           typeof it.points === "number" ? it.points + " pts" : null]
           .filter(Boolean).join(" · ");
         item.appendChild(head);

@@ -107,6 +107,17 @@ class Message(Base):
     )
 
 
+class ProviderOutage(Base):
+    """Read-only view of main_ui's provider_outage incident log (shared DB)."""
+
+    __tablename__ = "provider_outage"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 class UploadedImage(Base):
     __tablename__ = "uploaded_images"
 

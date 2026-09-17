@@ -1,11 +1,13 @@
 # database_ui/analytics/tests/test_data.py
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from database_ui.analytics import data as d
+from database_ui.analytics.data import fetch_outages
 from database_ui.analytics.weeks import week_containing
 from database_ui.conftest import seed
+from database_ui.db.models import ProviderOutage
 from database_ui.db.session import SessionLocal
 
 
@@ -55,3 +57,26 @@ def test_fetch_transcript_is_ordered(session):
     assert len(pairs) >= 2
     assert pairs[0][0] == "student"   # student turn precedes tutor turn
     assert pairs[-1][0] == "tutor"
+
+
+def _outage(s, start, end):
+    s.add(ProviderOutage(started_at=start, ended_at=end, reason=None))
+    s.commit()
+
+
+def test_fetch_outages_overlap(session):
+    s, _ids = session
+    # Week containing 2026-08-12 (a Wednesday) -> ET Sun 08-09 .. Sat 08-15.
+    week = week_containing(datetime(2026, 8, 12).date())
+    inside = datetime(2026, 8, 12, 18, tzinfo=timezone.utc)
+    _outage(s, inside, inside + timedelta(hours=2))          # wholly inside
+    _outage(s, week.start_utc - timedelta(hours=1),
+            week.start_utc + timedelta(hours=1))              # spans into week start
+    _outage(s, datetime(2026, 8, 13, 20, tzinfo=timezone.utc), None)  # ongoing
+    _outage(s, week.end_utc + timedelta(hours=1),
+            week.end_utc + timedelta(hours=2))                # entirely after -> excluded
+
+    out = fetch_outages(s, week)
+    assert len(out) == 3
+    assert out[0]["start"] <= out[1]["start"] <= out[2]["start"]   # ordered by start
+    assert any(o["end"] is None for o in out)                      # ongoing preserved

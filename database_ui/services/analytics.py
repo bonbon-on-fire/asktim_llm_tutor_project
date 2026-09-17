@@ -35,6 +35,8 @@ def live_stats(db: Session, week: Week, courses: list[str] | None) -> dict:
     stats["week_over_week"] = week_over_week(stats, prior_stats)
     stats["week"] = {"key": week.key, "label": week.label(),
                      "start": week.key, "end": week.end.isoformat()}
+    # Outages are global (not course-scoped) — pass no courses.
+    stats["outages"] = data_mod.fetch_outages(db, week)
     return stats
 
 

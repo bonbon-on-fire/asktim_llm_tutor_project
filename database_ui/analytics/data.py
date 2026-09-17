@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from database_ui.analytics.weeks import TZ, Week
-from database_ui.db.models import Conversation, Message
+from database_ui.db.models import Conversation, Message, ProviderOutage
 
 
 @dataclass(frozen=True)
@@ -133,6 +133,34 @@ def earliest_conversation_date(db: Session, courses: list[str] | None) -> date |
     stmt = _scoped(select(func.min(Conversation.started_at)), courses)
     ts = db.execute(stmt).scalar_one_or_none()
     return ts.astimezone(TZ).date() if ts is not None else None
+
+
+def fetch_outages(db: Session, week: Week) -> list[dict]:
+    """Degraded episodes overlapping ``week`` (UTC half-open), in report TZ.
+
+    Overlap = started before the week ends AND (still open OR ended at/after the
+    week starts). Timestamps are emitted as ISO strings in ``TZ`` so the client
+    buckets them by the same ET calendar day as the activity bars; ``end`` is
+    ``None`` for an ongoing outage.
+    """
+    stmt = (
+        select(ProviderOutage)
+        .where(
+            ProviderOutage.started_at < week.end_utc,
+            (ProviderOutage.ended_at.is_(None))
+            | (ProviderOutage.ended_at >= week.start_utc),
+        )
+        .order_by(ProviderOutage.started_at.asc())
+    )
+    rows = db.execute(stmt).scalars().all()
+    return [
+        {
+            "start": r.started_at.astimezone(TZ).isoformat(),
+            "end": r.ended_at.astimezone(TZ).isoformat() if r.ended_at else None,
+            "reason": r.reason,
+        }
+        for r in rows
+    ]
 
 
 def fetch_transcript(db: Session, conversation_id: str) -> list[tuple[str, str]]:

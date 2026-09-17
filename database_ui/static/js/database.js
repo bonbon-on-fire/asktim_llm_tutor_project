@@ -459,14 +459,14 @@
     try {
       const r = await fetch(`/api/conversation/${id}`);
       if (!r.ok) {
-        showError("Could not load that conversation.");
+        showError("Could not load that conversation");
         return;
       }
       const convo = await r.json();
       for (const m of convo.messages) renderMessage(m);
       messageList.scrollTop = 0;
     } catch (e) {
-      showError("Could not load that conversation.");
+      showError("Could not load that conversation");
     }
   }
 

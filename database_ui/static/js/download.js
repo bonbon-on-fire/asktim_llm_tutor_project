@@ -85,9 +85,10 @@
       if (checked.length === 0) return "None";
       if (checked.length === 1) return checked[0].label;
       if (checked.length === options.length) return "All (" + checked.length + ")";
-      // Topmost selected course's label plus "+K" for the rest (e.g. "Supply Chain +1").
+      // Topmost selected course's label plus "(+K)" for the rest (e.g. "Supply Chain (+1)").
       // options is in display order, so checked[0] is the top one in the dropdown.
-      return checked[0].label + " +" + (checked.length - 1);
+      // Parenthesised to match the weekly report's course picker.
+      return checked[0].label + " (+" + (checked.length - 1) + ")";
     }
     function paintLabel() {
       labelSpan.textContent = summary();
